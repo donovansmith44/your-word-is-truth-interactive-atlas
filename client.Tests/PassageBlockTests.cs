@@ -1,5 +1,6 @@
 using BibleAtlas.Client.Contract;
 using BibleAtlas.Client.Exploring;
+using BibleAtlas.Client.Legacy;
 using static BibleAtlas.Client.Tests.EventAccountsTests;
 
 namespace BibleAtlas.Client.Tests;

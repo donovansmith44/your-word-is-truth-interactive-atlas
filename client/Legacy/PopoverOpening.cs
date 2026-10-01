@@ -1,6 +1,7 @@
 using BibleAtlas.Client.Contract;
+using BibleAtlas.Client.Exploring;
 
-namespace BibleAtlas.Client.Exploring;
+namespace BibleAtlas.Client.Legacy;
 
 public abstract record PopoverOpening
 {

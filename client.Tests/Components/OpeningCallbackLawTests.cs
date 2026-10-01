@@ -1,5 +1,6 @@
 using System.Reflection;
 using BibleAtlas.Client.Exploring;
+using BibleAtlas.Client.Legacy;
 using Microsoft.AspNetCore.Components;
 
 namespace BibleAtlas.Client.Tests;

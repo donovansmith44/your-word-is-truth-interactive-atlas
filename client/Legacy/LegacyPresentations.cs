@@ -1,4 +1,6 @@
-namespace BibleAtlas.Client.Exploring;
+using BibleAtlas.Client.Exploring;
+
+namespace BibleAtlas.Client.Legacy;
 
 public sealed class LegacyPresentations
 {

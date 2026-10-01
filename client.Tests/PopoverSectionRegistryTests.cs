@@ -1,4 +1,5 @@
 using BibleAtlas.Client.Exploring;
+using BibleAtlas.Client.Legacy;
 
 namespace BibleAtlas.Client.Tests;
 

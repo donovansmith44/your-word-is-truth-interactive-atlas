@@ -1,6 +1,7 @@
 using BibleAtlas.Client.Contract;
+using BibleAtlas.Client.Exploring;
 
-namespace BibleAtlas.Client.Exploring;
+namespace BibleAtlas.Client.Legacy;
 
 public sealed record PassageListVerse(string Vref, string Text, int? GroupCount = null, IReadOnlyList<Anchor>? Anchors = null, IReadOnlyList<WordsOfChristSpan>? WordsOfChrist = null)
 {

@@ -1,6 +1,7 @@
 using BibleAtlas.Client.Contract;
+using BibleAtlas.Client.Exploring;
 
-namespace BibleAtlas.Client.Exploring;
+namespace BibleAtlas.Client.Legacy;
 
 public sealed record V1Node(string Kind, string Key, string Title);
 

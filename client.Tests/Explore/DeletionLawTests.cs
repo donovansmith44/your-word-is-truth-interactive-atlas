@@ -1,6 +1,7 @@
 using System.Text.RegularExpressions;
 using BibleAtlas.Client.Contract;
 using BibleAtlas.Client.Exploring;
+using BibleAtlas.Client.Legacy;
 using BibleAtlas.Client.Tests.State;
 
 namespace BibleAtlas.Client.Tests;
@@ -30,7 +31,7 @@ public sealed class DeletionLawTests
     public void No_section_provider_names_a_migrated_kind()
     {
         // Arrange
-        var providers = File.ReadAllText(Path.Combine(ConformanceTests.ClientRoot, "Exploring", "PopoverSectionProviders.cs"));
+        var providers = File.ReadAllText(Path.Combine(ConformanceTests.ClientRoot, "Legacy", "PopoverSectionProviders.cs"));
 
         // Act
         var named = MigratedKinds

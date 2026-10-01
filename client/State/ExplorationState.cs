@@ -1,6 +1,7 @@
 using BibleAtlas.Client.Contracts;
+using BibleAtlas.Client.Exploring;
 
-namespace BibleAtlas.Client.Exploring;
+namespace BibleAtlas.Client.State;
 
 public abstract record ExplorationState
 {

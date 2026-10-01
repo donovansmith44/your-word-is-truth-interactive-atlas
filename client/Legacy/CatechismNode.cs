@@ -1,7 +1,8 @@
 using BibleAtlas.Client.Contract;
 using Microsoft.AspNetCore.Components;
+using BibleAtlas.Client.Exploring;
 
-namespace BibleAtlas.Client.Exploring;
+namespace BibleAtlas.Client.Legacy;
 
 public sealed class CatechismNode : IExplorable
 {

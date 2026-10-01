@@ -1,6 +1,7 @@
 using BibleAtlas.Client.Contract;
 using BibleAtlas.Client.Contracts;
 using BibleAtlas.Client.Exploring;
+using BibleAtlas.Client.Legacy;
 using BibleAtlas.Client.State;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.JSInterop;

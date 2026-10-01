@@ -40,6 +40,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\client\BibleAtlas.Client.csproj" />
+    <ProjectReference Include="..\client\Exploring\BibleAtlas.Client.Exploring.csproj" />
   </ItemGroup>
 
   <!--

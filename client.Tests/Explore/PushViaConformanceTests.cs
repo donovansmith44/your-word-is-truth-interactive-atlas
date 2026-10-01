@@ -9,7 +9,7 @@ public sealed class PushViaConformanceTests
     public void Every_legacy_push_names_the_kind_of_link_it_follows()
     {
         // Arrange
-        var sources = new[] { Path.Combine("client", "Exploring", "PopoverSectionProviders.cs"), Path.Combine("client", "Exploring", "YearNode.cs") };
+        var sources = new[] { Path.Combine("client", "Legacy", "PopoverSectionProviders.cs"), Path.Combine("client", "Legacy", "YearNode.cs") };
         // Act
         var pushes = sources.SelectMany(source => PushesIn(File.ReadAllText(Path.Combine(ConformanceTests.RepoRoot(), source)))).ToList();
         // Assert

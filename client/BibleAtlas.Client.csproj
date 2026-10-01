@@ -7,6 +7,7 @@
     <OverrideHtmlAssetPlaceholders>true</OverrideHtmlAssetPlaceholders>
     <NoWarn>$(NoWarn);CS8524</NoWarn>
     <WarningsAsErrors>$(WarningsAsErrors);CS8509</WarningsAsErrors>
+    <DefaultItemExcludes>$(DefaultItemExcludes);Exploring/**</DefaultItemExcludes>
   </PropertyGroup>
 
   <ItemGroup>
@@ -14,49 +15,8 @@
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="10.0.11" PrivateAssets="all" />
   </ItemGroup>
 
-  <PropertyGroup>
-    <ContractDocument>$(MSBuildProjectDirectory)/../contracts/openapi.yaml</ContractDocument>
-    <ContractVocabulary>$(MSBuildProjectDirectory)/../contracts/atlas-graph-contract/fixtures/graph-vocabulary.json</ContractVocabulary>
-    <GeneratedWire>$(MSBuildProjectDirectory)/$(BaseIntermediateOutputPath)Contract/Wire.g.cs</GeneratedWire>
-    <ContractGeneratorProject>$(MSBuildProjectDirectory)/../client.ContractGenerator/BibleAtlas.Client.ContractGenerator.csproj</ContractGeneratorProject>
-    <ContractGeneratorAssets>$(MSBuildProjectDirectory)/../client.ContractGenerator/obj/project.assets.json</ContractGeneratorAssets>
-    <ContractGeneratorHost>$(DOTNET_HOST_PATH)</ContractGeneratorHost>
-    <ContractGeneratorHost Condition="'$(ContractGeneratorHost)' == ''">dotnet</ContractGeneratorHost>
-  </PropertyGroup>
-
   <ItemGroup>
-    <EmbeddedResource Include="$(ContractVocabulary)" LogicalName="graph-vocabulary.json" />
+    <ProjectReference Include="Exploring/BibleAtlas.Client.Exploring.csproj" />
   </ItemGroup>
-
-  <Target Name="RestoreContractGenerator" BeforeTargets="BuildContractGenerator"
-          Inputs="$(ContractGeneratorProject)" Outputs="$(ContractGeneratorAssets)">
-    <MSBuild Projects="$(ContractGeneratorProject)" Targets="Restore"
-             Properties="MSBuildRestoreSessionId=$([System.Guid]::NewGuid())" />
-  </Target>
-
-  <!-- Stryker's Buildalyzer based project analysis captures this nested in process build's own
-       Csc invocation as though it belonged to THIS project (a Buildalyzer limitation with nested
-       MSBuild tasks), crashing on a file path resolved against the wrong project directory. The
-       mutation gate sets SkipContractGeneratorRebuild=true, having already built both this project
-       and the generator itself, so GenerateContract's own Inputs/Outputs finds $(GeneratedWire)
-       already current and skips its Exec too; no other caller sets this property. -->
-  <Target Name="BuildContractGenerator" BeforeTargets="GenerateContract"
-          Condition="'$(SkipContractGeneratorRebuild)' != 'true'">
-    <MSBuild Projects="$(ContractGeneratorProject)" Targets="Build">
-      <Output TaskParameter="TargetOutputs" ItemName="ContractGenerator" />
-    </MSBuild>
-  </Target>
-
-  <Target Name="GenerateContract" BeforeTargets="CoreCompile"
-          Inputs="$(ContractDocument);@(ContractGenerator)"
-          Outputs="$(GeneratedWire)">
-    <Exec Command="&quot;$(ContractGeneratorHost)&quot; &quot;@(ContractGenerator)&quot; &quot;$(ContractDocument)&quot; &quot;$(GeneratedWire)&quot;" />
-  </Target>
-
-  <Target Name="IncludeGeneratedContract" AfterTargets="GenerateContract" BeforeTargets="CoreCompile">
-    <ItemGroup>
-      <Compile Include="$(GeneratedWire)" />
-    </ItemGroup>
-  </Target>
 
 </Project>
