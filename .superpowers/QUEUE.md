@@ -94,6 +94,8 @@ Protocol: `AGENTS.md`. Plan: `docs/superpowers/plans/2026-09-30-v1-roadmap.md`.
 - **F-52 (D.R.Y.): geography is compiled twice** (the label pass and `GraphService::assemble`); the pipeline does not hand it on.
 - **F-53 (UX): clicking the same place mention twice keeps the popover's current trail** (hosts key on a value-equal `PopoverOpening`); the World behaves the same. Owner: reopen fresh, or keep?
 - **F-54 (F-31): `MapFocusHatch.Query(placeId, …)` builds world queries from a local place id** in the event-place buttons; the served `NodeRef` should be the only id.
+- **F-55 (tests): two flaky specs predate FOCUS-6** — `reader-xref-anchoring` XSCRIPT-DISMISS-2 (popover closes after the hover transit; ≈10–15% on 3baaeb6 and after) and `split-view` VIEWSTATE-1 (scroll restored as 0; waits only 200 ms after the wheel). Closure: wait on a condition, never a delay; a lint that forbids fixed waits in specs.
+- **F-56 (UX): Escape stops closing the popover after an internal step** (focus leaves the panel; seen on the world after following `site-of`). Not yet checked against pre-FOCUS-6.
 - **F-39 note:** R4b confirms it — labels sit outside the logical hash; only a manual schema bump moves the root. Proposed closure: labels in `logical_dump_section`.
 - **F-3 (rule 25, client derivation): `client/CanonRef.cs`** — see A-BACKLOG; closes when the legacy routes retire.
 
