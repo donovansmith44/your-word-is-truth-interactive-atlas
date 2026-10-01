@@ -138,7 +138,7 @@
 
 @if (_activeNode is not null)
 {
-    <ExplorerPopover @key="_activeNode" Root="_activeNode" OnClose="ClosePopover"
+    <ExplorerPopover @key="_activeNode" Opening="new PopoverOpening.Legacy(_activeNode)" OnClose="ClosePopover"
                       InSplit="SplitMode" OnNavigateWorldInSplit="ApplyExternalQuery" PaneAnchor="@(SplitMode ? "atlas" : null)" />
 }
 
