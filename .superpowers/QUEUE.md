@@ -291,6 +291,8 @@ Protocol: `AGENTS.md`. Plan: `docs/superpowers/plans/2026-09-30-v1-roadmap.md`.
 - **Deliverable:** flag every entry that touches doctrine: baptism, the Lord's Supper, election/predestination, conversion, the law and the gospel, the church and ministry, the end times, and the like. Quote the passage and say why it may conflict with Lutheran teaching. No judgment beyond flagging.
 - **Output:** `.superpowers/analysis/easton-doctrinal-review.md` on `lane/codex/CX-R2`, sorted by how prominent the entity is in the app (its node's edge count from `bibex`/the artifact).
 - **Note:** Easton is re-sourced from its public-domain original when A-THEO replaces Theographic; the review carries over (same text).
+- **Progress:** `.superpowers/analysis/easton-doctrinal-review.md` is a working inventory, not a finished review: 6,519 source rows screened, 2,047 nonempty candidates, 22 specific quoted notes. Prominence measured from all five pinned artifact sections; 3,169/3,170 served descriptions have a source-text equivalent. No app/data edits.
+- **handoff:** continue contextual review of the remaining 2,025 candidates and the 4,313 nonempty unselected rows; preserve numbered-family context, distinguish historical-only hits from claims, and add passage-specific questions before setting review. Scratch scripts and SQLite copies: ~/w/CX-R2-scratch. No locks held. M1/M2 await the M0 gate resolution and reviewed landing; audit priority remains 1446/1406 BC, possibly 1200 BC.
 
 ---
 
