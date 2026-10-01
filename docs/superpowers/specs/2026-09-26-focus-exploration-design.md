@@ -609,7 +609,10 @@ Nothing open remains; the spec awaits the plans.
   - Migrated onto the monad and deleted: the popover's Follow and Back, the
     saved-exploration resume (`Begin` then `Replay`: two element reads
     whatever the trail's length), the World view's era crossing
-    (`Crossing.Walk`, a query walk over `Here`, `Links` and `Follow`);
+    (`Crossing.Walk`, a query walk over `Here`, `Links` and `Follow`; an
+    `Explorable` reads each page of its neighbours, per kind, cursor and
+    limit, once, so a crossing after the frame is presented costs one
+    element read and no neighbour read);
     `Exploration.Back`, `ExplorationIntent.Follow`/`Back`,
     `ExplorationState.Continue`. The batched `IExplorer.Resolve` stays, and
     only the monad calls it.

@@ -516,7 +516,7 @@ public sealed class FocusViewTests : BunitContext
         await view.InvokeAsync(() => { });
 
         // Assert
-        view.MarkupMatches(CouldNotLoad);
+        view.WaitForAssertion(() => view.MarkupMatches(CouldNotLoad));
     }
 
     [Fact]

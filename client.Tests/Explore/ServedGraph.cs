@@ -17,6 +17,8 @@ internal sealed class ServedGraph : IExplorableClient
 
     public int ElementReads { get; private set; }
 
+    public int NeighbourReads { get; private set; }
+
     public ServedGraph Serving(NodeRecord card)
     {
         _cards[card.Id] = card;
@@ -35,6 +37,12 @@ internal sealed class ServedGraph : IExplorableClient
         return this;
     }
 
+    public ServedGraph Failing(string id, EdgeKind kind)
+    {
+        _pages.Remove((id, kind, null));
+        return this;
+    }
+
     public Task<NodeRecord> Card(string id) => Task.FromResult(_cards[id]);
 
     public Task<IReadOnlyList<Element>> Elements(IReadOnlyList<string> ids)
@@ -46,6 +54,7 @@ internal sealed class ServedGraph : IExplorableClient
     public Task<EdgePage> Edges(string positionId, EdgeKind kind, int? cursor = null, int limit = IExplorableClient.DefaultPageSize)
     {
         LimitAsked = limit;
+        NeighbourReads++;
         return Task.FromResult(_pages[(positionId, kind, cursor)]);
     }
 

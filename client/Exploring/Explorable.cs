@@ -5,6 +5,7 @@ namespace BibleAtlas.Client.Exploring;
 public sealed class Explorable
 {
     private readonly IExplorableClient _graph;
+    private readonly Dictionary<(EdgeKind Kind, int? Cursor, int Limit), AsyncMemo<EdgePage>> _pages = [];
 
     internal Explorable(NodeRecord node, IExplorableClient graph)
         : this(new NodePosition(new NodeRef(id: node.Id, kind: node.Kind, label: node.Label)), node, node.Provenance, node.EdgeSummary, [], graph)
@@ -56,10 +57,16 @@ public sealed class Explorable
             return new Page<Entry>([], null);
         }
 
-        var page = await _graph.Edges(Id, kind, cursor, limit);
+        var page = await PageOf(kind, cursor, limit);
         return new Page<Entry>(
             page.Entries.Select(entry => new Entry(new Link(kind, entry.Neighbour), new Link(kind, new EdgePosition(entry.Edge)))).ToList(),
             page.Next);
+    }
+
+    private Task<EdgePage> PageOf(EdgeKind kind, int? cursor, int limit)
+    {
+        var memo = _pages.TryGetValue((kind, cursor, limit), out var read) ? read : _pages[(kind, cursor, limit)] = new AsyncMemo<EdgePage>();
+        return memo.Get(() => _graph.Edges(Id, kind, cursor, limit));
     }
 
     public override bool Equals(object? obj) => obj is Explorable other && PositionIdentity.Comparer.Equals(Identity, other.Identity);
