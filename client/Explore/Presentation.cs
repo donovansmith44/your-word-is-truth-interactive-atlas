@@ -8,7 +8,12 @@ public abstract record Presentation
     {
     }
 
-    public static Form? Of(NodeKind kind, Surface surface) => surface switch
+    public static Form? Of(ElementKind kind, Surface surface) =>
+        kind.Match(node: node => OfNode(node, surface), edge: _ => OfEdge(surface));
+
+    public static bool Offers(Link link, Surface surface) => Of(ElementKind.Of(link.Target), surface) is not null;
+
+    private static Form? OfNode(NodeKind kind, Surface surface) => surface switch
     {
         Surface.World => kind switch
         {
@@ -34,7 +39,11 @@ public abstract record Presentation
         },
     };
 
-    public static bool Offers(Link link, Surface surface) => Of(link.Target.Kind, surface) is not null;
+    private static Form? OfEdge(Surface surface) => surface switch
+    {
+        Surface.World or Surface.Reader => null,
+        Surface.Popover => Form.Card,
+    };
 
     public enum Form
     {

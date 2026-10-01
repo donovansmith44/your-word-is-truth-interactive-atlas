@@ -12,8 +12,8 @@ public sealed class AffordancesTests
 
     private static readonly IReadOnlyDictionary<EdgeKind, Affordance> NamedRows = new Dictionary<EdgeKind, Affordance>
     {
-        [EdgeKind.FollowsIn] = new Affordance.Arrows(),
-        [EdgeKind.PrecedesIn] = new Affordance.Arrows(),
+        [EdgeKind.FollowsIn] = new Affordance.Arrows(ArrowDirection.Next),
+        [EdgeKind.PrecedesIn] = new Affordance.Arrows(ArrowDirection.Previous),
         [EdgeKind.Contains] = new Affordance.InlineChildren(),
         [EdgeKind.Shows] = new Affordance.InlineChildren(),
         [EdgeKind.MemberOf] = new Affordance.UpCrumb(),
@@ -47,6 +47,17 @@ public sealed class AffordancesTests
         var table = kinds.ToDictionary(k => k, Affordances.Of);
         // Assert
         Assert.Equal(expected, table);
+    }
+
+    [Fact]
+    public void Following_is_the_next_arrow_and_preceding_the_previous()
+    {
+        // Arrange
+        var succession = new[] { EdgeKind.FollowsIn, EdgeKind.PrecedesIn };
+        // Act
+        var arrows = succession.Select(Affordances.Of).ToArray();
+        // Assert
+        Assert.Equal(new Affordance[] { new Affordance.Arrows(ArrowDirection.Next), new Affordance.Arrows(ArrowDirection.Previous) }, arrows);
     }
 
     [Fact]

@@ -72,6 +72,25 @@ public sealed class EdgeKindsTests
         Assert.Equal(declared, symmetric);
     }
 
+    [Fact]
+    public void Every_kind_is_displayed_by_the_words_x_atlas_relations_serves_for_it()
+    {
+        // Arrange
+        var relations = PublishedRelations();
+        var served = relations.Directed
+            .SelectMany(r => new[]
+            {
+                KeyValuePair.Create(WireNames.Parse<EdgeKind>(r.Forward), r.ForwardDisplay),
+                KeyValuePair.Create(WireNames.Parse<EdgeKind>(r.Inverse), r.InverseDisplay),
+            })
+            .Concat(relations.Symmetric.Select(s => KeyValuePair.Create(WireNames.Parse<EdgeKind>(s.Label), s.Display)))
+            .ToDictionary();
+        // Act
+        var displayed = Enum.GetValues<EdgeKind>().ToDictionary(k => k, k => k.DisplayLabel());
+        // Assert
+        Assert.Equal(served, displayed);
+    }
+
     private static Relations PublishedRelations() =>
         new DeserializerBuilder()
             .WithNamingConvention(CamelCaseNamingConvention.Instance)
@@ -105,10 +124,18 @@ public sealed class EdgeKindsTests
         public string Forward { get; set; } = "";
 
         public string Inverse { get; set; } = "";
+
+        [YamlMember(Alias = "forward_display", ApplyNamingConventions = false)]
+        public string ForwardDisplay { get; set; } = "";
+
+        [YamlMember(Alias = "inverse_display", ApplyNamingConventions = false)]
+        public string InverseDisplay { get; set; } = "";
     }
 
     private sealed class SymmetricRelation
     {
         public string Label { get; set; } = "";
+
+        public string Display { get; set; } = "";
     }
 }

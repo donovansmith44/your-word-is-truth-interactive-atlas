@@ -5,7 +5,7 @@ namespace BibleAtlas.Client.Tests;
 
 public class FetchLayerConformanceTests
 {
-    private static readonly Regex FetchCall = new(@"\b(Atlas|Graph|atlas|Explorer)\.[A-Z]\w*\(|\.Links\(", RegexOptions.Compiled);
+    private static readonly Regex FetchCall = new(@"\b(Atlas|Graph|atlas|Explorer)\.[A-Z]\w*\(|\.Entries\(", RegexOptions.Compiled);
     private static readonly Regex ThroughARequest = new(@"\.Fetch\(\(\) =>", RegexOptions.Compiled);
     private static readonly Regex TypedInput = new(@"<input[^>]*@oninput", RegexOptions.Compiled | RegexOptions.Singleline);
     private static readonly Regex DraftBound = new(@"value=""@\w+\.Text""", RegexOptions.Compiled);
@@ -37,7 +37,7 @@ public class FetchLayerConformanceTests
             "var node = await Explorer.Resolve(target);",
             "var next = await Explorer.Follow(link);",
             "var card = await Explorer.Present(node, Surface.Popover);",
-            "var page = await node.Links(kind, cursor);",
+            "var page = await node.Entries(kind, cursor);",
         };
 
         // Act

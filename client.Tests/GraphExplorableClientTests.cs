@@ -109,6 +109,48 @@ public class GraphExplorableClientTests
     }
 
     [Fact]
+    public async Task Elements_asks_the_element_read_for_every_id_at_once_and_answers_its_elements_in_order()
+    {
+        // Arrange
+        var (client, handler) = MakeClient();
+        handler.ResponseBody = """
+            {"elements":[
+              {"element":"node","node":{"id":"text-unit:EXO.14.21","kind":"TextUnit","label":"Exodus 14:21","provenance":"kjv","edge_summary":[],"version":"abc123"}},
+              {"element":"edge","edge":{"id":"Attests:00aa","kind":"attested-in","label":"The Red Sea parted · Attested in · Exodus 14:21","subject":{"position":"node","node":{"id":"Event:red_sea","kind":"Event","label":"The Red Sea parted"}},"object":{"position":"node","node":{"id":"text-unit:EXO.14.21","kind":"TextUnit","label":"Exodus 14:21"}},"provenance":"kjv","edge_summary":[]}},
+              {"element":"missing","id":"Event:nowhere"}],"version":"abc123"}
+            """;
+
+        // Act
+        var elements = await client.Elements(["text-unit:EXO.14.21", "Attests:00aa", "Event:nowhere"]);
+
+        // Assert
+        Assert.Equal(
+            ("/api/elements", "?ids=text-unit:EXO.14.21,Attests:00aa,Event:nowhere", WholeValue.Of(new Element[]
+            {
+                new NodeElement(new NodeRecord(book: null, catechism: null, description: null, edgeSummary: [], @event: null, id: "text-unit:EXO.14.21", kind: NodeKind.TextUnit, label: "Exodus 14:21", person: null, place: null, provenance: "kjv", version: "abc123")),
+                new EdgeElement(new EdgeRecord(edgeSummary: [], id: "Attests:00aa", kind: EdgeKind.AttestedIn, label: "The Red Sea parted · Attested in · Exodus 14:21", narrative: null,
+                    @object: new NodePosition(new NodeRef(id: "text-unit:EXO.14.21", kind: NodeKind.TextUnit, label: "Exodus 14:21")), parentage: null, provenance: "kjv",
+                    subject: new NodePosition(new NodeRef(id: "Event:red_sea", kind: NodeKind.Event, label: "The Red Sea parted")), votes: null)),
+                new MissingElement("Event:nowhere"),
+            })),
+            (handler.LastRequestUri!.AbsolutePath, Uri.UnescapeDataString(handler.LastRequestUri.Query), WholeValue.Of(elements.ToArray())));
+    }
+
+    [Fact]
+    public async Task Elements_escapes_each_id_and_keeps_the_separator_between_them()
+    {
+        // Arrange
+        var (client, handler) = MakeClient();
+        handler.ResponseBody = """{"elements":[],"version":"abc123"}""";
+
+        // Act
+        await client.Elements(["a,b", "c d"]);
+
+        // Assert
+        Assert.Equal("?ids=a%2Cb,c%20d", handler.LastRequestUri!.Query);
+    }
+
+    [Fact]
     public async Task Reading_RequestsTheTextWindowEndpoint_AndDeserializesTheRealWireShape()
     {
         var (client, handler) = MakeClient();

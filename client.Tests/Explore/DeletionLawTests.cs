@@ -19,6 +19,6 @@ public sealed class DeletionLawTests
         var legacyNodesForMigratedKinds = migrated.Select(node => (node.Kind, LegacyNodes.For(node))).ToList();
 
         // Assert
-        Assert.Equal(MigratedKinds.Select(kind => (kind, (IExplorable?)null)).ToList(), legacyNodesForMigratedKinds);
+        Assert.Equal(MigratedKinds.Select(kind => ((ElementKind)new ElementKind.Node(kind), (IExplorable?)null)).ToList(), legacyNodesForMigratedKinds);
     }
 }
