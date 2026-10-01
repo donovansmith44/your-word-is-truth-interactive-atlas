@@ -167,23 +167,6 @@ public sealed class GraphExplorerTests
     }
 
     [Fact]
-    public async Task Resolving_many_targets_is_one_element_read_answered_in_the_order_asked()
-    {
-        // Arrange
-        var graph = new ServedGraph()
-            .Serving(ServedGraph.Card(NodeKind.TextUnit, Exodus14.Id, Exodus14.Label))
-            .Serving(ServedGraph.Card(NodeKind.Event, ExodusEvent.Id, ExodusEvent.Label))
-            .Serving(ServedGraph.EdgeRecordOf(AttestedIn, ExodusEvent, Exodus14));
-        var explorer = new GraphExplorer(graph);
-
-        // Act
-        var resolved = await explorer.Resolve([ServedGraph.At(Exodus14), ServedGraph.AtEdge(AttestedIn), ServedGraph.At(ExodusEvent)]);
-
-        // Assert
-        Assert.Equal((1, string.Join(" ", Exodus14.Id, AttestedIn.Id, ExodusEvent.Id)), (graph.ElementReads, string.Join(" ", resolved.Select(element => element.Id))));
-    }
-
-    [Fact]
     public async Task Presenting_an_edge_on_the_popover_yields_its_card_and_on_any_other_surface_nothing()
     {
         // Arrange

@@ -1066,13 +1066,13 @@
 
     private async Task Cross(ArrowDirection direction)
     {
-        if (CrossingTo(direction) is not { } link)
+        if (CrossingTo(direction) is not { } link || ExplorationAtom.Value is not ExplorationState.Open { Exploration: var from })
         {
             return;
         }
 
-        (await _crossing.Next().Fetch(() => Explorer.Follow(link))).Match(
-            arrived: target => ExplorationAtom.Dispatch(new ExplorationIntent.Follow(new Step(link.Kind, target))),
+        (await _crossing.Next().Walk(() => Explore.Follow(link).Run(Explorer, from))).Match(
+            arrived: walked => ExplorationAtom.Dispatch(new ExplorationIntent.Reseed(walked.Trail)),
             failed: () => _errorMessage = $"Couldn't reach {Positions.Of(link.Target).Label} -- check your connection and try again.",
             superseded: () => { });
     }

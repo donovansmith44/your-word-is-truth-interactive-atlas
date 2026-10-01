@@ -1,7 +1,8 @@
 using BibleAtlas.Client.Contract;
-using BibleAtlas.Client.Explore;
 
 namespace BibleAtlas.Client.Tests;
+
+using BibleAtlas.Client.Explore;
 
 internal sealed class ServedGraph : IExplorableClient
 {
@@ -125,4 +126,12 @@ internal static class Resolved
 
     public static Explorable At(ServedGraph graph, PositionRef target) =>
         new GraphExplorer(graph).Resolve(target).GetAwaiter().GetResult();
+}
+
+internal static class Walked
+{
+    public static Exploration WalkedBack(this Exploration trail) =>
+        Explore.Back.Run(new GraphExplorer(new ServedGraph()), trail).GetAwaiter().GetResult() is Outcome<(Explorable Value, Exploration Trail)>.Arrived { Value.Trail: var back }
+            ? back
+            : throw new InvalidOperationException($"going back from {trail.Current.Label} asked the graph");
 }

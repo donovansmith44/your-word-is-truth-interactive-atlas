@@ -499,3 +499,116 @@ Nothing open remains; the spec awaits the plans.
   in the current era, highlights its territory at the slider's current
   year, and shows its reign window on the slider so the reader can scrub
   its rise and fall. No jump, no multi-era overlay.
+
+## 12. Rulings (owner, 2026-09-30, amending §3.1–§3.3 and §3.5)
+
+- **R15 — an Explorable is explorable because it has a frontier.** "Explorable
+  essentially means that we can interactively get to another node by graph
+  traversal (i.e., get context): this is the explore monad." §3.1's
+  `Explorable(Kind, Id, Label)` plus a separate `IFrontier` is replaced by:
+  ```csharp
+  public sealed class Explorable                    // a node WITH its frontier; sealed, no presentation methods
+  {
+      public NodeKind Kind { get; }  public string Id { get; }  public string Label { get; }
+      public IReadOnlyList<FrontierGroup> Groups { get; }                   // the card's edge_summary
+      public Task<Page<Link>> Links(EdgeKind kind, int? cursor = null);     // pages this node's edges, server order
+      // equality and hash: (Kind, Id)
+  }
+  public sealed record Link(EdgeKind Kind, NodeRef Target);   // a reference, not yet explorable
+  public interface IExplorer
+  {
+      Task<Explorable> Resolve(NodeRef target);   // unit: one card fetch → the node with its frontier
+      Task<Explorable> Follow(Link link);          // bind: through one edge to the next node with its frontier
+      Task<Presentation> Present(Explorable node, Surface surface);
+  }
+  ```
+  `IFrontier` is folded in; `Explorable.From(NodeRef)` does not exist (a
+  reference is resolved, never promoted); `GraphExplorer` is the only
+  constructor of an `Explorable`. `FrontierGroup`, `Page<T>` and the three
+  frontier laws stand.
+- **R16 — presentation is a functor over the explorable, keyed by kind and
+  surface.** The same `Explorable` is presented differently on each surface
+  (a place is a region on the World view and a card in the popover) and
+  offers the same frontier on every surface. `Presentation.Of(NodeKind,
+  Surface)` with `Surface = World | Reader | Popover`, and
+  `Affordances.Of(EdgeKind)`, are the two exhaustive tables (a missing arm is
+  a build error, `client/BibleAtlas.Client.csproj`). There is no per-node
+  presentation method and no interface a node implements to present itself:
+  that is the legacy `IExplorable` design §9 retires. R9's home surfaces
+  become rows of the table.
+- **R17 — Back is the dual of the last un-returned hop** (`Breadcrumb[^1]`),
+  so Back at the bottom is a no-op and Back-after-Back never goes forward
+  (amends §3.5's literal `Links[^1]`).
+- **R18 — edges are explorable** (owner, 2026-09-30: "I already agree and want
+  explorable edges"). An edge is a graph element with a frontier of its own:
+  its two ends, its justification and provenance, and anything positioned on
+  it. So `Follow` is total and the last case of "every affordance is a
+  queried edge" closes (F-21, F1-12 retire). Types, shown for sign-off at
+  FOCUS-1's close (PRINCIPLES 12); to be built as its own batch (A-EDGES)
+  between FOCUS-1 and FOCUS-2, so FOCUS-2…9 write their rows against the
+  final table:
+  ```csharp
+  public abstract record ElementKind { Node(NodeKind); Edge(EdgeKind); }      // what an Explorable is
+  public sealed class Explorable { ElementKind Kind; string Id; string Label; Groups; Links(...); }
+  public sealed record Link(EdgeKind Kind, PositionRef Target);              // node or edge; the wire's union
+  IExplorer.Resolve(PositionRef) ; Follow(Link)                              // total
+  Presentation.Of(ElementKind, Surface)                                      // rows for edge kinds too
+  ```
+  **Amended by owner, 2026-09-30 (PRINCIPLES 27):** the "Server" paragraph
+  that stood here put the frontier into the backend (an edge card endpoint,
+  `EdgeSource`/`EdgeTarget` relations, labels composed per request) and is
+  withdrawn; that work (`lane/claude/F6-t1`, `F6-t2`) never lands. An edge's
+  frontier is derived on the client from what the graph already holds: its
+  ends are fields of the edge, read by the generic element read (nodes and
+  edges alike, many ids per call); its justification and anything positioned
+  on it are the generic neighbour read at its position. Its label is compiled
+  into the artifact and read, never composed per request or on the client.
+- **R19 — the explore monad, for real** (owner, 2026-10-01: "Good."). R15
+  named the monad; R19 builds it, client only (PRINCIPLES 27):
+  `Explore<T>` = StateT Exploration (ReaderT IExplorer (ExceptT Failure Task)).
+  ```csharp
+  public sealed class Explore<T>
+  {
+      public Task<Outcome<(T Value, Exploration Trail)>> Run(IExplorer explorer, Exploration from);
+  }
+  public static class Explore
+  {
+      public static Explore<T> Return<T>(T value);
+      public static Explore<Explorable> Here { get; }
+      public static Explore<Page<Link>> Links(EdgeKind kind, int? cursor = null);   // through the one Paging door (F-59)
+      public static Explore<Explorable> Follow(Link link);                           // records one Step
+      public static Explore<Explorable> Back { get; }                                // R17, moved here
+      public static Explore<Unit> Replay(IReadOnlyList<Link> links);                 // signed as IReadOnlyList<Step>; see below
+      public static Task<Outcome<Exploration>> Begin(IExplorer explorer, PositionRef start);
+      public static Explore<U> Select<T, U>(this Explore<T> m, Func<T, U> f);
+      public static Explore<U> SelectMany<T, U>(this Explore<T> m, Func<T, Explore<U>> f);
+      public static Explore<V> SelectMany<T, U, V>(this Explore<T> m, Func<T, Explore<U>> f, Func<T, U, V> project);
+  }
+  ```
+  Rulings:
+  - No Resolve inside a walk. Only `Begin` starts one, so a trail stays
+    continuous (R15: a reference is resolved, never promoted).
+  - Back is a monad primitive. It is the dual of the last un-returned hop
+    (R17), it asks the graph nothing, and Back after Back never goes forward.
+  - Failure is the existing `Outcome` (F-58). A failed request ends the walk:
+    later binds never run, no request goes out after the failure, nothing
+    throws. A component runs a walk through `Request.Walk`, which drops a
+    superseded answer like `Request.Fetch`.
+  - Laws, as tests: left identity, right identity and associativity over
+    generated walks on `ServedGraph`, comparing value and trail; a query
+    walk's trail is its breadcrumb; Replay of a trail reproduces it; Back
+    after Follow returns to the prior Here.
+  - Migrated onto the monad and deleted: the popover's Follow and Back, the
+    saved-exploration resume (`Begin` then `Replay`; it was one batched
+    element read), the World view's era crossing (`Follow`);
+    `Exploration.Back`, `ExplorationIntent.Follow`/`Back`,
+    `ExplorationState.Continue`, `IExplorer.Resolve(IReadOnlyList<PositionRef>)`.
+    A walk lands in the atom as `ExplorationIntent.Reseed(trail)`.
+  - Closed (24b): a source law, `ExploreDoorLawTests`, fails if any client
+    file but the monad and the explorer calls `IExplorer.Follow` or
+    `Resolve`; the fetch law sees `Explore.Begin` and `.Run(Explorer` as
+    fetches that must go through a request.
+  - `Replay` takes the links a saved exploration holds. The signed text said
+    `IReadOnlyList<Step>`, but a `Step` carries a resolved `Explorable`, and
+    a save has only links, so resume could not go through it. Built as
+    `IReadOnlyList<Link>`, pending the owner's confirmation.

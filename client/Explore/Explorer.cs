@@ -7,8 +7,6 @@ public interface IExplorer
 {
     Task<Explorable> Resolve(PositionRef target);
 
-    Task<IReadOnlyList<Explorable>> Resolve(IReadOnlyList<PositionRef> targets);
-
     Task<Explorable> Follow(Link link);
 
     Task<Presentation?> Present(PresentationRequest request);
@@ -24,10 +22,7 @@ public sealed class GraphExplorer(IExplorableClient graph) : IExplorer
     private const string DestroyedField = "Destroyed";
     private const string BlurbField = "Blurb";
 
-    public async Task<Explorable> Resolve(PositionRef target) => (await Resolve([target]))[0];
-
-    public async Task<IReadOnlyList<Explorable>> Resolve(IReadOnlyList<PositionRef> targets) =>
-        (await graph.Elements(targets.Select(target => Positions.Of(target).Id).ToList())).Select(Of).ToList();
+    public async Task<Explorable> Resolve(PositionRef target) => Of((await graph.Elements([Positions.Of(target).Id]))[0]);
 
     public Task<Explorable> Follow(Link link) => Resolve(link.Target);
 

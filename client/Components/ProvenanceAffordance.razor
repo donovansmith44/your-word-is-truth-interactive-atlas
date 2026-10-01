@@ -18,7 +18,7 @@
             <span class="popover-provenance-panel" id="@_panelId" role="note" data-testid="@PanelTestId">
                 @foreach (var p in _resolved)
                 {
-                    @if (p.Status == Explore.ProvenanceStatus.RegistryUnavailable)
+                    @if (p.Status == ProvenanceStatus.RegistryUnavailable)
                     {
                         @* An infrastructure fault (the source list failed to load), not an
                            unrecognized id -- said as one, not the other. *@
@@ -27,7 +27,7 @@
                             Its source id is &quot;@p.Id&quot;.
                         </span>
                     }
-                    else if (p.Status == Explore.ProvenanceStatus.Unresolved)
+                    else if (p.Status == ProvenanceStatus.Unresolved)
                     {
                         <span class="popover-provenance-error" data-testid="@UnresolvedTestId">
                             @if (string.IsNullOrWhiteSpace(p.Id))
@@ -103,7 +103,7 @@
     {
         // A blank/whitespace id is normalized, not filtered out -- it still renders as one
         // loud entry rather than disappearing or being confused with a genuinely empty list.
-        _ids = (Provenance ?? Array.Empty<string>()).Select(Explore.ProvenanceResolver.NormalizeId).Distinct().ToList();
+        _ids = (Provenance ?? Array.Empty<string>()).Select(ProvenanceResolver.NormalizeId).Distinct().ToList();
         _resolved = ProvenanceResolver.ResolveAll(Sources, _ids);
     }
 

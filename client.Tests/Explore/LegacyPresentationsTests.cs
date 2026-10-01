@@ -20,7 +20,7 @@ public sealed class LegacyPresentationsTests
         views.Arrive(dated, new YearNode(LegacyViews.TwoThousandBc, LegacyViews.TerahLeavesUr));
 
         // Act
-        var restored = views.Present(dated.Back());
+        var restored = views.Present(dated.WalkedBack());
 
         // Assert
         Assert.Same(eventBody, restored);
@@ -55,7 +55,7 @@ public sealed class LegacyPresentationsTests
         }).ToList();
 
         // Act
-        var outcomes = laws.Select(law => (law.View.GetType().Name, Forward: law.Views.Present(law.Pushed), Back: law.Views.Present(law.Pushed.Back()))).ToList();
+        var outcomes = laws.Select(law => (law.View.GetType().Name, Forward: law.Views.Present(law.Pushed), Back: law.Views.Present(law.Pushed.WalkedBack()))).ToList();
 
         // Assert
         Assert.Equal(
@@ -78,7 +78,7 @@ public sealed class LegacyPresentationsTests
             views.Arrive(pushed, view);
             var onward = pushed.Follow(new Step(EdgeKind.FollowsIn, wilderness));
             views.Present(onward);
-            return (View: view, Views: views, Back: onward.Back());
+            return (View: view, Views: views, Back: onward.WalkedBack());
         }).ToList();
 
         // Act
@@ -101,8 +101,8 @@ public sealed class LegacyPresentationsTests
             var pushed = start.Follow(new Step(EdgeKind.Mentions, node));
             views.Present(start);
             views.Arrive(pushed, view);
-            views.Present(pushed.Back());
-            return (View: view, Node: node, Views: views, Again: pushed.Back().Follow(new Step(EdgeKind.Mentions, node)));
+            views.Present(pushed.WalkedBack());
+            return (View: view, Node: node, Views: views, Again: pushed.WalkedBack().Follow(new Step(EdgeKind.Mentions, node)));
         }).ToList();
 
         // Act

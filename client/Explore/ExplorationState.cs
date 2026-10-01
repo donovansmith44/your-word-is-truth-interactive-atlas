@@ -8,9 +8,6 @@ public abstract record ExplorationState
     {
     }
 
-    public ExplorationState Continue(Func<Exploration, Exploration> hop) =>
-        this is Open open ? new Open(hop(open.Exploration)) : this;
-
     public sealed record Closed : ExplorationState;
 
     public sealed record Open(Exploration Exploration) : ExplorationState;
@@ -37,20 +34,6 @@ public abstract record ExplorationIntent : IIntent<ExplorationState>
             current is ExplorationState.Open { Exploration.Current: var here } && here == Node
                 ? current
                 : new ExplorationState.Open(new Exploration(Node, []));
-    }
-
-    public sealed record Follow(Step Step, string? Origin = null) : ExplorationIntent(Origin)
-    {
-        public override string Name => "exploration-follow";
-
-        public override ExplorationState Apply(ExplorationState current) => current.Continue(e => e.Follow(Step));
-    }
-
-    public sealed record Back(string? Origin = null) : ExplorationIntent(Origin)
-    {
-        public override string Name => "exploration-back";
-
-        public override ExplorationState Apply(ExplorationState current) => current.Continue(e => e.Back());
     }
 
     public sealed record Reset(string? Origin = null) : ExplorationIntent(Origin)

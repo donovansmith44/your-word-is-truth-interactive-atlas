@@ -60,8 +60,13 @@ public static class Paging
     public static async Task<IReadOnlyList<EdgeEntry>> Whole(IExplorableClient graph, string positionId, EdgeKind kind) =>
         (await Unread<EdgeEntry>().ToTheEnd(Neighbours(graph, positionId, kind))).Kept;
 
-    public static async Task<Link?> FirstLink(Explorable element, EdgeKind kind) =>
-        (await Unread<Entry>().Reading((cursor, limit) => element.Entries(kind, cursor, limit), Affordances.Of(kind).InitialClamp, Everything)).Kept.FirstOrDefault()?.Neighbour;
+    public static async Task<Link?> FirstLink(Explorable element, EdgeKind kind) => (await Links(element, kind, null)).Items.FirstOrDefault();
+
+    public static async Task<Page<Link>> Links(Explorable element, EdgeKind kind, int? cursor)
+    {
+        var read = await (Unread<Entry>() with { Next = cursor }).Reading((next, limit) => element.Entries(kind, next, limit), Affordances.Of(kind).InitialClamp, Everything);
+        return new Page<Link>(read.Kept.Select(entry => entry.Neighbour).ToList(), read.Next);
+    }
 
     private static PageRead<EdgeEntry> Neighbours(IExplorableClient graph, string positionId, EdgeKind kind) =>
         async (cursor, limit) =>

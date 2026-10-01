@@ -5,8 +5,8 @@ namespace BibleAtlas.Client.Tests;
 
 public class FetchLayerConformanceTests
 {
-    private static readonly Regex FetchCall = new(@"\b(Atlas|Graph|atlas|Explorer|Maps)\.[A-Z]\w*\(|\.Entries\(", RegexOptions.Compiled);
-    private static readonly Regex ThroughARequest = new(@"\.Fetch\(\(\) =>", RegexOptions.Compiled);
+    private static readonly Regex FetchCall = new(@"\b(Atlas|Graph|atlas|Explorer|Maps)\.[A-Z]\w*\(|\.Entries\(|\bExplore\.Begin\(|\.Run\(Explorer\b", RegexOptions.Compiled);
+    private static readonly Regex ThroughARequest = new(@"\.(Fetch|Walk)\(\(\) =>", RegexOptions.Compiled);
     private static readonly Regex TypedInput = new(@"<input[^>]*@oninput", RegexOptions.Compiled | RegexOptions.Singleline);
     private static readonly Regex DraftBound = new(@"value=""@\w+\.Text""", RegexOptions.Compiled);
 
@@ -44,7 +44,7 @@ public class FetchLayerConformanceTests
     }
 
     [Fact]
-    public void Resolving_following_presenting_and_paging_a_frontier_are_fetches_the_law_sees()
+    public void Resolving_following_presenting_paging_beginning_and_walking_are_fetches_the_law_sees()
     {
         // Arrange
         var planted = new[]
@@ -53,13 +53,15 @@ public class FetchLayerConformanceTests
             "var next = await Explorer.Follow(link);",
             "var card = await Explorer.Present(request);",
             "var page = await node.Entries(kind, cursor);",
+            "var begun = await Explore.Begin(Explorer, target);",
+            "var walked = await Explore.Follow(link).Run(Explorer, from);",
         };
 
         // Act
         var seen = planted.Select(line => FetchCall.IsMatch(line)).ToList();
 
         // Assert
-        Assert.Equal([true, true, true, true], seen);
+        Assert.Equal([true, true, true, true, true, true], seen);
     }
 
     [Fact]

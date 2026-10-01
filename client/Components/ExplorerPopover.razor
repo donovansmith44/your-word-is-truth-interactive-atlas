@@ -25,10 +25,10 @@
      style="@(VerseAnchorStyle ?? PaneRectStyle)" data-testid="popover" tabindex="-1" @ref="_panelRef" @onkeydown="OnKeyDown"
      @onpointerenter="OnPanelPointerEnter" @onpointerleave="OnPanelPointerLeave">
     <div class="popover-head">
-        @if (Exploration is { Breadcrumb.Count: > 0 })
+        @if (Exploration is { Breadcrumb.Count: > 0 } walked)
         {
             <button type="button" class="popover-breadcrumb-back" data-testid="popover-breadcrumb-back"
-                    aria-label="Back" title="Back" @onclick="Back">&lsaquo;</button>
+                    aria-label="Back" title="Back" @onclick="() => Back(walked)">&lsaquo;</button>
         }
         <p class="popover-title" data-testid="popover-title" data-ref="@(IsText ? "true" : "false")">@Title</p>
         @if (_chips.Count > 0)
@@ -256,23 +256,20 @@
 
     private async Task Resume(Request request, SavedExploration saved)
     {
-        if (Arriving(await request.Fetch(() => Explorer.Resolve(saved.Trail)), () => Resume(_requests.Next(), saved)) is not [var start, ..] trail)
+        if (Arriving(await request.Walk(() => Explore.Begin(Explorer, saved.Start)), () => Resume(_requests.Next(), saved)) is { } begun)
         {
-            return;
+            await Walk(request, Explore.Replay(saved.Steps), begun, null, () => Resume(_requests.Next(), saved));
         }
-
-        ApplyLocally(new ExplorationIntent.Reseed(new Exploration(start, saved.Steps.Zip(trail.Skip(1), (step, target) => new Step(step.Kind, target)).ToList())));
-        await LoadCurrent();
     }
 
     private async Task OpenAt(Request request, PositionRef target, IExplorable? legacy)
     {
-        if (Arriving(await request.Fetch(() => Explorer.Resolve(target)), () => OpenAt(_requests.Next(), target, legacy)) is not { } start)
+        if (Arriving(await request.Walk(() => Explore.Begin(Explorer, target)), () => OpenAt(_requests.Next(), target, legacy)) is not { } begun)
         {
             return;
         }
 
-        PresentArrival(new ExplorationIntent.Open(start), legacy);
+        PresentArrival(new ExplorationIntent.Open(begun.Current), legacy);
         await LoadCurrent();
     }
 
@@ -473,11 +470,14 @@
 
     private Task FollowAsync(Link link) => Arrive(link, null, () => FollowAsync(link));
 
-    private async Task Arrive(Link link, IExplorable? legacy, Func<Task> retry)
+    private Task Arrive(Link link, IExplorable? legacy, Func<Task> retry) =>
+        Exploration is { } from ? Walk(_requests.Next(), Explore.Follow(link), from, legacy, retry) : Task.CompletedTask;
+
+    private async Task Walk<T>(Request request, Explore<T> walk, Exploration from, IExplorable? legacy, Func<Task> retry)
     {
-        if (Arriving(await _requests.Next().Fetch(() => Explorer.Follow(link)), retry) is { } target)
+        if (Arriving((await request.Walk(() => walk.Run(Explorer, from))).Select(walked => walked.Trail), retry) is { } trail)
         {
-            PresentArrival(new ExplorationIntent.Follow(new Step(link.Kind, target)), legacy);
+            PresentArrival(new ExplorationIntent.Reseed(trail), legacy);
             await LoadCurrent();
         }
 
@@ -545,16 +545,7 @@
         }
     }
 
-    private async Task Back()
-    {
-        if (Exploration is not { Breadcrumb.Count: > 0 })
-        {
-            return;
-        }
-
-        ApplyLocally(new ExplorationIntent.Back());
-        await LoadCurrent();
-    }
+    private Task Back(Exploration from) => Walk(_requests.Next(), Explore.Back, from, null, () => Back(from));
 
     private async Task RequestClose()
     {

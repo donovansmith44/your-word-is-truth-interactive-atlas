@@ -100,18 +100,19 @@ public sealed class ExplorerPopoverTests : BunitContext
     }
 
     [Fact]
-    public void Opening_on_a_save_reseeds_its_whole_trail_in_one_element_read()
+    public void Opening_on_a_save_begins_at_its_start_and_replays_its_steps()
     {
         // Arrange
         var graph = Narratives();
-        Hosting(graph);
+        var atom = Hosting(graph);
         var saved = AtExodus with { Steps = [new Link(EdgeKind.FollowsIn, ServedGraph.At(Wilderness))] };
 
         // Act
         var popover = Render<ExplorerPopover>(p => p.Add(v => v.Opening, new PopoverOpening.Resume(saved)));
 
         // Assert
-        popover.WaitForAssertion(() => Assert.Equal(1, graph.ElementReads));
+        var replayed = new Exploration(Resolved.Node(graph, Exodus), [new Step(EdgeKind.FollowsIn, Resolved.Node(graph, Wilderness))]);
+        popover.WaitForAssertion(() => Assert.Equal(new ExplorationState.Open(replayed), atom.Value));
     }
 
     [Fact]
@@ -177,6 +178,21 @@ public sealed class ExplorerPopoverTests : BunitContext
         // Assert
         popover.WaitForAssertion(() => popover.Find("[data-testid='popover-body']").MarkupMatches(ExodusPresented));
         Assert.Equal(new ExplorationState.Open(new Exploration(Resolved.Node(graph, Exodus), [])), atom.Value);
+    }
+
+    [Fact]
+    public async Task A_push_before_the_popover_has_arrived_anywhere_changes_nothing()
+    {
+        // Arrange
+        var atom = Hosting(new FlakyGraph(Narratives(), failedReads: 1));
+        var popover = Render<ExplorerPopover>(p => p.Add(v => v.Opening, new PopoverOpening.Explore(ServedGraph.At(Exodus))));
+        popover.WaitForElement("[data-testid='could-not-load-retry']");
+
+        // Act
+        await popover.InvokeAsync(() => popover.Instance.PushAsync(new PopoverOpening.Explore(ServedGraph.At(Wilderness)), EdgeKind.FollowsIn));
+
+        // Assert
+        Assert.Equal(new ExplorationState.Closed(), atom.Value);
     }
 
     [Fact]

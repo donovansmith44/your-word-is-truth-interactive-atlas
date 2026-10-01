@@ -60,48 +60,6 @@ public sealed class ExplorationStateTests
     }
 
     [Fact]
-    public void Follow_appends_the_step_and_Back_appends_its_dual()
-    {
-        // Arrange
-        var (follow, back) = (new ExplorationIntent.Follow(ToGenesis2), new ExplorationIntent.Back());
-
-        // Act
-        var followed = follow.Apply(AtGenesis1);
-        var returned = back.Apply(followed);
-
-        // Assert
-        Assert.Equal(
-            (AtGenesis2ViaGenesis1, new ExplorationState.Open(new Exploration(Genesis1, [ToGenesis2, BackToGenesis1]))),
-            (followed, returned));
-    }
-
-    [Fact]
-    public void Following_the_same_step_twice_is_two_hops()
-    {
-        // Arrange
-        var follow = new ExplorationIntent.Follow(ToGenesis2);
-
-        // Act
-        var twice = follow.Apply(follow.Apply(AtGenesis1));
-
-        // Assert
-        Assert.Equal(new ExplorationState.Open(new Exploration(Genesis1, [ToGenesis2, ToGenesis2])), twice);
-    }
-
-    [Fact]
-    public void Follow_and_Back_on_a_closed_state_change_nothing()
-    {
-        // Arrange
-        var (follow, back) = (new ExplorationIntent.Follow(ToGenesis2), new ExplorationIntent.Back());
-
-        // Act
-        var results = (follow.Apply(Closed), back.Apply(Closed));
-
-        // Assert
-        Assert.Equal((Closed, Closed), results);
-    }
-
-    [Fact]
     public void Reset_closes_and_Reseed_replaces_verbatim()
     {
         // Arrange
@@ -122,8 +80,6 @@ public sealed class ExplorationStateTests
         IIntent<ExplorationState>[] intents =
         [
             new ExplorationIntent.Open(Genesis1),
-            new ExplorationIntent.Follow(ToGenesis2),
-            new ExplorationIntent.Back(),
             new ExplorationIntent.Reset(),
             new ExplorationIntent.Reseed(new Exploration(Genesis1, [])),
         ];
@@ -132,11 +88,11 @@ public sealed class ExplorationStateTests
         var names = intents.Select(i => i.Name).ToList();
 
         // Assert
-        Assert.Equal(["exploration-open", "exploration-follow", "exploration-back", "exploration-reset", "exploration-reseed"], names);
+        Assert.Equal(["exploration-open", "exploration-reset", "exploration-reseed"], names);
     }
 
     [Fact]
-    public void The_intent_vocabulary_is_open_follow_back_reset_reseed_and_nothing_else()
+    public void The_intent_vocabulary_is_open_reset_reseed_and_nothing_else()
     {
         // Arrange
         var intent = typeof(ExplorationIntent);
@@ -150,7 +106,7 @@ public sealed class ExplorationStateTests
 
         // Assert
         Assert.Equal(
-            [("Back", true, true), ("Follow", true, true), ("Open", true, true), ("Reseed", true, true), ("Reset", true, true)],
+            [("Open", true, true), ("Reseed", true, true), ("Reset", true, true)],
             cases);
     }
 

@@ -14,14 +14,6 @@ public sealed record Exploration(Explorable Start, IReadOnlyList<Step> Steps)
 
     public Exploration Follow(Step step) => this with { Steps = [.. Steps, step] };
 
-    public Exploration Back()
-    {
-        var crumbs = Breadcrumb;
-        return crumbs.Count == 0
-            ? this
-            : Follow(new Step(crumbs[^1].Kind.Dual(), SourceOf(crumbs, crumbs.Count - 1)));
-    }
-
     public bool Equals(Exploration? other) =>
         other is not null && Start == other.Start && Steps.SequenceEqual(other.Steps);
 

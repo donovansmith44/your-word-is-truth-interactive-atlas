@@ -33,6 +33,9 @@ public readonly record struct Request(CancellationToken Token)
         }
     }
 
+    public async Task<Outcome<T>> Walk<T>(Func<Task<Outcome<T>>> walk) =>
+        await (await Fetch(walk)).Then(Task.FromResult);
+
     public Task<Outcome<(A, B)>> Fetch<A, B>(Func<Task<A>> first, Func<Task<B>> second) =>
         Fetch(async () =>
         {
@@ -61,6 +64,12 @@ public abstract record Outcome<T>
             arrived: value => new Outcome<U>.Arrived(map(value)),
             failed: () => new Outcome<U>.Failed(),
             superseded: () => new Outcome<U>.Superseded());
+
+    public Task<Outcome<U>> Then<U>(Func<T, Task<Outcome<U>>> next) =>
+        Match(
+            arrived: next,
+            failed: () => Task.FromResult<Outcome<U>>(new Outcome<U>.Failed()),
+            superseded: () => Task.FromResult<Outcome<U>>(new Outcome<U>.Superseded()));
 
     public void Match(Action<T> arrived, Action failed, Action superseded) =>
         Match(
