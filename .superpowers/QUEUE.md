@@ -20,7 +20,7 @@ Protocol: `AGENTS.md`. Plan: `docs/superpowers/plans/2026-09-30-v1-roadmap.md`.
 3. **O-PASTOR:** Pastor Hromowyck demo: Oct 21 or 22?
 4. **O-NAMES:** 4 of 5 answered 2026-09-30 (spec §10: one Name per language; events denotable; map-generator's ids pending licensing; many names per entity as a `Naming` type). Open: which titles go on the review list (all held until you choose), and your sign-off of the amended types.
 5. **O-ORDER:** FOCUS-6 comes right after FOCUS-1 (owner, 2026-09-30). Open: can FOCUS-4+5 and FOCUS-7+8 each close as a single batch?
-6. **O-ERRATA-SEED:** List the map errors you've already noticed (map, place or polity, what's wrong). They seed CX-M2.
+6. **O-ERRATA-SEED:** owner supplied: Bible-mode Edom looks oversized and Davidic content appears at 1406 BC; prioritize 1446 and 1406 BC, then possibly 1200 BC, before wider coverage.
 7. **O-STYLE:** After CX-M1's gallery, which style (parchment / canaan / slate), and which eras get a finished map (all 10 atlas eras?)
 8. **O-GPL:** Redraw the GPL `historical-basemaps` world borders as our own CC0 work (recommended), or accept GPL? Swap the OSM rivers (ODbL) for Natural Earth (recommended)? Your licensing rule (2026-09-29) disqualifies both as they stand.
 9. **O-PDF:** `Saltwater (Notation and Tab).pdf` in map-generator: remove it from HEAD (recommended), and also purge it from history? Is the repo public?
@@ -32,12 +32,14 @@ Protocol: `AGENTS.md`. Plan: `docs/superpowers/plans/2026-09-30-v1-roadmap.md`.
 15. **O-BADGE:** FOCUS-1 drops the client-derived kind badge ("Passage"/"Verse") from the trail and selection tray and shows the served label only (rule 25). Want a served display kind on the card instead (a contract item)?
 16. **O-FINDINGS:** FOCUS-1 touches the files of F-6, F-7 (popover level), F-9 and F-12 (rewritten files). Close them inside FOCUS-1 (yes/no per finding)?
 17. **O-CHOOSER:** the map's place chooser (world-cluster-chooser:213) stays open after zooming dissolves the cluster it was opened on; it fails 2 of 3 on today's build too (not FOCUS-1's). Fix it (close the chooser when its cluster dissolves)?
-18. **O-LAND-F1:** Codex has been stalled all day, so FOCUS-1 has no reviewer. Land it on my own review, or wait for Codex?
+18. **O-LAND-F1:** superseded by Codex review: changes requested on 678a0d2..3baaeb6 (F-38..F-42).
 19. **O-F6 (five, from the FOCUS-6 plan `docs/superpowers/plans/2026-10-01-focus6-geography.md`; the plan builds the [default] if unanswered):** (a) add edge-end relations `from`/`source-of` and `to`/`target-of` (22 → 24), node cards not counting them? [yes] (b) with `PlaceCard` gone, does hovering a place still preview it, or is a click the only way in? [click only] (c) a place card's time-window content (period name/blurb, events in the window, narrative prev/next): a card that ignores the window, or one scoped to it? [ignores] (d) `/world` with nothing focused: today's free slider, or always open on a Map? [free slider] (e) crossing into the next era: follow `follows-in` when the slider is dragged past the bound, or only on an arrow click? [click]
 20. **O-EDGE-TYPES:** the client types (R18) stand, signed off 2026-09-30 ("Good go"). O-F6 (a) is WITHDRAWN (owner, 2026-09-30, PRINCIPLES 27): no `from`/`to` relations; the graph models the domain, never a view.
 21a. **O-F6R (FOCUS-6 re-plan `f0f3470`, plan OPEN 6–13; defaults build if unanswered):** 6 vocabulary gate skips string literals [skip; alt: move `event_merge.rs` tables to `data/curated/`] · 7 delete the unread `frontier.rs` FocusKind×Capability matrix [delete] · 8 rename `exploration-roundtrip.feature` (AQC major) [rename] · 9 "focus" in the gate word list [no] · 10 edge label wording [`{subject} · {kind label} · {object}`; ties to O-LABELS] · 11 widen `/api/node/{id}/edges` to edge ids vs new `/api/position/{id}/edges` [widen] · 12 `edge_summary` bundled in the element record vs its own read [bundled] · 13 `loci`/`note` on neighbour pages only [yes]
 21. **O-LABELS:** edge kinds now show display labels derived from their wire names ("attested-in" → "Attested in", "spouse-of" → "Spouse of"). Keep derived, or hand-write a curated label per kind (a data file)?
 22. **O-CACHE:** FOCUS-0 owes one proof (R44): clear `data/cache/sections/*` and run `cargo test -p atlas-cli` green first time. OK to clear the cache (regenerable) in `~/src/bible-atlas`?
+
+23. **O-M0-LIMB:** Authorize a scoped follow-up for the cross-platform limb fixture law (23 float differences ≤2.22e-16, identical topology), keeping the existing fixture and requiring a justified numerical comparison rather than re-blessing it?
 
 ## FINDINGS (rules 24a/24b: open categories, each with its proposed CLOSURE; the owner decides; agents append)
 - **F-1 (rule 26, server facts in code): the canon table.** `server/atlas-core/src/canon.rs` holds the 66 books (codes, OSIS ids, names) as a static table in code. Proposed closure: the canon becomes a curated file (`data/curated/books.toml` already exists — check what it holds) compiled into the artifact's Kjv section, and `BookId`/codes are read from it; a law forbids book literals in server code. Cost: `BookId(pub u8)` and the code-string wire form re-anchor on the data.
@@ -79,6 +81,12 @@ Protocol: `AGENTS.md`. Plan: `docs/superpowers/plans/2026-09-30-v1-roadmap.md`.
 
 ---
 
+- **F-38 (Codex A-F1 review, Important): Back loses the previous legacy presentation when two views share a node identity.** RenderedLegacyNodes overwrites EventNode with YearNode (also Passage/Verse and TimeAndPlace/Event aliases). Closure: retain presentation per navigation entry through one legacy bridge; alias-wide restoration laws.
+- **F-39 (Codex A-F1 review, Important): generic frontier request failures escape rendering.** FocusView initial/fill/reveal requests propagate errors outside the popover's catches. Closure: one async presentation outcome abstraction covering current/stale failures, disposal and retry across generic/legacy paths.
+- **F-40 (Codex A-F1 review, Important, 27e): inline groups eagerly drain every page.** FocusView InitiallyShown returns group.Count for Contains/Shows and fills before presenting. Closure: bounded paging for every affordance, with enumerating large-cardinality laws.
+- **F-41 (Codex A-F1 review, Important): presentation reuse keys only on Node, ignoring Surface.** Popover-to-World on the same Map retains excluded Person links. Closure: one presentation request key including all inputs, with surface-transition laws.
+- **F-42 (Codex A-F1 review, Important, 14b): identity equality/hash is repeated in NodeIdentity, Explorable and Link.** Closure: one identity equality implementation, composed by every wrapper.
+
 ## Lane A: Claude
 
 ### A-C2: CONTRACT-2 close
@@ -91,6 +99,9 @@ Protocol: `AGENTS.md`. Plan: `docs/superpowers/plans/2026-09-30-v1-roadmap.md`.
 - **Plan:** `docs/superpowers/plans/2026-09-27-focus1-types.md` (9 tasks), plus rulings R11–R14 in the FOCUS spec.
 - **Note:** build no interaction that works only by hovering.
 - **Done when:** the plan's Task 9 gates pass and it's reviewed by Codex.
+
+- **Codex review (2026-09-30): changes requested** on `678a0d2..3baaeb6`; F-38..F-42 above, report `docs/superpowers/reports/2026-09-30-focus-1-codex-review.md` on `lane/codex/A-F1-review`. Independent 572 client + 54 contract tests pass; four isolated behavioral reproductions fail. No landing approval.
+- **handoff:** Claude addresses or obtains owner disposition for F-38..F-42, then requests re-review of the fix range; reproduction code is in the report. No review locks held.
 
 ### A-EDGES: edges are explorable (R18)
 - **Status:** REWORK (owner, 2026-09-30, PRINCIPLES 27). `lane/claude/F6-t1` and `F6-t2` (`86baad7`, `54079c4`, `7f1ef67`) never land: they put the frontier into the backend (edge card endpoint, `EdgeSource`/`EdgeTarget` relations, labels composed per request). Rebuilt on `3baaeb6`: the generic element read (node or edge, many ids per call), edge labels compiled into the artifact, the edge frontier derived on the client; first the closure of F-33.
@@ -174,7 +185,7 @@ Protocol: `AGENTS.md`. Plan: `docs/superpowers/plans/2026-09-30-v1-roadmap.md`.
 ## Lane B: maps (Codex, repo `mapgen` unless noted)
 
 ### CX-M0: map-generator hygiene
-- **Status:** ready
+- **Status:** blocked:owner (O-M0-LIMB)
 - **Repo / base:** `mapgen`, `origin/master` = `6608db4`. (Your Windows copy's `master` also has 2 unpushed commits, O-MG-LOCAL; work from `6608db4`, not from them.)
 - **Worktree:** `git -C ~/src/map-generator worktree add -b lane/codex/CX-M0 ~/w/mg-CX-M0 6608db4`
 - **Files:** `crates/*/Cargo.toml`, `Cargo.lock`, `rust-toolchain.toml`, `crates/map-types/tests/toolchain_pin.rs`, `scripts/demo.sh`, the PDF.
@@ -188,6 +199,13 @@ Protocol: `AGENTS.md`. Plan: `docs/superpowers/plans/2026-09-30-v1-roadmap.md`.
   5. `git rm "Saltwater (Notation and Tab).pdf"` (HEAD only; history is O-PDF).
 - **Gates (in WSL, after `. ~/.bible-atlas-env`):** `CARGO_TARGET_DIR=~/mut/codex-CX-M0 nice -n 10 cargo test --workspace -j 4`; `make demo` then `curl -s localhost:8090/api/meta` answers; `make contract-gates` (GHC 9.6.7 + cabal are installed via ghcup); `make stop`.
 - **Done when:** all of the above, pushed to `lane/codex/CX-M0`, reviewed. The controller then fast-forwards `master`.
+
+- **Execution notes:** Original claim interrupted before push; resumed after independent A-F1 review d170086 on lane/codex/A-F1-review. Main prep now wins. Workspace Cargo.toml is named by step 3. Owner audit priority: 1446 and 1406 BC, then possibly 1200 BC; Edom extent and Davidic content seed the register.
+
+- **Result / range:** mapgen `6608db4..9f99a90`, pushed `lane/codex/CX-M0`; imported the instructed Stage 1 commits and TOOLCHAIN-1, then the landed mapgen operating files. Latest atlas pin `e49593567e05bf61210a842b68ef85bb6c75514e` compiles the whole workspace; no type edits or fallback pin needed. One workspace git dependency, committed Cargo.lock; Linux PID-scoped detached demo; PDF removed from HEAD only.
+- **Verification:** red manifest load before dependency fix; isolated launcher start/stop and foreign-PID tests red then 2/2 green. Rust workspace completed with **187 passed, 1 failed, 1 ignored**. Only failure: `map-encoders::tests::limb_fixtures_match_rust`. Scratch comparison: 23 numeric differences, maximum absolute 2.220446049250313e-16, zero shape/key/boolean differences; no fixture changed. Haskell **368 examples / 0 failures**, both contract check and vocab commands pass; semver shell tests 6/6. `make contract-gates` fails at the same Rust fixture. `make demo` + `/api/meta` succeeded at 8090; `make stop` stopped its recorded PID, with no server left running.
+- **Environment:** clean worktree needs `map-compile build` from committed vendor inputs to generate ignored `data/canon/`; no refresh or source data edits. Cabal's default solver omits tests: ignored `contracts/runner/cabal.project.local` contains `tests: True` and `jobs: 4`; with that config the literal gate reaches Rust. Diagnostics and logs are `/tmp/codex-CX-M0-*`; numeric comparison used a scratch copy, never the bless test. Windows launcher path has not been executed on WSL.
+- **handoff:** resolve O-M0-LIMB in a scoped follow-up; re-run the failed law and required gates, then set review (not green yet). Heavy lock released; demo stopped. M1/M2 remain blocked until reviewed landing. The two owner commits on local master were not imported. Owner maps priority remains 1446/1406 BC, then possibly 1200 BC.
 
 ### CX-M1: a map gallery for choosing a style
 - **Status:** blocked:CX-M0
@@ -252,12 +270,14 @@ Protocol: `AGENTS.md`. Plan: `docs/superpowers/plans/2026-09-30-v1-roadmap.md`.
 ## Lane C: analyses (Codex, read-only on `atlas`; outputs go to `.superpowers/analysis/`)
 
 ### CX-R3: prove the KJV → original-word alignment join
-- **Status:** claimed:codex:2026-10-01T02:07:16+00:00
+- **Status:** review:285f706..d3f43e5 (branch `lane/codex/CX-R3`)
 - **Base:** the atlas at `678a0d2` (CONTRACT-2's close; `kjv_token` is in the tracked artifact's Kjv section: 790,892 words).
 - **Background:** `.superpowers/analysis/name-sources.md` already chose **BibleForgeDB** (public domain / CC0): it aligns 763,778 KJV words to specific Hebrew/Greek tokens. Its KJV edition differs from our `data/raw/kjv.json` in 452 verses; ~17.9k of its rows are flagged ERROR; its Greek needs STEPBible TAGNT's Textus Receptus.
 - **Question:** how much of OUR KJV word layer can reach a specific original token through BibleForgeDB + STEPBible TAHOT/TAGNT, and what's left?
 - **Steps:** a spike in `~/w/CX-R3` scratch space (nothing committed but the report): download BibleForgeDB and TAHOT/TAGNT into scratch; join our `kjv_token` rows (read with `sqlite3` or a small script from the unpacked Kjv section, `data/cache/sections/`) to BibleForge's words by an explicit per-verse diff, never by position; then BibleForge's original tokens to TAHOT/TAGNT tokens. Report: the percentage of our words aligned; the unaligned by kind (italic/supplied, ERROR rows, the 452 differing verses, Greek TR gaps); 20 worked examples including Gen 32:28 "Israel"; the licence text of every file used.
 - **Done when:** `.superpowers/analysis/kjv-alignment-join.md` is pushed on `lane/codex/CX-R3` and reviewed. It feeds A-NAMES.
+- **Result:** 707,678 / 790,892 words (89.4785%) have a conservative complete bridge; all remaining words explicitly classified. Twenty examples, pinned source hashes, license declarations and reproducible spike source are in the report. Exact compiled artifact at 678a0d2 used; no KJV edits. 453 differing verse token lists under this normalization, rather than the earlier 452 estimate. Flags include truncated ERRO and shared original-token annotations.
+- **handoff:** Claude reviews d3f43e5 and feeds accepted evidence to A-NAMES. Scratch/audit: ~/w/CX-R3-scratch; no product inputs changed and no locks held. Unresolved lexical-code, TR ordering and versification cases are withheld, not guessed.
 
 ### CX-R1: the 65 overlapping-event cases
 - **Status:** ready (they surfaced when CONTRACT-2 removed the 20-verse cap on attesting verses; landed at `68fb00f`)
