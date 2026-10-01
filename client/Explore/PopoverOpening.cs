@@ -14,6 +14,10 @@ public abstract record PopoverOpening
 
     public sealed record Explore(PositionRef Target) : PopoverOpening
     {
+        public bool Equals(Explore? other) => other is not null && PositionIdentity.Comparer.Equals(Target, other.Target);
+
+        public override int GetHashCode() => PositionIdentity.Comparer.GetHashCode(Target);
+
         public override T Match<T>(Func<PositionRef, T> explore, Func<SavedExploration, T> resume, Func<IExplorable, T> legacy) => explore(Target);
     }
 

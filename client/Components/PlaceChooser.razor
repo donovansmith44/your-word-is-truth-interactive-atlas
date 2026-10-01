@@ -20,6 +20,10 @@
 
     public sealed record Choice(string Id, string DisplayName, NodeRef Node, bool Lit)
     {
+        public bool Equals(Choice? other) => other is not null && (Id, DisplayName, Lit) == (other.Id, other.DisplayName, other.Lit) && PositionIdentity.Comparer.Equals(Node, other.Node);
+
+        public override int GetHashCode() => HashCode.Combine(Id, DisplayName, Lit, PositionIdentity.Comparer.GetHashCode(Node));
+
         public static Choice Of(ScenePlace place) => new(place.Id, place.DisplayName, place.Node, Lit: true);
 
         public static Choice Of(QuietPlace place) => new(place.Id, place.DisplayName, place.Node, Lit: false);

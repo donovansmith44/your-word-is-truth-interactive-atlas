@@ -12,7 +12,7 @@
     </div>
     @if (Cap is int cap && Items.Count > cap)
     {
-        <RevealControls Total="@Items.Count" Default="@cap" Shown="@ShownCount(cap)" ShownChanged="@(n => _shown = n)"
+        <RevealControls OffersAll="true" Total="@Items.Count" Default="@cap" Shown="@ShownCount(cap)" ShownChanged="@(n => _shown = n)"
                          MoreTestId="@MoreTestId" CollapseTestId="@CollapseTestId" RevealNoun="catechism items" />
     }
 }

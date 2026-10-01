@@ -27,25 +27,17 @@ public sealed record EventAccount(IReadOnlyList<TextSpan> Runs, string? Note)
 
 public static class EventAccounts
 {
-    private const int LargestEdgePage = 200;
-
     public static async Task<IReadOnlyList<EventAccount>> ReadAsync(IExplorableClient graph, string eventId)
     {
         var accounts = new List<EventAccount>();
-        int? cursor = null;
-        do
+        foreach (var entry in await Paging.Whole(graph, NodeIds.Of(NodeKind.Event, eventId), EdgeKind.AttestedIn))
         {
-            var page = await graph.Edges(NodeIds.Of(NodeKind.Event, eventId), EdgeKind.AttestedIn, cursor, LargestEdgePage);
-            foreach (var entry in page.Entries)
+            if (entry.Loci is { Count: > 0 } runs && !accounts.Any(account => account.Runs.SequenceEqual(runs)))
             {
-                if (entry.Loci is { Count: > 0 } runs && !accounts.Any(account => account.Runs.SequenceEqual(runs)))
-                {
-                    accounts.Add(new EventAccount(runs, entry.Note));
-                }
+                accounts.Add(new EventAccount(runs, entry.Note));
             }
-            cursor = page.Next;
         }
-        while (cursor is not null);
+
         return accounts;
     }
 }

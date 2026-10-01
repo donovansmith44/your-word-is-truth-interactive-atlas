@@ -90,17 +90,17 @@ public sealed class ChapterTextTests
     }
 
     [Fact]
-    public async Task A_span_whose_text_cannot_be_read_resolves_to_no_verses()
+    public async Task A_span_whose_text_cannot_be_read_is_a_failure_its_reader_hears()
     {
         // Arrange
         var atlas = new StubbedAtlas("not a text window");
         var zion = new TextSpan(from: new TextPoint(unit: new BibleRef(BookId._2SA, 5, 7), word: null), to: new TextPoint(unit: new BibleRef(BookId._2SA, 5, 7), word: null));
 
         // Act
-        var verses = await VerseTextResolver.ResolveSpansAsync(atlas.Client(), [zion]);
+        var outcome = await new RequestSeries().Next().Fetch(() => VerseTextResolver.ResolveSpansAsync(atlas.Client(), [zion]));
 
         // Assert
-        Assert.Equal([], verses);
+        Assert.Equal(new Outcome<List<PassageListVerse>>.Failed(), outcome);
     }
 
     private static string Window(params (string Ref, string Book, int Chapter, int Verse)[] units) =>

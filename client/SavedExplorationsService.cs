@@ -14,10 +14,11 @@ public sealed record SavedExploration(string Id, string Name, DateTimeOffset Cre
 
     public bool Equals(SavedExploration? other) =>
         other is not null
-        && (Id, Name, CreatedUtc, Start) == (other.Id, other.Name, other.CreatedUtc, other.Start)
+        && (Id, Name, CreatedUtc) == (other.Id, other.Name, other.CreatedUtc)
+        && PositionIdentity.Comparer.Equals(Start, other.Start)
         && Steps.SequenceEqual(other.Steps);
 
-    public override int GetHashCode() => Steps.Aggregate(HashCode.Combine(Id, Name, CreatedUtc, Start), HashCode.Combine);
+    public override int GetHashCode() => Steps.Aggregate(HashCode.Combine(Id, Name, CreatedUtc, PositionIdentity.Comparer.GetHashCode(Start)), HashCode.Combine);
 }
 
 public sealed class SavedExplorationsService

@@ -554,6 +554,22 @@ public sealed class FocusViewTests : BunitContext
     }
 
     [Fact]
+    public async Task No_group_offers_to_reveal_all_of_a_collection_at_once()
+    {
+        // Arrange
+        var graph = new MultitudeGraph(Enum.GetValues<EdgeKind>());
+        var explorer = new GraphExplorer(graph);
+        Services.AddSingleton<IExplorer>(explorer);
+        var node = await explorer.Resolve(ServedGraph.At(Genesis2Ref));
+
+        // Act
+        var view = Render<FocusView>(p => p.Add(v => v.Node, node).Add(v => v.Surface, Surface.Popover));
+
+        // Assert
+        Assert.Equal((true, 0), (view.FindAll("[data-testid$='-more']").Count > 0, view.FindAll("[data-testid$='-more-all']").Count));
+    }
+
+    [Fact]
     public async Task Revealing_more_of_inline_children_reads_one_more_bounded_page()
     {
         // Arrange

@@ -19,7 +19,7 @@
     private PresentationRequest? _request;
     private Outcome<Presented>? _outcome;
 
-    private sealed record Presented(PresentationRequest Request, Presentation? Presentation, Dictionary<EdgeKind, Paging> Pages, Dictionary<EdgeKind, int> Shown);
+    private sealed record Presented(PresentationRequest Request, Presentation? Presentation, Dictionary<EdgeKind, Paging<Entry>> Pages, Dictionary<EdgeKind, int> Shown);
 
     protected override async Task OnParametersSetAsync()
     {
@@ -51,7 +51,7 @@
     private async Task Reveal(Presented presented, EdgeKind kind, int shown)
     {
         presented.Shown[kind] = shown;
-        (await _series.Current.Fetch(() => presented.Pages[kind].Reading(presented.Request, kind, shown))).Match(
+        (await _series.Current.Fetch(() => presented.Pages[kind].Revealed(presented.Request, kind, shown))).Match(
             arrived: paging => presented.Pages[kind] = paging,
             failed: () => _outcome = new Outcome<Presented>.Failed(),
             superseded: () => { });
@@ -147,12 +147,12 @@
     };
 
     private static IEnumerable<Entry> Shown(Presented presented, FrontierGroup group) =>
-        presented.Pages[group.Kind].Offered.Take(presented.Shown[group.Kind]);
+        presented.Pages[group.Kind].Kept.Take(presented.Shown[group.Kind]);
 
     private RenderFragment Reveal(Presented presented, FrontierGroup group, string handle) => __builder =>
     {
         var clamp = Affordances.Of(group.Kind).InitialClamp;
-        <RevealControls Total="group.Count" Default="clamp" Step="clamp" Shown="presented.Shown[group.Kind]"
+        <RevealControls OffersAll="false" Total="group.Count" Default="clamp" Step="clamp" Shown="presented.Shown[group.Kind]"
                         ShownChanged="shown => Reveal(presented, group.Kind, shown)"
                         MoreTestId="@($"{handle}-more")" CollapseTestId="@($"{handle}-collapse")" />
     };

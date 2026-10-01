@@ -356,7 +356,7 @@
             return;
         }
 
-        await SyncNarrativeFocusAsync();
+        await SyncNarrativeFocusAsync(request);
     }
 
     private async Task<bool> LoadLegacy(IExplorable legacy, Request request)
@@ -365,16 +365,7 @@
         _usingSectionRegistry = applicable.Count > 0;
 
         return _usingSectionRegistry
-            ? (await request.Fetch(() => Task.WhenAll(applicable.Select(p => p.ResolveAsync(legacy, Atlas, this))), () => legacy.ExploreAsync(Atlas))).Match(
-                arrived: loaded =>
-                {
-                    var resolved = loaded.Item1.OfType<PopoverSection>().ToList();
-                    _sections = XrefEntryPoint ? resolved.OrderByDescending(s => s.Testid == "xrefs").ToList() : resolved;
-                    _chips = loaded.Item2;
-                    return true;
-                },
-                failed: CouldNotLoadCurrent,
-                superseded: () => false)
+            ? await LoadSections(legacy, applicable, request)
             : (await request.Fetch(() => legacy.ExploreAsync(Atlas), () => legacy.BodyAsync(Atlas))).Match(
                 arrived: loaded =>
                 {
@@ -384,6 +375,36 @@
                 failed: CouldNotLoadCurrent,
                 superseded: () => false);
     }
+
+    private async Task<bool> LoadSections(IExplorable legacy, IReadOnlyList<IPopoverSectionProvider> applicable, Request request)
+    {
+        var chips = request.Fetch(() => legacy.ExploreAsync(Atlas));
+        var sections = await Task.WhenAll(applicable.Select(provider => request.Fetch(() => provider.ResolveAsync(legacy, Atlas, this))));
+        var chipsOutcome = await chips;
+        if (request.Superseded)
+        {
+            return false;
+        }
+
+        _chips = chipsOutcome.Match<IReadOnlyList<Chip>>(arrived: arrived => arrived, failed: () => [], superseded: () => []);
+        var resolved = sections.SelectMany(section => section.Match<IEnumerable<PopoverSection>>(arrived: arrived => arrived is null ? [] : [arrived], failed: () => [], superseded: () => [])).ToList();
+        if (sections.Any(Failed) || Failed(chipsOutcome))
+        {
+            resolved.Add(new PopoverSection(SectionsCouldNotLoad, SomeSectionsCouldNotLoad));
+        }
+
+        _sections = XrefEntryPoint ? resolved.OrderByDescending(s => s.Testid == "xrefs").ToList() : resolved;
+        return true;
+    }
+
+    private static bool Failed<T>(Outcome<T> outcome) => outcome.Match(arrived: _ => false, failed: () => true, superseded: () => false);
+
+    private const string SectionsCouldNotLoad = "could-not-load";
+
+    private RenderFragment SomeSectionsCouldNotLoad => __builder =>
+    {
+        <CouldNotLoad OnRetry="LoadCurrent" />
+    };
 
     private bool CouldNotLoadCurrent()
     {
@@ -414,25 +435,31 @@
         return attempt();
     }
 
-    private async Task SyncNarrativeFocusAsync()
+    private async Task SyncNarrativeFocusAsync(Request request)
+    {
+        var focus = _legacy is INarrativeAware aware
+            ? (await request.Fetch(() => aware.NarrativePositionsAsync(Atlas))).Select(NarrativeFocus.Of)
+            : new Outcome<NarrativeFocus>.Arrived(NarrativeFocus.None);
+        await focus.Match(arrived: FocusMap, failed: () => FocusMap(NarrativeFocus.None), superseded: () => Task.CompletedTask);
+    }
+
+    private async Task FocusMap(NarrativeFocus focus)
     {
         try
         {
-            if (_legacy is INarrativeAware aware)
-            {
-                var result = await aware.NarrativePositionsAsync(Atlas);
-                var narrativeIds = result.Narrative.Select(p => p.NarrativeId).Distinct().ToList();
-                var eventIds = result.Narrative.Select(p => p.EventId).Distinct().ToList();
-                await MapInterop.SetNarrativeFocus(JS, narrativeIds, eventIds);
-            }
-            else
-            {
-                await MapInterop.SetNarrativeFocus(JS, Array.Empty<string>(), Array.Empty<string>());
-            }
+            await MapInterop.SetNarrativeFocus(JS, focus.Narratives, focus.Events);
         }
         catch (Exception)
         {
         }
+    }
+
+    private sealed record NarrativeFocus(IReadOnlyList<string> Narratives, IReadOnlyList<string> Events)
+    {
+        public static readonly NarrativeFocus None = new([], []);
+
+        public static NarrativeFocus Of(NarrativeEventPositions positions) =>
+            new(positions.Narrative.Select(p => p.NarrativeId).Distinct().ToList(), positions.Narrative.Select(p => p.EventId).Distinct().ToList());
     }
 
     public Task PushAsync(PopoverOpening opening, EdgeKind via) =>

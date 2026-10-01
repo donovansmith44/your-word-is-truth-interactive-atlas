@@ -73,11 +73,9 @@ public sealed class GraphExplorer(IExplorableClient graph) : IExplorer
 
     private static async Task<Presentation> Bounded(Explorable element, TimeRange window) =>
         new Presentation.Geography(
-            new Frame.Bounded(window, await FirstLink(element, EdgeKind.PrecedesIn), await FirstLink(element, EdgeKind.FollowsIn)),
+            new Frame.Bounded(window, await Paging.FirstLink(element, EdgeKind.PrecedesIn), await Paging.FirstLink(element, EdgeKind.FollowsIn)),
             new Emphasis.None());
 
-    private static async Task<Link?> FirstLink(Explorable element, EdgeKind kind) =>
-        (await element.Entries(kind)).Items.FirstOrDefault()?.Neighbour;
 
     private static T Served<T>(T? detail, NodeRecord record)
         where T : class =>

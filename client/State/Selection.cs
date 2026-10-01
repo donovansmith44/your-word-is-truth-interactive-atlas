@@ -13,6 +13,10 @@ public static class Selection
 
 public sealed record ToggleSelection(NodeRef Node, string? Origin = null) : IIntent<IReadOnlyList<NodeRef>>
 {
+    public bool Equals(ToggleSelection? other) => other is not null && PositionIdentity.Comparer.Equals(Node, other.Node) && Origin == other.Origin;
+
+    public override int GetHashCode() => HashCode.Combine(PositionIdentity.Comparer.GetHashCode(Node), Origin);
+
     public string Name => "toggle-selection";
 
     public IReadOnlyList<NodeRef> Apply(IReadOnlyList<NodeRef> current) =>
@@ -23,6 +27,10 @@ public sealed record ToggleSelection(NodeRef Node, string? Origin = null) : IInt
 
 public sealed record RemoveSelection(NodeRef Node, string? Origin = null) : IIntent<IReadOnlyList<NodeRef>>
 {
+    public bool Equals(RemoveSelection? other) => other is not null && PositionIdentity.Comparer.Equals(Node, other.Node) && Origin == other.Origin;
+
+    public override int GetHashCode() => HashCode.Combine(PositionIdentity.Comparer.GetHashCode(Node), Origin);
+
     public string Name => "remove-selection";
 
     public IReadOnlyList<NodeRef> Apply(IReadOnlyList<NodeRef> current) =>

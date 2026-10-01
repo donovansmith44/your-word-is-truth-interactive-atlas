@@ -2,7 +2,12 @@ using BibleAtlas.Client.Contract;
 
 namespace BibleAtlas.Client.Explore;
 
-public sealed record KinGroup(string Heading, string TestId, IReadOnlyList<NodeRef> People, EdgeKind Via);
+public sealed record KinGroup(string Heading, string TestId, IReadOnlyList<NodeRef> People, EdgeKind Via)
+{
+    public bool Equals(KinGroup? other) => other is not null && (Heading, TestId, Via) == (other.Heading, other.TestId, other.Via) && People.SequenceEqual(other.People, PositionIdentity.Comparer);
+
+    public override int GetHashCode() => People.Select(PositionIdentity.Comparer.GetHashCode).Aggregate(HashCode.Combine(Heading, TestId, Via), HashCode.Combine);
+}
 
 public static class Kinship
 {

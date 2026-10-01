@@ -16,15 +16,7 @@ public sealed class YearNode(TimeRange when, NodeRef @event) : IExplorable
 
     public async Task<PopoverSection?> ResolveFrontierAsync(AtlasClient api, IPopoverSectionContext ctx)
     {
-        Scene scene;
-        try
-        {
-            scene = await api.SceneTime(when.From.Value, when.To.Value);
-        }
-        catch (Exception)
-        {
-            return null;
-        }
+        var scene = await api.SceneTime(when.From.Value, when.To.Value);
 
         var events = DedupeAndOrder(scene.Places.SelectMany(p => p.Events));
 

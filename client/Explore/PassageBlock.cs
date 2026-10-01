@@ -24,16 +24,10 @@ public static class VerseTextResolver
     {
         var pairs = vrefs.Select(CanonRef.ParseVerse).Select(p => (p.Book, p.Chapter)).Distinct().ToList();
         var chapters = new Dictionary<(string, int), ChapterText>();
-        try
+        var fetched = await Task.WhenAll(pairs.Select(p => api.ChapterText(p.Book, p.Chapter)));
+        foreach (var (pair, chapter) in pairs.Zip(fetched))
         {
-            var fetched = await Task.WhenAll(pairs.Select(p => api.ChapterText(p.Book, p.Chapter)));
-            foreach (var (pair, chapter) in pairs.Zip(fetched))
-            {
-                chapters[pair] = chapter;
-            }
-        }
-        catch (Exception)
-        {
+            chapters[pair] = chapter;
         }
 
         var result = new List<PassageListVerse>();
@@ -52,15 +46,8 @@ public static class VerseTextResolver
     {
         var chapters = spans.SelectMany(ChaptersOf).Distinct().ToList();
         Dictionary<(BookId Book, int Chapter), ChapterText> text;
-        try
-        {
-            var fetched = await Task.WhenAll(chapters.Select(c => api.ChapterText(c.Book.WireName(), c.Chapter)));
-            text = chapters.Zip(fetched).ToDictionary(pair => pair.First, pair => pair.Second);
-        }
-        catch (Exception)
-        {
-            return [];
-        }
+        var fetched = await Task.WhenAll(chapters.Select(c => api.ChapterText(c.Book.WireName(), c.Chapter)));
+        text = chapters.Zip(fetched).ToDictionary(pair => pair.First, pair => pair.Second);
 
         return spans
             .SelectMany(span => ChaptersOf(span).SelectMany(c => text[c].Units.Where(unit => CanonRef.Covers(span, (BibleRef)unit.Locus))))

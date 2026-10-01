@@ -53,8 +53,12 @@
     </div>
     @if (Cap is int cap && EffectiveTotal > cap)
     {
-        <RevealControls Total="@EffectiveTotal" Default="@cap" Shown="@ShownCount(cap)" ShownChanged="OnShownChanged"
+        <RevealControls OffersAll="true" Total="@EffectiveTotal" Default="@cap" Shown="@ShownCount(cap)" ShownChanged="OnShownChanged"
                          MoreTestId="@MoreTestId" CollapseTestId="@CollapseTestId" RevealNoun="@RevealNoun" />
+    }
+    @if (_remainderFailed)
+    {
+        <CouldNotLoad OnRetry="RetryRemainder" />
     }
 }
 
@@ -103,18 +107,27 @@
         if (_resolvedRemainder is null && !_resolvingRemainder && ResolveRemainingAsync is not null)
         {
             _resolvingRemainder = true;
-            try
-            {
-                _resolvedRemainder = await ResolveRemainingAsync();
-            }
-            catch (Exception)
-            {
-                _resolvedRemainder = Array.Empty<PassageSourceUnit>();
-            }
-            _blocks = PassageBlockBuilder.Build(Units.Concat(_resolvedRemainder).ToList());
+            (await _remainder.Next().Fetch(() => ResolveRemainingAsync())).Match(
+                arrived: remainder =>
+                {
+                    _resolvedRemainder = remainder;
+                    _blocks = PassageBlockBuilder.Build(Units.Concat(remainder).ToList());
+                },
+                failed: () => _remainderFailed = true,
+                superseded: () => { });
+            _resolvingRemainder = false;
         }
 
         _shown = n;
+    }
+
+    private readonly RequestSeries _remainder = new();
+    private bool _remainderFailed;
+
+    private Task RetryRemainder()
+    {
+        _remainderFailed = false;
+        return OnShownChanged(_shown ?? 0);
     }
 
     private IEnumerable<VisibleEntry> Visible

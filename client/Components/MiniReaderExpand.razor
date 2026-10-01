@@ -43,7 +43,7 @@ else
 
 @if (!AlreadyInCurrentReaderChapter)
 {
-    <RevealControls Total="1" Default="0" Step="1" Shown="@(_expanded ? 1 : 0)" ShownChanged="OnShownChanged"
+    <RevealControls OffersAll="false" Total="1" Default="0" Step="1" Shown="@(_expanded ? 1 : 0)" ShownChanged="OnShownChanged"
                      MoreTestId="@($"popover-verse-expand{TestIdSuffix}")" CollapseTestId="@($"popover-verse-collapse{TestIdSuffix}")"
                      RevealNoun="verses"
                      MoreLabel="Read the whole chapter"

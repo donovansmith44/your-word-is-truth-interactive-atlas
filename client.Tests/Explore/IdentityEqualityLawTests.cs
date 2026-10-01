@@ -71,6 +71,87 @@ public sealed class IdentityEqualityLawTests
         Assert.Empty(declaring);
     }
 
+    [Fact]
+    public void A_saved_exploration_is_the_same_save_whatever_its_start_is_labelled()
+    {
+        // Arrange
+        var saved = new SavedExploration("seed", "Seed", DateTimeOffset.UnixEpoch, At(Moses), []);
+
+        // Act
+        var relabelled = saved with { Start = At(MosesRelabelled) };
+
+        // Assert
+        Assert.True(Same(saved, relabelled));
+    }
+
+    [Fact]
+    public void Every_record_holding_an_element_is_equal_across_its_elements_labels()
+    {
+        // Arrange
+        var holders = typeof(PositionIdentity).Assembly.GetTypes()
+            .Where(type => type.GetMethod("<Clone>$") is not null && type.IsVisible && !type.IsAbstract && !type.IsGenericTypeDefinition
+                && type.GetCustomAttributes(typeof(System.CodeDom.Compiler.GeneratedCodeAttribute), false).Length == 0
+                && Elements.Holds(type))
+            .ToList();
+
+        // Act
+        var sensitive = holders.Where(type => type.GetConstructors().Length > 0).Where(type => !Same(Elements.Instance(type, relabelled: false), Elements.Instance(type, relabelled: true))).Select(type => type.FullName);
+
+        // Assert
+        Assert.Equal((true, Array.Empty<string?>()), (holders.Count > 0, sensitive.ToArray()));
+    }
+
+    private static class Elements
+    {
+        private static readonly Dictionary<Type, object> Shared = new()
+        {
+            [typeof(string)] = "shared",
+            [typeof(double)] = 1.0,
+            [typeof(int)] = 1,
+            [typeof(bool)] = true,
+            [typeof(EdgeKind)] = EdgeKind.Mentions,
+            [typeof(DateTimeOffset)] = DateTimeOffset.UnixEpoch,
+            [typeof(TimeRange)] = LegacyViews.TwoThousandBc,
+        };
+
+        public static bool Holds(Type type) =>
+            type == typeof(NodeRef) || type == typeof(PositionRef)
+            || (type.IsGenericType && type.GetGenericArguments().Any(Holds))
+            || (type.GetMethod("<Clone>$") is not null && type.GetCustomAttributes(typeof(System.CodeDom.Compiler.GeneratedCodeAttribute), false).Length == 0 && Constructor(type) is { } constructor && constructor.GetParameters().Any(parameter => Holds(Nullable.GetUnderlyingType(parameter.ParameterType) ?? parameter.ParameterType)));
+
+        public static object Instance(Type type, bool relabelled)
+        {
+            var underlying = Nullable.GetUnderlyingType(type) ?? type;
+            if (underlying == typeof(NodeRef))
+            {
+                return relabelled ? MosesRelabelled : Moses;
+            }
+
+            if (underlying == typeof(PositionRef))
+            {
+                return At(relabelled ? MosesRelabelled : Moses);
+            }
+
+            if (underlying.IsGenericType && underlying.GetGenericArguments() is [var element] && typeof(System.Collections.IEnumerable).IsAssignableFrom(underlying))
+            {
+                var list = (System.Collections.IList)Activator.CreateInstance(typeof(List<>).MakeGenericType(element))!;
+                list.Add(Instance(element, relabelled));
+                return list;
+            }
+
+            if (Holds(underlying))
+            {
+                var constructor = Constructor(underlying)!;
+                return constructor.Invoke(constructor.GetParameters().Select(parameter => Instance(parameter.ParameterType, relabelled)).ToArray());
+            }
+
+            return Shared.TryGetValue(underlying, out var shared) ? shared : throw new InvalidOperationException($"no sample for {underlying.Name}; add one");
+        }
+
+        private static System.Reflection.ConstructorInfo? Constructor(Type type) =>
+            type.GetConstructors().Where(constructor => constructor.GetParameters().All(parameter => parameter.ParameterType != type)).MaxBy(constructor => constructor.GetParameters().Length);
+    }
+
     private static PositionRef At(NodeRef node) => ServedGraph.At(node);
 
     private static (Explorable First, Explorable Second) Explorables(NodeRef first, NodeRef second) =>

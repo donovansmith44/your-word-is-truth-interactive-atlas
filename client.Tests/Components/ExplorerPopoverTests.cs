@@ -195,6 +195,22 @@ public sealed class ExplorerPopoverTests : BunitContext
         popover.WaitForAssertion(() => popover.Find("[data-testid='popover-body']").MarkupMatches($"""<div class="popover-body" data-testid="popover-body"><p>{FlakyLegacy.Loaded}</p></div>"""));
     }
 
+    [Fact]
+    public void A_legacy_section_whose_read_fails_offers_to_try_again_and_trying_again_loads_it()
+    {
+        // Arrange
+        const string prose = "In the beginning, cp. John 1, 1, that is, when time first began.";
+        var legacy = new CommentaryItemNode("kretzmann/0.1.0", "The Creation of Chaos and Light");
+        Hosting(new FlakyGraph(new ServedGraph().Serving(ServedGraph.Card(NodeKind.CommentaryItem, legacy.Identity.Id, legacy.Identity.Label) with { Description = prose }), failedReads: 0, failedCards: 1));
+        var popover = Render<ExplorerPopover>(p => p.Add(v => v.Opening, new PopoverOpening.Legacy(legacy)));
+
+        // Act
+        popover.WaitForElement("[data-testid='could-not-load-retry']").Click();
+
+        // Assert
+        popover.WaitForAssertion(() => Assert.Equal(prose, popover.Find(".popover-commentary-text").TextContent));
+    }
+
     private sealed class FlakyLegacy(NodeRef identity, int failures) : IExplorable
     {
         public const string Loaded = "loaded at last";
@@ -220,11 +236,13 @@ public sealed class ExplorerPopoverTests : BunitContext
                 });
     }
 
-    private sealed class FlakyGraph(ServedGraph served, int failedReads) : IExplorableClient
+    private sealed class FlakyGraph(ServedGraph served, int failedReads, int failedCards = 0) : IExplorableClient
     {
         private int _reads;
+        private int _cards;
 
-        public Task<NodeRecord> Card(string id) => served.Card(id);
+        public Task<NodeRecord> Card(string id) =>
+            _cards++ < failedCards ? Task.FromException<NodeRecord>(new HttpRequestException(Offline)) : served.Card(id);
 
         public Task<IReadOnlyList<Element>> Elements(IReadOnlyList<string> ids) =>
             _reads++ < failedReads ? Task.FromException<IReadOnlyList<Element>>(new HttpRequestException(Offline)) : served.Elements(ids);
