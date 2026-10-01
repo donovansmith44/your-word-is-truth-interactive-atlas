@@ -14,8 +14,7 @@ public sealed class GraphExplorerTests
     private const string LegacyGenesis2Label = "GEN.2";
     private const string MosesId = "Person:moses_2108";
     private const string MosesLabel = "Moses";
-    private const string HazorId = "Place:hazor-1";
-    private const string HazorLabel = "Hazor 1";
+    private const string Genesis1Label = "Genesis 1";
     private const string TheOneConstructingFile = "Explorer.cs";
     private const string SourceId = "Source:ussher";
     private const string SourceLabel = "Ussher";
@@ -228,18 +227,18 @@ public sealed class GraphExplorerTests
     }
 
     [Fact]
-    public async Task Presenting_a_node_on_its_home_surface_yields_the_generic_card_until_its_kind_is_migrated()
+    public async Task Presenting_a_node_on_the_reader_yields_the_generic_card_until_its_form_is_built()
     {
         // Arrange
-        var graph = new ServedGraph().Serving(ServedGraph.Card(NodeKind.Place, HazorId, HazorLabel));
+        var graph = new ServedGraph().Serving(ServedGraph.Card(NodeKind.Container, Genesis1Id, Genesis1Label));
         var explorer = new GraphExplorer(graph);
-        var hazor = await explorer.Resolve(ServedGraph.At(NodeKind.Place, HazorId, HazorLabel));
+        var genesis1 = await explorer.Resolve(ServedGraph.At(NodeKind.Container, Genesis1Id, Genesis1Label));
 
         // Act
-        var presentation = await explorer.Present(hazor, Surface.World);
+        var presentation = await explorer.Present(genesis1, Surface.Reader);
 
         // Assert
-        Assert.Equal(new Presentation.Card(HazorLabel, [new Presentation.Field("Provenance", ServedGraph.Provenance)]), presentation);
+        Assert.Equal(new Presentation.Card(Genesis1Label, [new Presentation.Field("Provenance", ServedGraph.Provenance)]), presentation);
     }
 
     [Fact]

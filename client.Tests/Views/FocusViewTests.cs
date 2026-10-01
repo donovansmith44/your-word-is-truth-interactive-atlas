@@ -23,6 +23,7 @@ public sealed class FocusViewTests : BunitContext
     private static readonly NodeRef Adam = ServedGraph.Ref(NodeKind.Person, "Person:adam", "Adam");
     private static readonly NodeRef Eden = ServedGraph.Ref(NodeKind.Place, "Place:eden", "Eden");
     private static readonly NodeRef EdenMap = ServedGraph.Ref(NodeKind.Map, "Map:era-eden", "The world of Eden");
+    private static readonly TimeRange EdenWindow = ServedGraph.Range(new Year(label: "4004 BC", value: -4003), new Year(label: "2348 BC", value: -2347), "4004 BC – 2348 BC");
     private static readonly NodeRef[] Citations = Enumerable.Range(1, CitesServed)
         .Select(n => ServedGraph.Ref(NodeKind.TextUnit, $"text-unit:JHN.1.{n}", $"JHN.1.{n}"))
         .ToArray();
@@ -266,7 +267,7 @@ public sealed class FocusViewTests : BunitContext
     {
         // Arrange
         var graph = Explored(new ServedGraph()
-            .Serving(ServedGraph.Card(NodeKind.Map, EdenMap.Id, EdenMap.Label, new FrontierGroup(EdgeKind.Shows, 2), new FrontierGroup(EdgeKind.MentionedIn, 1)))
+            .Serving(ServedGraph.Card(NodeKind.Map, EdenMap.Id, EdenMap.Label, new FrontierGroup(EdgeKind.Shows, 2), new FrontierGroup(EdgeKind.MentionedIn, 1)) with { Map = ServedGraph.MapWindow(EdenWindow) })
             .Serving(EdenMap.Id, EdgeKind.Shows, null, ServedGraph.Page(EdgeKind.Shows, null, Eden, Adam))
             .Serving(EdenMap.Id, EdgeKind.MentionedIn, null, ServedGraph.Page(EdgeKind.MentionedIn, null, Verse1)));
 
@@ -275,12 +276,6 @@ public sealed class FocusViewTests : BunitContext
 
         // Assert
         view.MarkupMatches("""
-            <div class="popover-section" data-testid="world-section-card">
-                <p class="focus-title" data-testid="world-card-title">The world of Eden</p>
-                <dl class="focus-fields">
-                    <div class="focus-field" data-testid="world-field-Provenance"><dt>Provenance</dt><dd>kjv</dd></div>
-                </dl>
-            </div>
             <div class="popover-section" data-testid="world-children-shows">
                 <button type="button" class="focus-child explorable" data-testid="world-child-shows-Place:eden">Eden</button>
             </div>
