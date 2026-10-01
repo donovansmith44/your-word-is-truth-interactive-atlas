@@ -101,6 +101,9 @@ Protocol: `AGENTS.md`. Plan: `docs/superpowers/plans/2026-09-30-v1-roadmap.md`.
 - **F-59 (Codex "F-40", Important, 27e): inline groups drain every page before first render.** Closure: bounded paging for every affordance; a law over every affordance at large cardinality.
 - **F-60 (Codex "F-41", Important): presentation reuse keys only on the node, not the surface.** Closure: one presentation request key over all inputs; surface-transition laws.
 - **F-61 (Codex "F-42", Important, 14b): node identity equality is declared three times** (NodeIdentity, Explorable, Link). Closure: one identity/comparer that every wrapper composes.
+- **F-62 (D.R.Y. across tiers): the page cap 200 is declared four times** — `MAX_EDGE_LIMIT` (atlas-contract graph.rs), `MAX_LIMIT` (atlas-cli edges.rs), `MAX_ELEMENTS` (graph_api test), `Paging.LargestPage` (client, added in the F1 fix wave). The contract does not publish it. Closure: one server constant, published as `maximum` on every limit parameter, the CLI and tests reading it, the client reading it from the contract.
+- **F-63 (rule 27e): legacy sections still read whole collections** through `Paging.Whole` (event accounts, catechism links, a person's events, kinship) and PassageList's "all" reveal. Bounded or retired as their kinds move to FocusView (FOCUS-2…9).
+- **F-64 (rule 4): `VersePersonsSection` is registered nowhere** (dead; the fix wave migrated it instead of deleting it).
 - **F-39 note:** R4b confirms it — labels sit outside the logical hash; only a manual schema bump moves the root. Proposed closure: labels in `logical_dump_section`.
 - **F-3 (rule 25, client derivation): `client/CanonRef.cs`** — see A-BACKLOG; closes when the legacy routes retire.
 
@@ -115,6 +118,8 @@ Protocol: `AGENTS.md`. Plan: `docs/superpowers/plans/2026-09-30-v1-roadmap.md`.
 
 ### A-F1: FOCUS-1
 - **Status:** review:678a0d2..3baaeb6 (branch `lane/claude/A-F1`; close report `docs/superpowers/reports/2026-09-30-focus-1-close.md` on the branch). Gates: 1,577 Rust / 572 client / 54 contract tests green; contract gate passed; AQC 0.12.0; Playwright green except the known world-quiet-places:211 and the pre-existing world-cluster-chooser:213 (O-CHOOSER). 
+- **Fix wave DONE (2026-10-01):** `lane/claude/F1-fix` `4ff1775..f1ded25` (3 commits) on top of FOCUS-6: F-57 per-entry legacy views (`LegacyPresentations`, `Exploration.Path`); F-58 `Outcome<T>` from every fetch + `CouldNotLoad` retry, no catch outside the Outcome door; F-59 `Paging<T>` the one door, clamps from `Affordances`, no unbounded "all" on FocusView; F-60 `PresentationRequest(Element, Surface)`; F-61 `PositionIdentity` the one comparer, reflection law over every record holding a ref. Reds recorded for each. client 655, contract 55, Playwright 190 + 3 skipped on 9000/6200. Residue: F-62, F-63, F-64.
+- **Codex: re-review** FOCUS-1 + FOCUS-6 + the fix wave together, range `678a0d2..f1ded25` on `lane/claude/F1-fix` (FOCUS-6's close report: `docs/superpowers/reports/2026-10-01-focus-6-close.md`). Then Claude lands FOCUS-1, FOCUS-6, fix wave in that order, one squashed commit per task.
 - **Codex review (2026-09-30): changes requested** — F-57..F-61 (Codex numbered them F-38..F-42; renumbered here), report `docs/superpowers/reports/2026-09-30-focus-1-codex-review.md` on `lane/codex/A-F1-review` (d170086). **Fix wave:** on top of FOCUS-6 (`lane/claude/F6-int` 4ff1775), because FOCUS-6 rewrote Explorable/Link/the popover opening; branch `lane/claude/F1-fix`. Then Codex re-reviews FOCUS-1 + the fix range and FOCUS-6 together.
 - **Plan:** `docs/superpowers/plans/2026-09-27-focus1-types.md` (9 tasks), plus rulings R11–R14 in the FOCUS spec.
 - **Note:** build no interaction that works only by hovering.
