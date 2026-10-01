@@ -41,6 +41,8 @@ Protocol: `AGENTS.md`. Plan: `docs/superpowers/plans/2026-09-30-v1-roadmap.md`.
 21. **O-LABELS:** edge kinds now show display labels derived from their wire names ("attested-in" → "Attested in", "spouse-of" → "Spouse of"). Keep derived, or hand-write a curated label per kind (a data file)?
 22. **O-CACHE:** FOCUS-0 owes one proof (R44): clear `data/cache/sections/*` and run `cargo test -p atlas-cli` green first time. OK to clear the cache (regenerable) in `~/src/bible-atlas`?
 
+23. **O-M0-LIMB:** Authorize a scoped follow-up in `crates/map-encoders/src/tests.rs` for the cross-platform limb fixture law (23 numeric differences ≤2.22e-16, identical structure), preserving the existing fixture and requiring a justified numerical comparison with drift-detection tests?
+
 ## FINDINGS (rules 24a/24b: open categories, each with its proposed CLOSURE; the owner decides; agents append)
 - **F-1 (rule 26, server facts in code): the canon table.** `server/atlas-core/src/canon.rs` holds the 66 books (codes, OSIS ids, names) as a static table in code. Proposed closure: the canon becomes a curated file (`data/curated/books.toml` already exists — check what it holds) compiled into the artifact's Kjv section, and `BookId`/codes are read from it; a law forbids book literals in server code. Cost: `BookId(pub u8)` and the code-string wire form re-anchor on the data.
 - **F-2 (rule 26): the attestation-pending inventory.** `server/atlas-graph/src/attestation_pending.rs` pins 889 event pairs as a `PENDING` const in code (re-swept by hand when the attests cap came off). Proposed closure: the inventory is a curated file with each pair's grounds, or is derived by the compiler as a law output, never a code literal.
@@ -220,7 +222,7 @@ Protocol: `AGENTS.md`. Plan: `docs/superpowers/plans/2026-09-30-v1-roadmap.md`.
 ## Lane B: maps (Codex, repo `mapgen` unless noted)
 
 ### CX-M0: map-generator hygiene
-- **Status:** claimed:codex:2026-10-01T20:34:30+00:00
+- **Status:** blocked:owner (O-M0-LIMB; implementation pushed, required gate red)
 - **Repo / base:** `mapgen`, `origin/master` = `6608db4`. (Your Windows copy's `master` also has 2 unpushed commits, O-MG-LOCAL; work from `6608db4`, not from them.)
 - **Worktree:** `git -C ~/src/map-generator worktree add -b lane/codex/CX-M0 ~/w/mg-CX-M0 6608db4`
 - **Files:** `crates/*/Cargo.toml`, `Cargo.lock`, `rust-toolchain.toml`, `crates/map-types/tests/toolchain_pin.rs`, `scripts/demo.sh`, the PDF.
@@ -234,6 +236,9 @@ Protocol: `AGENTS.md`. Plan: `docs/superpowers/plans/2026-09-30-v1-roadmap.md`.
   5. `git rm "Saltwater (Notation and Tab).pdf"` (HEAD only; history is O-PDF).
 - **Gates (in WSL, after `. ~/.bible-atlas-env`):** `CARGO_TARGET_DIR=~/mut/codex-CX-M0 nice -n 10 cargo test --workspace -j 4`; `make demo` then `curl -s localhost:8090/api/meta` answers; `make contract-gates` (GHC 9.6.7 + cabal are installed via ghcup); `make stop`.
 - **Done when:** all of the above, pushed to `lane/codex/CX-M0`, reviewed. The controller then fast-forwards `master`.
+
+- **Result restored / rechecked 2026-10-01:** mapgen `6608db4..9f99a90` pushed on `lane/codex/CX-M0`; one workspace git dependency, committed lockfile, Linux detached PID-scoped demo, PDF removed from HEAD. No graph type edits. Pinned atlas e495935 has identical graph-types tree to current main 0887c03. Required workspace gate: **187 passed / 1 failed / 1 ignored**; Haskell **368 passed**, contract/vocab and semver laws pass; demo `/api/meta` on 8090 and stop pass. Sole red, independently reconfirmed today: `map-encoders::tests::limb_fixtures_match_rust`; 23 numeric differences ≤2.220446049250313e-16, zero structural/discrete differences. Fixture unchanged. Full browser golden gate still owed after this blocker. Evidence/report: `docs/superpowers/reports/2026-10-01-cx-m0-handoff.md` on atlas `lane/codex/CX-M0`; `/tmp/codex-CX-M0-*`.
+- **handoff:** controller can review the concrete path/launcher change now; resolve O-M0-LIMB for the out-of-scope test, run the scoped follow-up and remaining gates, then set review. Do not land as gate-clean. All locks released; demo stopped. M1/M2 depend on reviewed landing; owner priority is local 1446/1406 BC, then possibly 1200 BC.
 
 ### CX-M1: a map gallery for choosing a style
 - **Status:** blocked:CX-M0
