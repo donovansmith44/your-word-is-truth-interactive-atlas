@@ -14,6 +14,17 @@
 
 ## OPEN: for the owner, before the task named starts (each blocks only that task)
 
+**Owner answers, 2026-10-02 (binding; they supersede the defaults below):**
+1. **(a)** keep the passage path (`PassageNode`) until FOCUS-3.
+2. **Drop PARALLELS.**
+3. **Events only.** A verse shows the events it attests; no passage-membership group ("the passage you can leave off").
+4. **(b)** a "read in context" hatch on FocusView for a verse.
+5. **Remove the cross-reference marker** — it duplicates opening the verse.
+6. **(a) now; (b) in FOCUS-3** — the label names the span; minting a passage per cited span waits for FOCUS-3.
+7. **(a)** rule 27 reaches every served site that composes a text-unit reference (all `encode_node_id` call sites), in FOCUS-2.
+8. **(a)** keep the locator ("JHN.3.16").
+9. **(a)** accept the AQC major; `TextUnit` nests the served `UnitText`.
+
 1. **A reader's verse range (Tasks 4, 6).** Five of the nine providers also serve `PassageNode` (`AppliesTo: node.Kind is "Verse" or "Passage"`, `PopoverSectionProviders.cs:153, 273, 368, 927, 1184`). A passage's identity is its first verse's TextUnit (F1-3); it has no node (F-13), and it reads `/api/xrefs/{sref}` and `/api/catechism/{sref}` (`PassageNode.cs:41, 43`). (a) Keep the passage path until FOCUS-3: three providers narrow to `"Passage"` and are renamed `PassageTextSection`, `PassageCrossRefsSection`, `PassageCatechismSection`; `/api/xrefs/{sref}`, `/api/catechism/{sref}`, `AtlasClient.Xrefs` and `AtlasClient.Catechism` move to FOCUS-3's §5 row. (b) A range opens its first verse on FocusView now, and the passage path dies in FOCUS-2. That loses the range's text, its cross references gathered over the range, and its catechism.
 2. **Parallels (Task 4).** `VerseParallelsSection` works out on the client each event's other accounts: one whole `attested-in` read per event (F-63, 27c, 27e). (a) The section dies. A verse's parallels are one step away: its `attests` event, whose `attested-in` group lists every account with its served runs. (b) Keep a PARALLELS section on FocusView as an `Explore` walk over the first page of each event, at one read per event, which breaks 27c.
 3. **Events and passages a verse belongs to (Task 3).** The legacy popover splits the verse's `attests` neighbours into EVENT and PASSAGE by `VerseEvent.kind` from `/api/verse`. (a) One `attests` group, in served order. (b) Two groups split by each neighbour's served `event.kind`, at one batched element read per page (27c).
