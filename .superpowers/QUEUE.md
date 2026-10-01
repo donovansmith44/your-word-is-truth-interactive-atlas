@@ -18,9 +18,9 @@ Protocol: `AGENTS.md`. Plan: `docs/superpowers/plans/2026-09-30-v1-roadmap.md`.
 1. **O-PUSH:** resolved 2026-09-30: `gh auth login` + `gh auth setup-git` in WSL; a push and a lock take/release from WSL both succeeded.
 2. **O-CODEX:** Codex CLI 0.159.2 is installed in WSL (`~/.local/bin/codex`, works from any shell). Run `codex login` once. It runs in `~/src` on this machine.
 3. **O-PASTOR:** Pastor Hromowyck demo: Oct 21 or 22?
-4. **O-NAMES:** Sign off the NAMES draft's types (`docs/superpowers/specs/2026-10-01-names-design.md`) and answer its §9 (5 one-line questions). It is drafted as ONE spec for the text and the maps' entity registry.
-5. **O-ORDER:** Can FOCUS-6 move up to right after FOCUS-1? Can FOCUS-4+5 and FOCUS-7+8 each close as a single batch?
-6. **O-ERRATA-SEED:** List the map errors you've already noticed (map, place or polity, what's wrong). They seed CX-M2.
+4. **O-NAMES:** 4 of 5 answered 2026-09-30 (spec §10: one Name per language; events denotable; map-generator's ids pending licensing; many names per entity as a `Naming` type). Open: which titles go on the review list (all held until you choose), and your sign-off of the amended types.
+5. **O-ORDER:** FOCUS-6 comes right after FOCUS-1 (owner, 2026-09-30). Open: can FOCUS-4+5 and FOCUS-7+8 each close as a single batch?
+6. **O-ERRATA-SEED:** owner supplied: Bible-mode Edom looks oversized and Davidic content appears at 1406 BC; prioritize 1446 and 1406 BC, then possibly 1200 BC, before wider coverage.
 7. **O-STYLE:** After CX-M1's gallery, which style (parchment / canaan / slate), and which eras get a finished map (all 10 atlas eras?)
 8. **O-GPL:** Redraw the GPL `historical-basemaps` world borders as our own CC0 work (recommended), or accept GPL? Swap the OSM rivers (ODbL) for Natural Earth (recommended)? Your licensing rule (2026-09-29) disqualifies both as they stand.
 9. **O-PDF:** `Saltwater (Notation and Tab).pdf` in map-generator: remove it from HEAD (recommended), and also purge it from history? Is the repo public?
@@ -31,7 +31,13 @@ Protocol: `AGENTS.md`. Plan: `docs/superpowers/plans/2026-09-30-v1-roadmap.md`.
 14. **O-GODLINK:** with persons linked in verse text (CONTRACT-2), "God" and "LORD" are links in nearly every verse (8,587 verses for God). Keep every occurrence linked, or link only the first in a window/chapter?
 15. **O-BADGE:** FOCUS-1 drops the client-derived kind badge ("Passage"/"Verse") from the trail and selection tray and shows the served label only (rule 25). Want a served display kind on the card instead (a contract item)?
 16. **O-FINDINGS:** FOCUS-1 touches the files of F-6, F-7 (popover level), F-9 and F-12 (rewritten files). Close them inside FOCUS-1 (yes/no per finding)?
-17. **O-CACHE:** FOCUS-0 owes one proof (R44): clear `data/cache/sections/*` and run `cargo test -p atlas-cli` green first time. OK to clear the cache (regenerable) in `~/src/bible-atlas`?
+17. **O-CHOOSER:** the map's place chooser (world-cluster-chooser:213) stays open after zooming dissolves the cluster it was opened on; it fails 2 of 3 on today's build too (not FOCUS-1's). Fix it (close the chooser when its cluster dissolves)?
+18. **O-LAND-F1:** superseded by Codex review: changes requested on 678a0d2..3baaeb6 (F-38..F-42).
+19. **O-F6 (five, from the FOCUS-6 plan `docs/superpowers/plans/2026-10-01-focus6-geography.md`; the plan builds the [default] if unanswered):** (a) add edge-end relations `from`/`source-of` and `to`/`target-of` (22 → 24), node cards not counting them? [yes] (b) with `PlaceCard` gone, does hovering a place still preview it, or is a click the only way in? [click only] (c) a place card's time-window content (period name/blurb, events in the window, narrative prev/next): a card that ignores the window, or one scoped to it? [ignores] (d) `/world` with nothing focused: today's free slider, or always open on a Map? [free slider] (e) crossing into the next era: follow `follows-in` when the slider is dragged past the bound, or only on an arrow click? [click]
+20. **O-EDGE-TYPES:** the client types (R18) stand, signed off 2026-09-30 ("Good go"). O-F6 (a) is WITHDRAWN (owner, 2026-09-30, PRINCIPLES 27): no `from`/`to` relations; the graph models the domain, never a view.
+21a. **O-F6R (FOCUS-6 re-plan `f0f3470`, plan OPEN 6–13; defaults build if unanswered):** 6 vocabulary gate skips string literals [skip; alt: move `event_merge.rs` tables to `data/curated/`] · 7 delete the unread `frontier.rs` FocusKind×Capability matrix [delete] · 8 rename `exploration-roundtrip.feature` (AQC major) [rename] · 9 "focus" in the gate word list [no] · 10 edge label wording [`{subject} · {kind label} · {object}`; ties to O-LABELS] · 11 widen `/api/node/{id}/edges` to edge ids vs new `/api/position/{id}/edges` [widen] · 12 `edge_summary` bundled in the element record vs its own read [bundled] · 13 `loci`/`note` on neighbour pages only [yes]
+21. **O-LABELS:** edge kinds now show display labels derived from their wire names ("attested-in" → "Attested in", "spouse-of" → "Spouse of"). Keep derived, or hand-write a curated label per kind (a data file)?
+22. **O-CACHE:** FOCUS-0 owes one proof (R44): clear `data/cache/sections/*` and run `cargo test -p atlas-cli` green first time. OK to clear the cache (regenerable) in `~/src/bible-atlas`?
 
 ## FINDINGS (rules 24a/24b: open categories, each with its proposed CLOSURE; the owner decides; agents append)
 - **F-1 (rule 26, server facts in code): the canon table.** `server/atlas-core/src/canon.rs` holds the 66 books (codes, OSIS ids, names) as a static table in code. Proposed closure: the canon becomes a curated file (`data/curated/books.toml` already exists — check what it holds) compiled into the artifact's Kjv section, and `BookId`/codes are read from it; a law forbids book literals in server code. Cost: `BookId(pub u8)` and the code-string wire form re-anchor on the data.
@@ -51,7 +57,31 @@ Protocol: `AGENTS.md`. Plan: `docs/superpowers/plans/2026-09-30-v1-roadmap.md`.
 - **F-16 (server wire): `PositionKind` is `NodeKind` + `Edge`, so every client mapping from a served position is partial.** Closure: FOCUS-1 Task 0 (F1-2) splits the edge position into its own wire shape.
 - **F-17 (server wire): the corpus is absent from `NodeRef`/`NodeCard`,** so the client parses ids to learn it (`HomeSurfaces`). Closure: `corpus` on the wire (a CONTRACT item, FOCUS-2/3).
 - **F-18 (client): `RevealPageSize` restates the server's page clamp.** Closure: the served page size is the one declaration.
+- **F-19 (FOCUS-1, client tests): the atom set was hand-declared in 4 places in ConformanceTests** — CLOSED in FOCUS-1 T6 (derived by reflection).
+- **F-20 (client): `IIntent.Name` is read by nothing outside tests** (rule 4). Closure: delete it across all atoms, or give it a reader.
+- **F-21 (server wire): an edge position is not fetchable via `/api/node`**; only `justified-by` serves edge positions. Closure: serve them only where a Sequence presents them (the Event/narrative batch), never as frontier neighbours.
+- **F-22 (client, T3's table): `Affordance.Arrows` carries no direction.** Closure: `Arrows(ArrowDirection)`.
+- **F-23 (contract): frontier section headings are the edge kind's wire name; no served display label.** Closure: a `label` per edge kind in the vocabulary document (O-BADGE's category).
+- **F-24 (client): `SectionOrder` is read by nothing on the new path** (rule 4). Closure: the view orders by it, or it goes.
+- **F-25 (tooling): `timing-gates.sh` writes its logs into the tree.** Closure: logs under the target dir; the tests-never-write-the-repo law covers scripts.
+- **F-27 (client): the popover title shows the legacy title (`GEN`) while the trail shows the served label (`Genesis`).** Closure: every surface reads the served label (legacy titles die per kind).
+- **F-28 (client): a FocusView section heading counts links not offered on that surface.** Closure: the count comes from `Presentation.Offers`.
+- **F-29 (client): the popover's `Root`/`Saved` are two optionals, not one sum.** Closure: `PopoverOpening = Root | Saved`.
+- **F-30 (tests): `tsc` over tests/ux has 16 pre-existing errors,** so spec types aren't enforced. Closure: tsc clean and in the gate.
+- **F-31 (client): node constructors disagree on local vs wire ids** (`PersonNode` vs the rest). Closure: one typed id on the client (FOCUS-1 R36 / A-BACKLOG).
+- **F-32 (map-generator): DUPLICATE of CX-M0 step 3, which already fixes it; closed here.** The workspace does not build in WSL. Seven crates take `atlas-graph-types` by a path into the old Windows-era tree (`../../../../scratch/bible-atlas-sketch/.claude/worktrees/bible-atlas-m1/graph-types`), which no longer exists; `cargo` fails at manifest load. Closure: one dependency declaration (workspace `[workspace.dependencies]` or a git dep on bible-atlas at a pinned rev), so a machine move cannot break seven sites.
+- **F-33 (backend, rule 27): the client's exploration vocabulary lives in the backend.** 56 files under `server/` and `graph-types/` name explore/explorable/frontier (`graph-types::explore::Frontier`, `FrontierEdge`, `FrontierRefusals`, `frontier_at`, …), from CONTRACT-2 and FOCUS-1. Closure: rename to the graph's own words (adjacency, neighbours) and a gate that fails on any such name in `server/` or `graph-types/`. First task of the A-EDGES rework.
+- **F-34 (API, rule 27a): the wire has view-shaped endpoints** (node "cards" with an edge summary, per-kind routes). Audit every route against the generic read set and propose the migration; the owner rules on order (likely after Nov 4).
+- **F-35 (rule 26): event-merge tables are curated data in code** (`event_merge.rs` string literals). Closure: move to `data/curated/` with provenance; the vocabulary gate can then scan literals.
+- **F-36 (rule 27): year and time-range labels are formatted per request.** Closure: compile them as labels.
+- **F-37 (rule 27f): no budget gate at 10× size.** Closure: a synthetic 10× graph and p95/size gates over the generic reads.
 - **F-3 (rule 25, client derivation): `client/CanonRef.cs`** — see A-BACKLOG; closes when the legacy routes retire.
+
+- **F-38 (Codex A-F1 review, Important): Back loses the previous legacy presentation when two views share a node identity.** RenderedLegacyNodes overwrites EventNode with YearNode (also Passage/Verse and TimeAndPlace/Event aliases). Closure: retain presentation per navigation entry through one legacy bridge; alias-wide restoration laws.
+- **F-39 (Codex A-F1 review, Important): generic frontier request failures escape rendering.** FocusView initial/fill/reveal requests propagate errors outside the popover's catches. Closure: one async presentation outcome abstraction covering current/stale failures, disposal and retry across generic/legacy paths.
+- **F-40 (Codex A-F1 review, Important, 27e): inline groups eagerly drain every page.** FocusView InitiallyShown returns group.Count for Contains/Shows and fills before presenting. Closure: bounded paging for every affordance, with enumerating large-cardinality laws.
+- **F-41 (Codex A-F1 review, Important): presentation reuse keys only on Node, ignoring Surface.** Popover-to-World on the same Map retains excluded Person links. Closure: one presentation request key including all inputs, with surface-transition laws.
+- **F-42 (Codex A-F1 review, Important, 14b): identity equality/hash is repeated in NodeIdentity, Explorable and Link.** Closure: one identity equality implementation, composed by every wrapper.
 
 ---
 
@@ -63,10 +93,18 @@ Protocol: `AGENTS.md`. Plan: `docs/superpowers/plans/2026-09-30-v1-roadmap.md`.
 - **Closed by** Task 11 plus a fix wave under rules 24/24a/24b/25/26 (every fix names its category, its failed abstraction, its side and the closure; see the close report §6a).
 
 ### A-F1: FOCUS-1
-- **Status:** claimed:claude:2026-09-30T15:10-04:00 — prep done (29 defects ruled, F1-1..F1-8 in the ledger `.superpowers/sdd/2026-09-30-focus1-types/progress.md`); wave 1 running (T1+Chip ∥ T3 ∥ Task 0: `NodeRef.kind: NodeKind`, the one Rust task).
+- **Status:** review:678a0d2..3baaeb6 (branch `lane/claude/A-F1`; close report `docs/superpowers/reports/2026-09-30-focus-1-close.md` on the branch). Gates: 1,577 Rust / 572 client / 54 contract tests green; contract gate passed; AQC 0.12.0; Playwright green except the known world-quiet-places:211 and the pre-existing world-cluster-chooser:213 (O-CHOOSER). **Codex: review this range (AGENTS.md 14b + 24a/24b), then Claude lands it.**
 - **Plan:** `docs/superpowers/plans/2026-09-27-focus1-types.md` (9 tasks), plus rulings R11–R14 in the FOCUS spec.
 - **Note:** build no interaction that works only by hovering.
 - **Done when:** the plan's Task 9 gates pass and it's reviewed by Codex.
+
+- **Codex review (2026-09-30): changes requested** on `678a0d2..3baaeb6`; F-38..F-42 above, report `docs/superpowers/reports/2026-09-30-focus-1-codex-review.md` on `lane/codex/A-F1-review`. Independent 572 client + 54 contract tests pass; four isolated behavioral reproductions fail. No landing approval.
+- **handoff:** Claude addresses or obtains owner disposition for F-38..F-42, then requests re-review of the fix range; reproduction code is in the report. No review locks held.
+
+### A-EDGES: edges are explorable (R18)
+- **Status:** REWORK (owner, 2026-09-30, PRINCIPLES 27). `lane/claude/F6-t1` and `F6-t2` (`86baad7`, `54079c4`, `7f1ef67`) never land: they put the frontier into the backend (edge card endpoint, `EdgeSource`/`EdgeTarget` relations, labels composed per request). Rebuilt on `3baaeb6`: the generic element read (node or edge, many ids per call), edge labels compiled into the artifact, the edge frontier derived on the client; first the closure of F-33.
+- **Ruling:** spec §12 R18 (owner, 2026-09-30). Server: an edge card and an edge's frontier in the generated document (AQC minor); wire `Link.Target: PositionRef`; client: `ElementKind = Node | Edge`, `Presentation.Of(ElementKind, Surface)` rows for every edge kind, `IExplorer.Resolve(PositionRef)`/`Follow` total. Closes F-21 and retires F1-12's filter. Types for owner sign-off at FOCUS-1's close.
+- **Done when:** `Follow` is total (a law over every served position), the edge card serves its justification, and a Playwright spec follows a verse → its attests edge → the event.
 
 ### A-NAMES: the NAMES spec (one registry of names and entities, for text and maps)
 - **Status:** blocked:owner (O-NAMES). A types-only draft is at `docs/superpowers/specs/2026-10-01-names-design.md`, with 5 open questions in its §9.
@@ -106,7 +144,7 @@ Protocol: `AGENTS.md`. Plan: `docs/superpowers/plans/2026-09-30-v1-roadmap.md`.
 
 ### A-FPLANS: write each FOCUS-n plan from FOCUS-1's actual result
 - **Status:** blocked:A-F1
-- **Order:** FOCUS-6 first if O-ORDER allows, then 2, 3, 4+5, 7+8, 9.
+- **Order:** FOCUS-6 first (owner, 2026-09-30), then 2, 3, 4+5, 7+8, 9. A-EDGES (R18) runs before FOCUS-6's plan is final, or alongside it if the tables it adds are disjoint.
 - **Assignment:** each plan names its agent, its base commit and its files. Codex takes the ones that pair against Claude's (server-heavy beside client-heavy).
 
 ### A-F3, A-F6, A-F9: FOCUS-3, FOCUS-6 (with the map switch), FOCUS-9
