@@ -277,6 +277,7 @@ pub(crate) fn node_description(id: &AnyNodeId, q: &impl GraphQuery) -> Option<St
     match node.payload {
         NodePayload::Place { description, .. } | NodePayload::Person { description, .. } | NodePayload::PeopleGroup { description, .. } => description,
         NodePayload::CommentaryItem { text, .. } => Some(text),
+        NodePayload::Anchor { citation, .. } => Some(citation),
         _ => None,
     }
 }

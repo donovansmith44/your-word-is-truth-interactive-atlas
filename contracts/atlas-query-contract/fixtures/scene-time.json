@@ -94,7 +94,7 @@
         "node": {
           "id": "Place:bethel-1",
           "kind": "Place",
-          "label": "Bethel 1"
+          "label": "Bethel"
         }
       },
       {
@@ -319,7 +319,7 @@
         "node": {
           "id": "Place:ur-1",
           "kind": "Place",
-          "label": "Ur 1"
+          "label": "Ur"
         }
       }
     ],
@@ -419,7 +419,7 @@
         "node": {
           "id": "Place:ai-1",
           "kind": "Place",
-          "label": "Ai 1"
+          "label": "Ai"
         },
         "total_events": 2
       },
@@ -455,7 +455,7 @@
         "node": {
           "id": "Place:antioch-1",
           "kind": "Place",
-          "label": "Antioch 1"
+          "label": "Antioch"
         },
         "total_events": 1
       },
@@ -470,7 +470,7 @@
         "node": {
           "id": "Place:antioch-2",
           "kind": "Place",
-          "label": "Antioch 2"
+          "label": "Antioch"
         },
         "total_events": 3
       },
@@ -497,7 +497,7 @@
         "node": {
           "id": "Place:aphek-2",
           "kind": "Place",
-          "label": "Aphek 2"
+          "label": "Aphek"
         },
         "total_events": 2
       },
@@ -509,7 +509,7 @@
         "node": {
           "id": "Place:aphek-3",
           "kind": "Place",
-          "label": "Aphek 3"
+          "label": "Aphek"
         },
         "total_events": 1
       },
@@ -653,7 +653,7 @@
         "node": {
           "id": "Place:babylon-1",
           "kind": "Place",
-          "label": "Babylon 1"
+          "label": "Babylon"
         },
         "total_events": 17
       },
@@ -677,7 +677,7 @@
         "node": {
           "id": "Place:beersheba-1",
           "kind": "Place",
-          "label": "Beersheba 1"
+          "label": "Beersheba"
         },
         "total_events": 8
       },
@@ -689,7 +689,7 @@
         "node": {
           "id": "Place:beersheba-2",
           "kind": "Place",
-          "label": "Beersheba 2"
+          "label": "Beersheba"
         },
         "total_events": 2
       },
@@ -713,7 +713,7 @@
         "node": {
           "id": "Place:bethany-1",
           "kind": "Place",
-          "label": "Bethany 1"
+          "label": "Bethany"
         },
         "total_events": 5
       },
@@ -725,7 +725,7 @@
         "node": {
           "id": "Place:bethany-2",
           "kind": "Place",
-          "label": "Bethany 2"
+          "label": "Bethabara"
         },
         "total_events": 4
       },
@@ -764,7 +764,7 @@
         "node": {
           "id": "Place:bethlehem-1",
           "kind": "Place",
-          "label": "Bethlehem 1"
+          "label": "Bethlehem"
         },
         "total_events": 13
       },
@@ -779,7 +779,7 @@
         "node": {
           "id": "Place:bethsaida-2",
           "kind": "Place",
-          "label": "Bethsaida 2"
+          "label": "Bethsaida"
         },
         "total_events": 4
       },
@@ -842,7 +842,7 @@
         "node": {
           "id": "Place:calneh-1",
           "kind": "Place",
-          "label": "Calneh 1"
+          "label": "Calneh"
         },
         "total_events": 1
       },
@@ -1070,7 +1070,7 @@
         "node": {
           "id": "Place:ebenezer-1",
           "kind": "Place",
-          "label": "Ebenezer 1"
+          "label": "Ebenezer"
         },
         "total_events": 1
       },
@@ -1082,7 +1082,7 @@
         "node": {
           "id": "Place:ebenezer-2",
           "kind": "Place",
-          "label": "Ebenezer 2"
+          "label": "Ebenezer"
         },
         "total_events": 1
       },
@@ -1157,7 +1157,7 @@
         "node": {
           "id": "Place:ephraim-2",
           "kind": "Place",
-          "label": "Ephraim 2"
+          "label": "Ephraim"
         },
         "total_events": 1
       },
@@ -1241,7 +1241,7 @@
         "node": {
           "id": "Place:galilee-1",
           "kind": "Place",
-          "label": "Galilee 1"
+          "label": "Galilee"
         },
         "total_events": 17
       },
@@ -1265,7 +1265,7 @@
         "node": {
           "id": "Place:gath-1",
           "kind": "Place",
-          "label": "Gath 1"
+          "label": "Gath"
         },
         "total_events": 3
       },
@@ -1361,7 +1361,7 @@
         "node": {
           "id": "Place:gilead-1",
           "kind": "Place",
-          "label": "Gilead 1"
+          "label": "Gilead"
         },
         "total_events": 1
       },
@@ -1373,7 +1373,7 @@
         "node": {
           "id": "Place:gilgal-1",
           "kind": "Place",
-          "label": "Gilgal 1"
+          "label": "Gilgal"
         },
         "total_events": 1
       },
@@ -1409,7 +1409,7 @@
         "node": {
           "id": "Place:goshen-1",
           "kind": "Place",
-          "label": "Goshen 1"
+          "label": "Goshen"
         },
         "total_events": 4
       },
@@ -1448,7 +1448,7 @@
         "node": {
           "id": "Place:hazor-1",
           "kind": "Place",
-          "label": "Hazor 1"
+          "label": "Hazor"
         },
         "total_events": 2
       },
@@ -1508,7 +1508,7 @@
         "node": {
           "id": "Place:jericho-1",
           "kind": "Place",
-          "label": "Jericho 1"
+          "label": "Jericho"
         },
         "total_events": 2
       },
@@ -1520,7 +1520,7 @@
         "node": {
           "id": "Place:jericho-2",
           "kind": "Place",
-          "label": "Jericho 2"
+          "label": "Jericho"
         },
         "total_events": 3
       },
@@ -1564,7 +1564,7 @@
         "node": {
           "id": "Place:jezreel-2",
           "kind": "Place",
-          "label": "Jezreel 2"
+          "label": "Jezreel"
         },
         "total_events": 2
       },
@@ -1600,7 +1600,7 @@
         "node": {
           "id": "Place:judea-1",
           "kind": "Place",
-          "label": "Judea 1"
+          "label": "Judea"
         },
         "total_events": 23
       },
@@ -1771,7 +1771,7 @@
         "node": {
           "id": "Place:malta",
           "kind": "Place",
-          "label": "Malta"
+          "label": "Melita"
         },
         "total_events": 1
       },
@@ -1915,7 +1915,7 @@
         "node": {
           "id": "Place:mizpah-3",
           "kind": "Place",
-          "label": "Mizpah 3"
+          "label": "Mizpah"
         },
         "total_events": 3
       },
@@ -1927,7 +1927,7 @@
         "node": {
           "id": "Place:moab-1",
           "kind": "Place",
-          "label": "Moab 1"
+          "label": "Moab"
         },
         "total_events": 15
       },
@@ -1939,7 +1939,7 @@
         "node": {
           "id": "Place:moab-2",
           "kind": "Place",
-          "label": "Moab 2"
+          "label": "Moab"
         },
         "total_events": 1
       },
@@ -1966,7 +1966,7 @@
         "node": {
           "id": "Place:moreh-1",
           "kind": "Place",
-          "label": "Moreh 1"
+          "label": "Moreh"
         },
         "total_events": 1
       },
@@ -2360,7 +2360,7 @@
         "node": {
           "id": "Place:rabbah-1",
           "kind": "Place",
-          "label": "Rabbah 1"
+          "label": "Rabbah"
         },
         "total_events": 3
       },
@@ -2372,7 +2372,7 @@
         "node": {
           "id": "Place:ramah-4",
           "kind": "Place",
-          "label": "Ramah 4"
+          "label": "Ramah"
         },
         "total_events": 4
       },
@@ -2408,7 +2408,7 @@
         "node": {
           "id": "Place:red-sea-1",
           "kind": "Place",
-          "label": "Red Sea 1"
+          "label": "Red Sea"
         },
         "total_events": 1
       },
@@ -2495,7 +2495,7 @@
         "node": {
           "id": "Place:riblah-1",
           "kind": "Place",
-          "label": "Riblah 1"
+          "label": "Riblah"
         },
         "total_events": 2
       },
@@ -2555,7 +2555,7 @@
         "node": {
           "id": "Place:samaria-1",
           "kind": "Place",
-          "label": "Samaria 1"
+          "label": "Samaria"
         },
         "total_events": 6
       },
@@ -2567,7 +2567,7 @@
         "node": {
           "id": "Place:samaria-2",
           "kind": "Place",
-          "label": "Samaria 2"
+          "label": "Samaria"
         },
         "total_events": 2
       },
@@ -2611,7 +2611,7 @@
         "node": {
           "id": "Place:samothrace",
           "kind": "Place",
-          "label": "Samothrace"
+          "label": "Samothracia"
         },
         "total_events": 1
       },
@@ -2790,7 +2790,7 @@
         "node": {
           "id": "Place:succoth-2",
           "kind": "Place",
-          "label": "Succoth 2"
+          "label": "Succoth"
         },
         "total_events": 1
       },
@@ -2814,7 +2814,7 @@
         "node": {
           "id": "Place:susa",
           "kind": "Place",
-          "label": "Susa"
+          "label": "Shushan"
         },
         "total_events": 14
       },
@@ -2946,7 +2946,7 @@
         "node": {
           "id": "Place:tigris",
           "kind": "Place",
-          "label": "Tigris"
+          "label": "Hiddekel"
         },
         "total_events": 1
       },
@@ -2958,7 +2958,7 @@
         "node": {
           "id": "Place:timnah-1",
           "kind": "Place",
-          "label": "Timnah 1"
+          "label": "Timnah"
         },
         "total_events": 2
       },
@@ -2982,7 +2982,7 @@
         "node": {
           "id": "Place:tiphsah-2",
           "kind": "Place",
-          "label": "Tiphsah 2"
+          "label": "Tiphsah"
         },
         "total_events": 1
       },
@@ -3114,7 +3114,7 @@
         "node": {
           "id": "Place:ziph-1",
           "kind": "Place",
-          "label": "Ziph 1"
+          "label": "Ziph"
         },
         "total_events": 1
       },

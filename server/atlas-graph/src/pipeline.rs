@@ -256,7 +256,8 @@ impl Pass for LabelPass {
         "label"
     }
     fn run(&self, ctx: &mut BuildCtx) -> Result<()> {
-        crate::labels::compile(&mut ctx.graph);
+        let geography = crate::geography::Geography::compile(&ctx.graph, ctx.atlas);
+        crate::labels::compile(&mut ctx.graph, &crate::labels::ReaderNames::of(&geography, ctx.atlas));
         Ok(())
     }
 }

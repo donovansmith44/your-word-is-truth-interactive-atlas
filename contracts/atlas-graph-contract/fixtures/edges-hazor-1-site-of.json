@@ -4,7 +4,7 @@
             "edge": {
                 "id": "LocatedAt:ba554caa302fbfebb1c80f4267da7c35",
                 "kind": "located-at",
-                "label": "Hazor is defeated and burned · Located at · Hazor 1"
+                "label": "Hazor is defeated and burned · Located at · Hazor"
             },
             "neighbour": {
                 "node": {
@@ -19,7 +19,7 @@
             "edge": {
                 "id": "LocatedAt:741c521c9d67d4ae5a1c2a1d96c114cb",
                 "kind": "located-at",
-                "label": "Subjugation by Jabin · Located at · Hazor 1"
+                "label": "Subjugation by Jabin · Located at · Hazor"
             },
             "neighbour": {
                 "node": {
