@@ -538,6 +538,22 @@ public sealed class FocusViewTests : BunitContext
     }
 
     [Fact]
+    public async Task A_group_whose_links_the_surface_does_not_offer_is_not_drained_looking_for_one_it_does()
+    {
+        // Arrange
+        var graph = new MultitudeGraph([EdgeKind.Shows]);
+        var explorer = new GraphExplorer(graph);
+        Services.AddSingleton<IExplorer>(explorer);
+        var node = await explorer.Resolve(ServedGraph.At(Genesis2Ref));
+
+        // Act
+        var view = Render<FocusView>(p => p.Add(v => v.Node, node).Add(v => v.Surface, Surface.World));
+
+        // Assert
+        Assert.Equal((1, Affordances.ChildrenShown, 0), (graph.Asked(EdgeKind.Shows), graph.Read(EdgeKind.Shows), view.FindAll(".focus-child").Count));
+    }
+
+    [Fact]
     public async Task Revealing_more_of_inline_children_reads_one_more_bounded_page()
     {
         // Arrange
