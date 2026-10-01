@@ -1,6 +1,6 @@
 using BibleAtlas.Client.Contract;
 using BibleAtlas.Client.Contracts;
-using BibleAtlas.Client.Explore;
+using BibleAtlas.Client.Exploring;
 using BibleAtlas.Client.State;
 
 namespace BibleAtlas.Client.Tests;
@@ -80,6 +80,7 @@ public sealed class ExplorationStateTests
         IIntent<ExplorationState>[] intents =
         [
             new ExplorationIntent.Open(Genesis1),
+            new ExplorationIntent.Arrive(new Exploration(Genesis1, []), new Exploration(Genesis1, [ToGenesis2])),
             new ExplorationIntent.Reset(),
             new ExplorationIntent.Reseed(new Exploration(Genesis1, [])),
         ];
@@ -88,11 +89,11 @@ public sealed class ExplorationStateTests
         var names = intents.Select(i => i.Name).ToList();
 
         // Assert
-        Assert.Equal(["exploration-open", "exploration-reset", "exploration-reseed"], names);
+        Assert.Equal(["exploration-open", "exploration-arrive", "exploration-reset", "exploration-reseed"], names);
     }
 
     [Fact]
-    public void The_intent_vocabulary_is_open_reset_reseed_and_nothing_else()
+    public void The_intent_vocabulary_is_open_arrive_reset_reseed_and_nothing_else()
     {
         // Arrange
         var intent = typeof(ExplorationIntent);
@@ -106,7 +107,7 @@ public sealed class ExplorationStateTests
 
         // Assert
         Assert.Equal(
-            [("Open", true, true), ("Reseed", true, true), ("Reset", true, true)],
+            [("Arrive", true, true), ("Open", true, true), ("Reseed", true, true), ("Reset", true, true)],
             cases);
     }
 

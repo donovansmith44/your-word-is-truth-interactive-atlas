@@ -1,5 +1,5 @@
 using BibleAtlas.Client.Contract;
-using BibleAtlas.Client.Explore;
+using BibleAtlas.Client.Exploring;
 using BibleAtlas.Client.Views;
 using Bunit;
 using Microsoft.Extensions.DependencyInjection;

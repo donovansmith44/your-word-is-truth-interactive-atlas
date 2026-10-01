@@ -1,6 +1,6 @@
 using BibleAtlas.Client.Contract;
 using BibleAtlas.Client.Contracts;
-using BibleAtlas.Client.Explore;
+using BibleAtlas.Client.Exploring;
 using BibleAtlas.Client.State;
 
 namespace BibleAtlas.Client.Tests.State;

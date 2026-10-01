@@ -1,0 +1,54 @@
+using BibleAtlas.Client.Contract;
+
+namespace BibleAtlas.Client.Exploring;
+
+public sealed record KinGroup(string Heading, string TestId, IReadOnlyList<NodeRef> People, EdgeKind Via)
+{
+    public bool Equals(KinGroup? other) => other is not null && (Heading, TestId, Via) == (other.Heading, other.TestId, other.Via) && People.SequenceEqual(other.People, PositionIdentity.Comparer);
+
+    public override int GetHashCode() => People.Select(PositionIdentity.Comparer.GetHashCode).Aggregate(HashCode.Combine(Heading, TestId, Via), HashCode.Combine);
+}
+
+public static class Kinship
+{
+    private static readonly IReadOnlyDictionary<Parentage, (string AsParent, string AsChild)> Labels = new Dictionary<Parentage, (string, string)>
+    {
+        [Parentage.Natural] = ("Parents", "Children"),
+        [Parentage.Eternal] = ("Father (eternal Son of God)", "Only begotten Son"),
+        [Parentage.Virgin] = ("Mother (born of the Virgin)", "Son (born of the Virgin)"),
+        [Parentage.Legal] = ("Legal father (as was supposed)", "Son (as was supposed)"),
+        [Parentage.Created] = ("Created by God", "Created"),
+    };
+
+    public static string AsParent(Parentage parentage) => Labels[parentage].AsParent;
+
+    public static string AsChild(Parentage parentage) => Labels[parentage].AsChild;
+
+    public static bool MakesSiblings(Parentage parentage) => parentage is Parentage.Natural or Parentage.Virgin or Parentage.Legal;
+
+    public static Parentage Of(EdgeEntry entry) => entry.Parentage!.Value;
+
+    public static IReadOnlyList<KinGroup> Groups(IReadOnlyList<EdgeEntry> parents, IReadOnlyList<NodeRef> spouses, IReadOnlyList<EdgeEntry> children, IReadOnlyList<NodeRef> siblings, IReadOnlyList<NodeRef> brethren)
+    {
+        IEnumerable<KinGroup> all =
+        [
+            .. ByParentage(parents, "parents", AsParent, EdgeKind.ChildOf),
+            Counted("Spouses", "spouses", spouses, EdgeKind.SpouseOf),
+            .. ByParentage(children, "children", AsChild, EdgeKind.ParentOf),
+            Counted("Siblings", "siblings", siblings, EdgeKind.BrethrenOf),
+            Counted("Brethren", "brethren", brethren, EdgeKind.BrethrenOf),
+        ];
+        return all.Where(g => g.People.Count > 0).ToList();
+    }
+
+    private static KinGroup Counted(string label, string testId, IReadOnlyList<NodeRef> people, EdgeKind via) => new($"{label} ({people.Count})", testId, people, via);
+
+    private static IEnumerable<KinGroup> ByParentage(IReadOnlyList<EdgeEntry> entries, string testId, Func<Parentage, string> label, EdgeKind via) =>
+        Enum.GetValues<Parentage>().Select(parentage =>
+        {
+            var people = entries.Where(e => Of(e) == parentage).Nodes().ToList();
+            return parentage == Parentage.Natural
+                ? Counted(label(parentage), testId, people, via)
+                : new KinGroup(label(parentage), $"{testId}-{parentage.ToString().ToLowerInvariant()}", people, via);
+        });
+}

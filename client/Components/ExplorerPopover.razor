@@ -258,7 +258,7 @@
     {
         if (Arriving(await request.Walk(() => Explore.Begin(Explorer, saved.Start)), () => Resume(_requests.Next(), saved)) is { } begun)
         {
-            await Walk(request, Explore.Replay(saved.Steps), begun, null, () => Resume(_requests.Next(), saved));
+            await Walk(request, Explore.Replay(saved.Steps), begun, trail => new ExplorationIntent.Reseed(trail), null, () => Resume(_requests.Next(), saved));
         }
     }
 
@@ -471,13 +471,13 @@
     private Task FollowAsync(Link link) => Arrive(link, null, () => FollowAsync(link));
 
     private Task Arrive(Link link, IExplorable? legacy, Func<Task> retry) =>
-        Exploration is { } from ? Walk(_requests.Next(), Explore.Follow(link), from, legacy, retry) : Task.CompletedTask;
+        Exploration is { } from ? Walk(_requests.Next(), Explore.Follow(link), from, trail => new ExplorationIntent.Arrive(from, trail), legacy, retry) : Task.CompletedTask;
 
-    private async Task Walk<T>(Request request, Explore<T> walk, Exploration from, IExplorable? legacy, Func<Task> retry)
+    private async Task Walk<T>(Request request, Explore<T> walk, Exploration from, Func<Exploration, ExplorationIntent> arrival, IExplorable? legacy, Func<Task> retry)
     {
         if (Arriving((await request.Walk(() => walk.Run(Explorer, from))).Select(walked => walked.Trail), retry) is { } trail)
         {
-            PresentArrival(new ExplorationIntent.Reseed(trail), legacy);
+            PresentArrival(arrival(trail), legacy);
             await LoadCurrent();
         }
 
@@ -545,7 +545,7 @@
         }
     }
 
-    private Task Back(Exploration from) => Walk(_requests.Next(), Explore.Back, from, null, () => Back(from));
+    private Task Back(Exploration from) => Walk(_requests.Next(), Explore.Back, from, trail => new ExplorationIntent.Arrive(from, trail), null, () => Back(from));
 
     private async Task RequestClose()
     {

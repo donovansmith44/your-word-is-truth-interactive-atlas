@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 using BibleAtlas.Client.Contract;
-using BibleAtlas.Client.Explore;
+using BibleAtlas.Client.Exploring;
 using Microsoft.JSInterop;
 
 namespace BibleAtlas.Client;

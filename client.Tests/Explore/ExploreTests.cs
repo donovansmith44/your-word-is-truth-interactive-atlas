@@ -1,8 +1,7 @@
 using BibleAtlas.Client.Contract;
+using BibleAtlas.Client.Exploring;
 
 namespace BibleAtlas.Client.Tests;
-
-using BibleAtlas.Client.Explore;
 
 public sealed class ExploreTests
 {
@@ -308,6 +307,36 @@ public sealed class ExploreTests
 
         // Assert
         Assert.Equal((true, 0), (trails.Any(trail => trail.Steps.Count > 1), unreproduced.Count));
+    }
+
+    [Fact]
+    public async Task Replaying_links_resolves_every_target_in_one_element_read_then_walks_them()
+    {
+        // Arrange
+        var (graph, explorer, from) = Served();
+        var readsBefore = graph.ElementReads;
+
+        // Act
+        var outcome = await Explore.Replay([ToGenesis2, ToGenesis3, UpToGenesis]).Run(explorer, from);
+        var reads = graph.ElementReads - readsBefore;
+
+        // Assert
+        var trail = new Exploration(from.Start, [new Step(EdgeKind.FollowsIn, Genesis(explorer, Genesis2Ref)), new Step(EdgeKind.FollowsIn, Genesis(explorer, Genesis3Ref)), new Step(EdgeKind.MemberOf, Genesis(explorer, GenesisRef))]);
+        Assert.Equal(((Outcome<(Unit, Exploration)>)new Outcome<(Unit, Exploration)>.Arrived((default, trail)), 1), (outcome, reads));
+    }
+
+    [Fact]
+    public async Task Replaying_no_links_asks_the_graph_nothing()
+    {
+        // Arrange
+        var (graph, explorer, from) = Served();
+        var readsBefore = graph.ElementReads;
+
+        // Act
+        var outcome = await Explore.Replay([]).Run(explorer, from);
+
+        // Assert
+        Assert.Equal(((Outcome<(Unit, Exploration)>)new Outcome<(Unit, Exploration)>.Arrived((default, from)), 0), (outcome, graph.ElementReads - readsBefore));
     }
 
     [Fact]

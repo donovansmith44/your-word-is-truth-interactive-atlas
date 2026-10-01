@@ -1071,8 +1071,8 @@
             return;
         }
 
-        (await _crossing.Next().Walk(() => Explore.Follow(link).Run(Explorer, from))).Match(
-            arrived: walked => ExplorationAtom.Dispatch(new ExplorationIntent.Reseed(walked.Trail)),
+        (await _crossing.Next().Walk(() => Crossing.Walk(link.Kind).Run(Explorer, from))).Match(
+            arrived: walked => ExplorationAtom.Dispatch(new ExplorationIntent.Arrive(from, walked.Trail)),
             failed: () => _errorMessage = $"Couldn't reach {Positions.Of(link.Target).Label} -- check your connection and try again.",
             superseded: () => { });
     }

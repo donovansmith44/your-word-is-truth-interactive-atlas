@@ -1,7 +1,7 @@
 using BibleAtlas.Client.Components;
 using BibleAtlas.Client.Contract;
 using BibleAtlas.Client.Contracts;
-using BibleAtlas.Client.Explore;
+using BibleAtlas.Client.Exploring;
 using BibleAtlas.Client.State;
 using Bunit;
 using Microsoft.AspNetCore.Components;
@@ -113,6 +113,22 @@ public sealed class ExplorerPopoverTests : BunitContext
         // Assert
         var replayed = new Exploration(Resolved.Node(graph, Exodus), [new Step(EdgeKind.FollowsIn, Resolved.Node(graph, Wilderness))]);
         popover.WaitForAssertion(() => Assert.Equal(new ExplorationState.Open(replayed), atom.Value));
+    }
+
+    [Fact]
+    public void Opening_on_a_save_reads_its_start_and_then_every_step_in_one_more_read()
+    {
+        // Arrange
+        const int StartThenSteps = 2;
+        var graph = Narratives();
+        var atom = Hosting(graph);
+        var saved = AtExodus with { Steps = [new Link(EdgeKind.FollowsIn, ServedGraph.At(Wilderness)), new Link(EdgeKind.PrecedesIn, ServedGraph.At(Exodus))] };
+
+        // Act
+        var popover = Render<ExplorerPopover>(p => p.Add(v => v.Opening, new PopoverOpening.Resume(saved)));
+
+        // Assert
+        popover.WaitForAssertion(() => Assert.Equal(StartThenSteps, graph.ElementReads));
     }
 
     [Fact]

@@ -587,23 +587,34 @@ Nothing open remains; the spec awaits the plans.
   ```
   Rulings:
   - No Resolve inside a walk. Only `Begin` starts one, so a trail stays
-    continuous (R15: a reference is resolved, never promoted).
+    continuous (R15: a reference is resolved, never promoted). The one
+    exception is `Replay`: it resolves every target in one batched element
+    read, then records the steps locally (PRINCIPLES 27c: a screen is a few
+    round trips). Replaying no links asks the graph nothing.
   - Back is a monad primitive. It is the dual of the last un-returned hop
     (R17), it asks the graph nothing, and Back after Back never goes forward.
   - Failure is the existing `Outcome` (F-58). A failed request ends the walk:
     later binds never run, no request goes out after the failure, nothing
     throws. A component runs a walk through `Request.Walk`, which drops a
     superseded answer like `Request.Fetch`.
+  - A walk lands as `ExplorationIntent.Arrive(From, Trail)`, which applies
+    only while the atom still holds the exploration the walk started from.
+    A walk that arrives after another navigation, or after the exploration
+    closed, changes nothing (`ExplorationInterleavingTests`). A resume
+    replaces the exploration outright (`Reseed`).
   - Laws, as tests: left identity, right identity and associativity over
     generated walks on `ServedGraph`, comparing value and trail; a query
     walk's trail is its breadcrumb; Replay of a trail reproduces it; Back
     after Follow returns to the prior Here.
   - Migrated onto the monad and deleted: the popover's Follow and Back, the
-    saved-exploration resume (`Begin` then `Replay`; it was one batched
-    element read), the World view's era crossing (`Follow`);
+    saved-exploration resume (`Begin` then `Replay`: two element reads
+    whatever the trail's length), the World view's era crossing
+    (`Crossing.Walk`, a query walk over `Here`, `Links` and `Follow`);
     `Exploration.Back`, `ExplorationIntent.Follow`/`Back`,
-    `ExplorationState.Continue`, `IExplorer.Resolve(IReadOnlyList<PositionRef>)`.
-    A walk lands in the atom as `ExplorationIntent.Reseed(trail)`.
+    `ExplorationState.Continue`. The batched `IExplorer.Resolve` stays, and
+    only the monad calls it.
+  - The namespace is `BibleAtlas.Client.Exploring`, so the type `Explore`
+    is not shadowed by a namespace of the same name (`NamespaceLawTests`).
   - Closed (24b): a source law, `ExploreDoorLawTests`, fails if any client
     file but the monad and the explorer calls `IExplorer.Follow` or
     `Resolve`; the fetch law sees `Explore.Begin` and `.Run(Explorer` as

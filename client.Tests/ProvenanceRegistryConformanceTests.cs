@@ -1,6 +1,6 @@
 using BibleAtlas.Client.Contract;
 using System.Text.Json;
-using BibleAtlas.Client.Explore;
+using BibleAtlas.Client.Exploring;
 
 namespace BibleAtlas.Client.Tests;
 

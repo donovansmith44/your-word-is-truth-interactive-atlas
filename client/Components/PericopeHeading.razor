@@ -1,4 +1,4 @@
-@using BibleAtlas.Client.Explore
+@using BibleAtlas.Client.Exploring
 
 <h2 class="pericope-heading @(Heading.IsContinuation ? "pericope-heading-continuation" : "") @(Heading.Kind == EventKind.General ? "explorable-quiet" : "explorable")"
     data-testid="@($"pericope-heading-{Heading.EventId}{TestIdSuffix}")" data-continuation="@(Heading.IsContinuation ? "true" : "false")"

@@ -1,8 +1,7 @@
 using BibleAtlas.Client.Contract;
+using BibleAtlas.Client.Exploring;
 
 namespace BibleAtlas.Client.Tests;
-
-using BibleAtlas.Client.Explore;
 
 internal sealed class ServedGraph : IExplorableClient
 {

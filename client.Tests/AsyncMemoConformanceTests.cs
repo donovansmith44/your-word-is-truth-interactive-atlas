@@ -54,7 +54,7 @@ public class AsyncMemoConformanceTests
         foreach (var file in ConformanceTests.ClientSourceFiles())
         {
             var relative = Normalize(Path.GetRelativePath(ConformanceTests.RepoRoot(), file));
-            if (relative == "client/Explore/AsyncMemo.cs")
+            if (relative == "client/Exploring/AsyncMemo.cs")
             {
                 continue;
             }
