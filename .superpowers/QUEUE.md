@@ -75,6 +75,11 @@ Protocol: `AGENTS.md`. Plan: `docs/superpowers/plans/2026-09-30-v1-roadmap.md`.
 - **F-35 (rule 26): event-merge tables are curated data in code** (`event_merge.rs` string literals). Closure: move to `data/curated/` with provenance; the vocabulary gate can then scan literals.
 - **F-36 (rule 27): year and time-range labels are formatted per request.** Closure: compile them as labels.
 - **F-37 (rule 27f): no budget gate at 10× size.** Closure: a synthetic 10× graph and p95/size gates over the generic reads.
+- **F-38 (rule 27): a place's default name and blurb are derived per request.** `resolve_display_name_and_canonical` (alias → curated → suffix-stripped name, `atlas-core/src/history.rs`) runs in `place_detail` and `places.rs`; `resolve_blurb` picks a per-period `place_history_blurb` row at read time. Closure: the compiler writes the default name and blurb into the artifact; FOCUS-6 re-planned Task 4 takes it.
+- **F-39 (integrity): the version root does not cover derived tables** (`edge_index`, `label`): a change to label logic with unchanged rows can reuse a stale blob under the same root; only a schema bump forces a rewrite. Closure: the root covers derived tables, or the derivation code's version is an input to the root.
+- **F-40 (rule 27f): compiled labels grow the artifact with every position** (R2: +25 MB, kjv 48→58, lexicon 42→52); at 10× the 100 MB blob ceiling breaks. Owner to weigh: labels for every position vs only for positions a reader can land on; dedup/compression.
+- **F-41 (gates): a test referenced by name in a script can vanish silently** (`timing-gates.sh` still names `frontier_page_latency_…`, renamed in R1; a filter matching nothing passes). Closure: the gate fails when a named test matches zero tests. FOCUS-6 close.
+- **F-42 (rule 27): reference strings are composed in served code** (`dot_ref`: `TextUnit.ref`, `next`, `encode_node_id`). Closure: compiled, with F-36.
 - **F-3 (rule 25, client derivation): `client/CanonRef.cs`** — see A-BACKLOG; closes when the legacy routes retire.
 
 ---
