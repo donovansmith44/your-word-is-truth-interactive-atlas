@@ -1,0 +1,43 @@
+{
+  "body": {
+    "id": "ab_ur",
+    "kind": "event",
+    "places": [
+      {
+        "id": "ur-1",
+        "name": "Ur",
+        "node": {
+          "id": "Place:ur-1",
+          "kind": "Place",
+          "label": "Ur"
+        }
+      }
+    ],
+    "provenance": "curated",
+    "title": "Terah's family leaves Ur",
+    "when": {
+      "from_year": -2100,
+      "to_year": -2092
+    },
+    "witnesses": [
+      {
+        "book": "GEN",
+        "verse_groups": [
+          {
+            "book": "GEN",
+            "chapter": 11,
+            "count": 2,
+            "verses": [
+              "GEN.11.28",
+              "GEN.11.31"
+            ]
+          }
+        ]
+      }
+    ],
+    "witnesses_provenance": [
+      "event-witnesses"
+    ]
+  },
+  "status": 200
+}

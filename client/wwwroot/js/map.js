@@ -1052,20 +1052,6 @@ export function setNarrativeFocus(activeNarrativeIds, currentEventIds) {
     }
 }
 
-export function measureCardPlacement(cardEl) {
-    if (!cardEl || !cardEl.isConnected) {
-        return { width: 0, height: 0, containerWidth: 0, containerHeight: 0 };
-    }
-
-    const container = cardEl.parentElement;
-    return {
-        width: cardEl.offsetWidth,
-        height: cardEl.offsetHeight,
-        containerWidth: container ? container.clientWidth : 0,
-        containerHeight: container ? container.clientHeight : 0,
-    };
-}
-
 export function setPolitiesVisible(id, visible) {
     const inst = instances.get(id);
     if (!inst || !inst.polities) {

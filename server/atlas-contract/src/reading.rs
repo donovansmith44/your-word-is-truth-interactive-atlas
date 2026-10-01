@@ -62,14 +62,8 @@ pub async fn chapter(
                 .places_for_verse(&key)
                 .iter()
                 .filter_map(|pid| scene_source.place(pid))
-                .map(|p| wire::PlaceRef {
-                    id: p.id.clone(),
-                    // The reader locates a mention by matching this name against the
-                    // verse's own words, so it must carry the wording the translation
-                    // uses rather than the default modern name.
-                    name: resolve_display_name(&p.name, data.place_history_for(&p.id), None, data.place_name_alias_for(&p.id)),
-                })
-                .collect();
+                .map(|p| place_ref(&p.id, resolve_display_name(&p.name, data.place_history_for(&p.id), None, data.place_name_alias_for(&p.id)), &snap))
+                .collect::<Result<_, _>>()?;
             let persons = graph
                 .persons_at_verse(book.0, chapter, v)
                 .into_iter()
@@ -247,6 +241,10 @@ fn first_verse_of_target(target: &str) -> Option<VerseId> {
     }
     let (left, _right) = target.split_once('-')?;
     VerseId::parse_canonical(left).ok()
+}
+
+pub(crate) fn place_ref(id: &str, name: String, query: &dyn GraphQuery) -> Result<wire::PlaceRef, ApiError> {
+    Ok(wire::PlaceRef { id: id.to_string(), name, node: crate::graph_wire::node_ref(&atlas_graph::event_world::place_stub_node_id(id), query)? })
 }
 
 pub(crate) fn drain_edges(

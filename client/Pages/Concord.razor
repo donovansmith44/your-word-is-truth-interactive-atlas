@@ -143,9 +143,9 @@
     </div>
 </CompositionSplit>
 
-@if (_activeNode is not null)
+@if (_opening is not null)
 {
-    <ExplorerPopover @key="_activeNode" Opening="new PopoverOpening.Legacy(_activeNode)" OnClose="ClosePopover" />
+    <ExplorerPopover @key="_opening" Opening="_opening" OnClose="ClosePopover" />
 }
 
 @code {
@@ -166,7 +166,7 @@
     private bool _loading = true;
     private string? _error;
     private readonly RequestSeries _windows = new();
-    private IExplorable? _activeNode;
+    private PopoverOpening? _opening;
 
     // Navigation here never triggers a Blazor route change, so the router's
     // automatic scroll-to-top never fires; this flag drives a manual reset instead.
@@ -317,7 +317,7 @@
         var request = _windows.Next();
         _loading = true;
         _error = null;
-        _activeNode = null;
+        _opening = null;
         _scrollResetPending = true;
         StateHasChanged();
 
@@ -386,7 +386,7 @@
         }
     }
 
-    private void OnExplore(TextUnit unit) => _activeNode = new ConcordUnitNode(unit.Ref, unit.Text);
+    private void OnExplore(TextUnit unit) => _opening = new PopoverOpening.Legacy(new ConcordUnitNode(unit.Ref, unit.Text));
 
     private void OnUnitKeyDown(KeyboardEventArgs e, TextUnit unit)
     {
@@ -396,7 +396,7 @@
         }
     }
 
-    private void OnExploreNode(IExplorable node) => _activeNode = node;
+    private void OnExploreNode(PopoverOpening opening) => _opening = opening;
 
-    private void ClosePopover() => _activeNode = null;
+    private void ClosePopover() => _opening = null;
 }

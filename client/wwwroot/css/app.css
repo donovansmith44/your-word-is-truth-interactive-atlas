@@ -3271,350 +3271,25 @@ input:focus-visible,
     pointer-events: none;
 }
 
-/* Place hover card -- a parchment artifact floating over the dusk map
-   (design-direction.md: "on the dusk map they read as lamplit paper
-   floating over the night world"). Anchored at the marker's screen point
-   (left/top, set inline by PlaceCard.razor from map.js's reported
-   containerPoint) then nudged up and centered above it via transform, so
-   it never sits directly on top of the lamp it describes. Widened from the
-   original 18rem -- design-direction.md's REVISED card leads with real
-   verse sentences (below), which need more breathing room than the
-   book/chapter/count index rows this width was originally sized for.
 
-   max-height + inner scroll is UNCONDITIONAL, not a separate "expanded"
-   state, as of Batch D (batch-d-brief.md, design language item 4:
-   "Card must not exceed ~60% viewport height expanded; inner scroll takes
-   over"). Originally only place-card-more's own reveals could make the
-   card tall (the pre-Batch-D initial state was always 2 short verse
-   lines), so gating the cap on a `place-card-expanded` class was enough --
-   but a passage-first place's INITIAL render can already be several verses
-   of real flowing KJV prose (e.g. Joshua 8's opening, ~730 characters
-   before a single click), tall enough on its own to push place-card-title
-   off the top of the viewport for a marker anchored near the top edge --
-   confirmed live (reader-map.spec.ts's WORLD-8, which only hovers+clicks
-   the title, started timing out against exactly this once passages
-   shipped). max-height has no effect on a card whose content already fits
-   under it, so this is a strict no-op for every small card -- safe to
-   apply always rather than re-litigate "is this render tall enough to
-   need it" per state. HOTFIX batch: max-height bounds HOW TALL the card
-   can ever get, which reduces but never eliminated a marker-near-the-top
-   cutoff (a still-tall-enough card could clear even the capped height and
-   cross the container's own top edge -- the user's own live report, "the
-   hover menu can be cut off by the top of the screen") -- see --card-dy
-   below for the actual general fix. Fix round 1: max-height bounding the
-   card's own SIZE was also, independently, not enough to keep a FLIPPED
-   card off the container's own bottom edge either (bounding how tall
-   something is says nothing about how far past a boundary an unclamped
-   placement can still push it) -- --card-dy-adjust below is what actually
-   closes that, not this property.
 
-   The scroll itself lives on .place-card-scroll (below), NOT this element:
-   a flex column with place-card-controls (the down/up arrows) as a second,
-   unscrolled flex item is what keeps those two buttons reachable at a
-   fixed position regardless of how tall the verse content grows, rather
-   than sliding away at the bottom of an ever-growing scrolled list --
-   confirmed live (world-hover-text.spec.ts's own repeated-place-card-more
-   property started timing out, Playwright retrying an unreachable/
-   reflowing target, when both lived in one shared scrolling box; a real
-   user hunting for the down arrow at the bottom of a long scroll would
-   have hit the same problem).
 
-   HOTFIX batch (requirement 1, flip-below-when-cut-off): --card-dx/
-   --card-dy are plain CSS custom properties PlaceCard.razor now always
-   sets inline (never left to a var() fallback here -- see that file's own
-   CardDxCss/CardDyCss). --card-dy alone still does "-50%"/"-100%"-style
-   percentage math NATIVELY, resolved against this element's OWN rendered
-   size -- CardPlacement.Compute (client/CardPlacement.cs) never computes
-   an absolute pixel position itself, only the things CSS can't derive on
-   its own: --card-dy swaps between the ORIGINAL `calc(-100% - 18px)`
-   (above the marker, unchanged default) and a plain `18px` (below it, once
-   PlaceCard.razor's own post-render measurement finds no room above) --
-   both keep the SAME 18px gap, just on opposite sides; --card-dx layers a
-   plain pixel nudge on top of the native `-50%` horizontal centering,
-   clamping the card off either container edge (0 for the common case --
-   see CardPlacement's own header for exactly when it's nonzero). Applies
-   identically wherever this card renders (full /world, split pane) since
-   the transform is the only thing positioning it -- no separate rule
-   needed per context.
 
-   Fix round 1 (review finding, Important): --card-dy-adjust is a further
-   plain pixel nudge layered on top of --card-dy (own `calc()`, same shape
-   --card-dx already uses on top of the native -50%) -- 0 for the
-   overwhelming common case (whichever orientation --card-dy picked
-   already fits the container cleanly), nonzero only when NEITHER
-   orientation fully fits and CardPlacement.Compute has to clamp the
-   chosen one against the container's own far edge. Before this, a flipped
-   card was only ever checked against "does it fit above" -- never against
-   the container's own BOTTOM edge -- so a tall-enough card near the
-   vertical middle of a short viewport could flip below and overflow past
-   the bottom (live-reproduced by review: 122px past the bottom at
-   1280x720, a real marker ("Ai", exodus scene) -- the exact user-reported
-   bug class on the opposite edge). Applied to BOTH the settled `to` state
-   below and the entrance animation's own `from` state (--card-dy-from,
-   @keyframes place-card-in below) so the whole entrance motion, not just
-   its end point, lands inside the clamped position -- no post-animation
-   snap. */
-.place-card {
-    position: absolute;
-    z-index: 30;
-    transform: translate(calc(-50% + var(--card-dx)), calc(var(--card-dy) + var(--card-dy-adjust)));
-    display: flex;
-    flex-direction: column;
-    min-width: 12rem;
-    max-width: 21rem;
-    max-height: min(26rem, 60vh);
-    padding: .65rem .85rem .75rem;
-    background: var(--parchment-raised);
-    border: 1px solid var(--bronze);
-    border-radius: 4px;
-    box-shadow: 0 10px 28px rgba(0, 0, 0, .45);
-    animation: place-card-in 120ms ease-out both;
-}
 
-/* The one part of .place-card that actually scrolls (title + verse/passage
-   content) -- flex:1 so it claims whatever space .place-card-controls
-   below doesn't need; min-height:0 overrides the flex default of
-   `min-height: auto`, which otherwise refuses to let a flex item shrink
-   below its own content size and would silently defeat overflow-y here
-   the moment content exceeds .place-card's max-height. */
-.place-card-scroll {
-    flex: 1 1 auto;
-    min-height: 0;
-    overflow-y: auto;
-}
 
-/* Batch G1 requirement 3: title + (while pinned) the close button share one
-   row -- title claims whatever space the close button doesn't need. */
-.place-card-head {
-    display: flex;
-    align-items: flex-start;
-    gap: .4rem;
-    margin: 0 0 .35rem;
-}
 
-/* WORLD-8/Task 15: opens a PlaceNode popover (this place's full event
-   history) -- a real <button> now, reset to read exactly as the plain
-   heading it always was. Batch G1 requirement 4 ("one-rule consistency"):
-   .explorable (shared darken-on-hover/focus rule, see its own comment)
-   replaces the old lapis-color hover -- every explorable element in this
-   card (title, dates, verses/passages) now darkens identically instead of
-   this one alone shifting to a different color. */
-.place-card-title {
-    display: block;
-    flex: 1 1 auto;
-    min-width: 0;
-    margin: 0;
-    padding: 0;
-    border: none;
-    background: none;
-    font-family: var(--font-serif);
-    font-variant-caps: small-caps;
-    letter-spacing: .05em;
-    font-size: 1.05rem;
-    color: var(--ink);
-    text-align: start;
-    cursor: pointer;
-}
 
-/* Batch G1 requirement 3: the pinned card's own close control ("closes via
-   Escape, an X, or clicking elsewhere on the map") -- present only while
-   Pinned (see PlaceCard.razor). Deliberately NOT .explorable -- a control,
-   not a DAG node, same family as place-card-more/-collapse. */
-.place-card-close {
-    flex: none;
-    margin: 0;
-    padding: 0 .1rem;
-    background: none;
-    border: none;
-    line-height: 1.3;
-    font-size: 1.15rem;
-    color: var(--ink-soft);
-    cursor: pointer;
-}
 
-.place-card-close:hover {
-    color: var(--lapis);
-}
 
-/* A lone verse's own line (batch-d-brief.md Requirement 2: any maximal run
-   of length 1) -- ref above its own sentence in the instrument mono face,
-   verse text in the serif, same shape .place-card-passage below uses for a
-   whole block. Batch G1 requirement 1b ("the map's verses are nodes too"):
-   also carries .explorable in markup -- the whole row darkens on hover/
-   focus and opens this verse's own VerseNode, same one rule as everywhere
-   else. */
-.place-card-verse {
-    margin: 0 0 .5rem;
-}
 
-.place-card-verse-ref {
-    display: block;
-    margin: 0 0 .1rem;
-    font-family: var(--font-mono);
-    font-size: .72rem;
-    letter-spacing: .03em;
-    color: var(--bronze-ink);
-}
 
-.place-card-verse-text {
-    display: block;
-    font-family: var(--font-serif);
-    font-size: .92rem;
-    line-height: 1.5;
-    color: var(--ink);
-}
 
-/* A passage -- a maximal run of >=2 consecutive same-book/chapter verses
-   (batch-d-brief.md Requirement 2) -- renders as ONE flowing block: a
-   single span ref ("GEN.12.1-4") above continuous KJV prose, rather than
-   .place-card-verse's repeated ref+text pair. Structurally a sibling of
-   .place-card-verse (same margin-bottom rhythm), not a variant of it.
-   Batch G1 requirement 1b: also carries .explorable -- clicking the block
-   ANYWHERE outside a specific verse span (the ref label, or the block's own
-   padding/whitespace) opens this whole passage's own PassageNode; clicking
-   INSIDE a specific verse span (.place-card-passage-verse below) opens that
-   VERSE's own node instead and stops the click from also bubbling up to
-   this row (see PlaceCard.razor's own @onclick:stopPropagation) -- the more
-   specific target wins, same nested-explorable resolution Reader.razor's
-   verse-line/verse-num pair already uses for a different reason. */
-.place-card-passage {
-    margin: 0 0 .5rem;
-}
 
-.place-card-passage-ref {
-    display: block;
-    margin: 0 0 .1rem;
-    font-family: var(--font-mono);
-    font-size: .72rem;
-    letter-spacing: .03em;
-    color: var(--bronze-ink);
-}
 
-.place-card-passage-text {
-    display: block;
-    font-family: var(--font-serif);
-    font-size: .92rem;
-    line-height: 1.6;
-    color: var(--ink);
-}
 
-/* One inline number per verse inside a flowing passage (Requirement 2:
-   "small inline verse numbers"), instrument mono face -- design language
-   item 4: "refs/verse numbers in the instrument mono face". Raised and
-   shrunk the way a printed Bible sets verse numbers into running prose,
-   not Reader's own separate-gutter .verse-num treatment (a different
-   layout entirely -- one verse per line, not flowing paragraph text). */
-.place-card-verse-num {
-    font-family: var(--font-mono);
-    font-size: .68rem;
-    color: var(--bronze-ink);
-    margin-inline-end: .15rem;
-}
 
-/* Batch G1 requirement 1b: one verse's own inline run within a flowing
-   passage (its sup number + text) -- carries .explorable too, so hovering/
-   clicking a SPECIFIC verse inside the passage darkens/opens just that
-   verse, per .place-card-passage's own comment. Deliberately no padding/
-   margin of its own (.explorable's shared rule adds none either, see its
-   comment) -- these sit back-to-back with no gap between them, and any
-   padding here would visibly overlap into the next verse's own run. */
-.place-card-passage-verse {
-    display: inline;
-}
 
-/* Batch E2 (the ever-present graph): the quiet line -- replaces verse
-   content entirely for a quiet place's card (PlaceCard.razor's @if renders
-   this INSTEAD OF the verse/passage loop, never alongside it, whenever
-   Place.Events is empty), sitting in the exact spot a verse/passage block
-   would otherwise occupy inside .place-card-scroll. Italic, ink-soft --
-   .place-card-blurb's "curator's-note prose, not scripture" register
-   (design-direction.md's "an invitation, not an error" voice, the same one
-   .world-empty already uses for the page-level empty state) -- but no top
-   border of its own the way .place-card-blurb has: unlike that ADDITION
-   below the verse content, this REPLACES it, so it needs no separator from
-   content that isn't there. */
-.place-card-quiet {
-    margin: 0 0 .5rem;
-    font-family: var(--font-serif);
-    font-style: italic;
-    font-size: .88rem;
-    line-height: 1.5;
-    color: var(--ink-soft);
-}
 
-/* place-card-more / place-card-collapse: the down/up arrow controls
-   (batch-d-brief.md Requirement 2 -- CONTRACT). Quiet parchment-styled
-   real <button>s, same "no border/background, ink-soft resting / lapis
-   hover" quiet-control language the title already used; grouped in one row
-   since both can be visible at once (partway expanded -- neither exhausted
-   nor back at the initial count). */
-.place-card-controls {
-    flex: none;
-    display: flex;
-    align-items: center;
-    gap: .6rem;
-    margin: .3rem 0 0;
-}
-
-.place-card-more,
-.place-card-collapse {
-    display: block;
-    margin: 0;
-    padding: 0;
-    font-family: var(--font-serif);
-    font-size: .95rem;
-    line-height: 1;
-    color: var(--ink-soft);
-    background: none;
-    border: none;
-    cursor: pointer;
-}
-
-.place-card-more:hover,
-.place-card-collapse:hover {
-    color: var(--lapis);
-}
-
-/* HOTFIX batch: `from`/`to` used to hardcode `calc(-100% - Npx)` directly --
-   harmless before this batch (the base `.place-card` rule's own transform
-   was the exact same hardcoded expression, so the keyframes' own `to` state
-   and the base rule always agreed). Now that the base rule reads
-   --card-dx/--card-dy (this file's own comment on .place-card explains why),
-   a keyframe animation's own declared values OUTRANK the base rule's for as
-   long as the animation applies, and animation-fill-mode:both (below) keeps
-   the `to` state applied FOREVER after it finishes -- a keyframes block
-   still hardcoding the OLD "always above" expression would silently pin
-   every card there regardless of --card-dy, undoing the flip entirely
-   (caught live: a flipped card's own computed transform kept resolving to
-   the pre-flip matrix even with data-flip="true" and the correct --card-dy
-   already set inline, until this fix). Both stops now read the SAME custom
-   properties the base rule does, --card-dy-from (PlaceCard.razor's own
-   CardDyFromCss, mirroring --card-dy's own flip logic with a 10px gap
-   instead of 18px) for the entrance offset, --card-dy for the settled one
-   -- so the animation's own `to` state and the base rule's resting state
-   are ALWAYS identical, in both orientations, and the original "settles
-   down 8px" pop-in feel (Batch D) survives unchanged in the non-flipped
-   case while gaining the same nuance, mirrored, in the flipped one.
-
-   Fix round 1: both stops also add --card-dy-adjust now, same reasoning
-   -- the base rule's own resting transform gained it (see .place-card's
-   own comment), so leaving it out here would reopen the identical class
-   of bug this file's own header comment just described: the entrance
-   animation's `to` state would disagree with the base rule's resting
-   state again, this time for a clamped-near-the-bottom card specifically,
-   silently undoing the round-1 clamp for the ~120ms the animation runs
-   (and, worse, forever after it if fill-mode:both's own `to` value were
-   the unadjusted one). */
-@keyframes place-card-in {
-    from { opacity: 0; transform: translate(calc(-50% + var(--card-dx)), calc(var(--card-dy-from) + var(--card-dy-adjust))); }
-    to { opacity: 1; transform: translate(calc(-50% + var(--card-dx)), calc(var(--card-dy) + var(--card-dy-adjust))); }
-}
-
-@media (prefers-reduced-motion: reduce) {
-    .place-card {
-        animation: none;
-    }
-}
 
 /* Batch C3 decision 2 (arbitration + chooser): the small hover flyout that
    replaces a guess whenever two or more places are genuinely coincident at
@@ -3714,149 +3389,19 @@ input:focus-visible,
     white-space: nowrap;
 }
 
-/* Batch E additions -- strictly below .place-card-controls above, never
-   disturbing Batch D's own scroll/controls layout (both are separate flex
-   children of .place-card, `flex: none`, so they just stack under it).
-   .place-card-blurb: a quiet one-liner, same serif/ink language as verse
-   text but italic and a touch smaller/softer -- reads as curator's-note
-   prose, not scripture. */
-.place-card-blurb {
-    flex: none;
-    margin: .5rem 0 0;
-    padding-top: .45rem;
-    border-top: 1px solid rgba(138, 107, 61, .25);
-    font-family: var(--font-serif);
-    font-style: italic;
-    font-size: .85rem;
-    line-height: 1.45;
-    color: var(--ink-soft);
-}
 
-/* place-card-dates: the "instrument-face line" (batch-e-brief.md's own
-   example: "Established c. 1003 BC · Destroyed 586 BC") -- a quiet mono
-   readout row, each date its own button (a giant-DAG node, per the user's
-   own framing: "every node is explorable"). */
-.place-card-dates {
-    flex: none;
-    display: flex;
-    align-items: baseline;
-    flex-wrap: wrap;
-    gap: .4rem;
-    margin: .4rem 0 0;
-}
 
-.place-card-dates-sep {
-    color: var(--bronze-ink);
-    opacity: .7;
-}
 
-/* Batch G1 requirement 4: also carries .explorable in markup (PlaceCard
-   .razor) for the shared darken-on-hover/focus rule -- the old lapis-color
-   hover this rule used to carry directly is gone, see .explorable's own
-   comment. */
-.place-card-date {
-    display: inline-flex;
-    align-items: baseline;
-    gap: .3rem;
-    margin: 0;
-    padding: 0;
-    background: none;
-    border: none;
-    cursor: pointer;
-    font-family: var(--font-mono);
-    font-size: .75rem;
-    letter-spacing: .02em;
-    color: var(--bronze-ink);
-}
 
-.place-card-date-label {
-    font-variant-caps: small-caps;
-    letter-spacing: .05em;
-    color: var(--ink-soft);
-}
 
-.place-card-date-value {
-    color: var(--bronze-ink);
-}
 
-/* The "Explore" affordance a hover/focus target exposes (batch-e-brief.md
-   Requirement 4). Always present in the DOM (never display:none/
-   pointer-events:none) so it's reliably clickable -- only its visual
-   emphasis changes on hover/focus, via opacity, the way a lamplit
-   instrument dial brightens under attention rather than staying invisible
-   until touched. */
-.place-card-date-explore {
-    opacity: .45;
-    font-size: .68rem;
-    text-decoration: underline;
-    text-underline-offset: 2px;
-    transition: opacity 120ms ease-out;
-}
 
-.place-card-date:hover .place-card-date-explore,
-.place-card-date:focus-visible .place-card-date-explore {
-    opacity: 1;
-}
 
-/* Batch G1 requirement 3 (narrative traversal) -- strictly LAST section of
-   the card (see PlaceCard.razor's own comment). One row per narrative this
-   PINNED place has a leg of in the current scene: a colored swatch (data-
-   driven narrative color, "never restyled" per design-direction.md, same
-   spirit ArrowLayer/Legend already follow) + name in small caps + prev/next
-   controls. */
-.place-card-narratives {
-    flex: none;
-    display: flex;
-    flex-direction: column;
-    gap: .35rem;
-    margin: .5rem 0 0;
-    padding-top: .45rem;
-    border-top: 1px solid rgba(138, 107, 61, .25);
-}
 
-.place-card-narrative-row {
-    display: flex;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: .4rem;
-}
 
-.place-card-narrative-swatch {
-    flex: none;
-    width: .55rem;
-    height: .55rem;
-    border-radius: 999px;
-}
 
-.place-card-narrative-name {
-    flex: none;
-    font-family: var(--font-serif);
-    font-variant-caps: small-caps;
-    letter-spacing: .04em;
-    font-size: .78rem;
-    color: var(--ink-soft);
-    margin-inline-end: auto;
-}
 
-/* Deliberately NOT .explorable -- a navigation control (jumps the pin to a
-   different place), not a DAG node of its own. */
-.place-card-nav-event {
-    flex: none;
-    margin: 0;
-    padding: 0;
-    background: none;
-    border: none;
-    cursor: pointer;
-    font-family: var(--font-serif);
-    font-variant-caps: small-caps;
-    letter-spacing: .03em;
-    font-size: .78rem;
-    color: var(--lapis);
-}
 
-.place-card-nav-event:hover {
-    color: var(--ink);
-}
 
 /* arrow-tip -- a parchment artifact too (design-direction.md: "popovers and
    hover cards are parchment artifacts on both pages"), same material and
@@ -6313,25 +5858,6 @@ input:focus-visible,
     }
 }
 
-/* Batch R requirement 3 (PLACE sections): established/destroyed dates,
-   period blurb -- popover-native renderings of the SAME content
-   PlaceCard's own place-card-date-established/-destroyed/place-card-blurb
-   already show one hop further out (see PlaceDatesSection/PlaceBlurbSection,
-   Explore/PopoverSectionProviders.cs, for exactly what's shared). Layout
-   mirrors PlaceCard's own instrument-face date row rather than copying its
-   classes outright -- a different component, its own class names, per this
-   file's single-class discipline.
-
-   Batch F2 requirement 6b: each date's own supporting verses/passages now
-   render immediately below its label/value row (PassageList.razor, a
-   sibling element, not nested inside .popover-place-date) -- the wider gap
-   here (.4rem, up from Batch R's own .3rem) gives that extra content room
-   to breathe between the established and destroyed groups. */
-.popover-place-dates {
-    display: flex;
-    flex-direction: column;
-    gap: .4rem;
-}
 
 /* Batch P: PersonMentionsList's own wrapper -- same "column of rows, small
    gap" shape .popover-place-dates already establishes one section type
@@ -6343,38 +5869,9 @@ input:focus-visible,
     gap: .2rem;
 }
 
-/* Batch F2 requirement 6b: no longer a <button> (the "click to reveal
-   verses" gate is retired -- see PlaceDatesSection's own doc comment) --
-   a plain instrument-face label/value row, same visual treatment, just
-   non-interactive chrome now rather than a control. */
-.popover-place-date {
-    display: flex;
-    align-items: baseline;
-    gap: .5rem;
-    width: 100%;
-    padding: .2rem 0 0;
-}
 
-.popover-place-date-label {
-    font-family: var(--font-serif);
-    font-variant-caps: small-caps;
-    letter-spacing: .04em;
-    font-size: .85rem;
-    color: var(--ink-soft);
-}
 
-.popover-place-date-value {
-    font-family: var(--font-mono);
-    font-size: .92rem;
-    color: var(--bronze-ink);
-}
 
-.popover-place-blurb {
-    margin: 0;
-    font-size: .96rem;
-    line-height: 1.6;
-    color: var(--ink);
-}
 
 /* Batch G2 decision 2: the popover's own save affordance -- same icon-scale
    footprint/material as .popover-head-action/.popover-breadcrumb-back

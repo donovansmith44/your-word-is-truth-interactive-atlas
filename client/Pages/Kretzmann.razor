@@ -85,7 +85,7 @@
                                    TextClass="verse-text kretzmann-scripture-text" MentionClass="verse-mention"
                                    XrefMarkerGlyph="@xrefLetters.GetValueOrDefault(row.Verse.Number, "")"
                                    OnXrefClick="OpenVerseXrefEntry"
-                                   OnToggleSelect="OnLineToggleSelect" OnMentionToggleSelect="OnMentionToggleSelect" />
+                                   OnToggleSelect="OnToggleSelect" />
 
                         @foreach (var item in row.CommentaryItems)
                         {
@@ -135,9 +135,9 @@
     </div>
 </CompositionSplit>
 
-@if (_activeNode is not null)
+@if (_opening is not null)
 {
-    <ExplorerPopover @key="_activeNode" Opening="new PopoverOpening.Legacy(_activeNode)" OnClose="ClosePopover" />
+    <ExplorerPopover @key="_opening" Opening="_opening" OnClose="ClosePopover" />
 }
 
 @code {
@@ -177,7 +177,7 @@
     private string? _error;
     private readonly RequestSeries _startup = new();
     private readonly RequestSeries _chapters = new();
-    private IExplorable? _activeNode;
+    private PopoverOpening? _opening;
     private IEscapeHatch? _followHatchBacking;
 
     private string? _loadedBook;
@@ -250,7 +250,7 @@
             return;
         }
 
-        _activeNode = null;
+        _opening = null;
         _anchorVerse = null;
         _passageRange = null;
         _ = LoadChapterAsync();
@@ -262,7 +262,7 @@
         {
             _releasedBook = null;
             _releasedChapter = null;
-            _activeNode = null;
+            _opening = null;
             _ = LoadChapterAsync();
         }
         else
@@ -291,7 +291,7 @@
         {
             _releasedBook = null;
             _releasedChapter = null;
-            _activeNode = null;
+            _opening = null;
             await LoadChapterAsync();
         }
     }
@@ -395,7 +395,7 @@
         {
             _releasedBook = book;
             _releasedChapter = chapterNum;
-            _activeNode = null;
+            _opening = null;
             _ = LoadChapterAsync();
         }
     }
@@ -533,7 +533,7 @@
     private CommentaryItemRow ProseOf(CommentaryItemRow item, string prose) =>
         item with { Text = prose, Citations = KretzmannCitationScan.Anchors(prose, _toc ?? EmptyToc) };
 
-    private void OnExplore(CommentaryItemRow item) => _activeNode = new CommentaryItemNode(NodeIds.LocalPart(item.Id), item.Heading);
+    private void OnExplore(CommentaryItemRow item) => _opening = new PopoverOpening.Legacy(new CommentaryItemNode(NodeIds.LocalPart(item.Id), item.Heading));
 
     private void OnItemKeyDown(KeyboardEventArgs e, CommentaryItemRow item)
     {
@@ -543,25 +543,19 @@
         }
     }
 
-    private void OnLineExplore(IExplorable node) => _activeNode = node;
+    private void OnLineExplore(PopoverOpening opening) => _opening = opening;
 
-    // VerseLine/MentionScan already branch a Ctrl/Cmd-click away from
-    // OnExplore into these callbacks instead; leaving them unwired makes
-    // the click a dead gesture (no popover, no tray add), not a no-op.
-    private void OnLineToggleSelect(VerseNode node) => SelectionAtom.Dispatch(new ToggleSelection(node.Identity));
-
-    private void OnMentionToggleSelect(IExplorable node) => SelectionAtom.Dispatch(new ToggleSelection(node.Identity));
-
+    private void OnToggleSelect(NodeRef node) => SelectionAtom.Dispatch(new ToggleSelection(node));
     private void OpenChapter()
     {
         var title = $"{_book}.{_chapterNum}";
-        if (_activeNode is ChapterNode current && current.Title == title)
+        if (_opening?.OpensLegacy(node => node is ChapterNode current && current.Title == title) == true)
         {
             return;
         }
 
         var totalChapters = _toc?.FirstOrDefault(b => b.Code == _book)?.Chapters.Count;
-        _activeNode = new ChapterNode(_book, _chapterNum, totalChapters);
+        _opening = new PopoverOpening.Legacy(new ChapterNode(_book, _chapterNum, totalChapters));
     }
 
     private void OnVerseNumClick(MouseEventArgs e, int verseNum)
@@ -569,7 +563,7 @@
         if (e.ShiftKey && _anchorVerse is int anchor && anchor != verseNum)
         {
             _passageRange = (Math.Min(anchor, verseNum), Math.Max(anchor, verseNum));
-            _activeNode = null;
+            _opening = null;
             return;
         }
 
@@ -594,21 +588,21 @@
         var text = string.Join(" ", _verses
             .Where(v => v.Number >= range.From && v.Number <= range.To)
             .Select(v => v.Text));
-        _activeNode = new PassageNode(PassageRef(range), text);
+        _opening = new PopoverOpening.Legacy(new PassageNode(PassageRef(range), text));
     }
 
     private void OpenVerseXrefEntry(int verseNum)
     {
         var vref = $"{_book}.{_chapterNum}.{verseNum}";
-        if (_activeNode is VerseNode { XrefEntryPoint: true } current && current.Title == vref)
+        if (_opening?.OpensLegacy(node => node is VerseNode { XrefEntryPoint: true } current && current.Title == vref) == true)
         {
             return;
         }
 
-        _activeNode = new VerseNode(vref, xrefEntryPoint: true);
+        _opening = new PopoverOpening.Legacy(new VerseNode(vref, xrefEntryPoint: true));
     }
 
-    private void OnExploreNode(IExplorable node) => _activeNode = node;
+    private void OnExploreNode(PopoverOpening opening) => _opening = opening;
 
-    private void ClosePopover() => _activeNode = null;
+    private void ClosePopover() => _opening = null;
 }

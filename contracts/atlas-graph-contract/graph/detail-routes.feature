@@ -1,5 +1,5 @@
 Feature: the detail routes — pinned whole until the graph API subsumes them
-  These seven routes are consumed only by the atlas's own client today. Each
+  These six routes are consumed only by the atlas's own client today. Each
   is pinned as its entire response so that FOCUS can retire them one at a
   time with a visible diff, and so that no route is served without a promise.
 
@@ -10,7 +10,7 @@ Feature: the detail routes — pinned whole until the graph API subsumes them
   owns, and the two would drift.
 
   Vocabulary:
-    | projection | any of: books, catechism-item, catechism-list, chapter, contract, edge-page, eras, event, export-format, gazetteer, kretzmann-chapter, land-mask, landmarks, narrative-event, narratives, node-card, place, polities, sources, verse, version-root, vocabulary, xref-list |
+    | projection | any of: books, catechism-item, catechism-list, chapter, contract, edge-page, eras, event, export-format, gazetteer, kretzmann-chapter, land-mask, landmarks, narrative-event, narratives, node-card, polities, sources, verse, version-root, vocabulary, xref-list |
 
   Scenario: the canon's books
     When I GET /api/books
@@ -31,10 +31,6 @@ Feature: the detail routes — pinned whole until the graph API subsumes them
   Scenario: a catechism item
     When I GET /api/catechism/item/commandment-1
     Then the consumed projection catechism-item equals fixture "catechism-item-commandment-1"
-
-  Scenario: a place
-    When I GET /api/place/hazor-1
-    Then the consumed projection place equals fixture "place-hazor-1"
 
   Scenario: an event's narrative positions
     When I GET /api/narrative/event/ab_ur

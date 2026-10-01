@@ -23,15 +23,11 @@ const RELATIONS_EXTENSION: &str = "x-atlas-relations";
 const COMPONENT_REFERENCE: &str = "#/components/schemas/";
 const SHAPE_REFERENCE: &str = "#/$defs/";
 
-/// The eight families every route belongs to, as a consumer's table of contents.
-/// A route names its own family where it is declared; this list gives each name
-/// its one sentence, and the families a route may name are exactly these.
-pub const FAMILIES: [(&str, &str); 8] = [
+pub const FAMILIES: [(&str, &str); 7] = [
     ("meta", "What this server is: whether it is up, the schema versions of the data it answers from, this document itself, and the sources every answer is drawn from."),
     ("map", "The map: what is in view for a span of years or at a passage, the polity borders and eras behind it, and the coastline and landmarks it is drawn over."),
     ("reading", "Scripture as it is read: a chapter verse by verse, one verse in full, and the cross references a verse carries."),
     ("catechism", "The catechism: one item in full, and the items that cite a passage."),
-    ("places", "One place: where it is, what happened there, and the name and history it bore in the period asked about."),
     ("events", "What happened: one event in full, every narrative this atlas tells, and the narrative legs an event belongs to."),
     ("graph", "This atlas as a graph: one node's record, nodes and edges by id many at once, one page of the neighbours of a node or an edge, and a window of a corpus's reading spine."),
     ("contents", "One corpus's table of contents, two levels deep."),

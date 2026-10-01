@@ -12,7 +12,6 @@ public sealed class AtlasClient
     private readonly LruCache<string, Chapter> _chapterCache = new(capacity: 24);
     private readonly LruCache<string, Explore.ChapterText> _chapterTextCache = new(capacity: 24);
     private readonly LruCache<string, Polities> _politiesCache = new(capacity: 12);
-    private readonly LruCache<string, PlacePage> _placeHistoryCache = new(capacity: 24);
     private readonly LruCache<string, IReadOnlyList<CrossRef>> _xrefsCache = new(capacity: 24);
     private readonly LruCache<string, IReadOnlyList<CatechismRef>> _catechismSpanCache = new(capacity: 24);
     // AsyncMemo, not a plain cache: several callers can independently invoke Books()/Eras()/etc.
@@ -106,23 +105,6 @@ public sealed class AtlasClient
     // curator-added commentary unit is visible on the very next chapter visit.
     public Task<KretzmannChapter> KretzmannChapter(string book, int chapter) =>
         _http.GetRequired<KretzmannChapter>($"api/kretzmann/chapter/{book}.{chapter}");
-
-    public Task<PlacePage> Place(string id) =>
-        _http.GetRequired<PlacePage>($"api/place/{id}");
-
-    public async Task<PlacePage> PlaceHistory(string id, int? from, int? to)
-    {
-        var key = from is int f && to is int t ? $"{id}:{f}:{t}" : id;
-        if (_placeHistoryCache.TryGet(key, out var cached))
-        {
-            return cached;
-        }
-
-        var url = from is int f2 && to is int t2 ? $"api/place/{id}?from={f2}&to={t2}" : $"api/place/{id}";
-        var result = await _http.GetRequired<PlacePage>(url);
-        _placeHistoryCache.Put(key, result);
-        return result;
-    }
 
     public async Task<IReadOnlyList<CrossRef>> Xrefs(string sref)
     {

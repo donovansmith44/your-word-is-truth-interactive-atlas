@@ -586,9 +586,9 @@ async fn person_record_carries_a_real_easton_description_when_a_match_exists() {
 }
 
 #[tokio::test]
-async fn place_detail_carries_a_real_easton_description_when_a_match_exists() {
+async fn place_record_carries_a_real_easton_description_when_a_match_exists() {
     let app = artifact_app();
-    let (st, body, _) = get(&app, "/api/place/hebron").await;
+    let (st, body, _) = get(&app, "/api/node/Place:hebron").await;
     assert_eq!(st, 200, "{body}");
     let description = body["description"].as_str().expect("Hebron must carry a real description over the real compiled data");
     assert!(!description.trim().is_empty());
@@ -2005,7 +2005,7 @@ async fn a_titled_passages_record_carries_its_kind_and_no_date() {
 async fn a_place_record_carries_its_coordinates_its_name_and_its_dated_founding_and_fall() {
     // Arrange
     let app = compiled_app();
-    let (_, legacy, _) = get(&app, "/api/place/jerusalem").await;
+    let place = real_atlas().0.places.iter().find(|p| p.id == "jerusalem").cloned().unwrap();
     let blurb = atlas_core::history::default_blurb(&real_atlas().0.place_history_for("jerusalem").unwrap().blurbs).unwrap().text.clone();
     // Act
     let (status, record, _) = get(&app, "/api/node/Place:jerusalem").await;
@@ -2015,8 +2015,8 @@ async fn a_place_record_carries_its_coordinates_its_name_and_its_dated_founding_
         (
             StatusCode::OK,
             serde_json::json!({
-                "lat": legacy["lat"],
-                "lon": legacy["lon"],
+                "lat": place.lat,
+                "lon": place.lon,
                 "display_name": "Jerusalem",
                 "blurb": blurb,
                 "established": {
@@ -2063,13 +2063,13 @@ async fn a_catechism_record_carries_its_prose() {
 async fn a_place_the_kjv_names_otherwise_carries_that_name_beside_its_canonical_one() {
     // Arrange
     let app = compiled_app();
-    let (_, legacy, _) = get(&app, "/api/place/tigris").await;
+    let place = real_atlas().0.places.iter().find(|p| p.id == "tigris").cloned().unwrap();
     // Act
     let (status, record, _) = get(&app, "/api/node/Place:tigris").await;
     // Assert
     assert_eq!(
         (status, record["place"].clone()),
-        (StatusCode::OK, serde_json::json!({ "lat": legacy["lat"], "lon": legacy["lon"], "display_name": "Hiddekel", "canonical_name": "Tigris" }))
+        (StatusCode::OK, serde_json::json!({ "lat": place.lat, "lon": place.lon, "display_name": "Hiddekel", "canonical_name": "Tigris" }))
     );
 }
 

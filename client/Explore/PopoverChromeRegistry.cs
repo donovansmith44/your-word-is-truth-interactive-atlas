@@ -20,12 +20,10 @@ public static class PopoverChromeRegistry
         ["Book"] = Exact("popover-chip-map", "popover-chip-context", "popover-chip-book"),
 
         ["Author"] = Exact("popover-chip-map"),
-        ["Place"] = Exact("popover-chip-map"),
-        ["TimeAndPlace"] = Exact("popover-chip-map"),
         ["Event"] = Exact("popover-chip-map"),
         ["PolityDelta"] = Exact("popover-chip-map"),
 
-        ["Year"] = new[] { ChipDeclaration.Prefix("popover-chip-verse-"), ChipDeclaration.Exact("popover-chip-map") },
+        ["Year"] = Exact("popover-chip-map"),
 
         ["Catechism"] = Array.Empty<ChipDeclaration>(),
         ["Person"] = Exact("popover-chip-year-born", "popover-chip-year-died", "popover-chip-year-span"),

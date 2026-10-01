@@ -121,8 +121,7 @@
                                TextClass="verse-text" MentionClass="verse-mention"
                                XrefMarkerGlyph="@xrefLetters.GetValueOrDefault(v.Number, "")"
                                OnXrefClick="OpenVerseXrefEntryPersistent" OnXrefHoverEnter="OpenVerseXrefEntryHover"
-                               OnXrefHoverLeave="OnXrefMarkerPointerLeave" OnToggleSelect="OnLineToggleSelect"
-                               OnMentionToggleSelect="OnMentionToggleSelect" />
+                               OnXrefHoverLeave="OnXrefMarkerPointerLeave" OnToggleSelect="OnToggleSelect" />
                 }
             </article>
         }
@@ -166,9 +165,9 @@
         <ContentsPanel Corpus="Corpus.Bible" CurrentRef="@($"{_book}.{_chapterNum}")" OnNavigate="OnContentsNavigate" OnClose="CloseContents" />
     }
 
-    @if (_activeNode is not null)
+    @if (_opening is not null)
     {
-        <ExplorerPopover @key="_activeNode" Opening="new PopoverOpening.Legacy(_activeNode)" OnClose="ClosePopover"
+        <ExplorerPopover @key="_opening" Opening="_opening" OnClose="ClosePopover"
                           InSplit="@(_compositionSplit?.IsSplitOpen == true && _compositionSplit?.IsHost == true)" OnNavigateWorldInSplit="NavigateWorldInSplit" PaneAnchor="@(_compositionSplit?.IsSplitOpen == true ? "reader" : null)"
                           VerseAnchorSelector="@(_xrefEntryVerse is int xv ? $"#v{xv}" : null)" ShowBackdrop="!_hoverOnlyOpen"
                           OnPanelPointerEnter="CancelHoverClose" OnPanelPointerLeave="OnPanelPointerLeaveHoverGuard" />
@@ -203,7 +202,7 @@
     private string? _loadedBook;
     private int? _loadedChapterNum;
     private string? _errorMessage;
-    private IExplorable? _activeNode;
+    private PopoverOpening? _opening;
 
     private int? _anchorVerse;
     private (int From, int To)? _passageRange;
@@ -278,7 +277,7 @@
         }
 
         ResetXrefEntryState();
-        _activeNode = null;
+        _opening = null;
         _scrolledFragment = null;
         await LoadChapter();
         StateHasChanged();
@@ -319,7 +318,7 @@
         }
 
         ResetXrefEntryState();
-        _activeNode = null;
+        _opening = null;
         _scrolledFragment = null;
         await LoadChapter();
     }
@@ -412,16 +411,13 @@
         }
     }
 
-    private void OnLineExplore(IExplorable node)
+    private void OnLineExplore(PopoverOpening opening)
     {
         ResetXrefEntryState();
-        _activeNode = node;
+        _opening = opening;
     }
 
-    private void OnLineToggleSelect(VerseNode node) => SelectionAtom.Dispatch(new ToggleSelection(node.Identity));
-
-    private void OnMentionToggleSelect(IExplorable node) => SelectionAtom.Dispatch(new ToggleSelection(node.Identity));
-
+    private void OnToggleSelect(NodeRef node) => SelectionAtom.Dispatch(new ToggleSelection(node));
     private void ResetXrefEntryState()
     {
         _xrefEntryVerse = null;
@@ -435,7 +431,7 @@
     {
         var vref = $"{_book}.{_chapterNum}.{verseNum}";
         _xrefEntryVerse = verseNum;
-        if (_activeNode is VerseNode { XrefEntryPoint: true } current && current.Title == vref)
+        if (_opening?.OpensLegacy(node => node is VerseNode { XrefEntryPoint: true } current && current.Title == vref) == true)
         {
             if (persistent)
             {
@@ -445,7 +441,7 @@
             return;
         }
 
-        _activeNode = new VerseNode(vref, xrefEntryPoint: true);
+        _opening = new PopoverOpening.Legacy(new VerseNode(vref, xrefEntryPoint: true));
         _hoverOnlyOpen = !persistent;
         CancelHoverCloseTimer();
     }
@@ -503,7 +499,7 @@
             return;
         }
 
-        _activeNode = null;
+        _opening = null;
         _xrefEntryVerse = null;
         _hoverOnlyOpen = false;
         await InvokeAsync(StateHasChanged);
@@ -512,7 +508,7 @@
     private void OpenChapter()
     {
         var title = $"{_book}.{_chapterNum}";
-        if (_activeNode is ChapterNode current && current.Title == title)
+        if (_opening?.OpensLegacy(node => node is ChapterNode current && current.Title == title) == true)
         {
             return;
         }
@@ -521,7 +517,7 @@
         _showChapterPeek = false;
         ResetXrefEntryState();
         var totalChapters = _toc?.FirstOrDefault(b => b.Code == _book)?.Chapters.Count;
-        _activeNode = new ChapterNode(_book, _chapterNum, totalChapters) { AlreadyLoaded = _chapter };
+        _opening = new PopoverOpening.Legacy(new ChapterNode(_book, _chapterNum, totalChapters) { AlreadyLoaded = _chapter });
     }
 
     private bool _showChapterPeek;
@@ -587,7 +583,7 @@
     private Task ClosePopover()
     {
         ResetXrefEntryState();
-        _activeNode = null;
+        _opening = null;
         return Task.CompletedTask;
     }
 
@@ -632,7 +628,7 @@
         {
             _passageRange = (Math.Min(anchor, verseNum), Math.Max(anchor, verseNum));
             ResetXrefEntryState();
-            _activeNode = null;
+            _opening = null;
             return;
         }
 
@@ -658,7 +654,7 @@
         var text = string.Join(" ", chapter.Verses
             .Where(v => v.Number >= range.From && v.Number <= range.To)
             .Select(v => v.Text));
-        _activeNode = new PassageNode(PassageRef(range), text);
+        _opening = new PopoverOpening.Legacy(new PassageNode(PassageRef(range), text));
     }
 
     private bool IsGuestMounted => _compositionSplit is { IsSplitOpen: true, IsHost: false };

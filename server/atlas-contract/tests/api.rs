@@ -153,7 +153,7 @@ async fn health_books_eras_narratives_shapes() {
 }
 
 #[tokio::test]
-async fn verse_chapter_place_and_404() {
+async fn verse_chapter_event_and_404() {
     let app = app();
 
     let (st, body) = call(&app, "/api/chapter/JOS.1").await;
@@ -246,7 +246,7 @@ async fn verse_chapter_place_and_404() {
     assert_eq!(body["id"], "e3");
     assert_eq!(body["title"], "Jericho falls");
     assert_eq!(body["when"]["from_year"], -1405);
-    assert_eq!(body["places"], serde_json::json!([{"id": "jericho", "name": "Jericho"}]));
+    assert_eq!(body["places"], serde_json::json!([{"id": "jericho", "name": "Jericho", "node": {"id": "Place:jericho", "kind": "Place", "label": "Jericho"}}]));
     let witnesses = body["witnesses"].as_array().unwrap();
     assert_eq!(witnesses.len(), 1, "{body}");
     assert_eq!(witnesses[0]["book"], "JOS");
@@ -256,19 +256,6 @@ async fn verse_chapter_place_and_404() {
     assert_eq!(st, 404);
     assert_eq!(body["error"]["code"], "not_found");
 
-    let (st, body) = call(&app, "/api/place/jericho").await;
-    assert_eq!(st, 200);
-    assert_eq!(body["id"], "jericho");
-    assert_eq!(body["name"], "Jericho");
-    let events = body["events"].as_array().unwrap();
-    assert_eq!(events.len(), 2);
-    assert_eq!(events[0]["id"], "e2");
-    assert_eq!(events[1]["id"], "e3");
-    assert!(events[0]["when"]["from"]["value"].as_i64().unwrap() <= events[1]["when"]["from"]["value"].as_i64().unwrap());
-
-    let (st, body) = call(&app, "/api/place/does-not-exist").await;
-    assert_eq!(st, 404);
-    assert_eq!(body["error"]["code"], "not_found");
 }
 
 #[tokio::test]
@@ -344,7 +331,7 @@ async fn general_kind_event_places_never_resolve_a_spurious_period_name() {
     assert!(body.get("when").is_none(), "general-kind passage must not carry a `when` key: {body}");
     assert_eq!(
         body["places"],
-        serde_json::json!([{"id": "hebron", "name": "Hebron"}]),
+        serde_json::json!([{"id": "hebron", "name": "Hebron", "node": {"id": "Place:hebron", "kind": "Place", "label": "Hebron"}}]),
         "must resolve the plain default, NOT the curated period name \"Kirjath-arba\" that undated()'s [-4004,100] span would spuriously intersect: {body}"
     );
 
@@ -369,7 +356,7 @@ async fn data_hebron_period_name_still_resolves_for_a_real_event_kind_window() {
     assert_eq!(st, 200);
     assert_eq!(body["kind"], "event");
     assert_eq!(body["when"]["from_year"], -2500);
-    assert_eq!(body["places"], serde_json::json!([{"id": "hebron", "name": "Kirjath-arba"}]), "{body}");
+    assert_eq!(body["places"], serde_json::json!([{"id": "hebron", "name": "Kirjath-arba", "node": {"id": "Place:hebron", "kind": "Place", "label": "Hebron"}}]), "{body}");
 }
 
 #[tokio::test]
@@ -503,49 +490,6 @@ async fn narrative_event_positions_endpoint() {
     let (st, body) = call(&app, "/api/narrative/event/does-not-exist").await;
     assert_eq!(st, 404);
     assert_eq!(body["error"]["code"], "not_found");
-}
-
-#[tokio::test]
-async fn place_history_resolves_by_window_and_is_deterministic() {
-    let app = app();
-
-    let (st, body) = call(&app, "/api/place/jericho?from=-1406&to=-1405").await;
-    assert_eq!(st, 200);
-    assert!(body.get("history").is_none(), "{body}");
-
-    let (st, body) = call(&app, "/api/place/hebron").await;
-    assert_eq!(st, 200);
-    assert_eq!(body["history"]["display_name"], "Hebron");
-    assert!(body["history"]["blurb"].is_null(), "{body}");
-    assert_eq!(body["history"]["established"]["when"]["from_year"], -2000);
-    assert_eq!(body["history"]["established"]["verses"], serde_json::json!(["GEN.23.19"]));
-    assert_eq!(body["history"]["established"]["note"], "traditional");
-    assert!(body["history"]["destroyed"].is_null());
-
-    let (st, body) = call(&app, "/api/place/hebron?from=-2500&to=-2200").await;
-    assert_eq!(st, 200);
-    assert_eq!(body["history"]["display_name"], "Kirjath-arba");
-
-    let (st, body) = call(&app, "/api/place/hebron?from=-2001&to=-2001").await;
-    assert_eq!(body["history"]["display_name"], "Kirjath-arba");
-    let (st2, body2) = call(&app, "/api/place/hebron?from=-2000&to=-2000").await;
-    assert_eq!(st, 200);
-    assert_eq!(st2, 200);
-    assert_eq!(body2["history"]["display_name"], "Hebron");
-
-    let (st, blurb_hit) = call(&app, "/api/place/hebron?from=-2100&to=-2000").await;
-    assert_eq!(st, 200);
-    assert_eq!(blurb_hit["history"]["blurb"], "Abraham buried Sarah in the cave of Machpelah here.");
-    assert_eq!(blurb_hit["history"]["established"]["when"]["from_year"], -2000);
-
-    let (st, blurb_miss) = call(&app, "/api/place/hebron?from=1&to=50").await;
-    assert_eq!(st, 200);
-    assert!(blurb_miss["history"]["blurb"].is_null(), "{blurb_miss}");
-    assert_eq!(blurb_miss["history"]["established"]["when"]["from_year"], -2000);
-
-    let (_, again) = call(&app, "/api/place/hebron?from=-2100&to=-2000").await;
-    let (_, repeat) = call(&app, "/api/place/hebron?from=-2100&to=-2000").await;
-    assert_eq!(again, repeat);
 }
 
 #[tokio::test]
@@ -735,6 +679,46 @@ async fn a_place_that_shares_a_catechism_items_id_carries_no_catechism_prose() {
                 "version": record["version"],
                 "place": { "lat": 31.5, "lon": 35.5, "display_name": "Demo Item" },
             })
+        )
+    );
+}
+
+#[tokio::test]
+async fn a_place_a_chapter_names_carries_the_node_it_opens_on() {
+    // Arrange
+    let mut data = demo_fixture();
+    data.places.push(Place { id: "kadesh".into(), name: "Kadesh".into(), lat: 30.6, lon: 34.4, verse_links: vec!["JOS.1.1".into()] });
+    let data: AtlasData = data.finish();
+    let graph = graph_fixture_for(&data);
+    let app = atlas_contract::app::build(Arc::new(data), graph, None);
+
+    // Act
+    let (status, chapter) = call(&app, "/api/chapter/JOS.1").await;
+
+    // Assert
+    assert_eq!(
+        (status, chapter["verses"][0]["places"].clone()),
+        (
+            StatusCode::OK,
+            serde_json::json!([{ "id": "kadesh", "name": "Kadesh", "node": { "id": "Place:kadesh", "kind": "Place", "label": "Kadesh" } }])
+        )
+    );
+}
+
+#[tokio::test]
+async fn a_place_an_event_names_carries_the_node_it_opens_on() {
+    // Arrange
+    let app = app();
+
+    // Act
+    let (status, event) = call(&app, "/api/event/e3").await;
+
+    // Assert
+    assert_eq!(
+        (status, event["places"].clone()),
+        (
+            StatusCode::OK,
+            serde_json::json!([{ "id": "jericho", "name": "Jericho", "node": { "id": "Place:jericho", "kind": "Place", "label": "Jericho" } }])
         )
     );
 }

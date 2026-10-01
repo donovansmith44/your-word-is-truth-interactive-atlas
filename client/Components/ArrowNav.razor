@@ -87,7 +87,7 @@ else
     [Parameter] public bool Inline { get; set; }
     [Parameter] public string? InlinePrefixText { get; set; }
 
-    [Parameter, EditorRequired] public EventCallback<IExplorable> OnExplore { get; set; }
+    [Parameter, EditorRequired] public EventCallback<PopoverOpening> OnExplore { get; set; }
 
     private string RoleText => Direction == "prior" ? "PRIOR EVENT" : "FOLLOWING EVENT";
 
@@ -125,7 +125,7 @@ else
     private List<RefsList.RefDescriptor> RefDescriptors => _fetchedRefs ?? [];
 
     public static List<RefsList.RefDescriptor> SelectRefs(IReadOnlyList<EventAccount> accounts) =>
-        accounts.Select(account => new RefsList.RefDescriptor(account.Reference, new VerseNode(account.FirstVerse))).ToList();
+        accounts.Select(account => new RefsList.RefDescriptor(account.Reference, new PopoverOpening.Legacy(new VerseNode(account.FirstVerse)))).ToList();
 
     private string WrapperClass => Inline ? "popover-story-thread-leg-wrap" : $"popover-event-nav-side popover-event-nav-side-{Direction}";
 
@@ -139,7 +139,7 @@ else
         CancelDwell();
         CancelDismiss();
         HidePeekState();
-        return OnExplore.InvokeAsync(new EventNode(Adjacent.Id, Adjacent.Label));
+        return OnExplore.InvokeAsync(new PopoverOpening.Legacy(new EventNode(Adjacent.Id, Adjacent.Label)));
     }
 
     private const int LongLabelThreshold = 24;

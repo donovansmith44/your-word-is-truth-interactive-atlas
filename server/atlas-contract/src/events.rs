@@ -11,7 +11,7 @@ use atlas_graph_types::id::Position;
 use atlas_graph_types::store::GraphQuery;
 
 use crate::error::{ApiError, NoRefusals};
-use crate::reading::drain_edges;
+use crate::reading::{drain_edges, place_ref};
 use crate::wire;
 
 /// Where one event sits in time: its neighbours in each narrative it is a leg of, and its neighbours in the whole chronology.
@@ -120,11 +120,8 @@ pub async fn event(State(data): State<Arc<AtlasData>>, State(graph): State<Arc<G
         .places
         .iter()
         .filter_map(|pid| atlas_graph::legacy::place_from_node(&atlas_graph::event_world::place_stub_node_id(pid), &snap))
-        .map(|p| wire::PlaceRef {
-            id: p.id.clone(),
-            name: resolve_display_name(&p.name, data.place_history_for(&p.id), window, data.place_name_alias_for(&p.id)),
-        })
-        .collect();
+        .map(|p| place_ref(&p.id, resolve_display_name(&p.name, data.place_history_for(&p.id), window, data.place_name_alias_for(&p.id)), &snap))
+        .collect::<Result<_, _>>()?;
     let witnesses = atlas_core::scene::witnesses_for(e);
     let when = window;
 

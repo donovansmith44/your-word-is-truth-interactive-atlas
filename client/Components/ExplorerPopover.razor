@@ -440,7 +440,13 @@
         }
     }
 
-    public async Task PushAsync(IExplorable node, EdgeKind via)
+    public Task PushAsync(PopoverOpening opening, EdgeKind via) =>
+        opening.Match(
+            explore: target => FollowAsync(new Link(via, target)),
+            resume: saved => Resume(_requests.Next(), saved),
+            legacy: node => PushLegacyAsync(node, via));
+
+    private async Task PushLegacyAsync(IExplorable node, EdgeKind via)
     {
         if (await Followed(new Link(via, new NodePosition(node.Identity))) is { } target)
         {
@@ -470,9 +476,9 @@
         StateHasChanged();
     }
 
-    public Task ToggleSelectAsync(IExplorable node)
+    public Task ToggleSelectAsync(NodeRef node)
     {
-        SelectionAtom.Dispatch(new ToggleSelection(node.Identity));
+        SelectionAtom.Dispatch(new ToggleSelection(node));
         return Task.CompletedTask;
     }
 
@@ -511,7 +517,7 @@
         switch (ex.Target)
         {
             case ChipTarget.Push push:
-                await PushAsync(push.Next, push.Via);
+                await PushLegacyAsync(push.Next, push.Via);
                 break;
 
             case ChipTarget.NavigateWorld world:

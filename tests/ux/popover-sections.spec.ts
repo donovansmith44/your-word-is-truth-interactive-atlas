@@ -590,6 +590,19 @@ test('CHAP-HOVER-1: quick pass over chapter-head produces nothing (the tickle te
   await expect(page.getByTestId('popover-title')).toHaveText('The walls of Jericho fall');
 });
 
+test('PLACE-ONE-VIEW: a place on the chapter card and a place mentioned in the text both open its served record', async ({ page }) => {
+  const jericho = await api.node('Place:jericho-1');
+
+  await page.goto('/read/JOS/6');
+  await page.getByTestId('chapter-head').click();
+  await page.getByTestId('chapter-card-place-jericho-1').click();
+  await expect(page.getByTestId('popover-card-title')).toHaveText(jericho.label);
+
+  await page.goto('/read/JOS/6');
+  await page.getByTestId('verse-mention-1-jericho-1').click();
+  await expect(page.getByTestId('popover-card-title')).toHaveText(jericho.label);
+});
+
 test('CHAPTER-CARD-1: clicking chapter-head opens the real card directly -- CHAP-HOVER-1 respec\'s "click is the only entry point" (hover no longer opens it at all, even quietly -- see that note)', async ({ page }) => {
   await page.goto('/read/JOS/6');
   await page.getByTestId('chapter-head').click();

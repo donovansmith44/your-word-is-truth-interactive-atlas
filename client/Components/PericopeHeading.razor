@@ -16,9 +16,9 @@
 
     [Parameter] public string TestIdSuffix { get; set; } = "";
 
-    [Parameter, EditorRequired] public EventCallback<IExplorable> OnExplore { get; set; }
+    [Parameter, EditorRequired] public EventCallback<PopoverOpening> OnExplore { get; set; }
 
-    private Task Open() => OnExplore.InvokeAsync(new EventNode(Heading.EventId, Heading.Title));
+    private Task Open() => OnExplore.InvokeAsync(new PopoverOpening.Legacy(new EventNode(Heading.EventId, Heading.Title)));
 
     private Task OnKeyDown(KeyboardEventArgs e) => e.Key == "Enter" ? Open() : Task.CompletedTask;
 }

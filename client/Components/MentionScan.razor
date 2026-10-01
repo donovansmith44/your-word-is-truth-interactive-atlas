@@ -10,15 +10,15 @@
               tabindex="0" role="button" aria-label="@($"Explore {piece.Text}")"
               @onpointerenter="() => Blink(placeId, true)" @onpointerleave="() => Blink(placeId, false)"
               @onfocus="() => Blink(placeId, true)" @onblur="() => Blink(placeId, false)"
-              @onclick="@(e => Open(e, new PlaceNode(placeId, piece.Text)))" @onclick:stopPropagation="true"
-              @onkeydown="@(e => OnKeyDown(e, new PlaceNode(placeId, piece.Text)))" @onkeydown:stopPropagation="true">@piece.Text</span>
+              @onclick="@(e => Open(e, new PopoverOpening.Explore(new NodePosition(place)), place))" @onclick:stopPropagation="true"
+              @onkeydown="@(e => OnKeyDown(e, new PopoverOpening.Explore(new NodePosition(place))))" @onkeydown:stopPropagation="true">@piece.Text</span>
     }
     else if (piece.Anchor?.Node is { Kind: NodeKind.Person } person)
     {
         <span class="@ClassPrefix @($"{ClassPrefix}-person")" data-testid="@($"{ClassPrefix}-person-{Verse}-{NodeIds.LocalPart(person)}{TestIdSuffix}")"
               tabindex="0" role="button" aria-label="@($"Explore {person.Label}")"
-              @onclick="@(e => Open(e, new PersonNode(person.Id, person.Label)))" @onclick:stopPropagation="true"
-              @onkeydown="@(e => OnKeyDown(e, new PersonNode(person.Id, person.Label)))" @onkeydown:stopPropagation="true">@piece.Text</span>
+              @onclick="@(e => Open(e, new PopoverOpening.Legacy(new PersonNode(person.Id, person.Label)), person))" @onclick:stopPropagation="true"
+              @onkeydown="@(e => OnKeyDown(e, new PopoverOpening.Legacy(new PersonNode(person.Id, person.Label))))" @onkeydown:stopPropagation="true">@piece.Text</span>
     }
     else
     {
@@ -31,14 +31,14 @@
     [Parameter, EditorRequired] public int Verse { get; set; }
     [Parameter, EditorRequired] public string ClassPrefix { get; set; } = default!;
     [Parameter] public string TestIdSuffix { get; set; } = "";
-    [Parameter, EditorRequired] public EventCallback<IExplorable> OnExplore { get; set; }
+    [Parameter, EditorRequired] public EventCallback<PopoverOpening> OnExplore { get; set; }
 
-    [Parameter] public EventCallback<IExplorable> OnToggleSelect { get; set; }
+    [Parameter] public EventCallback<NodeRef> OnToggleSelect { get; set; }
 
     private Task Blink(string placeId, bool active) => MapInterop.BlinkPlace(JS, placeId, active);
 
-    private Task Open(MouseEventArgs e, IExplorable node) =>
-        e.CtrlKey || e.MetaKey ? OnToggleSelect.InvokeAsync(node) : OnExplore.InvokeAsync(node);
+    private Task Open(MouseEventArgs e, PopoverOpening opening, NodeRef node) =>
+        e.CtrlKey || e.MetaKey ? OnToggleSelect.InvokeAsync(node) : OnExplore.InvokeAsync(opening);
 
-    private Task OnKeyDown(KeyboardEventArgs e, IExplorable node) => e.Key == "Enter" ? OnExplore.InvokeAsync(node) : Task.CompletedTask;
+    private Task OnKeyDown(KeyboardEventArgs e, PopoverOpening opening) => e.Key == "Enter" ? OnExplore.InvokeAsync(opening) : Task.CompletedTask;
 }

@@ -272,7 +272,7 @@ fn book_detail(id: &AnyNodeId, data: &AtlasData, snap: &impl GraphQuery) -> Resu
     }))
 }
 
-pub(crate) fn node_description(id: &AnyNodeId, q: &impl GraphQuery) -> Option<String> {
+fn node_description(id: &AnyNodeId, q: &impl GraphQuery) -> Option<String> {
     let node = q.node(id)?;
     match node.payload {
         NodePayload::Place { description, .. } | NodePayload::Person { description, .. } | NodePayload::PeopleGroup { description, .. } => description,

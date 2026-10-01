@@ -2,7 +2,7 @@ use serde::Serialize;
 
 use atlas_core::data::BookMeta;
 use atlas_core::time::TimeRange;
-use atlas_core::wire::VerseGroup;
+use atlas_core::wire::{NodeRef, VerseGroup};
 use atlas_core::xrefs::AggregatedXref;
 use atlas_graph::heading::Heading;
 
@@ -42,10 +42,11 @@ pub struct Verse {
 
 #[derive(Debug, Serialize, utoipa::ToSchema)]
 #[serde(deny_unknown_fields)]
-#[schema(description = "A place named by something else on this response: its id, to read or to target on the map, and the name to show for it.")]
+#[schema(description = "A place named by something else on this response: its id, to target on the map, the name to show for it, and its node in the graph.")]
 pub struct PlaceRef {
     pub id: String,
     pub name: String,
+    pub node: NodeRef,
 }
 
 #[derive(Debug, Serialize, utoipa::ToSchema)]

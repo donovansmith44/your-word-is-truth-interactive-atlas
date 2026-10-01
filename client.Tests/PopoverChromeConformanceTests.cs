@@ -7,7 +7,7 @@ namespace BibleAtlas.Client.Tests;
 
 public class PopoverChromeConformanceTests
 {
-    private const int ConcreteExplorableNodeClasses = 14;
+    private const int ConcreteExplorableNodeClasses = 12;
 
     private static string StripLineComments(string text) => Regex.Replace(text, "//[^\n]*", string.Empty);
 
@@ -81,7 +81,7 @@ public class PopoverChromeConformanceTests
         }
 
         Assert.Equal(realKinds.Count, PopoverChromeRegistry.ByKind.Count);
-        Assert.Equal(14, PopoverChromeRegistry.ByKind.Count);
+        Assert.Equal(ConcreteExplorableNodeClasses, PopoverChromeRegistry.ByKind.Count);
     }
 
     [Fact]

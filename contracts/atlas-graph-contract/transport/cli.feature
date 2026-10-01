@@ -18,7 +18,7 @@ Feature: bibex — a second transport over the same graph
   assertions in server/atlas-cli/tests/cli.rs — not here.
 
   Vocabulary:
-    | projection | any of: books, catechism-item, catechism-list, chapter, contract, edge-page, eras, event, export-format, gazetteer, kretzmann-chapter, land-mask, landmarks, narrative-event, narratives, node-card, place, polities, sources, verse, version-root, vocabulary, xref-list |
+    | projection | any of: books, catechism-item, catechism-list, chapter, contract, edge-page, eras, event, export-format, gazetteer, kretzmann-chapter, land-mask, landmarks, narrative-event, narratives, node-card, polities, sources, verse, version-root, vocabulary, xref-list |
 
   Scenario: the CLI and the wire agree about a node's identity
     When I GET /api/node/Place:hazor-1 as wire

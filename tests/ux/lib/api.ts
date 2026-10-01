@@ -21,9 +21,6 @@ export const api = {
   // catechism item's own full content.
   catechism: (sref: string) => getJson(`/api/catechism/${sref}`),
   catechismItem: (id: string) => getJson(`/api/catechism/item/${id}`),
-  place: (id: string) => getJson(`/api/place/${id}`),
-  // Batch E: `/api/place/{id}?from=&to=` -- the window-scoped `history` payload.
-  placeHistory: (id: string, from: number, to: number) => getJson(`/api/place/${id}?from=${from}&to=${to}`),
   narratives: () => getJson('/api/narratives'),
   // Batch N: GET /api/narrative/event/{id} -- every narrative position the
   // given event id occupies (mirrors catechismItem's own id-keyed shape;

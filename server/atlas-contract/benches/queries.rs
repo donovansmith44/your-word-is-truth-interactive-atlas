@@ -13,7 +13,7 @@ use atlas_core::time::TimeRange;
 use atlas_graph::GraphService;
 use atlas_contract::query::Contract;
 use atlas_contract::reference::Reference;
-use atlas_contract::{catechism, events, graph, map, places, reading};
+use atlas_contract::{catechism, events, graph, map, reading};
 
 fn repo_data_dir() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data")
@@ -88,9 +88,6 @@ fn bench_handlers(c: &mut Criterion) {
         b.iter(|| rt.block_on(reading::verse(State(data.clone()), State(graph.clone()), asked_for("JHN.3.16"))))
     });
     group.bench_function("xrefs", |b| b.iter(|| rt.block_on(reading::xrefs(State(graph.clone()), asked_for("JHN.3.16")))));
-    group.bench_function("place", |b| {
-        b.iter(|| rt.block_on(places::place(State(data.clone()), State(graph.clone()), AxPath("hebron".to_string()), Contract(places::PlacePeriod { from: None, to: None }))))
-    });
     group.bench_function("event", |b| {
         b.iter(|| rt.block_on(events::event(State(data.clone()), State(graph.clone()), AxPath("ab_ur".to_string()))))
     });

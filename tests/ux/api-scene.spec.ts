@@ -208,10 +208,4 @@ test('QUIET-1 spot-assert: a quiet place\'s display_name matches the lit-side wi
   const jerusalem = s.quiet_places.find((p: any) => p.id === 'jerusalem');
   expect(jerusalem, 'jerusalem should be quiet, not absent entirely, in the primeval era').toBeTruthy();
   expect(jerusalem.display_name).toBe('Jebus');
-
-  // Cross-checked directly against the same resolve_display_name the lit
-  // side's own marker label/place-card-title call through -- proves the two
-  // paths agree, not just that this ONE value looks plausible.
-  const direct = await api.placeHistory('jerusalem', w.from, w.to);
-  expect(direct.history.display_name).toBe('Jebus');
 });

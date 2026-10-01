@@ -82,7 +82,7 @@ public sealed class ChapterCardSection : IPopoverSectionProvider
                     builder.AddAttribute(seq++, "type", "button");
                     builder.AddAttribute(seq++, "class", "popover-event-row popover-event-row-button explorable");
                     builder.AddAttribute(seq++, "data-testid", $"chapter-card-heading-{eventId}");
-                    builder.AddAttribute(seq++, "onclick", EventCallback.Factory.Create(ctx, () => ctx.PushAsync(new EventNode(eventId, title), EdgeKind.Attests)));
+                    builder.AddAttribute(seq++, "onclick", EventCallback.Factory.Create(ctx, () => ctx.PushAsync(new PopoverOpening.Legacy(new EventNode(eventId, title)), EdgeKind.Attests)));
                     builder.AddContent(seq++, title);
                     builder.CloseElement();
                 }
@@ -113,11 +113,12 @@ public sealed class ChapterCardSection : IPopoverSectionProvider
                 {
                     var placeId = p.Id;
                     var placeName = p.Name;
+                    var place = new PopoverOpening.Explore(new NodePosition(p.Node));
                     builder.OpenElement(seq++, "button");
                     builder.AddAttribute(seq++, "type", "button");
                     builder.AddAttribute(seq++, "class", "popover-event-row popover-event-row-button explorable");
                     builder.AddAttribute(seq++, "data-testid", $"chapter-card-place-{placeId}");
-                    builder.AddAttribute(seq++, "onclick", EventCallback.Factory.Create(ctx, () => ctx.PushAsync(new PlaceNode(placeId, placeName), EdgeKind.Mentions)));
+                    builder.AddAttribute(seq++, "onclick", EventCallback.Factory.Create(ctx, () => ctx.PushAsync(place, EdgeKind.Mentions)));
                     builder.AddContent(seq++, placeName);
                     builder.CloseElement();
                 }
@@ -220,7 +221,7 @@ public sealed class VerseTextSectionProvider : IPopoverSectionProvider
             builder.AddAttribute(seq++, "FocalToVerse", focalTo);
             builder.AddAttribute(seq++, "CompactText", compactText);
             builder.AddAttribute(seq++, "FocalVerses", focalVerses);
-            builder.AddAttribute(seq++, "OnExplore", EventCallback.Factory.Create<IExplorable>(ctx, n => ctx.PushAsync(n, EdgeKind.Mentions)));
+            builder.AddAttribute(seq++, "OnExplore", EventCallback.Factory.Create<PopoverOpening>(ctx, opening => ctx.PushAsync(opening, EdgeKind.Mentions)));
             builder.CloseComponent();
 
             seq = FrontierProvenance.Affordance(
@@ -370,8 +371,8 @@ public sealed class CrossRefsSection : IPopoverSectionProvider
             builder.AddAttribute(seq++, "RevealNoun", "cross-references");
             builder.AddAttribute(seq++, "ClampVerses", Components.PassageList.StandardVerseClamp);
             builder.AddAttribute(seq++, "ExploreAsVerse", true);
-            builder.AddAttribute(seq++, "OnExplore", EventCallback.Factory.Create<IExplorable>(ctx, n => ctx.PushAsync(n, EdgeKind.Cites)));
-            builder.AddAttribute(seq++, "OnToggleSelect", EventCallback.Factory.Create<IExplorable>(ctx, n => ctx.ToggleSelectAsync(n)));
+            builder.AddAttribute(seq++, "OnExplore", EventCallback.Factory.Create<PopoverOpening>(ctx, opening => ctx.PushAsync(opening, EdgeKind.Cites)));
+            builder.AddAttribute(seq++, "OnToggleSelect", EventCallback.Factory.Create<NodeRef>(ctx, node => ctx.ToggleSelectAsync(node)));
             builder.CloseComponent();
         };
         return new PopoverSection("xrefs", body);
@@ -461,7 +462,7 @@ public sealed class CatechismSeamSection : IPopoverSectionProvider
             builder.OpenComponent<Components.CatechismList>(seq++);
             builder.AddAttribute(seq++, "Items", items);
             builder.AddAttribute(seq++, "Cap", CatechismDefaultCap);
-            builder.AddAttribute(seq++, "OnExplore", EventCallback.Factory.Create<IExplorable>(ctx, n => ctx.PushAsync(n, EdgeKind.CatechismLink)));
+            builder.AddAttribute(seq++, "OnExplore", EventCallback.Factory.Create<PopoverOpening>(ctx, opening => ctx.PushAsync(opening, EdgeKind.CatechismLink)));
             builder.CloseComponent();
         };
         return new PopoverSection("catechism", body);
@@ -668,209 +669,10 @@ public sealed class CatechismScripturesSection : IPopoverSectionProvider
             builder.OpenComponent<Components.PassageList>(seq++);
             builder.AddAttribute(seq++, "Units", (IReadOnlyList<PassageSourceUnit>)units);
             builder.AddAttribute(seq++, "RefTestIdPrefix", "catechism-verse");
-            builder.AddAttribute(seq++, "OnExplore", EventCallback.Factory.Create<IExplorable>(ctx, n => ctx.PushAsync(n, EdgeKind.CatechismLink)));
+            builder.AddAttribute(seq++, "OnExplore", EventCallback.Factory.Create<PopoverOpening>(ctx, opening => ctx.PushAsync(opening, EdgeKind.CatechismLink)));
             builder.CloseComponent();
         };
         return new PopoverSection("catechism-scriptures", body);
-    }
-}
-
-public sealed class PlaceDescriptionSection : IPopoverSectionProvider
-{
-    public bool AppliesTo(IExplorable node) => node.Kind == "Place";
-
-    public async Task<PopoverSection?> ResolveAsync(IExplorable node, AtlasClient api, IPopoverSectionContext ctx)
-    {
-        if (node is not PlaceNode place)
-        {
-            return null;
-        }
-
-        PlacePage detail;
-        try
-        {
-            detail = await place.DetailAsync(api);
-        }
-        catch (Exception)
-        {
-            return null;
-        }
-
-        if (detail.CanonicalName is not { } canonical)
-        {
-            return null;
-        }
-
-        RenderFragment body = builder =>
-        {
-            var seq = 0;
-            builder.OpenElement(seq++, "p");
-            builder.AddAttribute(seq++, "class", "popover-meta");
-            builder.AddAttribute(seq++, "data-testid", "popover-place-canonical-name");
-            builder.AddContent(seq++, $"Known in modern atlases as {canonical}.");
-            builder.CloseElement();
-        };
-        return new PopoverSection("place-description", body);
-    }
-}
-
-public sealed class PlaceDatesSection : IPopoverSectionProvider
-{
-    private const int SupportingVersesCap = 2;
-
-    public bool AppliesTo(IExplorable node) => node.Kind == "Place";
-
-    public async Task<PopoverSection?> ResolveAsync(IExplorable node, AtlasClient api, IPopoverSectionContext ctx)
-    {
-        if (node is not PlaceNode place)
-        {
-            return null;
-        }
-
-        IReadOnlyList<PlaceDate> dates;
-        try
-        {
-            dates = await place.DatesAsync(api);
-        }
-        catch (Exception)
-        {
-            return null;
-        }
-
-        if (dates.Count == 0)
-        {
-            return null;
-        }
-
-        var versesOfEach = await Task.WhenAll(dates.Select(date => VerseTextResolver.ResolveSpansAsync(api, date.Claim.Verses)));
-
-        RenderFragment body = builder =>
-        {
-            var seq = 0;
-            builder.OpenElement(seq++, "div");
-            builder.AddAttribute(seq++, "class", "popover-place-dates");
-            foreach (var (date, verses) in dates.Zip(versesOfEach))
-            {
-                RenderDateRow(builder, ref seq, date, verses, ctx);
-            }
-            builder.CloseElement();
-        };
-        return new PopoverSection("place-dates", body);
-    }
-
-    private static void RenderDateRow(RenderTreeBuilder builder, ref int seq, PlaceDate date, List<PassageListVerse> verses, IPopoverSectionContext ctx)
-    {
-        var testidSuffix = date.Label.ToLowerInvariant();
-
-        builder.OpenElement(seq++, "div");
-        builder.AddAttribute(seq++, "class", "popover-place-date");
-        builder.AddAttribute(seq++, "data-testid", $"popover-place-date-{testidSuffix}");
-
-        builder.OpenElement(seq++, "span");
-        builder.AddAttribute(seq++, "class", "popover-place-date-label");
-        builder.AddContent(seq++, date.Label);
-        builder.CloseElement();
-
-        builder.OpenElement(seq++, "span");
-        builder.AddAttribute(seq++, "class", "popover-place-date-value");
-        builder.AddContent(seq++, date.Claim.Label);
-        builder.CloseElement();
-        builder.CloseElement();
-
-        if (verses.Count > 0)
-        {
-            var units = new PassageSourceUnit[] { new(verses) };
-            builder.OpenComponent<Components.PassageList>(seq++);
-            builder.AddAttribute(seq++, "Units", (IReadOnlyList<PassageSourceUnit>)units);
-            builder.AddAttribute(seq++, "RefTestIdPrefix", $"popover-place-date-{testidSuffix}-verse");
-            builder.AddAttribute(seq++, "Cap", SupportingVersesCap);
-            builder.AddAttribute(seq++, "MoreTestId", $"popover-place-date-{testidSuffix}-more");
-            builder.AddAttribute(seq++, "CollapseTestId", $"popover-place-date-{testidSuffix}-collapse");
-            builder.AddAttribute(seq++, "RevealNoun", "verses");
-            builder.AddAttribute(seq++, "OnExplore", EventCallback.Factory.Create<IExplorable>(ctx, n => ctx.PushAsync(n, EdgeKind.MentionedIn)));
-            builder.CloseComponent();
-        }
-    }
-}
-
-public sealed class PlaceBlurbSection : IPopoverSectionProvider
-{
-    public bool AppliesTo(IExplorable node) => node.Kind == "Place";
-
-    public async Task<PopoverSection?> ResolveAsync(IExplorable node, AtlasClient api, IPopoverSectionContext ctx)
-    {
-        if (node is not PlaceNode place)
-        {
-            return null;
-        }
-
-        PlacePage detail;
-        try
-        {
-            detail = await place.DetailAsync(api);
-        }
-        catch (Exception)
-        {
-            return null;
-        }
-
-        var blurb = detail.History?.Blurb;
-        if (blurb is null)
-        {
-            return null;
-        }
-
-        RenderFragment body = builder =>
-        {
-            builder.OpenElement(0, "p");
-            builder.AddAttribute(1, "class", "popover-place-blurb");
-            builder.AddAttribute(2, "data-testid", "popover-place-blurb");
-            builder.AddContent(3, blurb);
-            builder.CloseElement();
-        };
-        return new PopoverSection("place-blurb", body);
-    }
-}
-
-public sealed class PlaceEventsSection : IPopoverSectionProvider
-{
-    public bool AppliesTo(IExplorable node) => node.Kind == "Place";
-
-    public async Task<PopoverSection?> ResolveAsync(IExplorable node, AtlasClient api, IPopoverSectionContext ctx)
-    {
-        if (node is not PlaceNode place)
-        {
-            return null;
-        }
-
-        PlacePage detail;
-        try
-        {
-            detail = await place.DetailAsync(api);
-        }
-        catch (Exception)
-        {
-            return null;
-        }
-
-        if (detail.Events.Count == 0)
-        {
-            return null;
-        }
-
-        var placeName = place.Title;
-        var events = detail.Events;
-        RenderFragment body = builder =>
-        {
-            builder.OpenComponent<Components.PlaceEventsList>(0);
-            builder.AddAttribute(1, "PlaceId", place.PlaceId);
-            builder.AddAttribute(2, "PlaceName", placeName);
-            builder.AddAttribute(3, "Events", events);
-            builder.AddAttribute(4, "OnExplore", EventCallback.Factory.Create<IExplorable>(ctx, n => ctx.PushAsync(n, EdgeKind.SiteOf)));
-            builder.AddAttribute(5, "OnToggleSelect", EventCallback.Factory.Create<IExplorable>(ctx, n => ctx.ToggleSelectAsync(n)));
-            builder.CloseComponent();
-        };
-        return new PopoverSection("place-events", body);
     }
 }
 
@@ -937,7 +739,7 @@ public sealed class VerseEventMembershipSection : IPopoverSectionProvider
             builder.AddAttribute(seq++, "type", "button");
             builder.AddAttribute(seq++, "class", $"popover-event-row popover-event-row-button {explorableClass}");
             builder.AddAttribute(seq++, "data-testid", $"verse-event-{id}");
-            builder.AddAttribute(seq++, "onclick", EventCallback.Factory.Create(ctx, () => ctx.PushAsync(new EventNode(id, label), EdgeKind.Attests)));
+            builder.AddAttribute(seq++, "onclick", EventCallback.Factory.Create(ctx, () => ctx.PushAsync(new PopoverOpening.Legacy(new EventNode(id, label)), EdgeKind.Attests)));
             builder.AddContent(seq++, label);
             builder.CloseElement();
         }
@@ -1054,7 +856,7 @@ public sealed class EventDateAndPlacesSection : IPopoverSectionProvider
                     {
                         valueBuilder.AddAttribute(vseq++, "title", refNote);
                     }
-                    valueBuilder.AddAttribute(vseq++, "onclick", EventCallback.Factory.Create(ctx, () => ctx.PushAsync(new YearNode(when, ev.Identity), EdgeKind.DatedBy)));
+                    valueBuilder.AddAttribute(vseq++, "onclick", EventCallback.Factory.Create(ctx, () => ctx.PushAsync(new PopoverOpening.Legacy(new YearNode(when, ev.Identity)), EdgeKind.DatedBy)));
                     valueBuilder.AddContent(vseq++, when.Label);
                     valueBuilder.CloseElement();
 
@@ -1089,7 +891,7 @@ public sealed class EventDateAndPlacesSection : IPopoverSectionProvider
         builder.AddAttribute(seq++, "Glyph", glyph);
         builder.AddAttribute(seq++, "Inline", inline);
         builder.AddAttribute(seq++, "InlinePrefixText", inlinePrefixText);
-        builder.AddAttribute(seq++, "OnExplore", EventCallback.Factory.Create<IExplorable>(ctx, n => ctx.PushAsync(n, direction.Via)));
+        builder.AddAttribute(seq++, "OnExplore", EventCallback.Factory.Create<PopoverOpening>(ctx, opening => ctx.PushAsync(opening, direction.Via)));
         builder.CloseComponent();
     }
 }
@@ -1157,7 +959,7 @@ public sealed class EventWitnessesSection : IPopoverSectionProvider
             builder.AddAttribute(seq++, "Units", (IReadOnlyList<PassageSourceUnit>)units);
             builder.AddAttribute(seq++, "RefTestIdPrefix", "event-witness");
             builder.AddAttribute(seq++, "ClampVerses", Components.PassageList.StandardVerseClamp);
-            builder.AddAttribute(seq++, "OnExplore", EventCallback.Factory.Create<IExplorable>(ctx, n => ctx.PushAsync(n, EdgeKind.AttestedIn)));
+            builder.AddAttribute(seq++, "OnExplore", EventCallback.Factory.Create<PopoverOpening>(ctx, opening => ctx.PushAsync(opening, EdgeKind.AttestedIn)));
             builder.CloseComponent();
         };
         return new PopoverSection(multi ? "event-witnesses" : "event-witness", body);
@@ -1194,7 +996,7 @@ public sealed class EventMentionsSection : IPopoverSectionProvider
             return null;
         }
 
-        var refs = mentions.Select(v => new Components.RefsList.RefDescriptor(v, (IExplorable)new VerseNode(v))).ToList();
+        var refs = mentions.Select(v => new Components.RefsList.RefDescriptor(v, new PopoverOpening.Legacy(new VerseNode(v)))).ToList();
 
         var registry = await FrontierProvenance.RegistryOrNull(api);
 
@@ -1209,7 +1011,7 @@ public sealed class EventMentionsSection : IPopoverSectionProvider
             builder.OpenComponent<Components.RefsList>(seq++);
             builder.AddAttribute(seq++, "Refs", (IReadOnlyList<Components.RefsList.RefDescriptor>)refs);
             builder.AddAttribute(seq++, "TestIdPrefix", "event-mentioned-in");
-            builder.AddAttribute(seq++, "OnExplore", EventCallback.Factory.Create<IExplorable>(ctx, n => ctx.PushAsync(n, EdgeKind.MentionedIn)));
+            builder.AddAttribute(seq++, "OnExplore", EventCallback.Factory.Create<PopoverOpening>(ctx, opening => ctx.PushAsync(opening, EdgeKind.MentionedIn)));
             builder.CloseComponent();
         };
         return new PopoverSection("event-mentions", body);
@@ -1244,7 +1046,7 @@ public sealed class EventAnaloguesSection : IPopoverSectionProvider
         }
 
         var refs = analogues
-            .Select(a => new Components.RefsList.RefDescriptor(a.Title, (IExplorable)new EventNode(a.Id, a.Title), a.Id))
+            .Select(a => new Components.RefsList.RefDescriptor(a.Title, new PopoverOpening.Legacy(new EventNode(a.Id, a.Title)), a.Id))
             .ToList();
 
         var registry = await FrontierProvenance.RegistryOrNull(api);
@@ -1261,7 +1063,7 @@ public sealed class EventAnaloguesSection : IPopoverSectionProvider
             builder.OpenComponent<Components.RefsList>(seq++);
             builder.AddAttribute(seq++, "Refs", (IReadOnlyList<Components.RefsList.RefDescriptor>)refs);
             builder.AddAttribute(seq++, "TestIdPrefix", "event-analogues");
-            builder.AddAttribute(seq++, "OnExplore", EventCallback.Factory.Create<IExplorable>(ctx, n => ctx.PushAsync(n, EdgeKind.AnalogousTo)));
+            builder.AddAttribute(seq++, "OnExplore", EventCallback.Factory.Create<PopoverOpening>(ctx, opening => ctx.PushAsync(opening, EdgeKind.AnalogousTo)));
             builder.CloseComponent();
         };
         return new PopoverSection("event-analogues", body);
@@ -1346,7 +1148,7 @@ public sealed class VerseParallelsSection : IPopoverSectionProvider
                 builder.AddAttribute(seq++, "Units", (IReadOnlyList<PassageSourceUnit>)units);
                 builder.AddAttribute(seq++, "RefTestIdPrefix", multiEvent ? $"verse-parallel-{Slugify(label)}" : "verse-parallel");
                 builder.AddAttribute(seq++, "ClampVerses", Components.PassageList.StandardVerseClamp);
-                builder.AddAttribute(seq++, "OnExplore", EventCallback.Factory.Create<IExplorable>(ctx, n => ctx.PushAsync(n, EdgeKind.Parallel)));
+                builder.AddAttribute(seq++, "OnExplore", EventCallback.Factory.Create<PopoverOpening>(ctx, opening => ctx.PushAsync(opening, EdgeKind.Parallel)));
                 builder.CloseComponent();
             }
         };
@@ -1524,7 +1326,7 @@ public sealed class PolityDeltaScripturesSection : IPopoverSectionProvider
             builder.OpenComponent<Components.PassageList>(seq++);
             builder.AddAttribute(seq++, "Units", (IReadOnlyList<PassageSourceUnit>)units);
             builder.AddAttribute(seq++, "RefTestIdPrefix", "polity-delta-verse");
-            builder.AddAttribute(seq++, "OnExplore", EventCallback.Factory.Create<IExplorable>(ctx, n => ctx.PushAsync(n, EdgeKind.JustifiedBy)));
+            builder.AddAttribute(seq++, "OnExplore", EventCallback.Factory.Create<PopoverOpening>(ctx, opening => ctx.PushAsync(opening, EdgeKind.JustifiedBy)));
             builder.CloseComponent();
         };
         return new PopoverSection("polity-delta-scriptures", body);
@@ -1608,7 +1410,7 @@ public sealed class VersePersonsSection : IPopoverSectionProvider
                 builder.AddAttribute(seq++, "type", "button");
                 builder.AddAttribute(seq++, "class", "popover-event-row popover-event-row-button explorable");
                 builder.AddAttribute(seq++, "data-testid", $"verse-person-{Slug(label)}");
-                builder.AddAttribute(seq++, "onclick", EventCallback.Factory.Create(ctx, () => ctx.PushAsync(new PersonNode(id, label), EdgeKind.Mentions)));
+                builder.AddAttribute(seq++, "onclick", EventCallback.Factory.Create(ctx, () => ctx.PushAsync(new PopoverOpening.Legacy(new PersonNode(id, label)), EdgeKind.Mentions)));
                 builder.AddContent(seq++, label);
                 builder.CloseElement();
             }
@@ -1683,7 +1485,7 @@ public sealed class PersonCardAndMentionsSection : IPopoverSectionProvider
             builder.AddAttribute(seq++, "InitialNext", page.Next);
             builder.AddAttribute(seq++, "TotalCount", total);
             builder.AddAttribute(seq++, "ShowHeading", false);
-            builder.AddAttribute(seq++, "OnExplore", EventCallback.Factory.Create<IExplorable>(ctx, n => ctx.PushAsync(n, EdgeKind.MentionedIn)));
+            builder.AddAttribute(seq++, "OnExplore", EventCallback.Factory.Create<PopoverOpening>(ctx, opening => ctx.PushAsync(opening, EdgeKind.MentionedIn)));
             builder.CloseComponent();
             builder.CloseElement();
         };
@@ -1770,7 +1572,7 @@ public sealed class CatechismInConcordSection : IPopoverSectionProvider
 
             builder.OpenComponent<Components.ConcordUnitList>(seq++);
             builder.AddAttribute(seq++, "Items", (IReadOnlyList<NodeRef>)units);
-            builder.AddAttribute(seq++, "OnExplore", EventCallback.Factory.Create<IExplorable>(ctx, n => ctx.PushAsync(n, EdgeKind.CatechismLink)));
+            builder.AddAttribute(seq++, "OnExplore", EventCallback.Factory.Create<PopoverOpening>(ctx, opening => ctx.PushAsync(opening, EdgeKind.CatechismLink)));
             builder.CloseComponent();
         };
         return new PopoverSection("catechism-in-concord", body);
@@ -1817,7 +1619,7 @@ public sealed class ConcordSmallCatechismSection : IPopoverSectionProvider
 
             builder.OpenComponent<Components.CatechismList>(seq++);
             builder.AddAttribute(seq++, "Items", (IReadOnlyList<CatechismRef>)items);
-            builder.AddAttribute(seq++, "OnExplore", EventCallback.Factory.Create<IExplorable>(ctx, n => ctx.PushAsync(n, EdgeKind.CatechismLink)));
+            builder.AddAttribute(seq++, "OnExplore", EventCallback.Factory.Create<PopoverOpening>(ctx, opening => ctx.PushAsync(opening, EdgeKind.CatechismLink)));
             builder.CloseComponent();
         };
         return new PopoverSection("concord-small-catechism", body);
@@ -1907,7 +1709,7 @@ file static class PersonSectionRendering
             builder.AddAttribute(seq++, "type", "button");
             builder.AddAttribute(seq++, "class", "popover-catechism-item explorable");
             builder.AddAttribute(seq++, "data-testid", $"{testidPrefix}-{id.Replace(':', '-').Replace('.', '-')}");
-            builder.AddAttribute(seq++, "onclick", EventCallback.Factory.Create<MouseEventArgs>(ctx, () => ctx.PushAsync(target, via)));
+            builder.AddAttribute(seq++, "onclick", EventCallback.Factory.Create<MouseEventArgs>(ctx, () => ctx.PushAsync(new PopoverOpening.Legacy(target), via)));
             builder.AddContent(seq++, label);
             builder.CloseElement();
         }

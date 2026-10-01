@@ -14,9 +14,9 @@
 @code {
     // TestIdSuffix defaults to Ref; callers whose display text is a curated label rather than
     // the ref itself (and so could churn) pass a stable id instead.
-    public sealed record RefDescriptor(string Ref, IExplorable Target, string? TestIdSuffix = null);
+    public sealed record RefDescriptor(string Ref, PopoverOpening Target, string? TestIdSuffix = null);
 
     [Parameter, EditorRequired] public IReadOnlyList<RefDescriptor> Refs { get; set; } = Array.Empty<RefDescriptor>();
     [Parameter, EditorRequired] public string TestIdPrefix { get; set; } = default!;
-    [Parameter, EditorRequired] public EventCallback<IExplorable> OnExplore { get; set; }
+    [Parameter, EditorRequired] public EventCallback<PopoverOpening> OnExplore { get; set; }
 }

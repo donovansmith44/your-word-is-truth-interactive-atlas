@@ -8,7 +8,7 @@
         {
             var citation = NodeIds.LocalPart(unit);
             <button type="button" class="popover-catechism-item explorable" data-testid="@($"concord-link-{Slug(citation)}")"
-                    @onclick="() => OnExplore.InvokeAsync(new ConcordUnitNode(citation))">
+                    @onclick="() => OnExplore.InvokeAsync(new PopoverOpening.Legacy(new ConcordUnitNode(citation)))">
                 @citation
             </button>
         }
@@ -17,7 +17,7 @@
 
 @code {
     [Parameter, EditorRequired] public IReadOnlyList<NodeRef> Items { get; set; } = Array.Empty<NodeRef>();
-    [Parameter, EditorRequired] public EventCallback<IExplorable> OnExplore { get; set; }
+    [Parameter, EditorRequired] public EventCallback<PopoverOpening> OnExplore { get; set; }
 
     private static string Slug(string citation) => citation.Replace(' ', '-').Replace('.', '-');
 }

@@ -23,7 +23,7 @@
 
     [Parameter, EditorRequired] public string OwnerSlug { get; set; } = default!;
 
-    [Parameter, EditorRequired] public EventCallback<IExplorable> OnExplore { get; set; }
+    [Parameter, EditorRequired] public EventCallback<PopoverOpening> OnExplore { get; set; }
 
     private static IEnumerable<(TextPiece Piece, int Index)> Numbered(IReadOnlyList<TextPiece> pieces)
     {
@@ -31,7 +31,7 @@
         return pieces.Select(piece => (piece, piece.Anchor is null ? 0 : cited++));
     }
 
-    private Task Open(string verse) => OnExplore.InvokeAsync(new VerseNode(verse));
+    private Task Open(string verse) => OnExplore.InvokeAsync(new PopoverOpening.Legacy(new VerseNode(verse)));
 
     private Task OnKeyDown(KeyboardEventArgs e, string verse) => e.Key == "Enter" ? Open(verse) : Task.CompletedTask;
 }

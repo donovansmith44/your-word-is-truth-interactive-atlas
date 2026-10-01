@@ -25,7 +25,7 @@ Feature: the gazetteer — the atlas is the coordinate authority
 
   Vocabulary:
     | export | any of: gazetteer, chronology, kretzmann-chronology |
-    | projection | any of: books, catechism-item, catechism-list, chapter, contract, edge-page, eras, event, export-format, gazetteer, kretzmann-chapter, land-mask, landmarks, narrative-event, narratives, node-card, place, polities, sources, verse, version-root, vocabulary, xref-list |
+    | projection | any of: books, catechism-item, catechism-list, chapter, contract, edge-page, eras, event, export-format, gazetteer, kretzmann-chapter, land-mask, landmarks, narrative-event, narratives, node-card, polities, sources, verse, version-root, vocabulary, xref-list |
 
   Scenario: the coordinate authority, row by row
     When I read the gazetteer export

@@ -30,5 +30,5 @@
 
     [Parameter] public IReadOnlyList<TextUnit> FocalVerses { get; set; } = Array.Empty<TextUnit>();
 
-    [Parameter, EditorRequired] public EventCallback<IExplorable> OnExplore { get; set; }
+    [Parameter, EditorRequired] public EventCallback<PopoverOpening> OnExplore { get; set; }
 }

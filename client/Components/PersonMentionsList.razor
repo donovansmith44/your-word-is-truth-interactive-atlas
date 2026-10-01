@@ -23,7 +23,7 @@
         {
             var vref = verse.Label;
             <button type="button" class="popover-event-row popover-event-row-button explorable" data-testid="@($"person-mention-{vref}")"
-                    @onclick="() => OnExplore.InvokeAsync(new VerseNode(vref))">
+                    @onclick="() => OnExplore.InvokeAsync(new PopoverOpening.Legacy(new VerseNode(vref)))">
                 @vref
             </button>
         }
@@ -45,7 +45,7 @@
     [Parameter] public int? InitialNext { get; set; }
     [Parameter] public int TotalCount { get; set; }
     [Parameter] public bool ShowHeading { get; set; } = true;
-    [Parameter, EditorRequired] public EventCallback<IExplorable> OnExplore { get; set; }
+    [Parameter, EditorRequired] public EventCallback<PopoverOpening> OnExplore { get; set; }
 
     private IReadOnlyList<EdgeEntry> _entries = Array.Empty<EdgeEntry>();
     private int? _next;
