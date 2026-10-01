@@ -108,7 +108,7 @@ public class AqcSteps
         Answer(Query.Focus, FocusFixtureNameForCapturedIdentity(_capturedRef));
     }
 
-    [When("I run TraversalQuery for \"([^\"]+)\" frontier \"([^\"]+)\"")]
+    [When("I run TraversalQuery for \"([^\"]+)\" adjacency \"([^\"]+)\"")]
     public void WhenTraversalQuery(string id, string kind)
     {
         _focusRequestedId = null;
@@ -122,7 +122,7 @@ public class AqcSteps
         Answer(Query.Traversal, name);
     }
 
-    [When("I run TraversalQuery for \"([^\"]+)\" frontier \"([^\"]+)\" with limit (\\d+)")]
+    [When("I run TraversalQuery for \"([^\"]+)\" adjacency \"([^\"]+)\" with limit (\\d+)")]
     public void WhenTraversalQueryLimit(string id, string kind, int limit)
     {
         var name = (id, kind, limit) switch
@@ -222,7 +222,7 @@ public class AqcSteps
     {
         _capturedRef = _query switch
         {
-            Query.Focus => Body<NodeCard>().Id,
+            Query.Focus => Body<NodeRecord>().Id,
             Query.Traversal => Body<EdgePage>().Entries.Nodes().First().Id,
             _ => throw new InvalidOperationException($"a {_query} answer carries no focus reference"),
         };
@@ -270,7 +270,7 @@ public class AqcSteps
     }
 
     private static Type GeneratedRecord(string shape) =>
-        typeof(NodeCard).Assembly.GetType($"{typeof(NodeCard).Namespace}.{shape}")
+        typeof(NodeRecord).Assembly.GetType($"{typeof(NodeRecord).Namespace}.{shape}")
             ?? throw new NotSupportedException($"AqcSteps: no generated record named '{shape}'.");
 
     [Then("the response \"([^\"]+)\" field equals \"([^\"]+)\"")]
@@ -280,14 +280,14 @@ public class AqcSteps
         Assert.Equal(expected, actual.GetString());
     }
 
-    [Then("every frontier group is a relations! family")]
-    public void ThenEveryFrontierIsARelationsFamily()
+    [Then("every adjacency group is a relations! family")]
+    public void ThenEveryAdjacencyIsARelationsFamily()
     {
         IReadOnlyList<EdgeKind> kinds = _query switch
         {
-            Query.Focus => Body<NodeCard>().EdgeSummary.Select(e => e.Kind).ToList(),
+            Query.Focus => Body<NodeRecord>().EdgeSummary.Select(e => e.Kind).ToList(),
             Query.Traversal => [Body<EdgePage>().Kind],
-            _ => throw new InvalidOperationException($"a {_query} answer carries no frontier groups"),
+            _ => throw new InvalidOperationException($"a {_query} answer carries no adjacency groups"),
         };
         Assert.All(kinds, kind => Assert.True(Enum.IsDefined(kind)));
     }
@@ -302,7 +302,7 @@ public class AqcSteps
     public void ThenRoundTrips()
     {
         Assert.NotNull(_capturedRef);
-        Assert.Equal(_capturedRef, Body<NodeCard>().Id);
+        Assert.Equal(_capturedRef, Body<NodeRecord>().Id);
         if (_focusRequestedId is not null)
         {
             Assert.Equal(_focusRequestedId, _capturedRef);
@@ -318,7 +318,7 @@ public class AqcSteps
         Assert.All(targets, t => Assert.False(string.IsNullOrEmpty(t.Id) || string.IsNullOrEmpty(t.Label)));
         var first = targets[0].Id;
         var (status, focusBody) = LoadFixture(FocusFixtureNameForCapturedIdentity(first));
-        Assert.Equal((200, first), (status, focusBody.Deserialize<NodeCard>()!.Id));
+        Assert.Equal((200, first), (status, focusBody.Deserialize<NodeRecord>()!.Id));
     }
 
     [Then("every entry's \"edge\" id is present on the matching inverse-kind page of its own target node")]

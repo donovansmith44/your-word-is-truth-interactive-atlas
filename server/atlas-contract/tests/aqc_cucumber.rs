@@ -80,7 +80,7 @@ async fn when_focus_query_captured(world: &mut AqcWorld) {
     world.body = body;
 }
 
-#[when(expr = "I run TraversalQuery for {string} frontier {string}")]
+#[when(expr = "I run TraversalQuery for {string} adjacency {string}")]
 async fn when_traversal_query(world: &mut AqcWorld, id: String, kind: String) {
     world.focus_requested_id = None;
     world.last_traversal_id = id.clone();
@@ -90,7 +90,7 @@ async fn when_traversal_query(world: &mut AqcWorld, id: String, kind: String) {
     world.body = body;
 }
 
-#[when(expr = "I run TraversalQuery for {string} frontier {string} with limit {int}")]
+#[when(expr = "I run TraversalQuery for {string} adjacency {string} with limit {int}")]
 async fn when_traversal_query_limit(world: &mut AqcWorld, id: String, kind: String, limit: usize) {
     world.last_traversal_id = id.clone();
     world.last_traversal_kind = kind.clone();
@@ -193,8 +193,8 @@ fn then_field_equals(world: &mut AqcWorld, field: String, expected: String) {
     assert_eq!(actual, expected, "response field '{field}'");
 }
 
-#[then(expr = "every frontier group is a relations! family")]
-fn then_every_frontier_is_a_relations_family(world: &mut AqcWorld) {
+#[then(expr = "every adjacency group is a relations! family")]
+fn then_every_adjacency_is_a_relations_family(world: &mut AqcWorld) {
     if let Some(summary) = world.body.get("edge_summary").and_then(|v| v.as_array()) {
         for entry in summary {
             let kind = entry["kind"].as_str().unwrap();
@@ -203,7 +203,7 @@ fn then_every_frontier_is_a_relations_family(world: &mut AqcWorld) {
     } else if let Some(kind) = world.body.get("kind").and_then(|v| v.as_str()) {
         assert!(EdgeKind::from_label(kind).is_some(), "EdgePage kind '{kind}' is not a relations! family label");
     } else {
-        panic!("no frontier-bearing field (edge_summary or kind) on the last response: {}", world.body);
+        panic!("no adjacency-bearing field (edge_summary or kind) on the last response: {}", world.body);
     }
 }
 

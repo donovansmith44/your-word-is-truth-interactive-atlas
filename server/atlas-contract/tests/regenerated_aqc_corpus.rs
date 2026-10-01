@@ -15,7 +15,7 @@ fn the_exporter_regenerates_the_published_corpus_byte_for_byte_and_says_what_it_
     // Arrange
     let scratch = ScratchDirectory::new("regenerated_aqc_corpus");
     let expected_report = format!(
-        "export_aqc_examples: verified {} seeds against the real committed graph; wrote focus-query.feature + exploration-roundtrip.feature + {} fixture files + index.json ({} identity entries)\n",
+        "export_aqc_examples: verified {} seeds against the real committed graph; wrote focus-query.feature + descriptor-roundtrip.feature + {} fixture files + index.json ({} identity entries)\n",
         SEEDS.len(),
         SEEDS.len() + FIXTURES.len(),
         identity_entry_count()

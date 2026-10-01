@@ -8,8 +8,8 @@ public sealed class GraphExplorableClient : IExplorableClient
 
     public GraphExplorableClient(HttpClient http) => _http = http;
 
-    public Task<NodeCard> Card(string id) =>
-        _http.GetRequired<NodeCard>($"api/node/{Uri.EscapeDataString(id)}");
+    public Task<NodeRecord> Card(string id) =>
+        _http.GetRequired<NodeRecord>($"api/node/{Uri.EscapeDataString(id)}");
 
     public Task<EdgePage> Edges(string id, EdgeKind kind, int? cursor = null, int limit = IExplorableClient.DefaultPageSize) =>
         _http.GetRequired<EdgePage>(

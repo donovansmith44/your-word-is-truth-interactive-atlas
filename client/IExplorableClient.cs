@@ -6,7 +6,7 @@ public interface IExplorableClient
 {
     const int DefaultPageSize = 20;
 
-    Task<NodeCard> Card(string id);
+    Task<NodeRecord> Card(string id);
 
     Task<EdgePage> Edges(string id, EdgeKind kind, int? cursor = null, int limit = DefaultPageSize);
 

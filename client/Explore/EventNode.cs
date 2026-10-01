@@ -11,7 +11,7 @@ public interface INarrativeAware
 public sealed class EventNode : IExplorable, INarrativeAware
 {
     private readonly AsyncMemo<EventPage> _detail = new();
-    private readonly AsyncMemo<NodeCard> _card = new();
+    private readonly AsyncMemo<NodeRecord> _card = new();
     private readonly AsyncMemo<NarrativeEventPositions> _positions = new();
 
     public EventNode(string eventId, string title)
@@ -56,7 +56,7 @@ public sealed class EventNode : IExplorable, INarrativeAware
 
     public Task<EventPage> DetailAsync(AtlasClient api) => _detail.Get(() => api.Event(EventId));
 
-    public Task<NodeCard> CardAsync(AtlasClient api) => _card.Get(() => api.NodeCard(Identity.Id));
+    public Task<NodeRecord> CardAsync(AtlasClient api) => _card.Get(() => api.NodeRecord(Identity.Id));
 
     public Task<NarrativeEventPositions> NarrativePositionsAsync(AtlasClient api) =>
         _positions.Get(() => api.NarrativeEventPositions(EventId));

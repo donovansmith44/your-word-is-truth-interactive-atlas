@@ -465,12 +465,12 @@ public sealed class AtlasClientTests
     }
 
     [Fact]
-    public async Task NodeCard_requests_the_generic_node_endpoint()
+    public async Task NodeRecord_requests_the_generic_node_endpoint()
     {
         // Arrange
         var (client, handler) = MakeClient("""{"id":"text-unit:JHN.3.16","kind":"TextUnit","label":"JHN.3.16","provenance":"kjv","edge_summary":[],"version":"v"}""");
         // Act
-        await client.NodeCard("text-unit:JHN.3.16");
+        await client.NodeRecord("text-unit:JHN.3.16");
         // Assert
         Assert.Equal("/api/node/text-unit:JHN.3.16", Uri.UnescapeDataString(handler.RequestedUris[0].AbsolutePath));
     }

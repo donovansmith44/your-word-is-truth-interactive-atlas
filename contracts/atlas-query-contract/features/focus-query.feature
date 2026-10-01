@@ -1,5 +1,5 @@
-# FocusQuery(descriptor) -> one node's card.
-# GET /api/node/{id} -- server/atlas-contract/src/graph.rs::node_card.
+# FocusQuery(descriptor) -> one node's record.
+# GET /api/node/{id} -- server/atlas-contract/src/graph.rs::node_record.
 #
 # The Examples: table below is GENERATED, not hand-authored -- see
 # server/atlas-contract/src/bins/export_aqc_examples.rs. It draws one seed id per
@@ -7,15 +7,15 @@
 # graph at export time, so a stale seed id fails the exporter loud rather than
 # silently. Re-running the exporter against an unchanged graph reproduces this
 # table byte-identical; nothing in it is wall-clock random.
-Feature: FocusQuery -- one node's card, by descriptor
+Feature: FocusQuery -- one node's record, by descriptor
 
-  Scenario Outline: every sampled node kind resolves to a valid Focus card
+  Scenario Outline: every sampled node kind resolves to a valid Focus record
     Given a node of kind "<kind>" with id "<id>"
     When I run FocusQuery for "<id>"
-    Then the response is a valid "NodeCard"
+    Then the response is a valid "NodeRecord"
     And the response "id" field equals "<id>"
     And the response "kind" field equals "<kind>"
-    And every frontier group is a relations! family
+    And every adjacency group is a relations! family
 
     Examples:
       | kind           | id                             |

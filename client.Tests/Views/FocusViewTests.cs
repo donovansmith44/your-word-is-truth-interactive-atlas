@@ -289,7 +289,7 @@ public sealed class FocusViewTests : BunitContext
 
         public void Release() => _release.SetResult();
 
-        public Task<NodeCard> Card(string id) => served.Card(id);
+        public Task<NodeRecord> Card(string id) => served.Card(id);
 
         public async Task<EdgePage> Edges(string id, EdgeKind kind, int? cursor = null, int limit = IExplorableClient.DefaultPageSize)
         {

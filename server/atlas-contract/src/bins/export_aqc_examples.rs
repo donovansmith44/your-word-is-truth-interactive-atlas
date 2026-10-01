@@ -58,7 +58,7 @@ async fn main() -> anyhow::Result<()> {
     let features_dir = contract_dir.join("features");
     std::fs::create_dir_all(&features_dir)?;
     std::fs::write(features_dir.join("focus-query.feature"), aqc_export::focus_query_feature())?;
-    std::fs::write(features_dir.join("exploration-roundtrip.feature"), aqc_export::exploration_roundtrip_feature())?;
+    std::fs::write(features_dir.join("descriptor-roundtrip.feature"), aqc_export::descriptor_roundtrip_feature())?;
 
     let app = atlas_contract::app::build(Arc::new(data), Arc::new(graph), None);
     let fixtures_dir = contract_dir.join("fixtures");
@@ -87,7 +87,7 @@ async fn main() -> anyhow::Result<()> {
     std::fs::write(fixtures_dir.join("index.json"), serde_json::to_string_pretty(&identity_index)?)?;
 
     println!(
-        "export_aqc_examples: verified {} seeds against the real committed graph; wrote focus-query.feature + exploration-roundtrip.feature + {written} fixture files + index.json ({} identity entries)",
+        "export_aqc_examples: verified {} seeds against the real committed graph; wrote focus-query.feature + descriptor-roundtrip.feature + {written} fixture files + index.json ({} identity entries)",
         SEEDS.len(),
         identity_index.len()
     );

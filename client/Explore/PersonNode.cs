@@ -7,7 +7,7 @@ public sealed class PersonNode : IExplorable
 {
     private readonly string _personId;
     private readonly string _label;
-    private readonly AsyncMemo<NodeCard> _card = new();
+    private readonly AsyncMemo<NodeRecord> _card = new();
 
     public PersonNode(string personId, string label)
     {
@@ -20,14 +20,14 @@ public sealed class PersonNode : IExplorable
     public string Kind => "Person";
     public NodeRef Identity => new(id: _personId, kind: NodeKind.Person, label: _label);
 
-    public Task<NodeCard> CardAsync(Func<Task<NodeCard>> fetch) => _card.Get(fetch);
+    public Task<NodeRecord> CardAsync(Func<Task<NodeRecord>> fetch) => _card.Get(fetch);
 
     public async Task<IReadOnlyList<Chip>> ExploreAsync(AtlasClient api)
     {
         PersonLife? life;
         try
         {
-            life = (await CardAsync(() => api.NodeCard(_personId))).Person;
+            life = (await CardAsync(() => api.NodeRecord(_personId))).Person;
         }
         catch (Exception)
         {

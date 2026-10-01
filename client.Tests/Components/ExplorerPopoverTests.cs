@@ -69,7 +69,7 @@ public sealed class ExplorerPopoverTests : BunitContext
     {
         // Arrange
         const string prose = "In the beginning, cp. John 1, 1, that is, when time first began.";
-        Hosting(new ServedGraph().Serving(new NodeCard(
+        Hosting(new ServedGraph().Serving(new NodeRecord(
             book: null, catechism: null, description: prose, edgeSummary: [], @event: null,
             id: "CommentaryItem:kretzmann/0.1.0", kind: NodeKind.CommentaryItem, label: "The Creation of Chaos and Light",
             person: null, place: null, provenance: ServedGraph.Provenance, version: "v")));

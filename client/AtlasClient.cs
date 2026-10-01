@@ -179,8 +179,8 @@ public sealed class AtlasClient
 
     public Task<SourcesDocument> Sources() => _sourcesCache.Get(() => _http.GetRequired<SourcesDocument>("api/sources"));
 
-    public Task<NodeCard> NodeCard(string nodeId) =>
-        _http.GetRequired<NodeCard>($"api/node/{Uri.EscapeDataString(nodeId)}");
+    public Task<NodeRecord> NodeRecord(string nodeId) =>
+        _http.GetRequired<NodeRecord>($"api/node/{Uri.EscapeDataString(nodeId)}");
 
     public Task<Contract.Contents> Contents(Corpus corpus)
     {
