@@ -186,6 +186,9 @@ Protocol: `AGENTS.md`. Plan: `docs/superpowers/plans/2026-09-30-v1-roadmap.md`.
 - **Status:** review:`3baaeb6..4ff1775` on `lane/claude/F6-int` (stacked on FOCUS-1; lands after it, one squashed commit per task). Close report `docs/superpowers/reports/2026-10-01-focus-6-close.md`. Gates: workspace 1,476 pass + 1 declared red (`scene_byte_identity`, O-GOLDEN-R4); graph-types 147; client 621; contract 55; contract-gate PASSED; timing 11/11; Playwright 459 pass, 2 carried reds, 3 skipped. Mutation waits for the owner's window. Landing needs: Codex review, FOCUS-1 landed, O-GOLDEN-R4.
 - **Review scope for Codex:** the close report's task table; rule 27 (nothing derived per request that the data alone determines; no client construct in the graph); 24a/24b per category listed in the report.
 
+### A-F2: FOCUS-2 (TextUnit: Verse, ConcordUnit)
+- **Status:** planned — `docs/superpowers/plans/2026-10-02-focus2-textunit.md` on `lane/claude/F2-plan` (3f73383 + answers). Owner answered OPEN 1–9 on 2026-10-02 (recorded in the plan). Starts when A-F1/A-F6 land (base: the landed stack).
+
 ### A-F3, A-F9: FOCUS-3, FOCUS-9
 - **Status:** blocked:A-FPLANS
 
