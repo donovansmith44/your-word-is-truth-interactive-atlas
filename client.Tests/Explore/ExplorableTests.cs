@@ -15,7 +15,7 @@ public sealed class ExplorableTests
     private const string FollowingEdge = "Succession:00aa";
     private const string FollowingLabel = "Genesis 1 follows in Genesis 2";
     private const string PrecedingEdge = "Succession:00bb";
-    private const string NoLabel = "";
+    private const string PrecedingLabel = "Follows in: Genesis 2 → Genesis 1";
 
     private static readonly FrontierGroup[] Genesis1Groups =
     [
@@ -24,6 +24,8 @@ public sealed class ExplorableTests
         new(EdgeKind.FollowsIn, 1),
     ];
 
+    private static readonly EdgeRef Following = new(id: FollowingEdge, kind: EdgeKind.FollowsIn, label: FollowingLabel);
+    private static readonly EdgeRef Preceding = new(id: PrecedingEdge, kind: EdgeKind.FollowsIn, label: PrecedingLabel);
     private static readonly Explorable Genesis1 = Resolved.Node(NodeKind.Container, Genesis1Id, Genesis1Label, Genesis1Groups);
     private static readonly NodeRef Genesis2Ref = ServedGraph.Ref(NodeKind.Container, Genesis2Id, Genesis2Label);
     private static readonly NodeRef LegacyGenesis2Ref = ServedGraph.Ref(NodeKind.Container, Genesis2Id, "GEN.2");
@@ -107,8 +109,8 @@ public sealed class ExplorableTests
         var graph = new ServedGraph()
             .Serving(ServedGraph.Card(NodeKind.Container, Genesis1Id, Genesis1Label, Genesis1Groups))
             .Serving(Genesis1Id, EdgeKind.FollowsIn, null, ServedGraph.Page(EdgeKind.FollowsIn, null,
-                (FollowingEdge, EdgeEnd.From, ServedGraph.At(Genesis2Ref)),
-                (PrecedingEdge, EdgeEnd.To, ServedGraph.At(Genesis2Ref))));
+                (Following, EdgeEnd.From, ServedGraph.At(Genesis2Ref)),
+                (Preceding, EdgeEnd.To, ServedGraph.At(Genesis2Ref))));
         var genesis1 = Resolved.Node(graph, ServedGraph.Ref(NodeKind.Container, Genesis1Id, Genesis1Label));
 
         // Act
@@ -116,13 +118,11 @@ public sealed class ExplorableTests
 
         // Assert
         Assert.Equal(
-            new Page<Entry>(
-                [
-                    new Entry(new Link(EdgeKind.FollowsIn, ServedGraph.At(Genesis2Ref)), new Link(EdgeKind.SourceOf, ServedGraph.AtEdge(FollowingEdge, EdgeKind.FollowsIn, NoLabel))),
-                    new Entry(new Link(EdgeKind.FollowsIn, ServedGraph.At(Genesis2Ref)), new Link(EdgeKind.TargetOf, ServedGraph.AtEdge(PrecedingEdge, EdgeKind.PrecedesIn, NoLabel))),
-                ],
-                null),
-            page);
+            [
+                (new Link(EdgeKind.FollowsIn, ServedGraph.At(Genesis2Ref)), EdgeKind.SourceOf, Positions.Of(new EdgePosition(Following))),
+                (new Link(EdgeKind.FollowsIn, ServedGraph.At(Genesis2Ref)), EdgeKind.TargetOf, Positions.Of(new EdgePosition(Preceding))),
+            ],
+            page.Items.Select(entry => (entry.Neighbour, entry.Connection.Kind, Positions.Of(entry.Connection.Target))));
     }
 
     [Fact]

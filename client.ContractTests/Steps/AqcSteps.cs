@@ -326,7 +326,7 @@ public class AqcSteps
     {
         var entries = Body<EdgePage>().Entries;
         Assert.NotEmpty(entries);
-        Assert.All(entries, e => Assert.False(string.IsNullOrEmpty(e.Edge)));
+        Assert.All(entries, e => Assert.False(string.IsNullOrEmpty(e.Edge.Id)));
     }
 
     [Then("the response \"entries\" array has at most (\\d+) entry")]

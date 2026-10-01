@@ -70,8 +70,8 @@ public sealed class EventAccountsTests
         $$"""{"kind":"attested-in","entries":[{{string.Join(",", entries)}}],"next":{{(next is int n ? n.ToString() : "null")}},"version":"v"}""";
 
     private static string Unplaced(string verse, string loci) =>
-        $$"""{"edge":"attests:{{verse}}","node":{"id":"text-unit:{{verse}}","kind":"TextUnit","label":"{{verse}}"},"loci":{{loci}},"note":null}""";
+        $$"""{"edge":{"id":"attests:{{verse}}","kind":"attested-in","label":"Attested in: {{verse}}"},"node":{"id":"text-unit:{{verse}}","kind":"TextUnit","label":"{{verse}}"},"loci":{{loci}},"note":null}""";
 
     private static string Attestation(string verse, TextSpan run, string? note) =>
-        $$"""{"edge":"attests:{{verse}}","node":{"id":"text-unit:{{verse}}","kind":"TextUnit","label":"{{verse}}"},"loci":[{{WholeValue.Of(run)}}],"note":{{WholeValue.Of(note)}}}""";
+        $$"""{"edge":{"id":"attests:{{verse}}","kind":"attested-in","label":"Attested in: {{verse}}"},"node":{"id":"text-unit:{{verse}}","kind":"TextUnit","label":"{{verse}}"},"loci":[{{WholeValue.Of(run)}}],"note":{{WholeValue.Of(note)}}}""";
 }

@@ -24,6 +24,7 @@ public sealed class GraphExplorerTests
     private const string JustifiedEdge = "Mentions:00cc";
     private const string JustifiedLabel = "EXO.14.21 mentions the Red Sea";
     private const string JustifiesEdge = "JustifiedBy:00dd";
+    private const string JustifiesLabel = "Justified by: EXO.14.21 mentions the Red Sea → Ussher";
 
     private static readonly NodeRef ExodusEvent = ServedGraph.Ref(NodeKind.Event, "Event:red_sea", "The Red Sea parted");
     private static readonly NodeRef Exodus14 = ServedGraph.Ref(NodeKind.TextUnit, "text-unit:EXO.14.21", "EXO.14.21");
@@ -84,7 +85,7 @@ public sealed class GraphExplorerTests
         // Arrange
         var graph = new ServedGraph()
             .Serving(ServedGraph.Card(NodeKind.Source, SourceId, SourceLabel, new FrontierGroup(EdgeKind.Justifies, 1)))
-            .Serving(SourceId, EdgeKind.Justifies, null, ServedGraph.Page(EdgeKind.Justifies, null, (JustifiesEdge, EdgeEnd.To, ServedGraph.AtEdge(JustifiedEdge, EdgeKind.Mentions, JustifiedLabel))));
+            .Serving(SourceId, EdgeKind.Justifies, null, ServedGraph.Page(EdgeKind.Justifies, null, (new EdgeRef(id: JustifiesEdge, kind: EdgeKind.JustifiedBy, label: JustifiesLabel), EdgeEnd.To, ServedGraph.AtEdge(JustifiedEdge, EdgeKind.Mentions, JustifiedLabel))));
         var justifier = await new GraphExplorer(graph).Resolve(ServedGraph.At(NodeKind.Source, SourceId, SourceLabel));
 
         // Act

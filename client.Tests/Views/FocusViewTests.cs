@@ -173,7 +173,10 @@ public sealed class FocusViewTests : BunitContext
         view.Find("[data-testid='popover-entry-end-mentions-Edge:Place:eden']").Click();
 
         // Assert
-        Assert.Equal([new Link(EdgeKind.SourceOf, ServedGraph.AtEdge(ServedGraph.EdgeTo(ServedGraph.At(Eden)), EdgeKind.Mentions, Eden.Label))], followed);
+        var served = ServedGraph.EdgeTo(EdgeKind.Mentions, ServedGraph.At(Eden));
+        Assert.Equal(
+            [(EdgeKind.SourceOf, Positions.Of(new EdgePosition(served)))],
+            followed.Select(link => (link.Kind, Positions.Of(link.Target))));
     }
 
     [Fact]

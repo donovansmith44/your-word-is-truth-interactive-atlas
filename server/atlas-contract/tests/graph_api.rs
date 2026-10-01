@@ -770,7 +770,7 @@ async fn bijection_witness_over_http_cites_and_cited_by_share_the_same_edge_id()
     let (st, forward_page, _) = get(&app, "/api/node/text-unit:JHN.3.16/edges?kind=cites&limit=1").await;
     assert_eq!(st, 200);
     let entry = &forward_page["entries"][0];
-    let edge_id = entry["edge"].as_str().unwrap().to_string();
+    let edge_id = entry["edge"]["id"].as_str().unwrap().to_string();
     let target_id = entry["neighbour"]["node"]["id"].as_str().unwrap().to_string();
 
     let mut cursor: Option<u64> = None;
@@ -784,7 +784,7 @@ async fn bijection_witness_over_http_cites_and_cited_by_share_the_same_edge_id()
         assert_eq!(st2, 200);
         let inverse_entries = inverse_page["entries"].as_array().unwrap();
         if let Some(back) = inverse_entries.iter().find(|e| e["neighbour"]["node"]["id"] == "text-unit:JHN.3.16") {
-            found = Some(back["edge"].as_str().unwrap().to_string());
+            found = Some(back["edge"]["id"].as_str().unwrap().to_string());
             break;
         }
         match inverse_page["next"].as_u64() {
@@ -2332,7 +2332,7 @@ async fn an_edge_card_names_its_kind_its_ends_its_provenance_and_its_frontier() 
     let account = accounts["entries"].as_array().unwrap().iter().find(|e| e["edge"] == edge).expect("the event's own page carries the same edge").clone();
 
     // Act
-    let (status, card, _) = get(&app, &format!("/api/edge/{}", edge.as_str().unwrap())).await;
+    let (status, card, _) = get(&app, &format!("/api/edge/{}", edge["id"].as_str().unwrap())).await;
 
     // Assert
     assert_eq!(
@@ -2340,12 +2340,12 @@ async fn an_edge_card_names_its_kind_its_ends_its_provenance_and_its_frontier() 
         (
             StatusCode::OK,
             serde_json::json!({
-                "id": edge,
+                "id": edge["id"],
                 "kind": "attested-in",
                 "label": edge_label("attested-in", &event["node"], &verse),
                 "from": event,
                 "to": { "position": "node", "node": node_ref_of(&verse) },
-                "provenance": row_provenance(&edge),
+                "provenance": row_provenance(&edge["id"]),
                 "loci": account["loci"],
                 "note": account["note"],
                 "edge_summary": [{ "kind": "from", "count": 1 }, { "kind": "to", "count": 1 }],
@@ -2360,7 +2360,7 @@ async fn an_edge_card_reads_the_same_from_the_artifact_as_from_the_raw_build() {
     // Arrange
     let (raw, artifact) = (compiled_app(), artifact_app());
     let (edge, _) = the_attestation_of_a_verse(&raw).await;
-    let uri = format!("/api/edge/{}", edge.as_str().unwrap());
+    let uri = format!("/api/edge/{}", edge["id"].as_str().unwrap());
 
     // Act
     let (built, served) = (get(&raw, &uri).await, get(&artifact, &uri).await);
@@ -2380,7 +2380,7 @@ async fn an_edges_from_page_leads_to_its_source_node() {
     let (edge, event) = the_attestation_of_a_verse(&app).await;
 
     // Act
-    let (status, page, _) = get(&app, &format!("/api/edge/{}/edges?kind=from", edge.as_str().unwrap())).await;
+    let (status, page, _) = get(&app, &format!("/api/edge/{}/edges?kind=from", edge["id"].as_str().unwrap())).await;
 
     // Assert
     assert_eq!(
@@ -2400,7 +2400,7 @@ async fn an_edges_to_page_leads_to_its_target_node() {
     let (_, verse, _) = get(&app, &format!("/api/node/{A_VERSE_ATTESTING_ONE_EVENT}")).await;
 
     // Act
-    let (status, page, _) = get(&app, &format!("/api/edge/{}/edges?kind=to", edge.as_str().unwrap())).await;
+    let (status, page, _) = get(&app, &format!("/api/edge/{}/edges?kind=to", edge["id"].as_str().unwrap())).await;
 
     // Assert
     assert_eq!(
@@ -2424,7 +2424,7 @@ async fn a_justified_edge_lists_what_justifies_it() {
     let (_, anchor, _) = get(&app, &format!("/api/node/{AN_ANCHOR_WITH_ONE_DATING}")).await;
     let (_, dates, _) = get(&app, &format!("/api/node/{AN_ANCHOR_WITH_ONE_DATING}/edges?kind=dates")).await;
     let (_, justifies, _) = get(&app, &format!("/api/node/{AN_ANCHOR_WITH_ONE_DATING}/edges?kind=justifies")).await;
-    let dating = dates["entries"][0]["edge"].as_str().unwrap();
+    let dating = dates["entries"][0]["edge"]["id"].as_str().unwrap();
 
     // Act
     let (status, page, _) = get(&app, &format!("/api/edge/{dating}/edges?kind=justified-by")).await;
@@ -2456,11 +2456,27 @@ async fn every_edge_entry_says_which_end_the_page_node_is() {
 }
 
 #[tokio::test]
+async fn an_entry_serves_its_edge_as_the_edge_card_names_it_from_either_end() {
+    // Arrange
+    let app = compiled_app();
+    let (edge, event) = the_attestation_of_a_verse(&app).await;
+    let (_, card, _) = get(&app, &format!("/api/edge/{}", edge["id"].as_str().unwrap())).await;
+
+    // Act
+    let (_, accounts, _) = get(&app, &format!("/api/node/{}/edges?kind=attested-in&limit=200", event["node"]["id"].as_str().unwrap())).await;
+    let from_the_event = accounts["entries"].as_array().unwrap().iter().find(|e| e["edge"]["id"] == edge["id"]).unwrap()["edge"].clone();
+
+    // Assert
+    let named = serde_json::json!({ "id": card["id"], "kind": card["kind"], "label": card["label"] });
+    assert_eq!((edge, from_the_event), (named.clone(), named));
+}
+
+#[tokio::test]
 async fn an_unknown_edge_id_is_not_found() {
     // Arrange
     let app = compiled_app();
     let (edge, _) = the_attestation_of_a_verse(&app).await;
-    let (_, hash) = edge.as_str().unwrap().split_once(':').unwrap();
+    let (_, hash) = edge["id"].as_str().unwrap().split_once(':').unwrap();
     let unknown = format!("{}:{hash}", atlas_graph_types::edge::RelationId::Cites.name());
 
     // Act
@@ -2502,7 +2518,7 @@ async fn every_edge_ref_carries_its_kind_and_served_label() {
                 "kind": "justifies",
                 "entries": [{
                     "edge": page["entries"][0]["edge"],
-                    "neighbour": { "position": "edge", "edge": { "id": dates["entries"][0]["edge"], "kind": "dated-by", "label": edge_label("dated-by", dated, &anchor) } },
+                    "neighbour": { "position": "edge", "edge": { "id": dates["entries"][0]["edge"]["id"], "kind": "dated-by", "label": edge_label("dated-by", dated, &anchor) } },
                     "end": "to",
                 }],
                 "next": null,
@@ -2530,7 +2546,7 @@ async fn a_justification_has_a_card_drawn_from_the_row_it_justifies() {
     let app = compiled_app();
     let (_, anchor, _) = get(&app, &format!("/api/node/{AN_ANCHOR_WITH_ONE_DATING}")).await;
     let (_, justifies, _) = get(&app, &format!("/api/node/{AN_ANCHOR_WITH_ONE_DATING}/edges?kind=justifies")).await;
-    let justification = justifies["entries"][0]["edge"].clone();
+    let justification = justifies["entries"][0]["edge"]["id"].clone();
     let dating = justifies["entries"][0]["neighbour"].clone();
 
     // Act

@@ -1524,10 +1524,10 @@ components:
       - end
       properties:
         edge:
-          type: string
+          $ref: '#/components/schemas/EdgeRef'
           description: |-
-            The edge's own id. The neighbour's page for the opposite kind carries this
-            same id for this same connection, and the edge itself can be explored.
+            The edge itself, as `/api/edge/{id}` names it. The neighbour's page for the
+            opposite kind carries this same edge for this same connection.
         end:
           $ref: '#/components/schemas/EdgeEnd'
         loci:

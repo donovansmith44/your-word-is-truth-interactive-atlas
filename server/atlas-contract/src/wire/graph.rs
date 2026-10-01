@@ -146,9 +146,9 @@ pub struct EdgePage {
 #[serde(deny_unknown_fields)]
 #[schema(description = "One neighbour, with the edge that joins it and what that edge records: `neighbour` is what the edge leads to, a node or, on a `justifies` page, the edge the node grounds; `votes` only on a cross reference, `narrative` only on a narrative's succession, `loci` on an attestation (for `attested-in`, the runs of verses its account reads on without a break; for `attests`, the verse itself) and on a mention (each occurrence of the name in the verse as a span of its words, absent where the name is not found among the verse's words), `note` only on an attestation, `parentage` only on a parent-of edge. `end` says which end of the edge the page's own node or edge is, so `/api/edge/{edge}` reads the same connection from its other side. A page lists an edge once however many rows record it.")]
 pub struct EdgeEntry {
-    /// The edge's own id. The neighbour's page for the opposite kind carries this
-    /// same id for this same connection, and the edge itself can be explored.
-    pub edge: String,
+    /// The edge itself, as `/api/edge/{id}` names it. The neighbour's page for the
+    /// opposite kind carries this same edge for this same connection.
+    pub edge: EdgeRef,
     pub neighbour: PositionRef,
     pub end: EdgeEnd,
     #[serde(skip_serializing_if = "Option::is_none")]

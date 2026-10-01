@@ -23,7 +23,7 @@ use atlas_graph::tokens;
 use atlas_graph::window::{self, WindowDir};
 use atlas_graph::sqlite::SqliteError;
 use atlas_graph::GraphService;
-use atlas_graph_types::edge::{Direction, EdgeId, EdgeKind, EdgeRecord, RelationId};
+use atlas_graph_types::edge::{dual, Direction, EdgeId, EdgeKind, EdgeRecord, RelationId};
 use atlas_graph_types::explore::{EdgeMeta, EdgePage, EdgeQuery, EdgeSummary};
 use atlas_graph_types::id::{AnyNodeId, NodeKind, Position};
 use atlas_graph_types::node::NodePayload;
@@ -270,9 +270,18 @@ fn served_page(data: &AtlasData, graph: &GraphService, snap: &impl GraphQuery, h
     for e in page.entries.iter().filter(|e| names_a_fetchable_card(&e.node)) {
         let (votes, narrative, parentage) = meta_fields(&e.meta);
         let (loci, note) = facts.of(data, graph, snap, page.kind, here, &e.node)?;
-        entries.push(wire::EdgeEntry { edge: e.edge.0.clone(), neighbour: describe_position(&e.node, snap), end: page.kind.end_at(here, &e.node), votes, narrative, loci, note, parentage });
+        let end = page.kind.end_at(here, &e.node);
+        entries.push(wire::EdgeEntry { edge: edge_ref(&joining(page.kind, end, here, e), snap), neighbour: describe_position(&e.node, snap), end, votes, narrative, loci, note, parentage });
     }
     Ok(wire::EdgePage { kind: page.kind, entries, next: page.next, version: atlas_graph::version_hex(graph.version()) })
+}
+
+fn joining(kind: EdgeKind, end: wire::EdgeEnd, here: &Position, entry: &atlas_graph_types::explore::EdgeEntry) -> EdgeRecord {
+    let (kind, subject, object) = match end {
+        wire::EdgeEnd::From => (kind, here.clone(), entry.node.clone()),
+        wire::EdgeEnd::To => (dual(kind), entry.node.clone(), here.clone()),
+    };
+    EdgeRecord { id: entry.edge.clone(), kind, subject, object, meta: entry.meta.clone() }
 }
 
 fn names_a_fetchable_card(neighbour: &Position) -> bool {

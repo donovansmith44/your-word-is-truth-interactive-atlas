@@ -243,12 +243,12 @@ async fn then_bijection_witness(world: &mut AqcWorld, field: String) {
     assert!(!entries.is_empty(), "test needs at least one real entry to prove the bijection over");
     for entry in &entries {
         let target_id = entry["neighbour"]["node"]["id"].as_str().unwrap();
-        let this_edge = entry["edge"].as_str().unwrap();
+        let this_edge = entry["edge"]["id"].as_str().unwrap();
         let (status, inverse_page) = get(&format!("/api/node/{}/edges?kind={inverse_label}&limit=200", path_encode(target_id))).await;
         assert_eq!(status, StatusCode::OK.as_u16(), "the target's own inverse-kind page must resolve");
         let inverse_entries = inverse_page["entries"].as_array().unwrap();
         assert!(
-            inverse_entries.iter().any(|e| e["edge"].as_str() == Some(this_edge)),
+            inverse_entries.iter().any(|e| e["edge"]["id"].as_str() == Some(this_edge)),
             "edge id '{this_edge}' from '{}' must appear on '{target_id}''s own '{inverse_label}' page",
             world.last_traversal_id
         );
@@ -268,7 +268,7 @@ async fn then_pagination_no_repeats(world: &mut AqcWorld, next_field: String) {
     let id = world.last_traversal_id.clone();
     let kind = world.last_traversal_kind.clone();
     for entry in world.body["entries"].as_array().unwrap() {
-        seen.insert(entry["edge"].as_str().unwrap().to_string());
+        seen.insert(entry["edge"]["id"].as_str().unwrap().to_string());
     }
     let mut cursor = world.body["next"].as_u64().map(|n| n as usize);
     let mut pages_walked = 0;
@@ -282,7 +282,7 @@ async fn then_pagination_no_repeats(world: &mut AqcWorld, next_field: String) {
             break;
         }
         for entry in entries {
-            let edge_id = entry["edge"].as_str().unwrap().to_string();
+            let edge_id = entry["edge"]["id"].as_str().unwrap().to_string();
             assert!(seen.insert(edge_id.clone()), "edge id '{edge_id}' was already seen on an earlier page -- pagination repeated an entry");
         }
         cursor = page["next"].as_u64().map(|n| n as usize);

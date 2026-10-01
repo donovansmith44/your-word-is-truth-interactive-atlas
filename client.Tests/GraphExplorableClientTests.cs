@@ -55,7 +55,7 @@ public class GraphExplorableClientTests
     {
         var (client, handler) = MakeClient();
         handler.ResponseBody = """
-            {"kind":"cites","entries":[{"edge":"e1","neighbour":{"position":"node","node":{"id":"text-unit:ROM.3.23","kind":"TextUnit","label":"ROM.3.23"}},"end":"from"}],"next":null,"version":"abc123"}
+            {"kind":"cites","entries":[{"edge":{"id":"e1","kind":"cites","label":"Cites: JHN.3.16 → ROM.3.23"},"neighbour":{"position":"node","node":{"id":"text-unit:ROM.3.23","kind":"TextUnit","label":"ROM.3.23"}},"end":"from"}],"next":null,"version":"abc123"}
             """;
 
         var page = await client.Edges("text-unit:JHN.3.16", EdgeKind.Cites, cursor: null, limit: 5);
@@ -64,7 +64,7 @@ public class GraphExplorableClientTests
         Assert.Equal("?kind=cites&limit=5", handler.LastRequestUri.Query);
         Assert.Equal(EdgeKind.Cites, page.Kind);
         Assert.Single(page.Entries);
-        Assert.Equal("e1", page.Entries[0].Edge);
+        Assert.Equal(new EdgeRef(id: "e1", kind: EdgeKind.Cites, label: "Cites: JHN.3.16 → ROM.3.23"), page.Entries[0].Edge);
         Assert.Equal(new NodePosition(new NodeRef(id: "text-unit:ROM.3.23", kind: NodeKind.TextUnit, label: "ROM.3.23")), page.Entries[0].Neighbour);
         Assert.Null(page.Next);
     }
@@ -74,7 +74,7 @@ public class GraphExplorableClientTests
     {
         var (client, handler) = MakeClient();
         handler.ResponseBody = """
-            {"kind":"justifies","entries":[{"edge":"JustifiedBy:00aa","neighbour":{"position":"edge","edge":{"id":"DatedBy:00ff","kind":"dated-by","label":"Solomon crowned dated by 970 BC"}},"end":"from"}],"next":null,"version":"abc123"}
+            {"kind":"justifies","entries":[{"edge":{"id":"JustifiedBy:00aa","kind":"justified-by","label":"Justified by: Solomon crowned dated by 970 BC → Solomon crowned"},"neighbour":{"position":"edge","edge":{"id":"DatedBy:00ff","kind":"dated-by","label":"Solomon crowned dated by 970 BC"}},"end":"from"}],"next":null,"version":"abc123"}
             """;
 
         var page = await client.Edges("Anchor:solomon-crowned", EdgeKind.Justifies, cursor: null, limit: 5);

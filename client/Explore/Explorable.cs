@@ -4,8 +4,6 @@ namespace BibleAtlas.Client.Explore;
 
 public sealed class Explorable
 {
-    private const string UnservedEdgeLabel = "";
-
     private readonly Func<EdgeKind, int?, Task<EdgePage>> _page;
 
     internal Explorable(NodeCard card, IExplorableClient graph)
@@ -53,13 +51,13 @@ public sealed class Explorable
         }
 
         var page = await _page(kind, cursor);
-        return new Page<Entry>(page.Entries.Select(entry => new Entry(new Link(kind, entry.Neighbour), Connection(kind, entry))).ToList(), page.Next);
+        return new Page<Entry>(page.Entries.Select(entry => new Entry(new Link(kind, entry.Neighbour), Connection(entry))).ToList(), page.Next);
     }
 
-    private static Link Connection(EdgeKind kind, EdgeEntry entry) => entry.End switch
+    private static Link Connection(EdgeEntry entry) => entry.End switch
     {
-        EdgeEnd.From => new Link(EdgeKind.SourceOf, new EdgePosition(new EdgeRef(id: entry.Edge, kind: kind, label: UnservedEdgeLabel))),
-        EdgeEnd.To => new Link(EdgeKind.TargetOf, new EdgePosition(new EdgeRef(id: entry.Edge, kind: kind.Dual(), label: UnservedEdgeLabel))),
+        EdgeEnd.From => new Link(EdgeKind.SourceOf, new EdgePosition(entry.Edge)),
+        EdgeEnd.To => new Link(EdgeKind.TargetOf, new EdgePosition(entry.Edge)),
     };
 
     public override bool Equals(object? obj) => obj is Explorable other && Kind == other.Kind && Id == other.Id;

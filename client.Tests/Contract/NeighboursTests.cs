@@ -9,7 +9,7 @@ public sealed class NeighboursTests
     private static readonly EdgeRef ADating = new(id: "DatedBy:00ff", kind: EdgeKind.DatedBy, label: "Hazor 1 dated by 1700 BC");
 
     private static EdgeEntry Leading(string edge, PositionRef to) =>
-        new(edge: edge, end: EdgeEnd.From, loci: null, narrative: null, neighbour: to, note: null, parentage: null, votes: null);
+        new(edge: new EdgeRef(id: edge, kind: EdgeKind.Mentions, label: edge), end: EdgeEnd.From, loci: null, narrative: null, neighbour: to, note: null, parentage: null, votes: null);
 
     [Fact]
     public void Nodes_keeps_every_node_neighbour_in_page_order_and_passes_over_an_edge()

@@ -68,7 +68,8 @@ internal sealed class ServedGraph : IExplorableClient
 
     public static PositionRef At(NodeRef node) => new NodePosition(node);
 
-    public static string EdgeTo(PositionRef neighbour) => $"{EdgeIdPrefix}{Positions.Of(neighbour).Id}";
+    public static EdgeRef EdgeTo(EdgeKind kind, PositionRef neighbour) =>
+        new(id: $"{EdgeIdPrefix}{Positions.Of(neighbour).Id}", kind: kind, label: $"{kind.Label()}: {Positions.Of(neighbour).Label}");
 
     public static PositionRef AtEdge(string id, EdgeKind kind, string label) => new EdgePosition(new EdgeRef(id: id, kind: kind, label: label));
 
@@ -76,9 +77,9 @@ internal sealed class ServedGraph : IExplorableClient
         Page(kind, next, nodes.Select(At).ToArray());
 
     public static EdgePage Page(EdgeKind kind, int? next, params PositionRef[] neighbours) =>
-        Page(kind, next, neighbours.Select(neighbour => (EdgeTo(neighbour), EdgeEnd.From, neighbour)).ToArray());
+        Page(kind, next, neighbours.Select(neighbour => (EdgeTo(kind, neighbour), EdgeEnd.From, neighbour)).ToArray());
 
-    public static EdgePage Page(EdgeKind kind, int? next, params (string Edge, EdgeEnd End, PositionRef Neighbour)[] entries) =>
+    public static EdgePage Page(EdgeKind kind, int? next, params (EdgeRef Edge, EdgeEnd End, PositionRef Neighbour)[] entries) =>
         new(
             entries: entries.Select(entry => new EdgeEntry(edge: entry.Edge, end: entry.End, loci: null, narrative: null, neighbour: entry.Neighbour, note: null, parentage: null, votes: null)).ToList(),
             kind: kind, next: next, version: Version);
