@@ -22,6 +22,6 @@ The remaining failure is in `crates/map-encoders/src/tests.rs`, outside CX-M0's 
 
 The queue migration omitted this existing blocker and the analysis handoffs; they are being restored on ops. CX-M1/CX-M2 remain dependent on CX-M0's reviewed landing. The owner's errata seed is recorded: **1446/1406 BC first, possibly 1200 BC; Edom extent and early Davidic content; local geography only; findings cite Scripture or atlas facts and do not fix data.**
 
-Authored cleanup commit `59a9006`: 285 inserted / 26 deleted text lines (including 218 lockfile lines), plus PDF removal; detached-launch follow-up `9f99a90`: 1 insertion / 1 deletion. Imported Stage 1 and TOOLCHAIN-1 changes are separate from those figures. No shared locks held.
+Authored cleanup commit `59a9006`: 304 inserted / 33 deleted text lines (including 218 lockfile lines), plus PDF removal; detached-launch follow-up `9f99a90`: 1 insertion / 1 deletion. Imported Stage 1 and TOOLCHAIN-1 changes are separate from those figures. No shared locks held.
 
 Handoff: Claude can review the path/launcher implementation now, but should not land it as gate-clean. Resolve O-M0-LIMB, finish the scoped fixture follow-up, run remaining required gates, then move CX-M0 to review. Do not merge old atlas queue commits from `lane/codex/CX-M0`; take this report alone if needed. All further queue edits live on ops.
