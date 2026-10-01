@@ -99,5 +99,18 @@ mkdir -p "$tmp/t9-graph-types/src"
 printf '#[ignore]\nfn quietly_disabled_in_graph_types() {}\n' >> "$tmp/t9-graph-types/src/x.rs"
 expect_refused env TIMING_GATES_ROOTS="$tmp/t9-server $tmp/t9-graph-types" bash "$GATES" check
 
+# 10. ATTEMPT: a script names a test that no longer exists (a rename the
+#     script never followed). The shared named-test check must refuse a filter
+#     that matches zero tests, and accept one that matches.
+NAMED="$ROOT/scripts/named-test.sh"
+mkdir -p "$tmp/shim"
+printf '#!/usr/bin/env bash\nprintf "%%s\\n" "alpha_gate: test" "beta_gate: test" "2 tests, 0 benchmarks"\n' > "$tmp/shim/cargo"
+chmod +x "$tmp/shim/cargo"
+expect_ok env CARGO="$tmp/shim/cargo" bash "$NAMED" require exact pkg bin alpha_gate
+expect_ok env CARGO="$tmp/shim/cargo" bash "$NAMED" require prefix pkg bin alpha
+expect_refused env CARGO="$tmp/shim/cargo" bash "$NAMED" require exact pkg bin alpha
+expect_refused env CARGO="$tmp/shim/cargo" bash "$NAMED" require exact pkg bin renamed_away_gate
+expect_refused env CARGO="$tmp/shim/cargo" bash "$NAMED" require prefix pkg bin renamed_away
+
 echo "timing-gates selftest: $pass passed, $fail failed"
 [ "$fail" -eq 0 ]

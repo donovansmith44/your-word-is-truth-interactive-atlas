@@ -153,7 +153,7 @@ flattenGather _ _ = []
 -- what makes the vocabulary laws transport-agnostic: "every \"kind\" in
 -- this response names a declared node kind" has to be answerable without
 -- the step knowing the response's shape, because the whole point is that
--- the SAME law holds over a node card, an edge page, a scene and a CLI
+-- the SAME law holds over a node record, an edge page, a scene and a CLI
 -- dump, which have four different shapes and one vocabulary.
 collectKey :: Text -> Value -> [Value]
 collectKey k = go

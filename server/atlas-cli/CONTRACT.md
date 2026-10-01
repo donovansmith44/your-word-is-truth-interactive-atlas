@@ -155,8 +155,9 @@ joined same as before, `(none)` unchanged when a section is empty. This
 is the CLI's own established node-id vocabulary (the same one `bibex
 edges`'s target-listing rows already used before this batch), not the
 REST API's per-domain `PlaceRef`/`PersonRef` id space (those ids are
-bare curated ids meant for a DIFFERENT endpoint, `/api/place/{id}`, that
-this CLI has no equivalent of) — chosen so the loop the owner named always
+bare curated ids; the per-domain `/api/place/{id}` endpoint that took them
+no longer exists, and every node is read at `/api/node/{id}` in the form
+this CLI already speaks) — chosen so the loop the owner named always
 closes: copy the bracketed id, paste it straight into `bibex node`.
 
 Batch PERI-1 (PRESENTATION CATEGORY LAW — owner order, verbatim: "NUN is
@@ -481,9 +482,9 @@ vocabulary — no novel synonyms for an established name:
   (`graph_wire::encode_node_id`'s wire-encoded form, e.g. `Place:jericho`,
   `Person:aaron_1`), the one `bibex node`/`bibex edges` already speak, NOT
   the REST API's per-domain endpoints' own bare-id shapes
-  (`PlaceRef`/`PersonRef`'s `{id, name}`, meant for a DIFFERENT
-  wire surface, `/api/place/{id}`, that this CLI has no equivalent of) —
-  a deliberate choice, so a printed `id` always round-trips through THIS
+  (`PlaceRef`/`PersonRef`'s `{id, name}`, which belonged to the retired
+  `/api/place/{id}` endpoint; every node is now read at `/api/node/{id}`
+  in the form this CLI speaks) — a deliberate choice, so a printed `id` always round-trips through THIS
   binary's own `bibex node <id>`.
 - Refs use their canonical grammars verbatim (`ref: "GEN.1.1"`,
   `ref: "BoC 7.2.1"`), the same citation strings `graph_wire::

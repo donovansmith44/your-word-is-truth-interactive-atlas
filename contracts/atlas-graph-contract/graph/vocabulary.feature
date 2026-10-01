@@ -2,7 +2,7 @@ Feature: the declared vocabulary — the root of every other promise
   The graph declares its node kinds in graph-types' `kind_tags!` manifest
   (id.rs) and its edge families in its `relations!` manifest (edge.rs),
   and those two macros are the only place either list exists. Every
-  `kind` a consumer ever reads — on a node card, on an edge-page entry,
+  `kind` a consumer ever reads — on a node record, on an edge-page entry,
   in an edge summary, in a CLI dump — is drawn from here.
 
   This is why it is the FIRST feature and not a footnote: a consumer

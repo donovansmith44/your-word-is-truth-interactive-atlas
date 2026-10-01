@@ -128,7 +128,6 @@ smelled -- it is just ~5ms at the ceiling, not ~200ms.
 | chapter (JHN.3) | 218.8us [214.6, 223.3] |
 | verse (JHN.3.16) | 16.20us [15.83, 16.63] |
 | xrefs (JHN.3.16) | 12.90us [12.60, 13.23] |
-| place (hebron) | 162.1us [161.1, 163.2] |
 | event (ab_ur) | 3.73us [3.65, 3.81] |
 | narrative_event_positions (ab_ur) | 4.04us [3.92, 4.17] |
 | catechism_for_span (EXO.20.3) | 700ns [688, 712] |
@@ -138,7 +137,7 @@ smelled -- it is just ~5ms at the ceiling, not ~200ms.
 
 | Handler | Time (median [min, max]) |
 |---|---|
-| node_card (text-unit:JHN.3.16) | 9.43us [9.25, 9.61] |
+| node_record (text-unit:JHN.3.16) | 9.43us [9.25, 9.61] |
 | node_edges (text-unit:JHN.3.16, kind=cites) | 9.90us [9.71, 10.11] |
 | text_window (ref=JHN.3.16) | 2.39us [2.34, 2.44] |
 

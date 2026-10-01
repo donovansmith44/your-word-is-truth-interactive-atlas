@@ -32,7 +32,7 @@ Feature: bibex — a second transport over the same graph
 
   # RED ON PURPOSE, and disclosed rather than silenced (CDC-1 finding).
   # `GET /api/node/{id}` carries `version` -- the atlas version root the
-  # answer was computed at (graph_handlers.rs::NodeCardOut.version) --
+  # answer was computed at (graph_handlers.rs::NodeRecord.version) --
   # and `bibex --json node` carries no such field. A consumer reading the
   # graph over the CLI therefore cannot tell WHICH graph it read, so it
   # cannot implement the C6 stale-pin that the HTTP consumer can. The fix
