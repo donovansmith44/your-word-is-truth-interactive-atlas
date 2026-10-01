@@ -65,7 +65,7 @@ Take the lock first, following `.superpowers/LOCKS.md`. The locks are:
 - **Licensing** (owner 2026-09-29): ingest nothing that isn't public domain, CC0, or attribution-only permissive (CC BY 4.0, MIT, BSD, Apache-2.0). ShareAlike/copyleft (CC BY-SA, ODbL, GPL), NonCommercial, NoDerivatives and unlicensed sources are out. Cite the license; record attribution in `LICENSES.md`.
 
 ## Commits and branches
-- **Commits:** small, one behaviour each, with a message that states what is now true.
+- **Commits (owner, 2026-09-30: "start squashing"):** one commit per task on the main branch, squashed at landing (`git merge --squash` or `cherry-pick -n` of the lane range), with a message that states what is now true. Lane branches may hold work-in-progress commits; they are never rewritten, only squashed when landed. Red-before-green evidence lives in the task report and the ledger, not in separate commits. Queue and ledger edits ride along with the task's commit or go in one batched commit; the only stand-alone queue commit is a claim, because its push is the mutual exclusion.
 - **Codex:** pushes to `lane/codex/<item-id>` and never pushes to `worktree-bible-atlas-m1`.
 - **Landing:** Claude lands reviewed work by cherry-picking it, holding the `land` lock. Claude's own work lands the same way, after Codex has reviewed it.
 
