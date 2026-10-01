@@ -16,7 +16,7 @@
 
 **Owner answers, 2026-10-02 (binding; they supersede the defaults below):**
 1. **(a)** keep the passage path (`PassageNode`) until FOCUS-3.
-2. **Drop PARALLELS.**
+2. **Drop PARALLELS on a verse only** (`VerseParallelsSection`). An event's own parallel accounts (`attested-in`, `EventAccounts`) stay; they move with Event in FOCUS-4/5.
 3. **Events only.** A verse shows the events it attests; no passage-membership group ("the passage you can leave off").
 4. **(b)** a "read in context" hatch on FocusView for a verse.
 5. **Remove the cross-reference marker** — it duplicates opening the verse.
