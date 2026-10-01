@@ -39,6 +39,8 @@ Protocol: `AGENTS.md`. Plan: `docs/superpowers/plans/2026-09-30-v1-roadmap.md`.
 21. **O-LABELS:** edge kinds now show display labels derived from their wire names ("attested-in" → "Attested in", "spouse-of" → "Spouse of"). Keep derived, or hand-write a curated label per kind (a data file)?
 22. **O-CACHE:** FOCUS-0 owes one proof (R44): clear `data/cache/sections/*` and run `cargo test -p atlas-cli` green first time. OK to clear the cache (regenerable) in `~/src/bible-atlas`?
 
+23. **O-M0-LIMB:** Authorize a scoped follow-up for the cross-platform limb fixture law (23 float differences ≤2.22e-16, identical topology), keeping the existing fixture and requiring a justified numerical comparison rather than re-blessing it?
+
 ## FINDINGS (rules 24a/24b: open categories, each with its proposed CLOSURE; the owner decides; agents append)
 - **F-1 (rule 26, server facts in code): the canon table.** `server/atlas-core/src/canon.rs` holds the 66 books (codes, OSIS ids, names) as a static table in code. Proposed closure: the canon becomes a curated file (`data/curated/books.toml` already exists — check what it holds) compiled into the artifact's Kjv section, and `BookId`/codes are read from it; a law forbids book literals in server code. Cost: `BookId(pub u8)` and the code-string wire form re-anchor on the data.
 - **F-2 (rule 26): the attestation-pending inventory.** `server/atlas-graph/src/attestation_pending.rs` pins 889 event pairs as a `PENDING` const in code (re-swept by hand when the attests cap came off). Proposed closure: the inventory is a curated file with each pair's grounds, or is derived by the compiler as a law output, never a code literal.
@@ -174,7 +176,7 @@ Protocol: `AGENTS.md`. Plan: `docs/superpowers/plans/2026-09-30-v1-roadmap.md`.
 ## Lane B: maps (Codex, repo `mapgen` unless noted)
 
 ### CX-M0: map-generator hygiene
-- **Status:** claimed:codex:2026-09-30T12:33:21+00:00
+- **Status:** blocked:owner (O-M0-LIMB)
 - **Repo / base:** `mapgen`, `origin/master` = `6608db4`. (Your Windows copy's `master` also has 2 unpushed commits, O-MG-LOCAL; work from `6608db4`, not from them.)
 - **Worktree:** `git -C ~/src/map-generator worktree add -b lane/codex/CX-M0 ~/w/mg-CX-M0 6608db4`
 - **Files:** `crates/*/Cargo.toml`, `Cargo.lock`, `rust-toolchain.toml`, `crates/map-types/tests/toolchain_pin.rs`, `scripts/demo.sh`, the PDF.
@@ -190,6 +192,11 @@ Protocol: `AGENTS.md`. Plan: `docs/superpowers/plans/2026-09-30-v1-roadmap.md`.
 - **Done when:** all of the above, pushed to `lane/codex/CX-M0`, reviewed. The controller then fast-forwards `master`.
 
 - **Execution notes:** Original claim interrupted before push; resumed after independent A-F1 review d170086 on lane/codex/A-F1-review. Main prep now wins. Workspace Cargo.toml is named by step 3. Owner audit priority: 1446 and 1406 BC, then possibly 1200 BC; Edom extent and Davidic content seed the register.
+
+- **Result / range:** mapgen `6608db4..9f99a90`, pushed `lane/codex/CX-M0`; imported the instructed Stage 1 commits and TOOLCHAIN-1, then the landed mapgen operating files. Latest atlas pin `e49593567e05bf61210a842b68ef85bb6c75514e` compiles the whole workspace; no type edits or fallback pin needed. One workspace git dependency, committed Cargo.lock; Linux PID-scoped detached demo; PDF removed from HEAD only.
+- **Verification:** red manifest load before dependency fix; isolated launcher start/stop and foreign-PID tests red then 2/2 green. Rust workspace completed with **187 passed, 1 failed, 1 ignored**. Only failure: `map-encoders::tests::limb_fixtures_match_rust`. Scratch comparison: 23 numeric differences, maximum absolute 2.220446049250313e-16, zero shape/key/boolean differences; no fixture changed. Haskell **368 examples / 0 failures**, both contract check and vocab commands pass; semver shell tests 6/6. `make contract-gates` fails at the same Rust fixture. `make demo` + `/api/meta` succeeded at 8090; `make stop` stopped its recorded PID, with no server left running.
+- **Environment:** clean worktree needs `map-compile build` from committed vendor inputs to generate ignored `data/canon/`; no refresh or source data edits. Cabal's default solver omits tests: ignored `contracts/runner/cabal.project.local` contains `tests: True` and `jobs: 4`; with that config the literal gate reaches Rust. Diagnostics and logs are `/tmp/codex-CX-M0-*`; numeric comparison used a scratch copy, never the bless test. Windows launcher path has not been executed on WSL.
+- **handoff:** resolve O-M0-LIMB in a scoped follow-up; re-run the failed law and required gates, then set review (not green yet). Heavy lock released; demo stopped. M1/M2 remain blocked until reviewed landing. The two owner commits on local master were not imported. Owner maps priority remains 1446/1406 BC, then possibly 1200 BC.
 
 ### CX-M1: a map gallery for choosing a style
 - **Status:** blocked:CX-M0
