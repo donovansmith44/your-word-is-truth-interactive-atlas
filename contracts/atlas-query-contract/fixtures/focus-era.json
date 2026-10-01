@@ -1,11 +1,24 @@
 {
   "body": {
     "edge_summary": [],
+    "era": {
+      "window": {
+        "from": {
+          "label": "4004 BC",
+          "value": -4004
+        },
+        "label": "4004 – 2167 BC",
+        "to": {
+          "label": "2167 BC",
+          "value": -2167
+        }
+      }
+    },
     "id": "Era:primeval",
     "kind": "Era",
     "label": "Primeval",
     "provenance": "curated-eras",
-    "version": "8d01e50b4270c7aa8b6180a33ae47717"
+    "version": "f73d7cdc34fbeadd347429fad073d0b3"
   },
   "status": 200
 }

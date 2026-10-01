@@ -159,7 +159,7 @@ pub fn justified_by_source_family(source_edge_id: &EdgeId) -> Option<RowFamily> 
 }
 
 /// Part of every manifest line, and therefore part of the root.
-pub const SECTION_SCHEMA_VERSION: u32 = 19;
+pub const SECTION_SCHEMA_VERSION: u32 = 20;
 
 /// A per-row family appears under both of its homes.
 pub fn row_tables_of(section: Section) -> &'static [RowFamily] {
@@ -221,6 +221,8 @@ pub fn extra_tables_of(section: Section) -> &'static [&'static str] {
             "place",
             "era",
             "polity_era",
+            "polity_reign",
+            "place_default",
             "event_date",
             "heading_index",
             "canon_book",
@@ -463,7 +465,7 @@ mod laws {
         assert_eq!(extra_tables_of(Section::Concord), &["concord_unit", "concord_token"]);
         assert!(extra_tables_of(Section::Kretzmann).is_empty());
         assert_eq!(extra_tables_of(Section::Lexicon), &["lexicon_entry", "token"]);
-        assert_eq!(extra_tables_of(Section::Core).len(), 26);
+        assert_eq!(extra_tables_of(Section::Core).len(), 28);
         let order = logical_table_order(Section::Core);
         assert_eq!(order.last().copied(), Some("provenance_entry"));
         assert!(order.iter().position(|t| *t == "place").unwrap() > order.iter().position(|t| *t == "analogue").unwrap());

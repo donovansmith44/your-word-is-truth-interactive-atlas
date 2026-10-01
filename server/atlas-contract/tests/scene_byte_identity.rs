@@ -33,35 +33,35 @@ fn fnv1a(bytes: &[u8]) -> u64 {
 
 fn time_windows() -> Vec<(&'static str, i32, i32, u64, usize)> {
     vec![
-        ("era_primeval", -4004, -2167, 0x2584b94d0720adf7, 27027),
-        ("era_patriarchs", -2166, -1877, 0xeadb90faaa9ea84a, 42892),
-        ("era_egypt_exodus", -1876, -1407, 0xc3b74d4ce71150f5, 105654),
-        ("era_conquest_judges", -1406, -1051, 0x7c3b460537892d78, 63382),
-        ("era_united_kingdom", -1050, -932, 0x3279806a78d4d70c, 55319),
-        ("era_divided_kingdom", -931, -587, 0x310a20f95bdf42bf, 78000),
-        ("era_exile", -586, -539, 0xa5e3c23c077fcd17, 35243),
-        ("era_return", -538, -6, 0x8ccaaf9900e1ed58, 52774),
-        ("era_gospels", -5, 29, 0x4727c78190117cbc, 31179),
-        ("era_early_church", 30, 100, 0x1bb05aa9750654b4, 216063),
-        ("full_span", -4004, 100, 0xdbca691382d222bc, 504705),
-        ("nt_window_gospels_plus_church", -5, 100, 0x8b89acf61ee208d1, 224930),
-        ("degenerate_start_year", -4004, -4004, 0xebefdbe91f10b584, 22302),
-        ("degenerate_end_year", 100, 100, 0xbea64d997a0d2bfd, 22296),
-        ("degenerate_mid_year", -1000, -1000, 0x488c48f004e9d23f, 22303),
-        ("straddle_primeval_patriarchs", -2200, -2100, 0x66e1a807ec85b97d, 22589),
-        ("straddle_gospels_early_church", 25, 35, 0x530fb61481043d0b, 139642),
-        ("straddle_exile_return", -600, -500, 0x894d7de6b1d5752f, 63695),
-        ("narrow_conquest", -1407, -1406, 0xc88b81464855ec6a, 25198),
-        ("wide_kingdom_era", -1051, -539, 0x54e3368d89d9cfde, 123394),
+        ("era_primeval", -4004, -2167, 0xd6d88a5235212451, 42195),
+        ("era_patriarchs", -2166, -1877, 0x3d4e0479e4e942b8, 58060),
+        ("era_egypt_exodus", -1876, -1407, 0xc85ec11b91e49625, 120822),
+        ("era_conquest_judges", -1406, -1051, 0x8d75a5388856f164, 78550),
+        ("era_united_kingdom", -1050, -932, 0xb67dd2f4e4677bc4, 70487),
+        ("era_divided_kingdom", -931, -587, 0xff0f3d33ed8ce8e5, 93168),
+        ("era_exile", -586, -539, 0x5d493c45c4829b85, 50411),
+        ("era_return", -538, -6, 0x9fd315a4affc1130, 67942),
+        ("era_gospels", -5, 29, 0x0327651ff91e67ca, 46347),
+        ("era_early_church", 30, 100, 0x4dd5813794ce86be, 231231),
+        ("full_span", -4004, 100, 0xb6b0d864cb0680ae, 519873),
+        ("nt_window_gospels_plus_church", -5, 100, 0x3e3785410a04f949, 240098),
+        ("degenerate_start_year", -4004, -4004, 0x5a00f5496557575a, 37470),
+        ("degenerate_end_year", 100, 100, 0xd48a99543c63dccd, 37464),
+        ("degenerate_mid_year", -1000, -1000, 0x6f020eb1a97818eb, 37471),
+        ("straddle_primeval_patriarchs", -2200, -2100, 0xdcb7239a515362ef, 37757),
+        ("straddle_gospels_early_church", 25, 35, 0xa422d31e8666b55b, 154810),
+        ("straddle_exile_return", -600, -500, 0xcb512a76e1ecdb4b, 78863),
+        ("narrow_conquest", -1407, -1406, 0x6a358ad3058099b4, 40366),
+        ("wide_kingdom_era", -1051, -539, 0x873e1fd1df4f72bc, 138562),
     ]
 }
 
 fn scripture_refs() -> Vec<(&'static str, &'static str, u64, usize)> {
     vec![
         ("scripture_gen1", "GEN.1", 0xb7c306586ac67917, 92),
-        ("scripture_jhn316", "JHN.3.16", 0x50527262b6a5eff2, 835),
+        ("scripture_jhn316", "JHN.3.16", 0x9b95681aef7d1441, 902),
         ("scripture_psa23", "PSA.23", 0x0867e662452f6d17, 93),
-        ("scripture_exo20", "EXO.20", 0xe282835d4062df18, 1266),
+        ("scripture_exo20", "EXO.20", 0xfe2ffa5c868afca3, 1396),
         ("scripture_rev22", "REV.22", 0xb337c277a4229dd3, 93),
     ]
 }

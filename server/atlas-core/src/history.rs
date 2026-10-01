@@ -128,6 +128,11 @@ pub fn resolve_blurb(blurbs: &[PlaceBlurbEntry], window: TimeRange) -> Option<&P
     pick_by_window(&era, window, |b| b.when).map(|i| era[i])
 }
 
+pub fn default_blurb(blurbs: &[PlaceBlurbEntry]) -> Option<&PlaceBlurbEntry> {
+    let whole = TimeRange { from_year: blurbs.iter().map(|b| b.when.from_year).min()?, to_year: blurbs.iter().map(|b| b.when.to_year).max()? };
+    resolve_blurb(blurbs, whole)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -254,6 +259,42 @@ mod tests {
     fn several_intersecting_falls_back_to_latest_when_none_covers_midpoint() {
         let h = history(vec![name("A", -300, -200), name("B", -50, 50)]);
         assert_eq!(resolve_display_name("Default", Some(&h), Some(range(-300, 50)), None), "B");
+    }
+
+    #[test]
+    fn a_history_of_eras_and_one_broad_summary_defaults_to_the_summary() {
+        // Arrange
+        let blurbs = vec![blurb("first half", -4004, -587, "era"), blurb("second half", -538, 100, "era"), blurb("whole sweep", -4004, 100, "broad")];
+
+        // Act
+        let chosen = default_blurb(&blurbs);
+
+        // Assert
+        assert_eq!(chosen, Some(&blurbs[2]));
+    }
+
+    #[test]
+    fn a_history_of_one_blurb_defaults_to_it() {
+        // Arrange
+        let blurbs = vec![blurb("only", -200, -100, "era")];
+
+        // Act
+        let chosen = default_blurb(&blurbs);
+
+        // Assert
+        assert_eq!(chosen, Some(&blurbs[0]));
+    }
+
+    #[test]
+    fn a_history_of_no_blurbs_has_no_default() {
+        // Arrange
+        let blurbs: Vec<PlaceBlurbEntry> = Vec::new();
+
+        // Act
+        let chosen = default_blurb(&blurbs);
+
+        // Assert
+        assert_eq!(chosen, None);
     }
 
     #[test]

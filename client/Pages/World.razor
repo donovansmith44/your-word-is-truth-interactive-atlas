@@ -991,7 +991,7 @@
     private ScenePlace? QuietAsScenePlace(string id)
     {
         var quiet = _scene?.QuietPlaces.FirstOrDefault(p => p.Id == id);
-        return quiet is null ? null : new ScenePlace(brightness: 0, displayName: quiet.DisplayName, events: [], existenceFrom: null, existenceTo: null, id: quiet.Id, lat: quiet.Lat, lon: quiet.Lon, mergedIds: null, name: quiet.DisplayName);
+        return quiet is null ? null : new ScenePlace(brightness: 0, displayName: quiet.DisplayName, events: [], existenceFrom: null, existenceTo: null, id: quiet.Id, lat: quiet.Lat, lon: quiet.Lon, mergedIds: null, name: quiet.DisplayName, node: quiet.Node);
     }
 
     public void OnPlaceLeave()

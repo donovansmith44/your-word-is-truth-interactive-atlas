@@ -27,4 +27,6 @@ pub trait SceneSource {
     fn event_bearing_place_ids(&self) -> &HashSet<String>;
 
     fn total_events_for(&self, id: &str) -> u32;
+
+    fn place_node(&self, id: &str) -> crate::wire::NodeRef;
 }

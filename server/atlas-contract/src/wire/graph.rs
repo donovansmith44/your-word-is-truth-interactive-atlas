@@ -6,6 +6,8 @@ use serde::{Serialize, Serializer};
 use utoipa::openapi::{Ref, RefOr, Schema};
 use utoipa::{PartialSchema, ToSchema};
 
+pub use atlas_core::wire::NodeRef;
+
 use super::union::{case_of, tagged_by, Case};
 use super::TextSpan;
 
@@ -39,6 +41,33 @@ pub struct NodeRecord {
     pub catechism: Option<CatechismDetail>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub book: Option<BookDetail>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub map: Option<MapDetail>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub era: Option<EraDetail>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub polity: Option<PolityDetail>,
+}
+
+#[derive(Debug, Serialize, utoipa::ToSchema)]
+#[serde(deny_unknown_fields)]
+#[schema(description = "The years one map of the world shows, labelled.")]
+pub struct MapDetail {
+    pub window: super::TimeRange,
+}
+
+#[derive(Debug, Serialize, utoipa::ToSchema)]
+#[serde(deny_unknown_fields)]
+#[schema(description = "The years one era of this atlas's timeline spans, labelled.")]
+pub struct EraDetail {
+    pub window: super::TimeRange,
+}
+
+#[derive(Debug, Serialize, utoipa::ToSchema)]
+#[serde(deny_unknown_fields)]
+#[schema(description = "The years one polity stood, from the first year of its first era to the last year of its last, labelled.")]
+pub struct PolityDetail {
+    pub reign: super::TimeRange,
 }
 
 /// What is recorded about one person's life.
@@ -85,13 +114,15 @@ pub struct EventDetail {
 
 #[derive(Debug, Serialize, utoipa::ToSchema)]
 #[serde(deny_unknown_fields)]
-#[schema(description = "Where one place is (latitude north positive, longitude east positive), the name a reader of the King James Version knows it by, its plain canonical name only where that differs, and when it was founded and fell, where that is recorded.")]
+#[schema(description = "Where one place is (latitude north positive, longitude east positive), the name a reader of the King James Version knows it by, its plain canonical name only where that differs, a sentence on its history across every period recorded for it, and when it was founded and fell, each only where recorded.")]
 pub struct PlaceDetail {
     pub lat: f64,
     pub lon: f64,
     pub display_name: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub canonical_name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub blurb: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub established: Option<super::DateClaim>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -158,15 +189,6 @@ pub struct EdgeEntry {
     pub note: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub parentage: Option<atlas_graph_types::edge::Parentage>,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, utoipa::ToSchema)]
-#[serde(deny_unknown_fields)]
-#[schema(description = "A reference to a node: enough to show it, and the id to fetch it with.")]
-pub struct NodeRef {
-    pub id: String,
-    pub kind: NodeKind,
-    pub label: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, utoipa::ToSchema)]

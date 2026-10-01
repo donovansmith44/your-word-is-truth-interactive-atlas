@@ -61,7 +61,7 @@ internal sealed class ServedGraph : IExplorableClient
         new(
             book: null, catechism: null, description: null,
             edgeSummary: Summary(groups),
-            @event: null, id: id, kind: kind, label: label, person: null, place: null,
+            @event: null, id: id, kind: kind, label: label, person: null, place: null, era: null, map: null, polity: null,
             provenance: Provenance, version: Version);
 
     public static EdgeRecord EdgeRecordOf(EdgeRef edge, NodeRef subject, NodeRef @object, params FrontierGroup[] groups) =>

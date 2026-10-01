@@ -432,6 +432,12 @@ CREATE TABLE polity_era (
   from_year INTEGER NOT NULL, to_year INTEGER NOT NULL,
   PRIMARY KEY (node_id, ord)
 ) WITHOUT ROWID;
+CREATE TABLE polity_reign (
+  polity_id TEXT PRIMARY KEY, from_year INTEGER NOT NULL, to_year INTEGER NOT NULL
+) WITHOUT ROWID;
+CREATE TABLE place_default (
+  place_id TEXT PRIMARY KEY, display_name TEXT NOT NULL, canonical_name TEXT, blurb TEXT
+) WITHOUT ROWID;
 CREATE TABLE event_date (
   event_id  TEXT PRIMARY KEY,
   from_year INTEGER NOT NULL, to_year INTEGER NOT NULL,

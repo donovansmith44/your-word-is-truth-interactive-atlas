@@ -124,6 +124,7 @@ pub struct GraphService {
     pub red_letter_spans: HashMap<String, Vec<(usize, usize)>>,
     /// The per-surface provenance companion: the served graph cannot answer a ROW's provenance itself.
     pub provenance: crate::provenance::ProvenanceIndex,
+    pub geography: crate::geography::Geography,
     /// The map scene's data, materialised once from this service's port. An `OnceLock` for the one thing
     /// `assemble` cannot give it: the two curated-JSON sidecar maps live in `AtlasData`, which this crate
     /// never loads. The server and the CLI prime it at load time, so no request pays the materialisation.
@@ -244,7 +245,7 @@ impl GraphService {
             }
             None => HashMap::new(),
         };
-        Ok(Self::assemble(graph, stats, event_world_stats, Chronology::from_derivation(chrono), red_letter_spans, None))
+        Ok(Self::assemble(graph, stats, event_world_stats, Chronology::from_derivation(chrono), red_letter_spans, atlas, None))
     }
 
     pub fn from_canon_and_verses(canon: &Canon, verses: &HashMap<String, String>, xrefs_tsv: &str, atlas: &AtlasData) -> anyhow::Result<Self> {
@@ -253,7 +254,7 @@ impl GraphService {
 
     pub fn from_canon_and_verses_with_eras(canon: &Canon, verses: &HashMap<String, String>, xrefs_tsv: &str, atlas: &AtlasData, eras: &[atlas_core::data::Era]) -> anyhow::Result<Self> {
         let (graph, stats, event_world_stats, chrono) = build::build_graph_from_canon_and_verses_with_eras(canon, verses, xrefs_tsv, atlas, eras)?;
-        Ok(Self::assemble(graph, stats, event_world_stats, Chronology::from_derivation(chrono), HashMap::new(), None))
+        Ok(Self::assemble(graph, stats, event_world_stats, Chronology::from_derivation(chrono), HashMap::new(), atlas, None))
     }
 
     /// Reads the raw KJV and cross-reference sources, and the curated eras beside them: the only
@@ -280,8 +281,10 @@ impl GraphService {
         event_world_stats: EventWorldStats,
         chronology: Chronology,
         red_letter_spans: HashMap<String, Vec<(usize, usize)>>,
+        atlas: &AtlasData,
         sidecars: Option<(&AtlasData, &SourcesDocument)>,
     ) -> Self {
+        let geography = crate::geography::Geography::compile(&graph, atlas);
         let narrative_legs = narrative_legs_of(&graph);
         let heading_index = crate::heading::build_heading_index(&graph, &chronology.chrono.resolved);
         // The non-graph section tables ride the graph into the version root, computed from the same
@@ -289,6 +292,7 @@ impl GraphService {
         let mut extras = crate::sqlite::extras::Extras::graph_derived(&graph, &chronology.chrono, &red_letter_spans)
             .expect("assemble: the graph's projections encode");
         if let Some((atlas, sources)) = sidecars {
+            extras.extend(geography.tables());
             extras.extend(crate::sqlite::sidecars::fold_sidecars(atlas, sources).expect("assemble: the sidecars fold"));
         }
         extras.attach(&mut graph);
@@ -310,6 +314,7 @@ impl GraphService {
             absent_sections: Vec::new(),
             red_letter_spans,
             provenance,
+            geography,
             scene_source: std::sync::OnceLock::new(),
         }
     }
@@ -330,7 +335,7 @@ impl GraphService {
         }
         let present: Vec<Section> = snap.present().to_vec();
         let absent_sections: Vec<Section> = snap.absent().to_vec();
-        let (chrono, heading_index, red_letter_spans, narrative_legs, families, (stats, event_world_stats), (atlas, sources)) = snap
+        let (chrono, heading_index, red_letter_spans, narrative_legs, families, (stats, event_world_stats), (atlas, sources), geography) = snap
             .with_conn(|c| {
                 use crate::sqlite::serve;
                 Ok((
@@ -341,6 +346,7 @@ impl GraphService {
                     serve::load_provenance_families(c, &present)?,
                     serve::load_counters(c, &present)?,
                     crate::sqlite::sidecars::unfold(c)?,
+                    crate::geography::Geography::load(c)?,
                 ))
             })
             .map_err(|e| anyhow::anyhow!("loading the serving companions from the sections: {e}"))?;
@@ -356,6 +362,7 @@ impl GraphService {
             absent_sections,
             red_letter_spans,
             provenance: crate::provenance::ProvenanceIndex::from_families(families),
+            geography,
             scene_source: std::sync::OnceLock::new(),
         };
         Ok((service, atlas, sources))
@@ -699,7 +706,7 @@ mod tests {
     fn provenance_service(g: Graph) -> GraphService {
         let mut g = g;
         g.build_indexes();
-        GraphService::assemble(g, BuildStats::default(), EventWorldStats::default(), Chronology::from_derivation(crate::event_world::ChronologyDerivation::default()), HashMap::new(), None)
+        GraphService::assemble(g, BuildStats::default(), EventWorldStats::default(), Chronology::from_derivation(crate::event_world::ChronologyDerivation::default()), HashMap::new(), &AtlasData::default(), None)
     }
 
     fn prov_range() -> atlas_graph_types::text::BibleLocusRange {

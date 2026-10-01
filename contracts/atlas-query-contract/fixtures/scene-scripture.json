@@ -74,7 +74,12 @@
         "id": "jerusalem",
         "lat": 31.776667,
         "lon": 35.234167,
-        "name": "Jerusalem"
+        "name": "Jerusalem",
+        "node": {
+          "id": "Place:jerusalem",
+          "kind": "Place",
+          "label": "Jerusalem"
+        }
       }
     ],
     "quiet_places": [],

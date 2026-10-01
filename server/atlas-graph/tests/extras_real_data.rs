@@ -21,7 +21,7 @@ fn the_real_sidecars_fold_losslessly_into_twenty_one_tables() {
     let mut ex = Extras::default();
     ex.extend(tables);
     let names: Vec<&str> = ex.tables.iter().map(|t| t.spec.name).collect();
-    let expected: Vec<&str> = table_specs_of(Section::Core).iter().map(|s| s.name).skip(5).collect();
+    let expected: Vec<&str> = table_specs_of(Section::Core).iter().map(|s| s.name).skip(7).collect();
     assert_eq!(names, expected, "the fold produces exactly the sidecar tables, in extra_tables_of order");
     let n = |t: &str| ex.table(t).unwrap().rows.len();
     assert_eq!(n("canon_book"), 66);

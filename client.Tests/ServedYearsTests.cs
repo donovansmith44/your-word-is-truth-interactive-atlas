@@ -107,7 +107,7 @@ public sealed class ServedYearsTests
     private static PersonNode PersonWith(PersonLife life)
     {
         var node = new PersonNode("Person:moses", "Moses");
-        node.CardAsync(() => Task.FromResult(new NodeRecord(book: null, catechism: null, description: null, edgeSummary: [], @event: null, id: "Person:moses", kind: NodeKind.Person, label: "Moses", person: life, place: null, provenance: "", version: "")));
+        node.CardAsync(() => Task.FromResult(new NodeRecord(book: null, catechism: null, description: null, edgeSummary: [], @event: null, id: "Person:moses", kind: NodeKind.Person, label: "Moses", person: life, place: null, era: null, map: null, polity: null, provenance: "", version: "")));
         return node;
     }
 }

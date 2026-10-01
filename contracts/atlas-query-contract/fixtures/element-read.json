@@ -34,7 +34,7 @@
           "kind": "TextUnit",
           "label": "JHN.3.16",
           "provenance": "kjv",
-          "version": "8d01e50b4270c7aa8b6180a33ae47717"
+          "version": "f73d7cdc34fbeadd347429fad073d0b3"
         }
       },
       {
@@ -42,7 +42,7 @@
         "id": "Person:nonexistent-xyz"
       }
     ],
-    "version": "8d01e50b4270c7aa8b6180a33ae47717"
+    "version": "f73d7cdc34fbeadd347429fad073d0b3"
   },
   "status": 200
 }

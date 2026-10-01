@@ -8,6 +8,8 @@ use atlas_core::data::{Event, Narrative, Place, PlaceHistory, PlaceNameAlias};
 use atlas_core::refs::{ScriptureRef, VerseId};
 use atlas_core::scene_source::SceneSource;
 use atlas_core::time::TimeRange;
+use atlas_core::wire::NodeRef;
+use atlas_graph_types::id::{AnyNodeId, PlaceId, Position};
 use atlas_graph_types::store::GraphQuery;
 
 use crate::event_world::ChronologyDerivation;
@@ -41,6 +43,7 @@ pub struct GraphSceneSource {
     /// Sidecar-only: curated JSON, not a graph node, copied at construction.
     place_history: HashMap<String, PlaceHistory>,
     place_name_aliases: HashMap<String, Vec<PlaceNameAlias>>,
+    place_nodes: HashMap<String, NodeRef>,
 }
 
 impl GraphSceneSource {
@@ -84,6 +87,7 @@ impl GraphSceneSource {
         // ordered and the sort was stable, so ties already fell to id -- the key now says so.
         events.sort_by(|a, b| (a.when.from_year, &a.id).cmp(&(b.when.from_year, &b.id)));
 
+        let place_nodes = place_nodes_of(q, &places);
         let place_index: HashMap<String, usize> = places.iter().enumerate().map(|(i, p)| (p.id.clone(), i)).collect();
         let event_index: HashMap<String, usize> = events.iter().enumerate().map(|(i, e)| (e.id.clone(), i)).collect();
 
@@ -129,6 +133,7 @@ impl GraphSceneSource {
             verse_to_places,
             place_history: sidecars.place_history.clone(),
             place_name_aliases: sidecars.place_name_aliases.clone(),
+            place_nodes,
         }
     }
 
@@ -157,6 +162,20 @@ impl GraphSceneSource {
     pub fn narrative_list(&self) -> &[Narrative] {
         &self.narratives
     }
+}
+
+fn place_nodes_of(q: &impl GraphQuery, places: &[Place]) -> HashMap<String, NodeRef> {
+    let ids: Vec<AnyNodeId> = places.iter().map(|place| PlaceId::new(place.id.as_str()).erase()).collect();
+    let at: Vec<Position> = ids.iter().cloned().map(Position::Node).collect();
+    places
+        .iter()
+        .zip(ids)
+        .zip(q.labels(&at))
+        .map(|((place, id), label)| {
+            let label = label.unwrap_or_else(|| panic!("{} is a place of the scene and no label is compiled for it", place.id));
+            (place.id.clone(), crate::node_ref::node_ref(&id, label))
+        })
+        .collect()
 }
 
 /// Every method mirrors the exact `AtlasData` read the composer makes.
@@ -208,6 +227,10 @@ impl SceneSource for GraphSceneSource {
     /// 0 for a place with no events, the honest default.
     fn total_events_for(&self, id: &str) -> u32 {
         self.event_counts_by_place.get(id).copied().unwrap_or(0)
+    }
+
+    fn place_node(&self, id: &str) -> NodeRef {
+        self.place_nodes.get(id).cloned().unwrap_or_else(|| panic!("{id} is not a place of the scene"))
     }
 }
 

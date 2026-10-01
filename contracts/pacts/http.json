@@ -3224,7 +3224,7 @@
     "GET /api/contract": {
       "body": {
         "manifest_schema": 1,
-        "section_schema_version": 19
+        "section_schema_version": 20
       },
       "status": 200
     },
@@ -3234,6 +3234,11 @@
           "from_year": -4004,
           "id": "primeval",
           "name": "Primeval",
+          "node": {
+            "id": "Era:primeval",
+            "kind": "Era",
+            "label": "Primeval"
+          },
           "to_year": -2167,
           "window": {
             "from": {
@@ -3251,6 +3256,11 @@
           "from_year": -2166,
           "id": "patriarchs",
           "name": "Patriarchs",
+          "node": {
+            "id": "Era:patriarchs",
+            "kind": "Era",
+            "label": "Patriarchs"
+          },
           "to_year": -1877,
           "window": {
             "from": {
@@ -3268,6 +3278,11 @@
           "from_year": -1876,
           "id": "egypt-exodus",
           "name": "Egypt & Exodus",
+          "node": {
+            "id": "Era:egypt-exodus",
+            "kind": "Era",
+            "label": "Egypt & Exodus"
+          },
           "to_year": -1407,
           "window": {
             "from": {
@@ -3285,6 +3300,11 @@
           "from_year": -1406,
           "id": "conquest-judges",
           "name": "Conquest & Judges",
+          "node": {
+            "id": "Era:conquest-judges",
+            "kind": "Era",
+            "label": "Conquest & Judges"
+          },
           "to_year": -1051,
           "window": {
             "from": {
@@ -3302,6 +3322,11 @@
           "from_year": -1050,
           "id": "united-kingdom",
           "name": "United Kingdom",
+          "node": {
+            "id": "Era:united-kingdom",
+            "kind": "Era",
+            "label": "United Kingdom"
+          },
           "to_year": -932,
           "window": {
             "from": {
@@ -3319,6 +3344,11 @@
           "from_year": -931,
           "id": "divided-kingdom",
           "name": "Divided Kingdom",
+          "node": {
+            "id": "Era:divided-kingdom",
+            "kind": "Era",
+            "label": "Divided Kingdom"
+          },
           "to_year": -587,
           "window": {
             "from": {
@@ -3336,6 +3366,11 @@
           "from_year": -586,
           "id": "exile",
           "name": "Exile",
+          "node": {
+            "id": "Era:exile",
+            "kind": "Era",
+            "label": "Exile"
+          },
           "to_year": -539,
           "window": {
             "from": {
@@ -3353,6 +3388,11 @@
           "from_year": -538,
           "id": "return",
           "name": "Return & Second Temple",
+          "node": {
+            "id": "Era:return",
+            "kind": "Era",
+            "label": "Return & Second Temple"
+          },
           "to_year": -6,
           "window": {
             "from": {
@@ -3370,6 +3410,11 @@
           "from_year": -5,
           "id": "gospels",
           "name": "Gospels",
+          "node": {
+            "id": "Era:gospels",
+            "kind": "Era",
+            "label": "Gospels"
+          },
           "to_year": 29,
           "window": {
             "from": {
@@ -3387,6 +3432,11 @@
           "from_year": 30,
           "id": "early-church",
           "name": "Early Church",
+          "node": {
+            "id": "Era:early-church",
+            "kind": "Era",
+            "label": "Early Church"
+          },
           "to_year": 100,
           "window": {
             "from": {
@@ -3708,7 +3758,7 @@
             "verse": 31
           }
         ],
-        "version": "5755a274b632d0aa95938fc0ea367809"
+        "version": "54e5f25a1dbe0dd48531bf700a949fc3"
       },
       "status": 200
     },
@@ -4999,7 +5049,7 @@
         "kind": "Event",
         "label": "Terah's family leaves Ur",
         "provenance": "curated",
-        "version": "5755a274b632d0aa95938fc0ea367809"
+        "version": "54e5f25a1dbe0dd48531bf700a949fc3"
       },
       "status": 200
     },
@@ -5029,7 +5079,7 @@
           "lon": 35.569167
         },
         "provenance": "curated-places",
-        "version": "5755a274b632d0aa95938fc0ea367809"
+        "version": "54e5f25a1dbe0dd48531bf700a949fc3"
       },
       "status": 200
     },
@@ -5069,7 +5119,7 @@
         ],
         "kind": "site-of",
         "next": null,
-        "version": "5755a274b632d0aa95938fc0ea367809"
+        "version": "54e5f25a1dbe0dd48531bf700a949fc3"
       },
       "status": 200
     },
@@ -5154,6 +5204,11 @@
             "from": -335,
             "id": "alexander-empire",
             "name": "Empire of Alexander the Great",
+            "node": {
+              "id": "Polity:alexander-empire",
+              "kind": "Polity",
+              "label": "Empire of Alexander the Great"
+            },
             "reign": {
               "from": {
                 "label": "335 BC",
@@ -5459,6 +5514,11 @@
             "from": -1900,
             "id": "assyria",
             "name": "Assyria",
+            "node": {
+              "id": "Polity:assyria",
+              "kind": "Polity",
+              "label": "Neo-Assyrian Empire"
+            },
             "reign": {
               "from": {
                 "label": "1900 BC",
@@ -5621,6 +5681,11 @@
             "from": -911,
             "id": "assyria",
             "name": "Neo-Assyrian Empire",
+            "node": {
+              "id": "Polity:assyria",
+              "kind": "Polity",
+              "label": "Neo-Assyrian Empire"
+            },
             "reign": {
               "from": {
                 "label": "911 BC",
@@ -5884,6 +5949,11 @@
             "from": -2100,
             "id": "babylon",
             "name": "Babylonia",
+            "node": {
+              "id": "Polity:babylon",
+              "kind": "Polity",
+              "label": "Neo-Babylonian Empire"
+            },
             "reign": {
               "from": {
                 "label": "2100 BC",
@@ -6050,6 +6120,11 @@
             "from": -626,
             "id": "babylon",
             "name": "Neo-Babylonian Empire",
+            "node": {
+              "id": "Polity:babylon",
+              "kind": "Polity",
+              "label": "Neo-Babylonian Empire"
+            },
             "reign": {
               "from": {
                 "label": "626 BC",
@@ -6253,6 +6328,11 @@
             "from": -4004,
             "id": "egypt",
             "name": "Egypt",
+            "node": {
+              "id": "Polity:egypt",
+              "kind": "Polity",
+              "label": "Ptolemaic Egypt"
+            },
             "reign": {
               "from": {
                 "label": "4004 BC",
@@ -6447,6 +6527,11 @@
             "from": -1549,
             "id": "egypt",
             "name": "Egypt",
+            "node": {
+              "id": "Polity:egypt",
+              "kind": "Polity",
+              "label": "Ptolemaic Egypt"
+            },
             "reign": {
               "from": {
                 "label": "1549 BC",
@@ -6686,6 +6771,11 @@
             "from": -1068,
             "id": "egypt",
             "name": "Egypt",
+            "node": {
+              "id": "Polity:egypt",
+              "kind": "Polity",
+              "label": "Ptolemaic Egypt"
+            },
             "reign": {
               "from": {
                 "label": "1068 BC",
@@ -6890,6 +6980,11 @@
             "from": -331,
             "id": "egypt",
             "name": "Ptolemaic Egypt",
+            "node": {
+              "id": "Polity:egypt",
+              "kind": "Polity",
+              "label": "Ptolemaic Egypt"
+            },
             "reign": {
               "from": {
                 "label": "331 BC",
@@ -7194,6 +7289,11 @@
             "from": -4004,
             "id": "elam",
             "name": "Elam",
+            "node": {
+              "id": "Polity:elam",
+              "kind": "Polity",
+              "label": "Elam"
+            },
             "reign": {
               "from": {
                 "label": "4004 BC",
@@ -7380,6 +7480,11 @@
             "from": -1600,
             "id": "hittites",
             "name": "Hittite Empire",
+            "node": {
+              "id": "Polity:hittites",
+              "kind": "Polity",
+              "label": "Hittite Empire"
+            },
             "reign": {
               "from": {
                 "label": "1600 BC",
@@ -7538,6 +7643,11 @@
             "from": -1050,
             "id": "israel",
             "name": "Kingdom of Israel (United Monarchy)",
+            "node": {
+              "id": "Polity:israel",
+              "kind": "Polity",
+              "label": "Kingdom of Israel"
+            },
             "reign": {
               "from": {
                 "label": "1050 BC",
@@ -7712,6 +7822,11 @@
             "from": -930,
             "id": "israel",
             "name": "Kingdom of Israel",
+            "node": {
+              "id": "Polity:israel",
+              "kind": "Polity",
+              "label": "Kingdom of Israel"
+            },
             "reign": {
               "from": {
                 "label": "930 BC",
@@ -7914,6 +8029,11 @@
             "from": -930,
             "id": "judah",
             "name": "Kingdom of Judah",
+            "node": {
+              "id": "Polity:judah",
+              "kind": "Polity",
+              "label": "Herodian Kingdom of Judea"
+            },
             "reign": {
               "from": {
                 "label": "930 BC",
@@ -8084,6 +8204,11 @@
             "from": -538,
             "id": "judah",
             "name": "Yehud",
+            "node": {
+              "id": "Polity:judah",
+              "kind": "Polity",
+              "label": "Herodian Kingdom of Judea"
+            },
             "reign": {
               "from": {
                 "label": "538 BC",
@@ -8223,6 +8348,11 @@
             "from": -164,
             "id": "judah",
             "name": "Hasmonean Judea",
+            "node": {
+              "id": "Polity:judah",
+              "kind": "Polity",
+              "label": "Herodian Kingdom of Judea"
+            },
             "reign": {
               "from": {
                 "label": "164 BC",
@@ -8439,6 +8569,11 @@
             "from": -39,
             "id": "judah",
             "name": "Herodian Kingdom of Judea",
+            "node": {
+              "id": "Polity:judah",
+              "kind": "Polity",
+              "label": "Herodian Kingdom of Judea"
+            },
             "reign": {
               "from": {
                 "label": "39 BC",
@@ -8682,6 +8817,11 @@
             "from": -140,
             "id": "parthian-empire",
             "name": "Parthian Empire",
+            "node": {
+              "id": "Polity:parthian-empire",
+              "kind": "Polity",
+              "label": "Parthian Empire"
+            },
             "reign": {
               "from": {
                 "label": "140 BC",
@@ -8824,6 +8964,11 @@
             "from": -539,
             "id": "persia",
             "name": "Achaemenid Persian Empire",
+            "node": {
+              "id": "Polity:persia",
+              "kind": "Polity",
+              "label": "Achaemenid Persian Empire"
+            },
             "reign": {
               "from": {
                 "label": "539 BC",
@@ -9079,6 +9224,11 @@
             "from": -1200,
             "id": "phoenicia",
             "name": "Phoenicia",
+            "node": {
+              "id": "Polity:phoenicia",
+              "kind": "Polity",
+              "label": "Phoenicia"
+            },
             "reign": {
               "from": {
                 "label": "1200 BC",
@@ -9241,6 +9391,11 @@
             "from": -200,
             "id": "roman-empire",
             "name": "Roman Republic",
+            "node": {
+              "id": "Polity:roman-empire",
+              "kind": "Polity",
+              "label": "Roman Empire"
+            },
             "reign": {
               "from": {
                 "label": "200 BC",
@@ -9495,6 +9650,11 @@
             "from": -30,
             "id": "roman-empire",
             "name": "Roman Empire",
+            "node": {
+              "id": "Polity:roman-empire",
+              "kind": "Polity",
+              "label": "Roman Empire"
+            },
             "reign": {
               "from": {
                 "label": "30 BC",
@@ -9818,6 +9978,11 @@
             "from": -301,
             "id": "seleucid-empire",
             "name": "Seleucid Empire",
+            "node": {
+              "id": "Polity:seleucid-empire",
+              "kind": "Polity",
+              "label": "Seleucid Empire (rump)"
+            },
             "reign": {
               "from": {
                 "label": "301 BC",
@@ -9997,6 +10162,11 @@
             "from": -149,
             "id": "seleucid-empire",
             "name": "Seleucid Empire (rump)",
+            "node": {
+              "id": "Polity:seleucid-empire",
+              "kind": "Polity",
+              "label": "Seleucid Empire (rump)"
+            },
             "reign": {
               "from": {
                 "label": "149 BC",
@@ -10204,6 +10374,11 @@
             "from": -4004,
             "id": "sumer",
             "name": "Sumer",
+            "node": {
+              "id": "Polity:sumer",
+              "kind": "Polity",
+              "label": "Sumer"
+            },
             "reign": {
               "from": {
                 "label": "4004 BC",
@@ -11489,7 +11664,7 @@
             "name": "Shows"
           }
         ],
-        "section_schema_version": 19,
+        "section_schema_version": 20,
         "symmetric": [
           {
             "display": "Analogous to",

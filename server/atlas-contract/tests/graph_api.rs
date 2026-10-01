@@ -1553,6 +1553,7 @@ async fn the_map_for_the_first_era_shows_its_events_places_and_polities_and_is_f
                 { "kind": "shows", "count": shows },
             ],
             "version": version,
+            "map": { "window": eras[0]["window"] },
         })
     );
     let mut shown_by_kind: std::collections::BTreeMap<&str, usize> = std::collections::BTreeMap::new();
@@ -2004,6 +2005,7 @@ async fn a_place_record_carries_its_coordinates_its_name_and_its_dated_founding_
     // Arrange
     let app = compiled_app();
     let (_, legacy, _) = get(&app, "/api/place/jerusalem").await;
+    let blurb = atlas_core::history::default_blurb(&real_atlas().0.place_history_for("jerusalem").unwrap().blurbs).unwrap().text.clone();
     // Act
     let (status, record, _) = get(&app, "/api/node/Place:jerusalem").await;
     // Assert
@@ -2015,6 +2017,7 @@ async fn a_place_record_carries_its_coordinates_its_name_and_its_dated_founding_
                 "lat": legacy["lat"],
                 "lon": legacy["lon"],
                 "display_name": "Jerusalem",
+                "blurb": blurb,
                 "established": {
                     "when": { "from": { "value": -1003, "label": "1003 BC" }, "to": { "value": -1003, "label": "1003 BC" }, "label": "1003 BC" },
                     "label": "c. 1003 BC",
@@ -2592,4 +2595,154 @@ fn no_served_id_carries_the_separator_an_element_read_lists_ids_by() {
 
     // Assert
     assert_eq!(carrying, Vec::<String>::new());
+}
+
+const CONQUEST_ERA: &str = "conquest-judges";
+const CONQUEST_MAP: &str = "Map:era-conquest-judges";
+const CONQUEST_ERA_NODE: &str = "Era:conquest-judges";
+const A_POLITY_OF_MANY_ERAS: &str = "judah";
+const A_PLACE_OF_MANY_BLURBS: &str = "jerusalem";
+const A_PASSAGE_NAMING_PLACES: &str = "GEN.13";
+
+async fn era_window(app: &axum::Router, era: &str) -> serde_json::Value {
+    let (_, eras, _) = get(app, "/api/eras").await;
+    eras.as_array().unwrap().iter().find(|row| row["id"] == era).map(|row| row["window"].clone()).unwrap()
+}
+
+async fn every_era(app: &axum::Router) -> Vec<serde_json::Value> {
+    get(app, "/api/eras").await.1.as_array().unwrap().clone()
+}
+
+async fn resolved(app: &axum::Router, refs: &[serde_json::Value]) -> Vec<serde_json::Value> {
+    let mut ids: Vec<String> = refs.iter().map(|node| node["id"].as_str().unwrap().to_string()).collect();
+    ids.sort();
+    ids.dedup();
+    let mut records = std::collections::BTreeMap::new();
+    for chunk in ids.chunks(MAX_ELEMENTS) {
+        let asked: Vec<&str> = chunk.iter().map(String::as_str).collect();
+        let (_, page) = elements(app, &asked).await;
+        for (id, element) in chunk.iter().zip(page["elements"].as_array().unwrap()) {
+            records.insert(id.clone(), element["node"].clone());
+        }
+    }
+    refs.iter().map(|node| records[node["id"].as_str().unwrap()].clone()).collect()
+}
+
+fn named_by(record: &serde_json::Value) -> serde_json::Value {
+    serde_json::json!({ "id": record["id"], "kind": record["kind"], "label": record["label"] })
+}
+
+#[tokio::test]
+async fn a_map_record_serves_its_window() {
+    // Arrange
+    let app = compiled_app();
+    let window = era_window(&app, CONQUEST_ERA).await;
+
+    // Act
+    let (status, record, _) = get(&app, &format!("/api/node/{CONQUEST_MAP}")).await;
+
+    // Assert
+    assert_eq!((status, record["map"].clone()), (StatusCode::OK, serde_json::json!({ "window": window })));
+}
+
+#[tokio::test]
+async fn an_era_record_serves_its_window() {
+    // Arrange
+    let app = compiled_app();
+    let window = era_window(&app, CONQUEST_ERA).await;
+
+    // Act
+    let (status, record, _) = get(&app, &format!("/api/node/{CONQUEST_ERA_NODE}")).await;
+
+    // Assert
+    assert_eq!((status, record["era"].clone()), (StatusCode::OK, serde_json::json!({ "window": window })));
+}
+
+#[tokio::test]
+async fn a_polity_record_serves_its_compiled_reign_as_the_span_of_its_eras() {
+    use atlas_graph_types::node::NodePayload;
+    use atlas_graph_types::store::GraphQuery;
+    // Arrange
+    let app = compiled_app();
+    let polity = atlas_graph_types::id::PolityId::new(A_POLITY_OF_MANY_ERAS).erase();
+    let NodePayload::Polity { eras, .. } = served_snapshot().node(&polity).unwrap().payload else { panic!("{A_POLITY_OF_MANY_ERAS} is a polity") };
+    let span = atlas_core::time::TimeRange {
+        from_year: eras.iter().map(|era| era.from_year).min().unwrap(),
+        to_year: eras.iter().map(|era| era.to_year).max().unwrap(),
+    };
+    let reign = serde_json::to_value(atlas_contract::wire::TimeRange::of(span)).unwrap();
+
+    // Act
+    let (status, record, _) = get(&app, &format!("/api/node/Polity:{A_POLITY_OF_MANY_ERAS}")).await;
+
+    // Assert
+    assert_eq!((status, eras.len() > 1, record["polity"].clone()), (StatusCode::OK, true, serde_json::json!({ "reign": reign })));
+}
+
+#[tokio::test]
+async fn a_place_record_serves_its_compiled_default_blurb_where_one_is_recorded() {
+    // Arrange
+    let app = compiled_app();
+    let history = real_atlas().0.place_history_for(A_PLACE_OF_MANY_BLURBS).unwrap().clone();
+    let blurb = atlas_core::history::default_blurb(&history.blurbs).unwrap().text.clone();
+
+    // Act
+    let (status, record, _) = get(&app, &format!("/api/node/Place:{A_PLACE_OF_MANY_BLURBS}")).await;
+
+    // Assert
+    assert_eq!((status, history.blurbs.len() > 1, record["place"]["blurb"].clone()), (StatusCode::OK, true, serde_json::json!(blurb)));
+}
+
+#[tokio::test]
+async fn every_scene_place_and_quiet_place_names_its_node() {
+    // Arrange
+    let app = compiled_app();
+    let mut scenes = Vec::new();
+    for era in every_era(&app).await {
+        scenes.push(get(&app, &format!("/api/scene?from={}&to={}", era["from_year"], era["to_year"])).await.1);
+    }
+    scenes.push(get(&app, &format!("/api/scene/scripture?ref={A_PASSAGE_NAMING_PLACES}")).await.1);
+    let rows: Vec<serde_json::Value> = scenes
+        .iter()
+        .flat_map(|scene| scene["places"].as_array().unwrap().iter().chain(scene["quiet_places"].as_array().unwrap()))
+        .cloned()
+        .collect();
+    let refs: Vec<serde_json::Value> = rows.iter().map(|row| row["node"].clone()).collect();
+
+    // Act
+    let records = resolved(&app, &refs).await;
+
+    // Assert
+    let unnamed: Vec<(serde_json::Value, serde_json::Value)> = rows
+        .iter()
+        .zip(&records)
+        .filter(|(row, record)| named_by(record) != row["node"] || record["kind"] != "Place" || (record["place"]["lat"].clone(), record["place"]["lon"].clone()) != (row["lat"].clone(), row["lon"].clone()))
+        .map(|(row, record)| (row["node"].clone(), record.clone()))
+        .collect();
+    assert_eq!((rows.iter().any(|row| row["total_events"].is_number()), unnamed), (true, Vec::new()));
+}
+
+#[tokio::test]
+async fn every_polity_row_and_era_names_its_node() {
+    // Arrange
+    let app = compiled_app();
+    let eras = every_era(&app).await;
+    let mut polities = Vec::new();
+    for era in &eras {
+        polities.extend(get(&app, &format!("/api/polities?from={}&to={}", era["from_year"], era["to_year"])).await.1["polities"].as_array().unwrap().clone());
+    }
+    let rows: Vec<(serde_json::Value, &str)> = eras.iter().map(|era| (era.clone(), "Era")).chain(polities.iter().map(|polity| (polity.clone(), "Polity"))).collect();
+    let refs: Vec<serde_json::Value> = rows.iter().map(|(row, _)| row["node"].clone()).collect();
+
+    // Act
+    let records = resolved(&app, &refs).await;
+
+    // Assert
+    let unnamed: Vec<(serde_json::Value, serde_json::Value)> = rows
+        .iter()
+        .zip(&records)
+        .filter(|((row, kind), record)| named_by(record) != row["node"] || record["kind"] != *kind || record["id"] != format!("{kind}:{}", row["id"].as_str().unwrap()))
+        .map(|((row, _), record)| (row["node"].clone(), record.clone()))
+        .collect();
+    assert_eq!((polities.is_empty(), unnamed), (false, Vec::new()));
 }
