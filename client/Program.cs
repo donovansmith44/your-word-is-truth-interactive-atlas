@@ -5,6 +5,7 @@ using Microsoft.JSInterop;
 using BibleAtlas.Client;
 using BibleAtlas.Client.Contracts;
 using BibleAtlas.Client.Explore;
+using BibleAtlas.Client.Geography;
 using BibleAtlas.Client.State;
 using BibleAtlas.Client.Views;
 
@@ -29,6 +30,8 @@ public static class Program
             var baseAddress = AtlasClient.ResolveBaseAddress(builder.Configuration, builder.HostEnvironment);
             return new AtlasClient(new HttpClient { BaseAddress = baseAddress });
         });
+
+        builder.Services.AddSingleton<IMapSource>(sp => new AtlasMapSource(sp.GetRequiredService<AtlasClient>()));
 
         builder.Services.AddSingleton<IExplorableClient>(_ =>
         {
