@@ -84,6 +84,46 @@ pub struct Graph {
     pub edge_rows: Vec<EdgeRow>,
     /// Resolving a unit's position is a lookup instead of a scan of the spine.
     pub spine_index: BTreeMap<&'static str, BTreeMap<AnyNodeId, usize>>,
+    pub labels: BTreeMap<Position, String>,
+    pub edges_by_id: BTreeMap<crate::edge::EdgeId, crate::edge::EdgeRecord>,
+}
+
+impl Graph {
+    pub fn positions(&self) -> std::collections::BTreeSet<Position> {
+        let mut out: std::collections::BTreeSet<Position> = self.nodes.keys().map(|id| Position::Node(id.clone())).collect();
+        for ix in self.indexes.values().chain(self.symmetric_indexes.values()) {
+            out.extend(ix.fwd.keys().cloned());
+            out.extend(ix.inv.keys().cloned());
+        }
+        out
+    }
+
+    pub fn edge_records(&self) -> BTreeMap<crate::edge::EdgeId, crate::edge::EdgeRecord> {
+        use crate::edge::{Direction, EdgeKind, EdgeRecord};
+        let directed = self.indexes.iter().flat_map(|(rel, ix)| {
+            ix.fwd.iter().flat_map(move |(subject, adjacency)| {
+                adjacency.edges().map(move |entry| EdgeRecord {
+                    id: entry.edge.clone(),
+                    kind: EdgeKind::Directed(*rel, Direction::Forward),
+                    subject: subject.clone(),
+                    object: entry.node.clone(),
+                    meta: entry.meta.clone(),
+                })
+            })
+        });
+        let symmetric = self.symmetric_indexes.iter().flat_map(|(rel, ix)| {
+            ix.fwd.iter().flat_map(move |(subject, adjacency)| {
+                adjacency.edges().filter(move |entry| *subject <= entry.node).map(move |entry| EdgeRecord {
+                    id: entry.edge.clone(),
+                    kind: EdgeKind::Symmetric(*rel),
+                    subject: subject.clone(),
+                    object: entry.node.clone(),
+                    meta: entry.meta.clone(),
+                })
+            })
+        });
+        directed.chain(symmetric).map(|record| (record.id.clone(), record)).collect()
+    }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]

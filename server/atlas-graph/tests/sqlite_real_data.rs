@@ -94,3 +94,23 @@ fn the_full_real_graph_is_admitted_over_the_sqlite_backend_and_the_logical_hashe
     );
     assert!(total <= CEILING_SECS as f64, "DB-4b gate {total:.1}s exceeds ceiling {CEILING_SECS}s");
 }
+
+#[test]
+fn every_position_the_committed_artifact_holds_is_served_its_compiled_label() {
+    use atlas_graph_types::id::Position;
+    use atlas_graph_types::store::GraphQuery;
+    // Arrange
+    let (graph, snap) = atlas_graph::sqlite::reload::committed_graph(&common::compiled_dir()).expect("the committed sections read back");
+    let positions: Vec<Position> = graph.positions().into_iter().chain(graph.edges_by_id.keys().map(|id| Position::Edge(id.clone()))).collect();
+
+    // Act
+    let unlabelled: Vec<Position> = positions
+        .chunks(LABELS_PER_READ)
+        .flat_map(|chunk| chunk.iter().cloned().zip(snap.labels(chunk)).filter(|(_, label)| label.is_none()).map(|(position, _)| position).collect::<Vec<_>>())
+        .collect();
+
+    // Assert
+    assert_eq!((positions.is_empty(), unlabelled), (false, Vec::<Position>::new()));
+}
+
+const LABELS_PER_READ: usize = 5000;

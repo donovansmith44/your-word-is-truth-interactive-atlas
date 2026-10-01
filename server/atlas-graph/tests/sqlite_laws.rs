@@ -1468,3 +1468,45 @@ fn a_place_date_claim_round_trips_through_the_sidecar_with_the_event_it_names() 
     // Assert
     assert_eq!(unfolded.place_history, atlas.place_history);
 }
+
+#[test]
+fn every_held_position_answers_one_compiled_label_and_every_edge_its_record_from_the_sections() {
+    // Arrange
+    let mut g = every_end_held(specimen_graph());
+    atlas_graph::labels::compile(&mut g);
+    let dir = std::env::temp_dir().join(format!("f6-labels-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&dir);
+    write_sections(&g, &Extras::default(), "test", &layout_under(&dir)).unwrap();
+    let snap = open_written(&dir).unwrap();
+    let positions: Vec<atlas_graph_types::id::Position> = g.positions().into_iter().collect();
+
+    // Act
+    let admitted = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| assert_answers_match(&snap, &g))).is_ok();
+    let unlabelled = snap.labels(&positions).iter().filter(|label| label.is_none()).count();
+    let edges_read = g.edges_by_id.keys().filter(|id| snap.edge(id).is_some()).count();
+
+    // Assert
+    assert_eq!((admitted, unlabelled, edges_read), (true, 0, g.edges_by_id.len()));
+}
+
+fn every_end_held(mut g: atlas_graph_types::graph::Graph) -> atlas_graph_types::graph::Graph {
+    use atlas_graph_types::id::Position;
+    use atlas_graph_types::node::{Node, NodePayload};
+    g.build_indexes();
+    atlas_graph::event_world::add_justified_by(&mut g);
+    let unheld: Vec<_> = g
+        .positions()
+        .into_iter()
+        .filter_map(|p| match p {
+            Position::Node(id) if !g.nodes.contains_key(&id) && atlas_graph::labels::node_label(&id, None).is_none() => Some(id),
+            _ => None,
+        })
+        .collect();
+    for id in unheld {
+        let payload = NodePayload::Source { label: id.raw.clone() };
+        g.nodes.insert(id.clone(), Node { id, payload, provenance: "test".into() });
+    }
+    g.build_indexes();
+    atlas_graph::event_world::add_justified_by(&mut g);
+    g
+}

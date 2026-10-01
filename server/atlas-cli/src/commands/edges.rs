@@ -5,8 +5,8 @@ use atlas_graph_types::edge::EdgeKind;
 use atlas_graph_types::adjacency::EdgeQuery;
 use atlas_graph_types::id::{NodeKind, Position};
 use atlas_graph_types::store::GraphQuery;
-use atlas_contract::graph_wire::{decode_node_id, describe_position};
-use atlas_contract::wire::PositionRef;
+use atlas_contract::graph_wire::{decode_node_id, describe_position, edge_ref, labelled_positions};
+use atlas_contract::wire::{EdgeRef, PositionRef};
 
 use crate::error::CliError;
 
@@ -22,7 +22,7 @@ pub struct EdgesArgs<'a> {
 }
 
 struct ResolvedEntry {
-    edge: String,
+    edge: EdgeRef,
     neighbour: PositionRef,
 }
 
@@ -32,7 +32,7 @@ impl ResolvedEntry {
             PositionRef::Node { node } => (node.id.as_str(), node.kind.name(), node.label.as_str()),
             PositionRef::Edge { edge } => (edge.id.as_str(), AN_EDGE, edge.id.as_str()),
         };
-        format!("{:<24} {:<12} {:<28} {}\n", self.edge, kind, id, label)
+        format!("{:<24} {:<12} {:<28} {}\n", self.edge.id, kind, id, label)
     }
 }
 
@@ -86,8 +86,13 @@ fn resolve(graph: &GraphService, args: &EdgesArgs) -> Result<ResolvedPage, CliEr
         .entries
         .iter()
         .filter(|e| !matches!(&e.node, Position::Node(id) if id.kind == NodeKind::PeopleGroup))
-        .map(|e| ResolvedEntry { edge: e.edge.0.clone(), neighbour: describe_position(&e.node, &snap) })
-        .collect();
+        .map(|e| {
+            let neighbour = describe_position(&e.node, &snap)?;
+            let label = labelled_positions(&[Position::Edge(e.edge.clone())], &snap)?.remove(0);
+            Ok(ResolvedEntry { edge: edge_ref(&e.edge, label)?, neighbour })
+        })
+        .collect::<Result<_, atlas_contract::error::ApiError>>()
+        .map_err(CliError::unlabelled)?;
 
     if entries.is_empty() {
         return Err(CliError::empty_result(

@@ -2,10 +2,11 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 
+use atlas_graph_types::edge::EdgeId;
 use atlas_graph_types::id::{AnyNodeId, NodeKind, Position};
-use atlas_graph_types::node::Node;
 use atlas_graph_types::store::GraphQuery;
 
+use crate::error::ApiError;
 use crate::wire::{EdgeRef, NodeRef, PositionRef};
 
 pub fn encode_node_id(id: &AnyNodeId) -> String {
@@ -62,48 +63,53 @@ pub fn decode_node_id(s: &str) -> Option<AnyNodeId> {
     }
 }
 
-pub fn describe_node(id: &AnyNodeId, query: &dyn GraphQuery) -> String {
-    text_unit_label(id).unwrap_or_else(|| node_label(id, query.node(id)))
+pub fn describe_node(id: &AnyNodeId, query: &dyn GraphQuery) -> Result<String, ApiError> {
+    let at = Position::Node(id.clone());
+    labelled_positions(std::slice::from_ref(&at), query).map(|mut labels| labels.remove(0))
 }
 
-pub fn describe_nodes(ids: &BTreeSet<AnyNodeId>, query: &dyn GraphQuery) -> BTreeMap<AnyNodeId, NodeRef> {
-    let read: Vec<AnyNodeId> = ids.iter().filter(|id| text_unit_label(id).is_none()).cloned().collect();
-    let mut nodes: BTreeMap<AnyNodeId, Option<Node>> = read.iter().cloned().zip(query.nodes(&read)).collect();
-    ids.iter()
-        .map(|id| {
-            let label = text_unit_label(id).unwrap_or_else(|| node_label(id, nodes.remove(id).flatten()));
-            (id.clone(), labelled(id, label))
+pub fn describe_nodes(ids: &BTreeSet<AnyNodeId>, query: &dyn GraphQuery) -> Result<BTreeMap<AnyNodeId, NodeRef>, ApiError> {
+    let at: Vec<Position> = ids.iter().map(|id| Position::Node(id.clone())).collect();
+    let labels = labelled_positions(&at, query)?;
+    Ok(ids.iter().cloned().zip(labels).map(|(id, label)| (id.clone(), labelled(&id, label))).collect())
+}
+
+pub fn describe_positions(at: &[Position], query: &dyn GraphQuery) -> Result<Vec<PositionRef>, ApiError> {
+    let labels = labelled_positions(at, query)?;
+    at.iter()
+        .zip(labels)
+        .map(|(position, label)| match position {
+            Position::Node(id) => Ok(PositionRef::Node { node: labelled(id, label) }),
+            Position::Edge(id) => edge_ref(id, label).map(|edge| PositionRef::Edge { edge }),
         })
         .collect()
 }
 
-fn text_unit_label(id: &AnyNodeId) -> Option<String> {
-    if id.kind != NodeKind::TextUnit {
-        return None;
-    }
-    if let Some((book, chapter, verse)) = atlas_graph::kjv_adapter::decode_text_unit(id) {
-        return Some(atlas_graph::kjv_adapter::dot_ref(book, chapter, verse));
-    }
-    if let Some((part, article, paragraph)) = atlas_graph::concord_adapter::decode_text_unit(id) {
-        use atlas_graph_types::text::Corpus;
-        return Some(atlas_graph_types::text::ConcordTag::cite(&atlas_graph_types::text::ConcordRef { part, article, paragraph }));
-    }
-    Some("text unit".to_string())
+pub fn describe_position(at: &Position, query: &dyn GraphQuery) -> Result<PositionRef, ApiError> {
+    describe_positions(std::slice::from_ref(at), query).map(|mut described| described.remove(0))
 }
 
-fn node_label(id: &AnyNodeId, node: Option<Node>) -> String {
-    node.map(|n| atlas_graph_types::node::label(&n)).unwrap_or_else(|| id.kind.name().to_string())
+pub fn edge_ref(id: &EdgeId, label: String) -> Result<EdgeRef, ApiError> {
+    let kind = id.recorded_kind().ok_or_else(|| ApiError::internal(&format!("the edge id {} names no relation", id.0)))?;
+    Ok(EdgeRef { id: id.0.clone(), kind, label })
 }
 
-pub fn describe_position(pos: &Position, query: &dyn GraphQuery) -> PositionRef {
-    match pos {
-        Position::Node(id) => PositionRef::Node { node: node_ref(id, query) },
-        Position::Edge(eid) => PositionRef::Edge { edge: EdgeRef { id: eid.0.clone() } },
+pub fn labelled_positions(at: &[Position], query: &dyn GraphQuery) -> Result<Vec<String>, ApiError> {
+    at.iter()
+        .zip(query.labels(at))
+        .map(|(position, label)| label.ok_or_else(|| ApiError::internal(&format!("{} is held but no label is compiled for it", wire_position(position)))))
+        .collect()
+}
+
+fn wire_position(at: &Position) -> String {
+    match at {
+        Position::Node(id) => encode_node_id(id),
+        Position::Edge(id) => id.0.clone(),
     }
 }
 
-pub fn node_ref(id: &AnyNodeId, query: &dyn GraphQuery) -> NodeRef {
-    labelled(id, describe_node(id, query))
+pub fn node_ref(id: &AnyNodeId, query: &dyn GraphQuery) -> Result<NodeRef, ApiError> {
+    describe_node(id, query).map(|label| labelled(id, label))
 }
 
 fn labelled(id: &AnyNodeId, label: String) -> NodeRef {
@@ -115,23 +121,44 @@ mod tests {
     use super::*;
 
     const A_DATING: &str = "DatedBy:00ff";
+    const A_DATING_LABEL: &str = "Solomon crowned · Dated by · 970 BC";
+    const VERSE_LABEL: &str = "JHN.3.16";
 
     #[test]
-    fn a_position_is_described_as_the_node_or_the_edge_it_names() {
+    fn a_position_is_described_as_the_node_or_the_edge_it_names_by_its_compiled_label() {
         // Arrange
-        let graph = atlas_graph_types::graph::Graph::default();
         let verse = decode_node_id("text-unit:JHN.3.16").unwrap();
         let dating = atlas_graph_types::edge::EdgeId(A_DATING.to_string());
+        let mut graph = atlas_graph_types::graph::Graph::default();
+        graph.labels.insert(Position::Node(verse.clone()), VERSE_LABEL.to_string());
+        graph.labels.insert(Position::Edge(dating.clone()), A_DATING_LABEL.to_string());
         // Act
-        let described = [describe_position(&Position::Node(verse), &graph), describe_position(&Position::Edge(dating), &graph)];
+        let described = describe_positions(&[Position::Node(verse), Position::Edge(dating)], &graph).unwrap();
         // Assert
         assert_eq!(
             described,
-            [
-                PositionRef::Node { node: NodeRef { id: "text-unit:JHN.3.16".to_string(), kind: NodeKind::TextUnit, label: "JHN.3.16".to_string() } },
-                PositionRef::Edge { edge: EdgeRef { id: A_DATING.to_string() } },
+            vec![
+                PositionRef::Node { node: NodeRef { id: "text-unit:JHN.3.16".to_string(), kind: NodeKind::TextUnit, label: VERSE_LABEL.to_string() } },
+                PositionRef::Edge {
+                    edge: EdgeRef {
+                        id: A_DATING.to_string(),
+                        kind: atlas_graph_types::edge::EdgeKind::Directed(atlas_graph_types::edge::RelationId::DatedBy, atlas_graph_types::edge::Direction::Forward),
+                        label: A_DATING_LABEL.to_string(),
+                    }
+                },
             ]
         );
+    }
+
+    #[test]
+    fn a_held_position_with_no_compiled_label_is_an_internal_defect_naming_it() {
+        // Arrange
+        let graph = atlas_graph_types::graph::Graph::default();
+        let verse = decode_node_id("text-unit:JHN.3.16").unwrap();
+        // Act
+        let refused = describe_position(&Position::Node(verse), &graph).unwrap_err();
+        // Assert
+        assert_eq!((refused.code, refused.message), (crate::error::ErrorCode::Internal, "text-unit:JHN.3.16 is held but no label is compiled for it".to_string()));
     }
 
     #[test]

@@ -10,7 +10,8 @@ use atlas_graph_types::canon::{Canon, CANON_VERSION};
 use atlas_graph_types::adjacency::EdgeMeta;
 use atlas_graph_types::graph::Graph;
 use atlas_graph_types::id::{ContentAddressed, ContentHash};
-use atlas_graph_types::node::{Node, NodePayload};
+use atlas_graph_types::id::Position;
+use atlas_graph_types::node::Node;
 use rusqlite::types::Value;
 use rusqlite::{Connection, Transaction};
 
@@ -49,28 +50,6 @@ pub struct WrittenSection {
     pub elapsed: Duration,
 }
 
-/// The display string hoisted onto `node.label`; nothing reads it back.
-pub fn node_label(n: &Node) -> Option<&str> {
-    match &n.payload {
-        NodePayload::TextUnit { .. } => None,
-        NodePayload::Container { title } => Some(title),
-        NodePayload::Event { label, .. }
-        | NodePayload::Narrative { label, .. }
-        | NodePayload::Person { label, .. }
-        | NodePayload::PeopleGroup { label, .. }
-        | NodePayload::Era { label, .. }
-        | NodePayload::Map { label, .. }
-        | NodePayload::Polity { label, .. }
-        | NodePayload::CatechismItem { label }
-        | NodePayload::Source { label }
-        | NodePayload::Translation { label } => Some(label),
-        NodePayload::Place { canonical, .. } => Some(canonical),
-        NodePayload::Anchor { citation, .. } => Some(citation),
-        NodePayload::CommentaryItem { work, .. } => Some(&work.0),
-        NodePayload::LexiconEntry { lemma, .. } => Some(lemma),
-    }
-}
-
 /// `"Rel:hex"` -> the hash bytes for the `edge_id` BLOB.
 pub fn edge_id_blob(id: &atlas_graph_types::edge::EdgeId) -> Result<Vec<u8>, SqliteError> {
     let (_, hex) = id.0.split_once(':').ok_or_else(|| SqliteError(format!("edge id {} has no ':'", id.0)))?;
@@ -79,16 +58,23 @@ pub fn edge_id_blob(id: &atlas_graph_types::edge::EdgeId) -> Result<Vec<u8>, Sql
 }
 
 fn insert_nodes(tx: &Transaction, nodes: &[&Node]) -> Result<(), SqliteError> {
-    let mut stmt = tx.prepare_cached("INSERT INTO node (id, kind, pid, label, provenance, payload) VALUES (?, ?, ?, ?, ?, ?)")?;
+    let mut stmt = tx.prepare_cached("INSERT INTO node (id, kind, pid, provenance, payload) VALUES (?, ?, ?, ?, ?)")?;
     for n in nodes {
         stmt.execute(rusqlite::params![
             any_node_id_str(&n.id),
             node_kind_ordinal(n.id.kind),
             hash_bytes(&n.pid().hash),
-            node_label(n),
             n.provenance,
             n.encode(),
         ])?;
+    }
+    Ok(())
+}
+
+fn insert_labels(tx: &Transaction, labels: &[(Position, &str)]) -> Result<(), SqliteError> {
+    let mut stmt = tx.prepare_cached("INSERT INTO label (position, label) VALUES (?, ?)")?;
+    for (position, label) in labels {
+        stmt.execute(rusqlite::params![position_str(position), label])?;
     }
     Ok(())
 }
@@ -179,6 +165,7 @@ fn write_one(
             insert_row(&tx, &mut jw, *ord, row)?;
         }
         insert_edges(&tx, &p.edges)?;
+        insert_labels(&tx, &p.labels)?;
         if let Some((_corpus, order)) = p.spine {
             let mut stmt = tx.prepare_cached("INSERT INTO reading_spine (ord, node_id) VALUES (?, ?)")?;
             for (i, id) in order.iter().enumerate() {

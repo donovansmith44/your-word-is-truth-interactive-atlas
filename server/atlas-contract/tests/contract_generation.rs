@@ -140,37 +140,37 @@ fn x_atlas_relations_is_the_relations_manifest_in_declaration_order() {
     // Arrange
     let expected = serde_json::json!({
         "directed": [
-            { "name": "Contains",     "forward": "contains",        "inverse": "member-of" },
-            { "name": "Attests",      "forward": "attested-in",     "inverse": "attests" },
-            { "name": "Succession",   "forward": "follows-in",      "inverse": "precedes-in" },
-            { "name": "DatedBy",      "forward": "dated-by",        "inverse": "dates" },
-            { "name": "LocatedAt",    "forward": "located-at",      "inverse": "site-of" },
-            { "name": "Mentions",     "forward": "mentions",        "inverse": "mentioned-in" },
-            { "name": "Cites",        "forward": "cites",           "inverse": "cited-by" },
-            { "name": "Quotes",       "forward": "quotes",          "inverse": "quoted-by" },
-            { "name": "Confesses",    "forward": "confesses",       "inverse": "confessed-in" },
-            { "name": "Fulfillment",  "forward": "fulfilled-in",    "inverse": "fulfills" },
-            { "name": "Typology",     "forward": "prefigures",      "inverse": "prefigured-by" },
-            { "name": "NamedAfter",   "forward": "named-after",     "inverse": "namesake-of" },
-            { "name": "JustifiedBy",  "forward": "justified-by",    "inverse": "justifies" },
-            { "name": "CommentsOn",   "forward": "comments-on",     "inverse": "commented-on-by" },
-            { "name": "SpokenBy",     "forward": "spoken-by",       "inverse": "speech-of" },
-            { "name": "SpokenAt",     "forward": "spoken-at",       "inverse": "site-of-speech" },
-            { "name": "DerivedFrom",  "forward": "derived-from",    "inverse": "derives" },
-            { "name": "Occurs",       "forward": "occurs-in",       "inverse": "words" },
-            { "name": "ParentOf",     "forward": "parent-of",       "inverse": "child-of" },
-            { "name": "Participates", "forward": "participates-in", "inverse": "participants" },
-            { "name": "AuthoredBy",   "forward": "authored-by",     "inverse": "authored" },
-            { "name": "Shows",        "forward": "shows",           "inverse": "shown-on" },
+            { "name": "Contains", "forward": "contains", "inverse": "member-of", "forward_display": "Contains", "inverse_display": "Member of" },
+            { "name": "Attests", "forward": "attested-in", "inverse": "attests", "forward_display": "Attested in", "inverse_display": "Attests" },
+            { "name": "Succession", "forward": "follows-in", "inverse": "precedes-in", "forward_display": "Follows in", "inverse_display": "Precedes in" },
+            { "name": "DatedBy", "forward": "dated-by", "inverse": "dates", "forward_display": "Dated by", "inverse_display": "Dates" },
+            { "name": "LocatedAt", "forward": "located-at", "inverse": "site-of", "forward_display": "Located at", "inverse_display": "Site of" },
+            { "name": "Mentions", "forward": "mentions", "inverse": "mentioned-in", "forward_display": "Mentions", "inverse_display": "Mentioned in" },
+            { "name": "Cites", "forward": "cites", "inverse": "cited-by", "forward_display": "Cites", "inverse_display": "Cited by" },
+            { "name": "Quotes", "forward": "quotes", "inverse": "quoted-by", "forward_display": "Quotes", "inverse_display": "Quoted by" },
+            { "name": "Confesses", "forward": "confesses", "inverse": "confessed-in", "forward_display": "Confesses", "inverse_display": "Confessed in" },
+            { "name": "Fulfillment", "forward": "fulfilled-in", "inverse": "fulfills", "forward_display": "Fulfilled in", "inverse_display": "Fulfills" },
+            { "name": "Typology", "forward": "prefigures", "inverse": "prefigured-by", "forward_display": "Prefigures", "inverse_display": "Prefigured by" },
+            { "name": "NamedAfter", "forward": "named-after", "inverse": "namesake-of", "forward_display": "Named after", "inverse_display": "Namesake of" },
+            { "name": "JustifiedBy", "forward": "justified-by", "inverse": "justifies", "forward_display": "Justified by", "inverse_display": "Justifies" },
+            { "name": "CommentsOn", "forward": "comments-on", "inverse": "commented-on-by", "forward_display": "Comments on", "inverse_display": "Commented on by" },
+            { "name": "SpokenBy", "forward": "spoken-by", "inverse": "speech-of", "forward_display": "Spoken by", "inverse_display": "Speech of" },
+            { "name": "SpokenAt", "forward": "spoken-at", "inverse": "site-of-speech", "forward_display": "Spoken at", "inverse_display": "Site of speech" },
+            { "name": "DerivedFrom", "forward": "derived-from", "inverse": "derives", "forward_display": "Derived from", "inverse_display": "Derives" },
+            { "name": "Occurs", "forward": "occurs-in", "inverse": "words", "forward_display": "Occurs in", "inverse_display": "Words" },
+            { "name": "ParentOf", "forward": "parent-of", "inverse": "child-of", "forward_display": "Parent of", "inverse_display": "Child of" },
+            { "name": "Participates", "forward": "participates-in", "inverse": "participants", "forward_display": "Participates in", "inverse_display": "Participants" },
+            { "name": "AuthoredBy", "forward": "authored-by", "inverse": "authored", "forward_display": "Authored by", "inverse_display": "Authored" },
+            { "name": "Shows", "forward": "shows", "inverse": "shown-on", "forward_display": "Shows", "inverse_display": "Shown on" },
         ],
         "symmetric": [
-            { "name": "Analogue",          "label": "analogous-to" },
-            { "name": "CatechismLink",     "label": "catechism-link" },
-            { "name": "Corresponds",       "label": "corresponds-to" },
-            { "name": "Parallel",          "label": "parallel" },
-            { "name": "TemporalAdjacency", "label": "temporal-adjacency" },
-            { "name": "Spouses",           "label": "spouse-of" },
-            { "name": "Brethren",          "label": "brethren-of" },
+            { "name": "Analogue", "label": "analogous-to", "display": "Analogous to" },
+            { "name": "CatechismLink", "label": "catechism-link", "display": "Catechism link" },
+            { "name": "Corresponds", "label": "corresponds-to", "display": "Corresponds to" },
+            { "name": "Parallel", "label": "parallel", "display": "Parallel" },
+            { "name": "TemporalAdjacency", "label": "temporal-adjacency", "display": "Temporal adjacency" },
+            { "name": "Spouses", "label": "spouse-of", "display": "Spouse of" },
+            { "name": "Brethren", "label": "brethren-of", "display": "Brethren of" },
         ],
     });
     // Act
@@ -180,12 +180,34 @@ fn x_atlas_relations_is_the_relations_manifest_in_declaration_order() {
 }
 
 #[test]
+fn every_edge_kind_has_a_served_display_label() {
+    // Arrange
+    let relations = atlas_contract::document::relations_json();
+    let display_of = |kind: atlas_graph_types::edge::EdgeKind| -> Option<String> {
+        use atlas_graph_types::edge::{Direction, EdgeKind};
+        let (family, name, field) = match kind {
+            EdgeKind::Directed(r, Direction::Forward) => ("directed", r.name(), "forward_display"),
+            EdgeKind::Directed(r, Direction::Inverse) => ("directed", r.name(), "inverse_display"),
+            EdgeKind::Symmetric(s) => ("symmetric", s.name(), "display"),
+        };
+        relations[family].as_array()?.iter().find(|entry| entry["name"] == name)?[field].as_str().map(str::to_string)
+    };
+
+    // Act
+    let served: Vec<(atlas_graph_types::edge::EdgeKind, Option<String>)> = atlas_graph_types::edge::EdgeKind::all().map(|kind| (kind, display_of(kind))).collect();
+
+    // Assert
+    let expected: Vec<(atlas_graph_types::edge::EdgeKind, Option<String>)> = atlas_graph_types::edge::EdgeKind::all().map(|kind| (kind, Some(kind.display_label()))).collect();
+    assert_eq!(served, expected);
+}
+
+#[test]
 fn the_published_document_names_this_api_and_the_contract_version_it_serves() {
     // Arrange
     let version = std::fs::read_to_string(atlas_contract::document::contracts_root().join("atlas-query-contract/VERSION")).expect("the AQC VERSION file exists");
     let expected = serde_json::json!({
         "title": "Bible Atlas API",
-        "description": "The Bible Atlas HTTP API, generated from the Rust that serves it. The `x-atlas-relations` extension lists every relation this atlas joins two nodes by, each with the label its forward and its inverse neighbours are asked for, so a consumer builds its own vocabulary from that list rather than writing one out.",
+        "description": "The Bible Atlas HTTP API, generated from the Rust that serves it. The `x-atlas-relations` extension lists every relation this atlas joins two nodes by, each with the label its forward and its inverse neighbours are asked for and the words each is displayed by, so a consumer builds its own vocabulary from that list rather than writing one out.",
         "version": version.trim(),
     });
     // Act

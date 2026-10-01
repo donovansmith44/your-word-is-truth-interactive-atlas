@@ -770,7 +770,7 @@ async fn bijection_witness_over_http_cites_and_cited_by_share_the_same_edge_id()
     let (st, forward_page, _) = get(&app, "/api/node/text-unit:JHN.3.16/edges?kind=cites&limit=1").await;
     assert_eq!(st, 200);
     let entry = &forward_page["entries"][0];
-    let edge_id = entry["edge"].as_str().unwrap().to_string();
+    let edge_id = entry["edge"]["id"].as_str().unwrap().to_string();
     let target_id = entry["neighbour"]["node"]["id"].as_str().unwrap().to_string();
 
     let mut cursor: Option<u64> = None;
@@ -784,7 +784,7 @@ async fn bijection_witness_over_http_cites_and_cited_by_share_the_same_edge_id()
         assert_eq!(st2, 200);
         let inverse_entries = inverse_page["entries"].as_array().unwrap();
         if let Some(back) = inverse_entries.iter().find(|e| e["neighbour"]["node"]["id"] == "text-unit:JHN.3.16") {
-            found = Some(back["edge"].as_str().unwrap().to_string());
+            found = Some(back["edge"]["id"].as_str().unwrap().to_string());
             break;
         }
         match inverse_page["next"].as_u64() {
@@ -1487,9 +1487,9 @@ fn a_neighbour_is_published_as_a_node_position_or_an_edge_position_told_apart_by
             },
             "EdgeRef": {
                 "type": "object",
-                "description": "A reference to an edge: the id its own page carries as `edge`.",
-                "required": ["id"],
-                "properties": { "id": { "type": "string" } },
+                "description": "A reference to an edge: its id, which the page of either end carries for this same connection and the element read answers, the kind it is recorded in, and its compiled label.",
+                "required": ["id", "kind", "label"],
+                "properties": { "id": { "type": "string" }, "kind": { "$ref": "#/components/schemas/EdgeKind" }, "label": { "type": "string" } },
                 "additionalProperties": false,
             },
             "PositionKind": null,
@@ -1513,7 +1513,7 @@ async fn an_anchor_justifies_the_dating_it_grounds_and_that_neighbour_is_the_edg
         page,
         serde_json::json!({
             "kind": "justifies",
-            "entries": [{ "edge": page["entries"][0]["edge"], "neighbour": { "position": "edge", "edge": { "id": dates["entries"][0]["edge"] } } }],
+            "entries": [{ "edge": page["entries"][0]["edge"], "neighbour": { "position": "edge", "edge": dates["entries"][0]["edge"] } }],
             "next": null,
             "version": dates["version"],
         })
@@ -2313,4 +2313,283 @@ async fn the_virgin_mary_is_the_mother_of_jesus_only_and_joseph_his_father_only_
             serde_json::json!([]),
         )
     );
+}
+
+const A_BAPTISM_VERSE: &str = "text-unit:MAT.3.16";
+const AN_UNKNOWN_PERSON: &str = "Person:nobody-at-all";
+const A_SAMPLE_VERSE: &str = "text-unit:GEN.1.1";
+const MAX_ELEMENTS: usize = 200;
+
+async fn elements(app: &axum::Router, ids: &[&str]) -> (StatusCode, serde_json::Value) {
+    let (status, body, _) = get(app, &format!("/api/elements?ids={}", ids.iter().map(|id| encoded(id)).collect::<Vec<_>>().join(","))).await;
+    (status, body)
+}
+
+fn encoded(id: &str) -> String {
+    id.bytes()
+        .map(|b| match b {
+            b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'-' | b'_' | b'.' | b'~' | b':' => (b as char).to_string(),
+            other => format!("%{other:02X}"),
+        })
+        .collect()
+}
+
+fn served_snapshot() -> atlas_graph::service::Snap {
+    real_atlas().1.snapshot()
+}
+
+fn edge_summary_of(at: &atlas_graph_types::id::Position) -> serde_json::Value {
+    use atlas_graph_types::store::GraphQuery;
+    serde_json::Value::Array(
+        served_snapshot()
+            .edge_summary(at)
+            .into_iter()
+            .map(|(kind, count)| serde_json::json!({ "kind": kind.label(), "count": count }))
+            .collect(),
+    )
+}
+
+fn provenance_of(edge: &str) -> String {
+    use atlas_graph_types::store::GraphQuery;
+    served_snapshot().row_provenance(&atlas_graph_types::edge::EdgeId(edge.to_string())).expect("a row records the edge").provenance
+}
+
+fn node_position(record: &serde_json::Value) -> serde_json::Value {
+    serde_json::json!({ "position": "node", "node": { "id": record["id"], "kind": record["kind"], "label": record["label"] } })
+}
+
+#[tokio::test]
+async fn every_neighbour_names_its_edge_with_its_kind_and_compiled_label() {
+    // Arrange
+    let app = compiled_app();
+    let (_, record, _) = get(&app, &format!("/api/node/{A_SAMPLE_VERSE}")).await;
+    let mut entries: Vec<serde_json::Value> = Vec::new();
+    for summary in record["edge_summary"].as_array().unwrap() {
+        let (_, page, _) = get(&app, &format!("/api/node/{A_SAMPLE_VERSE}/edges?kind={}", summary["kind"].as_str().unwrap())).await;
+        entries.extend(page["entries"].as_array().unwrap().iter().cloned());
+    }
+    let ids: Vec<String> = entries.iter().map(|entry| entry["edge"]["id"].as_str().unwrap().to_string()).collect();
+
+    // Act
+    let (status, read) = elements(&app, &ids.iter().map(String::as_str).collect::<Vec<_>>()).await;
+
+    // Assert
+    assert_eq!(status, StatusCode::OK, "{read}");
+    let named: Vec<serde_json::Value> = entries.iter().map(|entry| entry["edge"].clone()).collect();
+    let served: Vec<serde_json::Value> = read["elements"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|element| serde_json::json!({ "id": element["edge"]["id"], "kind": element["edge"]["kind"], "label": element["edge"]["label"] }))
+        .collect();
+    assert_eq!((named.len() > 1, named), (true, served));
+}
+
+#[tokio::test]
+async fn the_element_read_answers_each_id_in_order_with_its_node_its_edge_or_its_absence() {
+    // Arrange
+    let app = compiled_app();
+    let (_, verse, _) = get(&app, &format!("/api/node/{A_BAPTISM_VERSE}")).await;
+    let (_, attests, _) = get(&app, &format!("/api/node/{A_BAPTISM_VERSE}/edges?kind=attests&limit=1")).await;
+    let entry = &attests["entries"][0];
+    let edge = entry["edge"]["id"].as_str().unwrap();
+    let at = atlas_graph_types::id::Position::Edge(atlas_graph_types::edge::EdgeId(edge.to_string()));
+
+    // Act
+    let (status, read) = elements(&app, &[A_BAPTISM_VERSE, edge, AN_UNKNOWN_PERSON]).await;
+
+    // Assert
+    assert_eq!(status, StatusCode::OK, "{read}");
+    assert_eq!(
+        read,
+        serde_json::json!({
+            "elements": [
+                { "element": "node", "node": verse },
+                {
+                    "element": "edge",
+                    "edge": {
+                        "id": edge,
+                        "kind": entry["edge"]["kind"],
+                        "label": entry["edge"]["label"],
+                        "subject": entry["neighbour"],
+                        "object": node_position(&verse),
+                        "provenance": provenance_of(edge),
+                        "edge_summary": edge_summary_of(&at),
+                    }
+                },
+                { "element": "missing", "id": AN_UNKNOWN_PERSON },
+            ],
+            "version": verse["version"],
+        })
+    );
+}
+
+#[tokio::test]
+async fn an_edge_record_names_its_kind_its_label_its_two_ends_and_its_provenance() {
+    // Arrange
+    let app = compiled_app();
+    let (_, place, _) = get(&app, "/api/node/Place:hazor-1").await;
+    let (_, sites, _) = get(&app, "/api/node/Place:hazor-1/edges?kind=site-of&limit=1").await;
+    let entry = &sites["entries"][0];
+    let edge = entry["edge"]["id"].as_str().unwrap();
+
+    // Act
+    let (_, read) = elements(&app, &[edge]).await;
+
+    // Assert
+    let record = &read["elements"][0]["edge"];
+    assert_eq!(
+        (record["kind"].clone(), record["label"].clone(), record["subject"].clone(), record["object"].clone(), record["provenance"].clone()),
+        (serde_json::json!("located-at"), entry["edge"]["label"].clone(), entry["neighbour"].clone(), node_position(&place), serde_json::json!(provenance_of(edge)))
+    );
+}
+
+#[tokio::test]
+async fn an_edge_records_counts_are_its_own_neighbours() {
+    // Arrange
+    let app = compiled_app();
+    let (_, dates, _) = get(&app, &format!("/api/node/{AN_ANCHOR_WITH_ONE_DATING}/edges?kind=dates")).await;
+    let dating = dates["entries"][0]["edge"]["id"].as_str().unwrap().to_string();
+    let justifying = every_edge_of(&app, &dating, "justified-by").await;
+
+    // Act
+    let (_, read) = elements(&app, &[&dating]).await;
+
+    // Assert
+    assert_eq!(read["elements"][0]["edge"]["edge_summary"], serde_json::json!([{ "kind": "justified-by", "count": justifying.len() }]));
+}
+
+#[tokio::test]
+async fn the_neighbour_read_at_an_edge_lists_what_justifies_it() {
+    // Arrange
+    let app = compiled_app();
+    let (_, anchor, _) = get(&app, &format!("/api/node/{AN_ANCHOR_WITH_ONE_DATING}")).await;
+    let (_, dates, _) = get(&app, &format!("/api/node/{AN_ANCHOR_WITH_ONE_DATING}/edges?kind=dates")).await;
+    let dating = dates["entries"][0]["edge"]["id"].as_str().unwrap().to_string();
+
+    // Act
+    let justifying = every_edge_of(&app, &dating, "justified-by").await;
+
+    // Assert
+    let neighbours: Vec<serde_json::Value> = justifying.iter().map(|entry| entry["neighbour"].clone()).collect();
+    assert!(neighbours.contains(&node_position(&anchor)), "{neighbours:?}");
+}
+
+#[tokio::test]
+async fn the_neighbour_read_of_an_edge_nothing_records_is_not_found() {
+    // Arrange
+    let app = compiled_app();
+    let unrecorded = format!("DatedBy:{}", "0".repeat(32));
+
+    // Act
+    let (status, body, _) = get(&app, &format!("/api/node/{unrecorded}/edges?kind=justified-by")).await;
+
+    // Assert
+    assert_eq!((status, body["error"]["code"].clone()), (StatusCode::NOT_FOUND, serde_json::json!("not_found")));
+}
+
+#[tokio::test]
+async fn the_node_route_and_the_element_read_serve_one_node_record() {
+    // Arrange
+    let app = compiled_app();
+    let (_, record, _) = get(&app, "/api/node/Person:aaron_1").await;
+
+    // Act
+    let (_, read) = elements(&app, &["Person:aaron_1"]).await;
+
+    // Assert
+    assert_eq!(read["elements"][0], serde_json::json!({ "element": "node", "node": record }));
+}
+
+#[tokio::test]
+async fn an_element_read_beyond_the_cap_is_refused() {
+    // Arrange
+    let app = compiled_app();
+    let ids = vec![A_SAMPLE_VERSE; MAX_ELEMENTS + 1];
+
+    // Act
+    let (status, body) = elements(&app, &ids).await;
+
+    // Assert
+    assert_eq!((status, body["error"]["code"].clone()), (StatusCode::BAD_REQUEST, serde_json::json!("too_many")));
+}
+
+#[tokio::test]
+async fn an_element_read_at_the_cap_is_answered() {
+    // Arrange
+    let app = compiled_app();
+    let ids = vec![A_SAMPLE_VERSE; MAX_ELEMENTS];
+
+    // Act
+    let (status, body) = elements(&app, &ids).await;
+
+    // Assert
+    assert_eq!((status, body["elements"].as_array().map(Vec::len)), (StatusCode::OK, Some(MAX_ELEMENTS)));
+}
+
+#[tokio::test]
+async fn an_element_read_of_no_id_is_refused() {
+    // Arrange
+    let app = compiled_app();
+
+    // Act
+    let refused = [get(&app, "/api/elements").await, get(&app, "/api/elements?ids=").await];
+
+    // Assert
+    let codes: Vec<(StatusCode, serde_json::Value)> = refused.iter().map(|(status, body, _)| (*status, body["error"]["code"].clone())).collect();
+    assert_eq!(codes, vec![(StatusCode::BAD_REQUEST, serde_json::json!("bad_ref")); 2]);
+}
+
+#[tokio::test]
+async fn one_malformed_id_refuses_the_whole_element_read() {
+    // Arrange
+    let app = compiled_app();
+
+    // Act
+    let refused = [elements(&app, &[A_SAMPLE_VERSE, "not-an-id"]).await, elements(&app, &[A_SAMPLE_VERSE, ""]).await];
+
+    // Assert
+    let codes: Vec<(StatusCode, serde_json::Value)> = refused.iter().map(|(status, body)| (*status, body["error"]["code"].clone())).collect();
+    assert_eq!(codes, vec![(StatusCode::BAD_REQUEST, serde_json::json!("bad_ref")); 2]);
+}
+
+#[test]
+fn no_relation_name_is_a_node_kind_prefix() {
+    // Arrange
+    let prefixes: Vec<String> = atlas_graph_types::id::NodeKind::ALL
+        .iter()
+        .map(|kind| {
+            let wire = atlas_contract::graph_wire::encode_node_id(&atlas_graph_types::id::AnyNodeId { kind: *kind, raw: "x".to_string() });
+            wire.split_once(':').unwrap().0.to_string()
+        })
+        .collect();
+    let relations: Vec<&str> = atlas_graph_types::edge::RelationId::ALL
+        .iter()
+        .map(|r| r.name())
+        .chain(atlas_graph_types::edge::SymRelationId::ALL.iter().map(|s| s.name()))
+        .collect();
+
+    // Act
+    let shared: Vec<&String> = prefixes.iter().filter(|prefix| relations.contains(&prefix.as_str())).collect();
+
+    // Assert
+    assert_eq!((prefixes.len(), shared), (atlas_graph_types::id::NodeKind::ALL.len(), Vec::<&String>::new()));
+}
+
+#[test]
+fn no_served_id_carries_the_separator_an_element_read_lists_ids_by() {
+    use atlas_graph_types::store::GraphQuery;
+    // Arrange
+    let snap = served_snapshot();
+
+    // Act
+    let carrying: Vec<String> = atlas_graph_types::id::NodeKind::ALL
+        .iter()
+        .flat_map(|kind| snap.nodes_of_kind(*kind, None, usize::MAX).ids)
+        .map(|id| atlas_contract::graph_wire::encode_node_id(&id))
+        .filter(|id| id.contains(atlas_contract::reference::ELEMENT_ID_SEPARATOR))
+        .collect();
+
+    // Assert
+    assert_eq!(carrying, Vec::<String>::new());
 }

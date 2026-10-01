@@ -7,6 +7,8 @@ use axum::extract::{FromRequestParts, Path};
 use axum::http::request::Parts;
 
 use atlas_core::refs::{BookId, ScriptureRef, VerseId};
+use atlas_graph_types::edge::EdgeId;
+use atlas_graph_types::graph::edge_hash;
 use atlas_graph_types::id::AnyNodeId;
 
 use crate::error::ApiError;
@@ -141,6 +143,72 @@ impl FromStr for NodeReference {
     }
 }
 
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum ElementId {
+    Node(AnyNodeId),
+    Edge(EdgeId),
+}
+
+pub fn decode_element_id(raw: &str) -> Option<ElementId> {
+    decode_node_id(raw).map(ElementId::Node).or_else(|| decode_edge_id(raw).map(ElementId::Edge))
+}
+
+fn decode_edge_id(raw: &str) -> Option<EdgeId> {
+    let id = EdgeId(raw.to_string());
+    id.recorded_kind()?;
+    edge_hash(&id)?;
+    Some(id)
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct PositionReference(pub ElementId);
+
+impl FromStr for PositionReference {
+    type Err = NamesNoReference;
+
+    fn from_str(raw: &str) -> Result<Self, NamesNoReference> {
+        decode_element_id(raw).map(PositionReference).ok_or(NamesNoReference)
+    }
+}
+
+pub const ELEMENT_ID_SEPARATOR: char = ',';
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct ElementIds(pub Vec<ElementId>);
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum ElementIdsRefused {
+    NoId,
+    TooMany(usize),
+    Malformed(String),
+}
+
+impl FromStr for ElementIds {
+    type Err = ElementIdsRefused;
+
+    fn from_str(raw: &str) -> Result<Self, ElementIdsRefused> {
+        if raw.is_empty() {
+            return Err(ElementIdsRefused::NoId);
+        }
+        let asked: Vec<&str> = raw.split(ELEMENT_ID_SEPARATOR).collect();
+        if asked.len() > crate::graph::MAX_ELEMENTS {
+            return Err(ElementIdsRefused::TooMany(asked.len()));
+        }
+        asked
+            .into_iter()
+            .map(|id| decode_element_id(id).ok_or_else(|| ElementIdsRefused::Malformed(id.to_string())))
+            .collect::<Result<Vec<_>, _>>()
+            .map(ElementIds)
+    }
+}
+
+impl<'de> serde::Deserialize<'de> for ElementIds {
+    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        let raw = String::deserialize(deserializer)?;
+        raw.parse().map_err(|refused: ElementIdsRefused| serde::de::Error::custom(format!("{refused:?}")))
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -231,5 +299,71 @@ mod tests {
         let read: Vec<bool> = asked.iter().map(|raw| raw.parse::<NodeReference>().is_ok()).collect();
         // Assert
         assert_eq!(read, vec![true, true, false, false]);
+    }
+
+    const AN_EDGE: &str = "LocatedAt:000102030405060708090a0b0c0d0e0f";
+    const A_SYMMETRIC_EDGE: &str = "Analogue:000102030405060708090a0b0c0d0e0f";
+
+    #[test]
+    fn an_element_id_is_a_node_id_or_a_relation_named_edge_id() {
+        // Arrange
+        let asked = ["Event:ab_ur", AN_EDGE, A_SYMMETRIC_EDGE, "LocatedAt:00ff", "Nowhere:000102030405060708090a0b0c0d0e0f", "nope"];
+
+        // Act
+        let read: Vec<Option<ElementId>> = asked.iter().map(|raw| decode_element_id(raw)).collect();
+
+        // Assert
+        assert_eq!(
+            read,
+            vec![
+                Some(ElementId::Node(decode_node_id("Event:ab_ur").unwrap())),
+                Some(ElementId::Edge(EdgeId(AN_EDGE.to_string()))),
+                Some(ElementId::Edge(EdgeId(A_SYMMETRIC_EDGE.to_string()))),
+                None,
+                None,
+                None,
+            ]
+        );
+    }
+
+    #[test]
+    fn a_position_reference_names_a_node_or_an_edge() {
+        // Arrange
+        let asked = ["text-unit:JHN.3.16", AN_EDGE, "nope"];
+
+        // Act
+        let read: Vec<Result<PositionReference, NamesNoReference>> = asked.iter().map(|raw| raw.parse()).collect();
+
+        // Assert
+        assert_eq!(
+            read,
+            vec![
+                Ok(PositionReference(ElementId::Node(decode_node_id("text-unit:JHN.3.16").unwrap()))),
+                Ok(PositionReference(ElementId::Edge(EdgeId(AN_EDGE.to_string())))),
+                Err(NamesNoReference),
+            ]
+        );
+    }
+
+    #[test]
+    fn a_list_of_element_ids_is_read_between_separators_and_refused_whole() {
+        // Arrange
+        let beyond_the_cap = vec!["Event:ab_ur"; crate::graph::MAX_ELEMENTS + 1].join(",");
+        let asked = [format!("Event:ab_ur,{AN_EDGE}"), String::new(), beyond_the_cap, "Event:ab_ur,nope".to_string(), "Event:ab_ur,".to_string()];
+
+        // Act
+        let read: Vec<Result<ElementIds, ElementIdsRefused>> = asked.iter().map(|raw| raw.parse()).collect();
+
+        // Assert
+        assert_eq!(
+            read,
+            vec![
+                Ok(ElementIds(vec![ElementId::Node(decode_node_id("Event:ab_ur").unwrap()), ElementId::Edge(EdgeId(AN_EDGE.to_string()))])),
+                Err(ElementIdsRefused::NoId),
+                Err(ElementIdsRefused::TooMany(crate::graph::MAX_ELEMENTS + 1)),
+                Err(ElementIdsRefused::Malformed("nope".to_string())),
+                Err(ElementIdsRefused::Malformed(String::new())),
+            ]
+        );
     }
 }

@@ -4,7 +4,7 @@
 
 use crate::canon::ids::any_node_id_str;
 use crate::canon::{encode_row_in_family, obj, serialize, str_value, Canon, RowFamily, Value, DOMAIN_PREFIX};
-use crate::edge::{CanonSuccession, Contains, CrossRef, EdgeId, RelationId};
+use crate::edge::{CanonSuccession, Contains, CrossRef, EdgeId};
 use crate::graph::Graph;
 use crate::id::ContentHash;
 use crate::node::{Node, NodePayload};
@@ -151,8 +151,7 @@ pub fn section_of_row(g: &Graph, family: RowFamily, row_ord: usize) -> Section {
 /// recoverable from the id with no extra index.
 pub fn justified_by_source_family(source_edge_id: &EdgeId) -> Option<RowFamily> {
     use crate::graph::EdgeRel;
-    let (relation, _hash) = source_edge_id.0.split_once(':')?;
-    let rel = RelationId::ALL.iter().copied().find(|r| format!("{r:?}") == relation)?;
+    let crate::edge::EdgeKind::Directed(rel, _) = source_edge_id.recorded_kind()? else { return None };
     RowFamily::ALL.iter().copied().find(|f| {
         f.relation() == EdgeRel::Directed(rel)
             && matches!(f, RowFamily::DatedBy | RowFamily::Fulfills | RowFamily::Typology | RowFamily::NamedAfter)
@@ -160,7 +159,7 @@ pub fn justified_by_source_family(source_edge_id: &EdgeId) -> Option<RowFamily> 
 }
 
 /// Part of every manifest line, and therefore part of the root.
-pub const SECTION_SCHEMA_VERSION: u32 = 18;
+pub const SECTION_SCHEMA_VERSION: u32 = 19;
 
 /// A per-row family appears under both of its homes.
 pub fn row_tables_of(section: Section) -> &'static [RowFamily] {

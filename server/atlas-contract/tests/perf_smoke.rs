@@ -168,3 +168,38 @@ fn adjacency_page_latency_corpus_over_both_arms() {
     let sql_p99 = run("sqlite (sections)", &sql_snap, &corpus);
     assert!(sql_p99 < Duration::from_millis(100), "served frontier page p99 {sql_p99:?} over 100 ms (spec 12)");
 }
+
+const ELEMENT_READ_BUDGET: Duration = Duration::from_millis(100);
+
+#[test]
+#[ignore = "wall-clock gate: run serialized via scripts/timing-gates.sh (CONTENTION-1)"]
+fn an_element_read_at_the_cap_answers_inside_the_read_budget() {
+    use atlas_contract::reference::ElementId;
+    use atlas_graph_types::adjacency::EdgeQuery;
+    use atlas_graph_types::id::{NodeKind, Position};
+    use atlas_graph_types::store::GraphQuery;
+    // Arrange
+    let compiled = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data/compiled");
+    let (graph, data) = atlas_contract::load::load_graph_and_data(&compiled).expect("the committed sections load");
+    let snap = graph.snapshot();
+    let half = atlas_contract::graph::MAX_ELEMENTS / 2;
+    let verses = snap.nodes_of_kind(NodeKind::TextUnit, None, half).ids;
+    let edges: Vec<ElementId> = verses
+        .iter()
+        .flat_map(|verse| {
+            let at = Position::Node(verse.clone());
+            snap.edge_summary(&at).into_keys().flat_map(|kind| snap.edges(&at, &EdgeQuery { kind, cursor: None, limit: 1 }).entries).map(|entry| ElementId::Edge(entry.edge)).collect::<Vec<_>>()
+        })
+        .take(half)
+        .collect();
+    let ids: Vec<ElementId> = verses.into_iter().map(ElementId::Node).chain(edges).collect();
+
+    // Act
+    let elapsed = median_of(7, || {
+        let _ = atlas_contract::graph::read_elements(&data, &graph, &snap, &ids);
+    });
+
+    // Assert
+    println!("PERF SMOKE {}: {elapsed:?} for {} ids (gate {:?})", "an_element_read_at_the_cap_answers_inside_the_read_budget", ids.len(), ELEMENT_READ_BUDGET);
+    assert_eq!((ids.len(), elapsed < ELEMENT_READ_BUDGET), (atlas_contract::graph::MAX_ELEMENTS, true), "the element read took {elapsed:?}");
+}

@@ -23,17 +23,17 @@ use atlas_graph::tokens;
 use atlas_graph::window::{self, WindowDir};
 use atlas_graph::sqlite::SqliteError;
 use atlas_graph::GraphService;
-use atlas_graph_types::edge::{Direction, EdgeKind, RelationId};
+use atlas_graph_types::edge::{Direction, EdgeId, EdgeKind, RelationId};
 use atlas_graph_types::adjacency::{EdgeMeta, EdgeQuery};
 use atlas_graph_types::id::{AnyNodeId, NodeKind, Position};
 use atlas_graph_types::node::NodePayload;
 use atlas_graph_types::store::GraphQuery;
 use atlas_graph_types::text::{BibleLocusRange, ConcordRef, Locus, TokenSpan, VerseRef};
 
-use crate::error::{ApiError, NeighbourRefusals, ReadingWindowRefusals, ReferenceRefusals};
-use crate::graph_wire::{describe_nodes, describe_position, encode_node_id, node_ref};
+use crate::error::{ApiError, ElementRefusals, NeighbourRefusals, ReadingWindowRefusals, ReferenceRefusals};
+use crate::graph_wire::{describe_nodes, describe_positions, edge_ref, encode_node_id, labelled_positions, node_ref};
 use crate::query::{self, AsGiven, Contract, ContractParams};
-use crate::reference::{ConcordParagraphReference, NodeReference, ReadingReference, Reference};
+use crate::reference::{ConcordParagraphReference, ElementId, ElementIds, ElementIdsRefused, NodeReference, PositionReference, ReadingReference, Reference};
 use crate::wire;
 
 /// One node of the graph at a glance: what it is, what to call it, where it came from, and how many neighbours it has of each kind.
@@ -50,30 +50,31 @@ pub async fn node_record(
     Reference(NodeReference(node_id)): Reference<NodeReference>,
 ) -> Result<Json<wire::NodeRecord>, ApiError> {
     let snap = graph.snapshot();
-    let node = snap.node(&node_id).ok_or_else(|| ApiError::not_found("node"))?;
+    read_node_record(&node_id, &data, &graph, &snap)?.map(Json).ok_or_else(|| ApiError::not_found("node"))
+}
 
-    let summary = snap.edge_summary(&Position::Node(node_id.clone()));
-    let label = crate::graph_wire::describe_node(&node_id, &snap);
-
-    let edge_summary = summary.into_iter().map(|(kind, count)| wire::EdgeSummaryEntry { kind, count }).collect();
-
-    let description = node_description(&node_id, &snap);
+fn read_node_record(node_id: &AnyNodeId, data: &AtlasData, graph: &GraphService, snap: &impl GraphQuery) -> Result<Option<wire::NodeRecord>, ApiError> {
+    let Some(node) = snap.node(node_id) else { return Ok(None) };
+    let label = crate::graph_wire::describe_node(node_id, snap)?;
+    let edge_summary = summary_at(snap, &Position::Node(node_id.clone()));
+    let description = node_description(node_id, snap);
     let person = match &node.payload {
         atlas_graph_types::node::NodePayload::Person { gender, birth_year, death_year, also_called, first_year, last_year, eternal, eternal_grounds, .. } => Some(wire::PersonLife {
             gender: gender.clone(),
-            birth: recorded_year(*birth_year, &node_id)?,
-            death: recorded_year(*death_year, &node_id)?,
-            first: recorded_year(*first_year, &node_id)?,
-            last: recorded_year(*last_year, &node_id)?,
+            birth: recorded_year(*birth_year, node_id)?,
+            death: recorded_year(*death_year, node_id)?,
+            first: recorded_year(*first_year, node_id)?,
+            last: recorded_year(*last_year, node_id)?,
             eternal: *eternal,
             eternal_grounds: eternal_grounds.clone(),
             also_called: also_called.clone(),
         }),
         _ => None,
     };
+    let place = atlas_graph::legacy::place_from_node(node_id, snap).map(|place| place_detail(&place, data, snap)).transpose()?;
 
-    Ok(Json(wire::NodeRecord {
-        id: encode_node_id(&node_id),
+    Ok(Some(wire::NodeRecord {
+        id: encode_node_id(node_id),
         kind: node_id.kind,
         label,
         provenance: node.provenance.clone(),
@@ -81,12 +82,110 @@ pub async fn node_record(
         version: atlas_graph::version_hex(graph.version()),
         person,
         description,
-        event: atlas_graph::legacy::event_from_node(&node_id, &snap, &graph.chronology.chrono).map(|event| event_detail(&event)),
-        place: atlas_graph::legacy::place_from_node(&node_id, &snap).map(|place| place_detail(&place, &data, &snap)),
-        catechism: catechism_detail(&node_id, &data),
-        book: book_detail(&node_id, &data, &snap)?,
+        event: atlas_graph::legacy::event_from_node(node_id, snap, &graph.chronology.chrono).map(|event| event_detail(&event)),
+        place,
+        catechism: catechism_detail(node_id, data),
+        book: book_detail(node_id, data, snap)?,
     }))
 }
+
+fn read_edge_record(id: &EdgeId, snap: &impl GraphQuery) -> Result<Option<wire::EdgeRecord>, ApiError> {
+    let Some(record) = snap.edge(id) else { return Ok(None) };
+    let at = Position::Edge(id.clone());
+    let [label, subject, object]: [String; 3] = labelled_positions(&[at.clone(), record.subject.clone(), record.object.clone()], snap)?
+        .try_into()
+        .map_err(|_| ApiError::internal("three positions were asked for and three labels were not answered"))?;
+    let (votes, narrative, parentage) = recorded(&record.meta);
+    Ok(Some(wire::EdgeRecord {
+        id: id.0.clone(),
+        kind: record.kind,
+        label,
+        subject: described_as(&record.subject, subject)?,
+        object: described_as(&record.object, object)?,
+        provenance: snap.row_provenance(id).map(|row| row.provenance),
+        votes,
+        narrative,
+        parentage,
+        edge_summary: summary_at(snap, &at),
+    }))
+}
+
+fn described_as(at: &Position, label: String) -> Result<wire::PositionRef, ApiError> {
+    match at {
+        Position::Node(id) => Ok(wire::PositionRef::Node { node: wire::NodeRef { id: encode_node_id(id), kind: id.kind, label } }),
+        Position::Edge(id) => edge_ref(id, label).map(|edge| wire::PositionRef::Edge { edge }),
+    }
+}
+
+fn recorded(meta: &EdgeMeta) -> (Option<u32>, Option<atlas_graph_types::id::NarrativeId>, Option<atlas_graph_types::edge::Parentage>) {
+    match meta {
+        EdgeMeta::Votes(votes) => (Some(*votes), None, None),
+        EdgeMeta::Narrative(narrative) => (None, Some(narrative.clone()), None),
+        EdgeMeta::Parentage(parentage) => (None, None, Some(*parentage)),
+        EdgeMeta::None => (None, None, None),
+    }
+}
+
+fn summary_at(snap: &impl GraphQuery, at: &Position) -> Vec<wire::EdgeSummaryEntry> {
+    snap.edge_summary(at).into_iter().map(|(kind, count)| wire::EdgeSummaryEntry { kind, count }).collect()
+}
+
+pub fn read_elements(data: &AtlasData, graph: &GraphService, snap: &impl GraphQuery, ids: &[ElementId]) -> Result<Vec<wire::Element>, ApiError> {
+    ids.iter()
+        .map(|id| {
+            let read = match id {
+                ElementId::Node(node) => read_node_record(node, data, graph, snap)?.map(|node| wire::Element::Node { node }),
+                ElementId::Edge(edge) => read_edge_record(edge, snap)?.map(|edge| wire::Element::Edge { edge }),
+            };
+            Ok(read.unwrap_or_else(|| wire::Element::Missing { id: element_wire_id(id) }))
+        })
+        .collect()
+}
+
+fn element_wire_id(id: &ElementId) -> String {
+    match id {
+        ElementId::Node(node) => encode_node_id(node),
+        ElementId::Edge(edge) => edge.0.clone(),
+    }
+}
+
+#[utoipa::path(
+    get,
+    path = "/api/elements",
+    summary = "Nodes and edges of the graph by id, many in one request, each answered in the order asked.",
+    description = "`ids` lists node ids (the form `/api/node/{id}` takes) and edge ids (the id an edge page carries for its edge), separated by commas: `ids=Event:ab_ur,LocatedAt:…`. Each id is answered by its own record, or by `missing` where it reads as an id but names nothing. One id that does not read as a node's or an edge's refuses the whole read as `bad_ref`, as does asking for none; more than 200 at once is `too_many`.",
+    params(ElementsQuery),
+    responses((status = 200, body = wire::ElementPage), ElementRefusals),
+    tag = "graph"
+)]
+pub async fn elements(
+    State(data): State<Arc<AtlasData>>,
+    State(graph): State<Arc<GraphService>>,
+    Contract(asked): Contract<ElementsQuery>,
+) -> Result<Json<wire::ElementPage>, ApiError> {
+    let snap = graph.snapshot();
+    let elements = read_elements(&data, &graph, &snap, &asked.ids.0)?;
+    Ok(Json(wire::ElementPage { elements, version: atlas_graph::version_hex(graph.version()) }))
+}
+
+#[derive(Debug, Deserialize, IntoParams)]
+#[into_params(parameter_in = Query)]
+pub struct ElementsQuery {
+    #[param(value_type = Vec<String>, style = Form, explode = false, min_items = 1, max_items = 200)]
+    pub ids: ElementIds,
+}
+
+impl ContractParams for ElementsQuery {
+    fn unreadable(_parameter: &str, asked_with: Option<&str>) -> ApiError {
+        let asked_with = asked_with.unwrap_or_default();
+        match asked_with.parse::<ElementIds>() {
+            Err(ElementIdsRefused::TooMany(asked)) => ApiError::too_many(asked, MAX_ELEMENTS),
+            _ => ApiError::bad_ref(asked_with),
+        }
+    }
+}
+
+pub const MAX_ELEMENTS: usize = MAX_EDGE_LIMIT;
 
 fn recorded_year(year: Option<i32>, person: &AnyNodeId) -> Result<Option<wire::Year>, ApiError> {
     year.map(wire::Year::of).transpose().map_err(|_| ApiError::internal(&format!("{} records a year zero", person.raw)))
@@ -104,20 +203,20 @@ fn event_detail(event: &Event) -> wire::EventDetail {
     }
 }
 
-fn place_detail(place: &Place, data: &AtlasData, snap: &impl GraphQuery) -> wire::PlaceDetail {
+fn place_detail(place: &Place, data: &AtlasData, snap: &impl GraphQuery) -> Result<wire::PlaceDetail, ApiError> {
     let history = data.place_history_for(&place.id);
     let (display_name, canonical_name) = resolve_display_name_and_canonical(&place.name, history, None, data.place_name_alias_for(&place.id));
-    wire::PlaceDetail {
+    Ok(wire::PlaceDetail {
         lat: place.lat,
         lon: place.lon,
         display_name,
         canonical_name,
-        established: history.and_then(|h| h.established.as_ref()).map(|claim| date_claim(claim, snap)),
-        destroyed: history.and_then(|h| h.destroyed.as_ref()).map(|claim| date_claim(claim, snap)),
-    }
+        established: history.and_then(|h| h.established.as_ref()).map(|claim| date_claim(claim, snap)).transpose()?,
+        destroyed: history.and_then(|h| h.destroyed.as_ref()).map(|claim| date_claim(claim, snap)).transpose()?,
+    })
 }
 
-fn date_claim(claim: &PlaceDateClaim, snap: &impl GraphQuery) -> wire::DateClaim {
+fn date_claim(claim: &PlaceDateClaim, snap: &impl GraphQuery) -> Result<wire::DateClaim, ApiError> {
     let verses = claim
         .verses
         .iter()
@@ -126,8 +225,8 @@ fn date_claim(claim: &PlaceDateClaim, snap: &impl GraphQuery) -> wire::DateClaim
             wire::TextSpan::whole(wire::TextRef::Bible { book: verse.book, chapter: verse.chapter, verse: verse.verse })
         })
         .collect();
-    let event = claim.event.as_ref().map(|event| node_ref(&event.erase(), snap));
-    wire::DateClaim::of(wire::TimeRange::of(claim.when), verses, claim.note.clone(), event)
+    let event = claim.event.as_ref().map(|event| node_ref(&event.erase(), snap)).transpose()?;
+    Ok(wire::DateClaim::of(wire::TimeRange::of(claim.when), verses, claim.note.clone(), event))
 }
 
 fn catechism_detail(id: &AnyNodeId, data: &AtlasData) -> Option<wire::CatechismDetail> {
@@ -154,7 +253,7 @@ fn book_detail(id: &AnyNodeId, data: &AtlasData, snap: &impl GraphQuery) -> Resu
     let written = meta.written().map_err(|refused| ApiError::internal(&format!("the writing date {code} records is refused: {refused}")))?;
     Ok(Some(wire::BookDetail {
         author: meta.author.clone(),
-        write_place: meta.write_place.as_ref().map(|place| node_ref(&atlas_graph::event_world::place_stub_node_id(place), snap)),
+        write_place: meta.write_place.as_ref().map(|place| node_ref(&atlas_graph::event_world::place_stub_node_id(place), snap)).transpose()?,
         written: written.map(wire::TimeRange::of),
     }))
 }
@@ -168,55 +267,53 @@ pub(crate) fn node_description(id: &AnyNodeId, q: &impl GraphQuery) -> Option<St
     }
 }
 
-/// One page of a node's neighbours of a single kind, each with the id of the edge that joins them.
-///
-/// `{id}` takes the same form `/api/node/{id}` does. The required `kind` is an
-/// edge label such as `cites` or `cited-by`; anything else is `bad_kind`, an
-/// unrecognised id is `bad_ref`, and an id naming no node is `not_found`.
-/// `limit` defaults to 20 and caps at 200; pass the response's `next` back as
-/// `cursor` for the following page, and its absence is the last page. A `limit`
-/// or `cursor` that does not read as a whole number is not refused: it leaves its
-/// default standing.
-#[utoipa::path(get, path = "/api/node/{id}/edges", params(("id" = String, Path), EdgePageQuery), responses((status = 200, body = wire::EdgePage), NeighbourRefusals), tag = "graph")]
+#[utoipa::path(
+    get,
+    path = "/api/node/{id}/edges",
+    summary = "One page of the neighbours of a node or of an edge, of a single kind, each with the edge that joins them.",
+    description = "`{id}` takes the same form `/api/node/{id}` does, or an edge's id as an edge page carries it. The required `kind` is an edge label such as `cites` or `cited-by`; anything else is `bad_kind`, an unrecognised id is `bad_ref`, and an id naming nothing is `not_found`. `limit` defaults to 20 and caps at 200; pass the response's `next` back as `cursor` for the following page, and its absence is the last page. A `limit` or `cursor` that does not read as a whole number is not refused: it leaves its default standing.",
+    params(("id" = String, Path), EdgePageQuery),
+    responses((status = 200, body = wire::EdgePage), NeighbourRefusals),
+    tag = "graph"
+)]
 pub async fn node_edges(
     State(data): State<Arc<AtlasData>>,
     State(graph): State<Arc<GraphService>>,
-    Reference(NodeReference(node_id)): Reference<NodeReference>,
+    Reference(PositionReference(asked_at)): Reference<PositionReference>,
     Contract(asked): Contract<EdgePageQuery>,
 ) -> Result<Json<wire::EdgePage>, ApiError> {
     let snap = graph.snapshot();
-    if snap.node(&node_id).is_none() {
-        return Err(ApiError::not_found("node"));
-    }
+    let at = match asked_at {
+        ElementId::Node(node_id) => snap.node(&node_id).map(|_| Position::Node(node_id)).ok_or_else(|| ApiError::not_found("node"))?,
+        ElementId::Edge(edge_id) => snap.edge(&edge_id).map(|_| Position::Edge(edge_id)).ok_or_else(|| ApiError::not_found("edge"))?,
+    };
 
-    let page = snap.edges(&Position::Node(node_id.clone()), &asked.page());
+    let page = snap.edges(&at, &asked.page());
+    let listed: Vec<&atlas_graph_types::adjacency::EdgeEntry> = page.entries.iter().filter(|e| !matches!(&e.node, Position::Node(id) if id.kind == NodeKind::PeopleGroup)).collect();
+    let neighbours = describe_positions(&listed.iter().map(|e| e.node.clone()).collect::<Vec<_>>(), &snap)?;
+    let edge_labels = labelled_positions(&listed.iter().map(|e| Position::Edge(e.edge.clone())).collect::<Vec<_>>(), &snap)?;
 
     let this_event = OnceCell::new();
     let mut mention_loci = MentionLoci::default();
-    let mut entries = Vec::with_capacity(page.entries.len());
-    for e in page.entries.iter().filter(|e| !matches!(&e.node, Position::Node(id) if id.kind == NodeKind::PeopleGroup)) {
-        let (votes, narrative, parentage) = match &e.meta {
-            EdgeMeta::Votes(votes) => (Some(*votes), None, None),
-            EdgeMeta::Narrative(narrative) => (None, Some(narrative.clone()), None),
-            EdgeMeta::Parentage(parentage) => (None, None, Some(*parentage)),
-            EdgeMeta::None => (None, None, None),
-        };
-        let (loci, note) = match (asked.kind, &e.node) {
-            (EdgeKind::Directed(RelationId::Attests, Direction::Forward), Position::Node(verse)) => {
-                let accounts = this_event.get_or_init(|| EventAccounts::read(&node_id, &snap, &graph.chronology.chrono));
+    let mut entries = Vec::with_capacity(listed.len());
+    for ((e, neighbour), edge_label) in listed.into_iter().zip(neighbours).zip(edge_labels) {
+        let (votes, narrative, parentage) = recorded(&e.meta);
+        let (loci, note) = match (&at, asked.kind, &e.node) {
+            (Position::Node(node_id), EdgeKind::Directed(RelationId::Attests, Direction::Forward), Position::Node(verse)) => {
+                let accounts = this_event.get_or_init(|| EventAccounts::read(node_id, &snap, &graph.chronology.chrono));
                 let (_, account) = accounts.holding(verse);
                 (Some(account.runs(&data.canon).to_vec()), account.note.clone())
             }
-            (EdgeKind::Directed(RelationId::Attests, Direction::Inverse), Position::Node(event)) => {
+            (Position::Node(node_id), EdgeKind::Directed(RelationId::Attests, Direction::Inverse), Position::Node(event)) => {
                 let accounts = EventAccounts::read(event, &snap, &graph.chronology.chrono);
-                let (verse, account) = accounts.holding(&node_id);
+                let (verse, account) = accounts.holding(node_id);
                 (Some(vec![wire::TextSpan::whole(wire::TextRef::of_verse(verse))]), account.note.clone())
             }
-            (EdgeKind::Directed(RelationId::Mentions, Direction::Forward), Position::Node(entity)) => (mention_loci.of(&graph, &node_id, entity)?, None),
-            (EdgeKind::Directed(RelationId::Mentions, Direction::Inverse), Position::Node(verse)) => (mention_loci.of(&graph, verse, &node_id)?, None),
+            (Position::Node(node_id), EdgeKind::Directed(RelationId::Mentions, Direction::Forward), Position::Node(entity)) => (mention_loci.of(&graph, node_id, entity)?, None),
+            (Position::Node(node_id), EdgeKind::Directed(RelationId::Mentions, Direction::Inverse), Position::Node(verse)) => (mention_loci.of(&graph, verse, node_id)?, None),
             _ => (None, None),
         };
-        entries.push(wire::EdgeEntry { edge: e.edge.0.clone(), neighbour: describe_position(&e.node, &snap), votes, narrative, loci, note, parentage });
+        entries.push(wire::EdgeEntry { edge: edge_ref(&e.edge, edge_label)?, neighbour, votes, narrative, loci, note, parentage });
     }
 
     Ok(Json(wire::EdgePage { kind: asked.kind, entries, next: page.next, version: atlas_graph::version_hex(graph.version()) }))
@@ -307,7 +404,7 @@ pub struct EdgePageQuery {
 
 const DEFAULT_EDGE_LIMIT: usize = 20;
 const SMALLEST_EDGE_LIMIT: usize = 1;
-const MAX_EDGE_LIMIT: usize = 200;
+pub const MAX_EDGE_LIMIT: usize = 200;
 
 impl EdgePageQuery {
     fn page(&self) -> EdgeQuery {
@@ -507,18 +604,18 @@ pub fn bible_text_units(graph: &GraphService, snap: &impl GraphQuery, ids: &[Any
         .filter_map(|id| atlas_graph::kjv_adapter::decode_text_unit(id).map(|(book, chapter, verse)| (id, VerseRef { book, chapter, verse })))
         .collect();
     let mut links = mention_links(graph, snap, verses.iter().map(|(_, verse)| verse))?;
-    Ok(verses
+    verses
         .into_iter()
-        .filter_map(|(id, verse)| {
-            let text = window::render(snap, id)?;
+        .filter_map(|(id, verse)| window::render(snap, id).map(|text| (id, verse, text)))
+        .map(|(id, verse, text)| {
             let r#ref = atlas_graph::kjv_adapter::dot_ref(verse.book, verse.chapter, verse.verse);
             let words_of_christ = graph.red_letter_spans.get(&r#ref).map(|spans| spans.iter().map(|&(start, end)| crate::wire::WordsOfChristSpan { start, end }).collect()).unwrap_or_default();
             let locus = wire::TextRef::of_verse(&verse);
-            let heading = graph.heading_index.get(&r#ref).map(|heading| unit_heading(heading, snap));
+            let heading = graph.heading_index.get(&r#ref).map(|heading| unit_heading(heading, snap)).transpose()?;
             let anchors = anchors_over(&text, MENTIONS, links.remove(&verse).unwrap_or_default());
-            Some(wire::TextUnit { r#ref, locus, text, words_of_christ, heading, anchors, edge_summary: unit_edge_summary(snap, id) })
+            Ok(wire::TextUnit { r#ref, locus, text, words_of_christ, heading, anchors, edge_summary: unit_edge_summary(snap, id) })
         })
-        .collect())
+        .collect()
 }
 
 pub fn concord_text_units(graph: &GraphService, snap: &impl GraphQuery, ids: &[AnyNodeId]) -> Result<Vec<wire::TextUnit>, ApiError> {
@@ -552,16 +649,18 @@ fn mention_links<'a>(graph: &GraphService, snap: &impl GraphQuery, verses: impl 
     let Some(window) = units_spanned(verses) else { return Ok(Links::new()) };
     let spans = graph.mention_spans_in(&window).map_err(|e| unreadable_rows("mentions", &e))?;
     let entities: BTreeSet<AnyNodeId> = spans.values().flatten().map(|span| span.entity.node_id()).collect();
-    let named = describe_nodes(&entities, snap);
+    let named = describe_nodes(&entities, snap)?;
     Ok(spans.into_iter().map(|(verse, spans)| (verse, spans.into_iter().map(|span| (span.words, named[&span.entity.node_id()].clone())).collect())).collect())
 }
 
 fn citation_links<'a>(graph: &GraphService, snap: &impl GraphQuery, paragraphs: impl Iterator<Item = &'a ConcordRef> + Clone) -> Result<Links<ConcordRef>, ApiError> {
     let Some(window) = units_spanned(paragraphs) else { return Ok(Links::new()) };
     let spans = graph.citation_spans_in(&window).map_err(|e| unreadable_rows("citations", &e))?;
+    let cited: BTreeSet<AnyNodeId> = spans.values().flatten().map(|span| verse_node_id(span.cites.book, span.cites.chapter, span.cites.verse)).collect();
+    let named = describe_nodes(&cited, snap)?;
     Ok(spans
         .into_iter()
-        .map(|(paragraph, spans)| (paragraph, spans.into_iter().map(|span| (span.words, node_ref(&verse_node_id(span.cites.book, span.cites.chapter, span.cites.verse), snap))).collect()))
+        .map(|(paragraph, spans)| (paragraph, spans.into_iter().map(|span| (span.words, named[&verse_node_id(span.cites.book, span.cites.chapter, span.cites.verse)].clone())).collect()))
         .collect())
 }
 
@@ -586,16 +685,16 @@ fn anchors_over(text: &str, kind: EdgeKind, links: Vec<(TokenSpan, wire::NodeRef
     anchors
 }
 
-fn unit_heading(heading: &Heading, snap: &impl GraphQuery) -> wire::UnitHeading {
-    wire::UnitHeading {
-        event: node_ref(&event_node_id(&heading.event_id), snap),
+fn unit_heading(heading: &Heading, snap: &impl GraphQuery) -> Result<wire::UnitHeading, ApiError> {
+    Ok(wire::UnitHeading {
+        event: node_ref(&event_node_id(&heading.event_id), snap)?,
         kind: heading.kind,
         is_continuation: heading.is_continuation,
-    }
+    })
 }
 
-fn unit_edge_summary(snap: &impl atlas_graph_types::store::GraphQuery, id: &atlas_graph_types::id::AnyNodeId) -> Vec<wire::EdgeSummaryEntry> {
-    snap.edge_summary(&Position::Node(id.clone())).into_iter().map(|(kind, count)| wire::EdgeSummaryEntry { kind, count }).collect()
+fn unit_edge_summary(snap: &impl GraphQuery, id: &AnyNodeId) -> Vec<wire::EdgeSummaryEntry> {
+    summary_at(snap, &Position::Node(id.clone()))
 }
 
 pub fn routes() -> utoipa_axum::router::OpenApiRouter<crate::app::AppState> {
@@ -603,6 +702,7 @@ pub fn routes() -> utoipa_axum::router::OpenApiRouter<crate::app::AppState> {
     utoipa_axum::router::OpenApiRouter::new()
         .routes(routes!(node_record))
         .routes(routes!(node_edges))
+        .routes(routes!(elements))
         .routes(routes!(text_window))
 }
 

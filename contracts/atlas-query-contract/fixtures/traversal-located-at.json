@@ -2,7 +2,11 @@
   "body": {
     "entries": [
       {
-        "edge": "LocatedAt:dafbb7c28eb80653a693de9906dc0669",
+        "edge": {
+          "id": "LocatedAt:dafbb7c28eb80653a693de9906dc0669",
+          "kind": "located-at",
+          "label": "Terah's family leaves Ur · Located at · Ur 1"
+        },
         "neighbour": {
           "node": {
             "id": "Place:ur-1",
@@ -15,7 +19,7 @@
     ],
     "kind": "located-at",
     "next": null,
-    "version": "03b477816961916c7e520c183cd9531c"
+    "version": "8d01e50b4270c7aa8b6180a33ae47717"
   },
   "status": 200
 }

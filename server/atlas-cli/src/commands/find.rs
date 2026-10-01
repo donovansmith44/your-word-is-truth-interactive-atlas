@@ -20,7 +20,7 @@ pub(crate) const SEARCHED_KINDS: &str = "Place/Event/Narrative/Era/Polity/Person
 pub(crate) const EXCLUDED_KINDS: &str =
     "PeopleGroup/CommentaryItem/Translation/TextUnit are not searched -- PeopleGroup has no `bibex node`-resolvable id yet (graph_wire::decode_node_id carries no PeopleGroup arm, pending the U5 rebinding), CommentaryItem has no id/label enumeration surface at its 50k+ scale, Translation has none either (a fixed 6-row set), and TextUnit is covered directly by 'bibex verse'/'bibex chapter' instead -- see CONTRACT.md";
 
-fn hits(graph: &GraphService, data: &AtlasData, term: &str) -> Vec<Hit> {
+fn hits(graph: &GraphService, data: &AtlasData, term: &str) -> Result<Vec<Hit>, CliError> {
     let snap = graph.snapshot();
     let needle = term.to_lowercase();
 
@@ -36,7 +36,7 @@ fn hits(graph: &GraphService, data: &AtlasData, term: &str) -> Vec<Hit> {
     ];
     for (kind_name, kind) in kinds {
         for id in &graph.ids_of_kind(kind) {
-            let label = describe_node(id, &snap);
+            let label = describe_node(id, &snap).map_err(CliError::unlabelled)?;
             if label.to_lowercase().contains(&needle) {
                 out.push(Hit { kind: kind_name, id: encode_node_id(id), label });
             }
@@ -53,11 +53,11 @@ fn hits(graph: &GraphService, data: &AtlasData, term: &str) -> Vec<Hit> {
     }
 
     out.sort_by(|a, b| (a.kind, &a.id).cmp(&(b.kind, &b.id)));
-    out
+    Ok(out)
 }
 
 pub fn run(graph: &GraphService, data: &AtlasData, term: &str) -> Result<String, CliError> {
-    let hits = hits(graph, data, term);
+    let hits = hits(graph, data, term)?;
 
     if hits.is_empty() {
         return Err(CliError::empty_result(format!("no matches for '{term}'"), format!("searched {SEARCHED_KINDS} labels ({EXCLUDED_KINDS})"), "try a shorter or different substring"));
@@ -73,7 +73,7 @@ pub fn run(graph: &GraphService, data: &AtlasData, term: &str) -> Result<String,
 /// `kind` travels with each row because this search spans several node kinds in one flat
 /// list. Zero matches is still the `empty_result` class, never a silently empty array.
 pub fn run_json(graph: &GraphService, data: &AtlasData, term: &str) -> Result<serde_json::Value, CliError> {
-    let hits = hits(graph, data, term);
+    let hits = hits(graph, data, term)?;
 
     if hits.is_empty() {
         return Err(CliError::empty_result(format!("no matches for '{term}'"), format!("searched {SEARCHED_KINDS} labels ({EXCLUDED_KINDS})"), "try a shorter or different substring"));

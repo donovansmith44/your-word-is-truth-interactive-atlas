@@ -137,10 +137,27 @@ impl EdgeKind {
     pub fn from_label(label: &str) -> Option<EdgeKind> {
         Self::all().find(|k| k.label() == label)
     }
+
+    pub fn display_label(self) -> String {
+        let words = self.label().replace('-', " ");
+        let mut letters = words.chars();
+        letters.next().map(|first| first.to_uppercase().chain(letters).collect()).unwrap_or_default()
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct EdgeId(pub Interned);
+
+impl EdgeId {
+    pub fn recorded_kind(&self) -> Option<EdgeKind> {
+        let (relation, _) = self.0.split_once(':')?;
+        RelationId::ALL
+            .iter()
+            .find(|r| r.name() == relation)
+            .map(|r| EdgeKind::Directed(*r, Direction::Forward))
+            .or_else(|| SymRelationId::ALL.iter().find(|s| s.name() == relation).map(|s| EdgeKind::Symmetric(*s)))
+    }
+}
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
 pub struct Justification {
@@ -457,12 +474,13 @@ pub trait Relation {
     fn endpoints(row: &Self::Row) -> Vec<(Position, Position)>;
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct EdgeRecord {
     pub id: EdgeId,
     pub kind: EdgeKind,
     pub subject: Position,
     pub object: Position,
+    pub meta: EdgeMeta,
 }
 
 #[derive(Debug, Default)]
@@ -575,6 +593,43 @@ mod tests {
     use super::*;
 
     const PROVENANCE: &str = "test";
+
+    #[test]
+    fn an_edge_kinds_display_label_is_its_wire_name_read_as_words() {
+        // Arrange
+        let kinds = [
+            EdgeKind::Directed(RelationId::Attests, Direction::Forward),
+            EdgeKind::Directed(RelationId::Contains, Direction::Inverse),
+            EdgeKind::Symmetric(SymRelationId::Spouses),
+        ];
+
+        // Act
+        let shown: Vec<String> = kinds.iter().map(|kind| kind.display_label()).collect();
+
+        // Assert
+        assert_eq!(shown, vec!["Attested in".to_string(), "Member of".to_string(), "Spouse of".to_string()]);
+    }
+
+    #[test]
+    fn an_edge_id_names_the_kind_its_edge_is_recorded_in() {
+        // Arrange
+        let ends = (Position::Node(EventId::new("e1").erase()), Position::Node(PlaceId::new("jordan").erase()));
+        let ids = [
+            entry_id(RelationId::LocatedAt, &ends.0, &ends.1),
+            entry_id_symmetric(SymRelationId::Analogue, &ends.0, &ends.1),
+            EdgeId("Nowhere:00ff".to_string()),
+            EdgeId("no separator".to_string()),
+        ];
+
+        // Act
+        let kinds: Vec<Option<EdgeKind>> = ids.iter().map(EdgeId::recorded_kind).collect();
+
+        // Assert
+        assert_eq!(
+            kinds,
+            vec![Some(EdgeKind::Directed(RelationId::LocatedAt, Direction::Forward)), Some(EdgeKind::Symmetric(SymRelationId::Analogue)), None, None]
+        );
+    }
 
     fn canon_step(prior: &str, next: &str) -> CanonSuccession {
         CanonSuccession {
