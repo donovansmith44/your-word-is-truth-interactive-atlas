@@ -214,3 +214,56 @@ wrong; fix the spec.
     `atlas-contract`, `atlas-server`, the client) reads the artifact and never
     parses a raw file or scans text. Closure: the tool boundary is a crate
     boundary; a served crate does not link the ETL.
+
+## Growth and performance (owner, 2026-09-30)
+
+27. **Derivation belongs to whoever knows its inputs.** Owner, 2026-09-30, on
+    the explorable-edge work that put a frontier into the backend: "we agreed
+    that frontier and explorable are front end constructs derived from the
+    graph". A derivation over the data alone (an index, a count per edge kind,
+    a label, a map's level of detail, a summary) is the compiler's, run once
+    into the artifact (26a). A derivation over one request (this element, these
+    neighbours, this window) is the server's, as an indexed read. A derivation
+    over the user's interaction (Explorable, frontier, presentation,
+    breadcrumb, Back) is the client's (25). The server derives nothing; it
+    reads what the compiler built. The graph models the domain and never a
+    view: no relation, field or element exists to serve a client construct.
+    Closure: no name from the client's exploration vocabulary (explore,
+    explorable, frontier, card, popover, presentation) appears in `server/` or
+    `graph-types/`, and a gate fails the build when one does.
+
+27a. **The wire serves the graph, not views.** A small closed set of generic
+    reads: elements by id (node or edge alike, many per call); a position's
+    neighbours by edge kind and direction, paged; the count per edge kind at a
+    position; range reads by passage span, time window and map area. A new
+    view or a new edge kind adds data and vocabulary, never an endpoint.
+
+27b. **Every read is bounded and index-backed.** Its cost is one index lookup
+    plus the size of what it returns, with the page size capped. Paging is
+    keyset (resume after the last item), never offset. Closure: the store
+    exposes index lookups only, so a scan cannot be written; an edge kind's
+    indexes follow from its entry in `relations!`, never from a hand-written
+    query.
+
+27c. **A screen is a few round trips.** Reads take many ids at once, and a
+    neighbour page carries each far end's id, kind and label, compiled into the
+    artifact. A derivation on the client never costs a request per item.
+
+27d. **Every answer is a pure function of (artifact root, request),** so it is
+    cacheable on the root everywhere: HTTP, the client, a static export. The
+    graph service holds no per-user state; saved explorations live elsewhere.
+
+27e. **The client holds a bounded working set.** It never loads a whole
+    collection; its element cache evicts; frontiers page lazily; long views
+    render only what is visible. Client work scales with the page shown,
+    never with the graph.
+
+27f. **Budgets are gates at future size.** p95 latency per read, response
+    size and client frame time are gated against a synthetic graph ten times
+    the current artifact (words-as-base alone multiplies positions about
+    25-fold). A blown budget fails the gate; the ceiling is never raised to
+    pass.
+
+27g. **Geometry is pre-tiled.** The map compiler ships each shape simplified
+    per zoom level; the server serves tiles by area and time window; full
+    resolution never crosses the wire.
