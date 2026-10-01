@@ -14,8 +14,6 @@ use atlas_graph_types::text::{BibleLocus, BibleLocusRange, TextLocus, VerseRef};
 
 use crate::pipeline::BuildCtx;
 
-/// One provenance tag per PeopleGroup source, so a card's provenance always names which of the three
-/// a node came from.
 pub const PROVENANCE_THEOGRAPHIC: &str = "theographic-people-groups";
 pub const PROVENANCE_CURATED_SEED: &str = "curated-people-groups";
 pub const PROVENANCE_RECLASSIFIED: &str = "theographic-people-reclassified";

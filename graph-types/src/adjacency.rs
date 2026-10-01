@@ -1,5 +1,3 @@
-//! Exploring means yielding frontiers and nothing else; `Holdings` is the act of doing it,
-//! with set semantics -- a position is arrived at once.
 
 use std::collections::{BTreeMap, BTreeSet, HashSet};
 
@@ -64,8 +62,7 @@ pub struct EdgePageWithNodes {
     pub next: Option<usize>,
 }
 
-/// Yielding frontiers, nothing else: payload and card live on the data side, deliberately apart.
-pub trait Explorable {
+pub trait Adjacent {
     fn edge_summary(&self, g: &Graph) -> EdgeSummary;
     fn edges(&self, g: &Graph, q: &EdgeQuery) -> EdgePage;
 }
@@ -75,18 +72,18 @@ pub trait Explorable {
 pub struct PositionRef(pub Position);
 
 #[derive(Clone, Debug, PartialEq, Eq, Default)]
-pub struct Frontier {
+pub struct Adjacency {
     rows: Vec<EdgeEntry>,
     edges: Vec<u32>,
 }
 
-impl Frontier {
-    pub fn of_rows(rows: Vec<EdgeEntry>) -> Frontier {
+impl Adjacency {
+    pub fn of_rows(rows: Vec<EdgeEntry>) -> Adjacency {
         let edges = first_row_of_each_edge(&rows);
-        Frontier { rows, edges }
+        Adjacency { rows, edges }
     }
 
-    pub fn append(&mut self, mut later: Frontier) {
+    pub fn append(&mut self, mut later: Adjacency) {
         self.rows.append(&mut later.rows);
         self.edges = first_row_of_each_edge(&self.rows);
     }
@@ -112,7 +109,7 @@ fn first_row_of_each_edge(rows: &[EdgeEntry]) -> Vec<u32> {
     rows.iter().enumerate().filter(|(_, row)| seen.insert(&row.edge)).map(|(ord, _)| ord as u32).collect()
 }
 
-fn frontier_at<'g>(g: &'g Graph, p: &Position, kind: EdgeKind) -> Option<&'g Frontier> {
+fn adjacency_at<'g>(g: &'g Graph, p: &Position, kind: EdgeKind) -> Option<&'g Adjacency> {
     match kind {
         EdgeKind::Directed(rel, dir) => g.indexes.get(&rel).and_then(|ix| match dir {
             Direction::Forward => ix.fwd.get(p),
@@ -123,10 +120,10 @@ fn frontier_at<'g>(g: &'g Graph, p: &Position, kind: EdgeKind) -> Option<&'g Fro
 }
 
 fn edge_count_at(g: &Graph, p: &Position, kind: EdgeKind) -> usize {
-    frontier_at(g, p, kind).map_or(0, Frontier::edge_count)
+    adjacency_at(g, p, kind).map_or(0, Adjacency::edge_count)
 }
 
-impl Explorable for PositionRef {
+impl Adjacent for PositionRef {
     fn edge_summary(&self, g: &Graph) -> EdgeSummary {
         let mut out = EdgeSummary::new();
         for rel in crate::edge::RelationId::ALL {
@@ -138,8 +135,6 @@ impl Explorable for PositionRef {
                 }
             }
         }
-        // Symmetric kinds must appear here too: a summary that omits real connections would
-        // hide them from a frontier that renders a section only when its count is positive.
         for rel in crate::edge::SymRelationId::ALL {
             let k = EdgeKind::Symmetric(*rel);
             let n = edge_count_at(g, &self.0, k);
@@ -151,7 +146,7 @@ impl Explorable for PositionRef {
     }
 
     fn edges(&self, g: &Graph, q: &EdgeQuery) -> EdgePage {
-        frontier_at(g, &self.0, q.kind).map_or_else(|| EdgePage { kind: q.kind, entries: Vec::new(), next: None }, |frontier| frontier.page(q))
+        adjacency_at(g, &self.0, q.kind).map_or_else(|| EdgePage { kind: q.kind, entries: Vec::new(), next: None }, |adjacency| adjacency.page(q))
     }
 }
 
@@ -176,13 +171,12 @@ impl Holdings {
         Holdings(out)
     }
 
-    /// The union over held positions of the TOTAL frontier of that kind -- every page.
     pub fn step(&self, g: &Graph, k: EdgeKind) -> Holdings {
         self.bind(|p| {
             Holdings(
-                frontier_at(g, p, k)
+                adjacency_at(g, p, k)
                     .into_iter()
-                    .flat_map(Frontier::edges)
+                    .flat_map(Adjacency::edges)
                     .map(|e| e.node.clone())
                     .collect(),
             )
@@ -197,13 +191,13 @@ impl Holdings {
 /// Traversing forward and then asking the target for its inverse entry finds the same edge id.
 pub fn inverse_entry_ids(g: &Graph, from: &Position, kind: EdgeKind) -> Vec<(EdgeId, EdgeId)> {
     let dk = dual(kind);
-    frontier_at(g, from, kind)
+    adjacency_at(g, from, kind)
         .into_iter()
-        .flat_map(Frontier::edges)
+        .flat_map(Adjacency::edges)
         .flat_map(|e| {
-            frontier_at(g, &e.node, dk)
+            adjacency_at(g, &e.node, dk)
                 .into_iter()
-                .flat_map(Frontier::edges)
+                .flat_map(Adjacency::edges)
                 .filter(|back| back.node == *from)
                 .map(move |back| (e.edge.clone(), back.edge.clone()))
                 .collect::<Vec<_>>()

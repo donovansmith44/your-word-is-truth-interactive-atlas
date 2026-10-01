@@ -5,7 +5,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
 
-use crate::explore::{EdgeEntry, EdgeEntryWithNode, EdgePage, EdgePageWithNodes, EdgeQuery, EdgeSummary, Explorable, NodePage, PositionRef};
+use crate::adjacency::{EdgeEntry, EdgeEntryWithNode, EdgePage, EdgePageWithNodes, EdgeQuery, EdgeSummary, Adjacent, NodePage, PositionRef};
 use crate::graph::Graph;
 use crate::id::{AnyNodeId, ContentAddressed, ContentHash, NodeKind, Pid, Position};
 use crate::node::Node;
@@ -186,7 +186,7 @@ fn version_of(g: &Graph) -> GraphVersion {
             s.into_bytes()
         }
         fn position_kind(&self) -> crate::id::PositionKind {
-            crate::id::PositionKind::Exploration
+            crate::id::PositionKind::Version
         }
     }
     GraphVersion(V(g).pid().hash)
@@ -848,7 +848,7 @@ mod laws {
     }
 
     #[test]
-    fn a_frontier_lists_an_edge_once_however_many_rows_mint_it() {
+    fn a_adjacency_lists_an_edge_once_however_many_rows_mint_it() {
         // Arrange
         let mut g = graph_with(&[("bible/1.1.1", "a")]);
         g.located_at.push(located_at("jordan", "event-witnesses"));
@@ -869,7 +869,7 @@ mod laws {
         assert_eq!(
             (page, summary, rows, first),
             (
-                EdgePage { kind, entries: vec![EdgeEntry { edge, node: jordan, meta: crate::explore::EdgeMeta::None }], next: None },
+                EdgePage { kind, entries: vec![EdgeEntry { edge, node: jordan, meta: crate::adjacency::EdgeMeta::None }], next: None },
                 [(kind, 1)].into_iter().collect(),
                 vec![(0, "event-witnesses".to_string()), (1, "attestation-corrections".to_string())],
                 Some(0),

@@ -7,9 +7,7 @@ pub mod edge;
 pub mod chrono;
 pub mod ingest;
 pub mod graph;
-pub mod explore;
-pub mod frontier;
-pub mod present;
+pub mod adjacency;
 pub mod store;
 #[cfg(any(feature = "serde", feature = "openapi"))]
 pub mod wire_form;
@@ -20,7 +18,7 @@ pub mod sha256;
 pub mod vocabulary;
 
 pub use edge::{dual, Direction, EdgeId, EdgeKind, RelationId, SymRelationId};
-pub use explore::{Explorable, Holdings};
+pub use adjacency::{Adjacent, Holdings};
 pub use graph::Graph;
 pub use store::{GraphPublisher, GraphSnapshot, GraphStore, GraphVersion, MemStore};
 pub use id::{AnyNodeId, NodeKind, Pid, Position, PositionKind};

@@ -193,7 +193,7 @@ mod tests {
     use atlas_core::data::{AtlasData, Canon, CatechismItem, CatechismPart};
     use atlas_etl::concord::{ConcordArticle, ConcordDocument, ConcordParagraph, ConcordStats};
     use atlas_graph_types::edge::{Direction, EdgeKind, RelationId, SymRelationId};
-    use atlas_graph_types::explore::{Explorable, PositionRef};
+    use atlas_graph_types::adjacency::{Adjacent, PositionRef};
     use atlas_graph_types::id::Position;
     use atlas_graph_types::store::GraphQuery;
     use std::collections::HashMap;
@@ -317,19 +317,19 @@ mod tests {
         let doc_container = doc_container_id("augsburg-confession");
         let art_container = article_container_id("augsburg-confession", 4);
         let forward = EdgeKind::Directed(RelationId::Contains, Direction::Forward);
-        let page = PositionRef(Position::Node(doc_container.erase())).edges(&ctx.graph, &atlas_graph_types::explore::EdgeQuery { kind: forward, cursor: None, limit: 10 });
+        let page = PositionRef(Position::Node(doc_container.erase())).edges(&ctx.graph, &atlas_graph_types::adjacency::EdgeQuery { kind: forward, cursor: None, limit: 10 });
         assert_eq!(page.entries.len(), 1, "the document container's own frontier lists its one article container");
         assert_eq!(page.entries[0].node, Position::Node(art_container.erase()));
 
-        let art_page = PositionRef(Position::Node(art_container.erase())).edges(&ctx.graph, &atlas_graph_types::explore::EdgeQuery { kind: forward, cursor: None, limit: 10 });
+        let art_page = PositionRef(Position::Node(art_container.erase())).edges(&ctx.graph, &atlas_graph_types::adjacency::EdgeQuery { kind: forward, cursor: None, limit: 10 });
         assert_eq!(art_page.entries.len(), 2, "the article container's own frontier lists both of its paragraphs");
 
         let p1 = text_unit_id(3, 4, 1);
         let inverse = EdgeKind::Directed(RelationId::Contains, Direction::Inverse);
-        let back = PositionRef(Position::Node(p1)).edges(&ctx.graph, &atlas_graph_types::explore::EdgeQuery { kind: inverse, cursor: None, limit: 10 });
+        let back = PositionRef(Position::Node(p1)).edges(&ctx.graph, &atlas_graph_types::adjacency::EdgeQuery { kind: inverse, cursor: None, limit: 10 });
         assert_eq!(back.entries.len(), 1, "paragraph 1 is a member of its article container only");
         assert_eq!(back.entries[0].node, Position::Node(art_container.erase()));
-        let up = PositionRef(Position::Node(art_container.erase())).edges(&ctx.graph, &atlas_graph_types::explore::EdgeQuery { kind: inverse, cursor: None, limit: 10 });
+        let up = PositionRef(Position::Node(art_container.erase())).edges(&ctx.graph, &atlas_graph_types::adjacency::EdgeQuery { kind: inverse, cursor: None, limit: 10 });
         assert_eq!(up.entries.len(), 1);
         assert_eq!(up.entries[0].node, Position::Node(doc_container.erase()));
     }
@@ -389,13 +389,13 @@ mod tests {
 
         let item_pos = Position::Node(crate::catechism_adapter::catechism_item_node_id("commandment-1"));
         let kind = EdgeKind::Symmetric(SymRelationId::CatechismLink);
-        let page = PositionRef(item_pos.clone()).edges(&ctx.graph, &atlas_graph_types::explore::EdgeQuery { kind, cursor: None, limit: 10 });
+        let page = PositionRef(item_pos.clone()).edges(&ctx.graph, &atlas_graph_types::adjacency::EdgeQuery { kind, cursor: None, limit: 10 });
         assert_eq!(page.entries.len(), 1, "the First Commandment's own CatechismItem reaches its Concord home");
 
         let concord_locus = Position::Node(text_unit_id(7, 2, 1));
         assert_eq!(page.entries[0].node, concord_locus, "linked to the Ten Commandments article's own paragraph 1 -- the First Commandment");
 
-        let from_locus = PositionRef(concord_locus).edges(&ctx.graph, &atlas_graph_types::explore::EdgeQuery { kind, cursor: None, limit: 10 });
+        let from_locus = PositionRef(concord_locus).edges(&ctx.graph, &atlas_graph_types::adjacency::EdgeQuery { kind, cursor: None, limit: 10 });
         assert_eq!(from_locus.entries.len(), 1);
         assert_eq!(from_locus.entries[0].node, item_pos);
         assert_eq!(from_locus.entries[0].edge, page.entries[0].edge);

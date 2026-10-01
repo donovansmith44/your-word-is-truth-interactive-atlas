@@ -40,19 +40,17 @@ pub struct Verse {
     pub words_of_christ: Vec<WordsOfChristSpan>,
 }
 
-/// A place named by something else on this response: its id, to explore or to
-/// target on the map, and the name to show for it.
 #[derive(Debug, Serialize, utoipa::ToSchema)]
 #[serde(deny_unknown_fields)]
+#[schema(description = "A place named by something else on this response: its id, to read or to target on the map, and the name to show for it.")]
 pub struct PlaceRef {
     pub id: String,
     pub name: String,
 }
 
-/// A person the graph attests at a verse -- never a name matched against the
-/// text -- with the id to explore and the name to show for it.
 #[derive(Debug, Serialize, utoipa::ToSchema)]
 #[serde(deny_unknown_fields)]
+#[schema(description = "A person the graph attests at a verse -- never a name matched against the text -- with the id to read and the name to show for it.")]
 pub struct PersonRef {
     pub id: String,
     pub name: String,

@@ -10,7 +10,7 @@ use std::sync::Mutex;
 use atlas_graph_types::canon::ids::{any_node_id_str, parse_any_node_id, position_str};
 use atlas_graph_types::canon::Canon;
 use atlas_graph_types::edge::{Direction, EdgeId, EdgeKind, Parentage};
-use atlas_graph_types::explore::{EdgeEntry, EdgeMeta, EdgePage, EdgeQuery, EdgeSummary, NodePage};
+use atlas_graph_types::adjacency::{EdgeEntry, EdgeMeta, EdgePage, EdgeQuery, EdgeSummary, NodePage};
 use atlas_graph_types::graph::EdgeRel;
 use atlas_graph_types::id::{AnyNodeId, ContentAddressed, ContentHash, NarrativeId, NodeKind, Pid, Position};
 use atlas_graph_types::node::Node;

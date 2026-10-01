@@ -13,7 +13,7 @@ use atlas_core::data::{AtlasData, Canon, CrossRef};
 use atlas_core::refs::ScriptureRef;
 use atlas_core::sources::SourcesDocument;
 use atlas_graph_types::edge::EdgeId;
-use atlas_graph_types::explore::{EdgePage, EdgePageWithNodes, EdgeQuery, EdgeSummary, NodePage};
+use atlas_graph_types::adjacency::{EdgePage, EdgePageWithNodes, EdgeQuery, EdgeSummary, NodePage};
 use atlas_graph_types::graph::Graph;
 use atlas_graph_types::id::{AnyNodeId, NodeKind, Pid, Position};
 use atlas_graph_types::node::Node;
@@ -410,7 +410,7 @@ impl GraphService {
     /// The distinct, sorted provenance of every row behind the edges of one kind at one position. A
     /// synthesised edge contributes nothing.
     fn provenance_over(&self, p: &atlas_graph_types::id::Position, kind: atlas_graph_types::edge::EdgeKind) -> Vec<String> {
-        use atlas_graph_types::explore::EdgeQuery;
+        use atlas_graph_types::adjacency::EdgeQuery;
         let mut set: std::collections::BTreeSet<String> = std::collections::BTreeSet::new();
         let mut cursor = None;
         loop {
@@ -444,7 +444,7 @@ impl GraphService {
     /// The provenance of the ONE `Analogue` row joining two events, from either end.
     pub fn analogue_provenance(&self, a_raw: &str, b_raw: &str) -> Option<String> {
         use atlas_graph_types::edge::{at, EdgeKind, SymRelationId};
-        use atlas_graph_types::explore::EdgeQuery;
+        use atlas_graph_types::adjacency::EdgeQuery;
         let a = at(&atlas_graph_types::id::EventId::new(a_raw).erase());
         let b = at(&atlas_graph_types::id::EventId::new(b_raw).erase());
         let kind = EdgeKind::Symmetric(SymRelationId::Analogue);
@@ -465,7 +465,7 @@ impl GraphService {
     /// all: adjacency comes from the `temporal-adjacency` edges and direction from that order.
     pub fn temporal_neighbors_of(&self, event_raw: &str) -> Option<(Option<String>, Option<String>)> {
         use atlas_graph_types::edge::{at, EdgeKind, SymRelationId};
-        use atlas_graph_types::explore::EdgeQuery;
+        use atlas_graph_types::adjacency::EdgeQuery;
         use atlas_graph_types::id::Position;
         let order = &self.chronology.chrono.order;
         let me = order.iter().position(|x| x == event_raw)?;
@@ -510,7 +510,7 @@ impl GraphService {
 
     pub fn persons_at_verse(&self, book: u8, chapter: u16, verse: u16) -> Vec<(String, String)> {
         use atlas_graph_types::edge::{at, Direction, EdgeKind, RelationId};
-        use atlas_graph_types::explore::EdgeQuery;
+        use atlas_graph_types::adjacency::EdgeQuery;
         use atlas_graph_types::id::NodeKind;
         use atlas_graph_types::node::NodePayload;
         let p = at(&crate::kjv_adapter::verse_node_id(book, chapter, verse));

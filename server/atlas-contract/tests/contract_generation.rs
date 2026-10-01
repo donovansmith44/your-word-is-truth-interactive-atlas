@@ -185,7 +185,7 @@ fn the_published_document_names_this_api_and_the_contract_version_it_serves() {
     let version = std::fs::read_to_string(atlas_contract::document::contracts_root().join("atlas-query-contract/VERSION")).expect("the AQC VERSION file exists");
     let expected = serde_json::json!({
         "title": "Bible Atlas API",
-        "description": "The Bible Atlas HTTP API, generated from the Rust that serves it. The `x-atlas-relations` extension lists every relation this atlas joins two nodes by, each with the label its forward and its inverse frontier is asked for, so a consumer builds its own frontier vocabulary from that list rather than writing one out.",
+        "description": "The Bible Atlas HTTP API, generated from the Rust that serves it. The `x-atlas-relations` extension lists every relation this atlas joins two nodes by, each with the label its forward and its inverse neighbours are asked for, so a consumer builds its own vocabulary from that list rather than writing one out.",
         "version": version.trim(),
     });
     // Act

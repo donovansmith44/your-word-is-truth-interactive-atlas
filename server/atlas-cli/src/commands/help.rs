@@ -2,12 +2,12 @@
 
 pub fn text() -> String {
     let mut out = String::new();
-    out.push_str("bibex -- a really simple CLI to query the Bible Explorer graph\n\n");
+    out.push_str("bibex -- a really simple CLI to query the Bible Atlas graph\n\n");
     out.push_str("commands:\n");
     out.push_str("  verse <ref>                     text + red-letter marks + attached places/persons/events/passages\n");
     out.push_str("  chapter <ref>                    every verse in a KJV chapter\n");
-    out.push_str("  node <id>                        a node's card + edge summary\n");
-    out.push_str("  edges <id> --kind K [opts]       one frontier page at a node\n");
+    out.push_str("  node <id>                        a node's record + edge summary\n");
+    out.push_str("  edges <id> --kind K [opts]       one neighbours page at a node\n");
     out.push_str("  find <term>                      name lookup across Place/Event/Narrative/Era/Polity/Person/CatechismItem\n");
     out.push_str("  kinds                            the full edge-kind vocabulary (--kind tokens) for 'edges'\n");
     out.push_str("  verify [--section <name>]        recompute every section's logical hash, blob hash and the root against\n");

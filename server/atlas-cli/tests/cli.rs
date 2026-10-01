@@ -114,7 +114,7 @@ fn chapter_happy_path_lists_every_verse() {
 }
 
 #[test]
-fn node_happy_path_shows_card_and_edge_summary() {
+fn node_happy_path_shows_record_and_edge_summary() {
     let o = run_with_data_dir(&["node", "Event:ab_ur"]);
     assert!(o.status.success(), "stderr: {}", stderr(&o));
     let out = stdout(&o);
@@ -125,7 +125,7 @@ fn node_happy_path_shows_card_and_edge_summary() {
 }
 
 #[test]
-fn edges_happy_path_lists_one_frontier_page() {
+fn edges_happy_path_lists_one_adjacency_page() {
     let o = run_with_data_dir(&["edges", "Event:ab_ur", "--kind", "located-at"]);
     assert!(o.status.success(), "stderr: {}", stderr(&o));
     let out = stdout(&o);
@@ -652,7 +652,7 @@ fn edges_reaches_a_chapters_verses_and_a_verse_reaches_its_chapter_back() {
 }
 
 #[test]
-fn node_json_on_a_chapter_container_carries_the_same_card_shape() {
+fn node_json_on_a_chapter_container_carries_the_same_record_shape() {
     let (o, v) = run_json(&["node", "Container:bible-chapter-JHN-3"]);
     assert!(o.status.success(), "stderr: {}", stderr(&o));
     let v = v.expect("json value");

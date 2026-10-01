@@ -24,13 +24,13 @@ use atlas_graph::window::{self, WindowDir};
 use atlas_graph::sqlite::SqliteError;
 use atlas_graph::GraphService;
 use atlas_graph_types::edge::{Direction, EdgeKind, RelationId};
-use atlas_graph_types::explore::{EdgeMeta, EdgeQuery};
+use atlas_graph_types::adjacency::{EdgeMeta, EdgeQuery};
 use atlas_graph_types::id::{AnyNodeId, NodeKind, Position};
 use atlas_graph_types::node::NodePayload;
 use atlas_graph_types::store::GraphQuery;
 use atlas_graph_types::text::{BibleLocusRange, ConcordRef, Locus, TokenSpan, VerseRef};
 
-use crate::error::{ApiError, FrontierRefusals, ReadingWindowRefusals, ReferenceRefusals};
+use crate::error::{ApiError, NeighbourRefusals, ReadingWindowRefusals, ReferenceRefusals};
 use crate::graph_wire::{describe_nodes, describe_position, encode_node_id, node_ref};
 use crate::query::{self, AsGiven, Contract, ContractParams};
 use crate::reference::{ConcordParagraphReference, NodeReference, ReadingReference, Reference};
@@ -43,12 +43,12 @@ use crate::wire;
 /// Scripture and `text-unit:BoC PART.ARTICLE.PARAGRAPH` for a paragraph of the
 /// Book of Concord. An id of no recognised kind is `bad_ref`; one that names no
 /// node is `not_found`.
-#[utoipa::path(get, path = "/api/node/{id}", params(("id" = String, Path)), responses((status = 200, body = wire::NodeCard), ReferenceRefusals), tag = "graph")]
-pub async fn node_card(
+#[utoipa::path(get, path = "/api/node/{id}", params(("id" = String, Path)), responses((status = 200, body = wire::NodeRecord), ReferenceRefusals), tag = "graph")]
+pub async fn node_record(
     State(data): State<Arc<AtlasData>>,
     State(graph): State<Arc<GraphService>>,
     Reference(NodeReference(node_id)): Reference<NodeReference>,
-) -> Result<Json<wire::NodeCard>, ApiError> {
+) -> Result<Json<wire::NodeRecord>, ApiError> {
     let snap = graph.snapshot();
     let node = snap.node(&node_id).ok_or_else(|| ApiError::not_found("node"))?;
 
@@ -72,7 +72,7 @@ pub async fn node_card(
         _ => None,
     };
 
-    Ok(Json(wire::NodeCard {
+    Ok(Json(wire::NodeRecord {
         id: encode_node_id(&node_id),
         kind: node_id.kind,
         label,
@@ -177,7 +177,7 @@ pub(crate) fn node_description(id: &AnyNodeId, q: &impl GraphQuery) -> Option<St
 /// `cursor` for the following page, and its absence is the last page. A `limit`
 /// or `cursor` that does not read as a whole number is not refused: it leaves its
 /// default standing.
-#[utoipa::path(get, path = "/api/node/{id}/edges", params(("id" = String, Path), EdgePageQuery), responses((status = 200, body = wire::EdgePage), FrontierRefusals), tag = "graph")]
+#[utoipa::path(get, path = "/api/node/{id}/edges", params(("id" = String, Path), EdgePageQuery), responses((status = 200, body = wire::EdgePage), NeighbourRefusals), tag = "graph")]
 pub async fn node_edges(
     State(data): State<Arc<AtlasData>>,
     State(graph): State<Arc<GraphService>>,
@@ -191,8 +191,6 @@ pub async fn node_edges(
 
     let page = snap.edges(&Position::Node(node_id.clone()), &asked.page());
 
-    // A PeopleGroup wire id does not decode, so an entry naming one would hand the
-    // caller a reference it cannot fetch a card for.
     let this_event = OnceCell::new();
     let mut mention_loci = MentionLoci::default();
     let mut entries = Vec::with_capacity(page.entries.len());
@@ -295,7 +293,6 @@ fn account_verses(account: &Account) -> Vec<VerseRef> {
         .collect()
 }
 
-/// Which of a node's frontiers to answer, and which page of it.
 #[derive(Debug, Deserialize, IntoParams)]
 #[into_params(parameter_in = Query)]
 pub struct EdgePageQuery {
@@ -604,7 +601,7 @@ fn unit_edge_summary(snap: &impl atlas_graph_types::store::GraphQuery, id: &atla
 pub fn routes() -> utoipa_axum::router::OpenApiRouter<crate::app::AppState> {
     use utoipa_axum::routes;
     utoipa_axum::router::OpenApiRouter::new()
-        .routes(routes!(node_card))
+        .routes(routes!(node_record))
         .routes(routes!(node_edges))
         .routes(routes!(text_window))
 }

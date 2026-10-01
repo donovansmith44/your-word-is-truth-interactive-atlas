@@ -115,7 +115,7 @@ pub struct RowEdge {
     pub rel: EdgeRel,
     pub subject: Position,
     pub object: Position,
-    pub meta: crate::explore::EdgeMeta,
+    pub meta: crate::adjacency::EdgeMeta,
 }
 
 fn text_node(kind_hint: &TextLocus) -> AnyNodeId {
@@ -133,7 +133,7 @@ impl Graph {
     pub fn row_edges(&self) -> Vec<RowEdge> {
         use crate::canon::RowFamily;
         use crate::edge::SymRelationId as S;
-        use crate::explore::EdgeMeta as M;
+        use crate::adjacency::EdgeMeta as M;
         use RelationId as R;
 
         fn push_edge(out: &mut Vec<RowEdge>, family: RowFamily, row_ord: usize, rel: EdgeRel, (subject, object, meta): (Position, Position, M)) {
@@ -417,7 +417,7 @@ impl Graph {
         use RelationId as R;
         use crate::edge::SymRelationId as S;
 
-        use crate::explore::EdgeMeta as M;
+        use crate::adjacency::EdgeMeta as M;
         let mut pairs: BTreeMap<RelationId, Vec<(Position, Position, M)>> = BTreeMap::new();
         let mut sym_pairs: BTreeMap<S, Vec<(Position, Position, M)>> = BTreeMap::new();
         let edges = self.row_edges();
@@ -559,7 +559,7 @@ pub fn corpus_key<C: Corpus>() -> &'static str {
 mod tests {
     use super::*;
     use crate::edge::{Contains, Direction, EdgeKind, RelationId};
-    use crate::explore::{EdgeQuery, Explorable, PositionRef};
+    use crate::adjacency::{EdgeQuery, Adjacent, PositionRef};
     use crate::id::{ContainerNodeId, NodeKind};
     use crate::ingest::ProvenanceId;
     use crate::node::{Node, NodePayload};
@@ -569,7 +569,7 @@ mod tests {
     #[test]
     fn parallel_build_indexes_matches_sequential_over_a_large_relation() {
         use crate::edge::Justification;
-        use crate::explore::EdgeMeta as M;
+        use crate::adjacency::EdgeMeta as M;
         use crate::id::EventId;
         use crate::text::{BibleLocusRange, VerseRef};
 
@@ -695,7 +695,7 @@ mod tests {
         let succ = PositionRef(crate::id::Position::Node(ch1.erase())).edges(&g, &EdgeQuery { kind: follows, cursor: None, limit: 10 });
         assert_eq!(succ.entries.len(), 1);
         assert_eq!(succ.entries[0].node, crate::id::Position::Node(ch2.erase()));
-        assert_eq!(succ.entries[0].meta, crate::explore::EdgeMeta::None, "a canon step carries no narrative annotation");
+        assert_eq!(succ.entries[0].meta, crate::adjacency::EdgeMeta::None, "a canon step carries no narrative annotation");
         let precedes = EdgeKind::Directed(RelationId::Succession, Direction::Inverse);
         let prev = PositionRef(crate::id::Position::Node(ch2.erase())).edges(&g, &EdgeQuery { kind: precedes, cursor: None, limit: 10 });
         assert_eq!(prev.entries.len(), 1);
@@ -866,7 +866,7 @@ mod tests {
         // Assert
         assert_eq!(
             (children.entries.iter().map(|e| e.meta.clone()).collect::<Vec<_>>(), parents.entries.iter().map(|e| e.meta.clone()).collect::<Vec<_>>()),
-            (vec![crate::explore::EdgeMeta::Parentage(crate::edge::Parentage::Eternal)], vec![crate::explore::EdgeMeta::Parentage(crate::edge::Parentage::Eternal)])
+            (vec![crate::adjacency::EdgeMeta::Parentage(crate::edge::Parentage::Eternal)], vec![crate::adjacency::EdgeMeta::Parentage(crate::edge::Parentage::Eternal)])
         );
     }
 }
@@ -952,14 +952,14 @@ mod row_edge_laws {
             }
         }
         for (rel, ix) in &g.indexes {
-            for (subject, frontier) in &ix.fwd {
-                let ids: Vec<EdgeId> = frontier.edges().map(|e| e.edge.clone()).collect();
+            for (subject, adjacency) in &ix.fwd {
+                let ids: Vec<EdgeId> = adjacency.edges().map(|e| e.edge.clone()).collect();
                 assert_eq!(ids, from_rows[&(EdgeRel::Directed(*rel), subject.clone())], "fwd order at {subject:?}");
             }
         }
         for (rel, ix) in &g.symmetric_indexes {
-            for (subject, frontier) in &ix.fwd {
-                let ids: Vec<EdgeId> = frontier.edges().map(|e| e.edge.clone()).collect();
+            for (subject, adjacency) in &ix.fwd {
+                let ids: Vec<EdgeId> = adjacency.edges().map(|e| e.edge.clone()).collect();
                 assert_eq!(ids, from_rows[&(EdgeRel::Symmetric(*rel), subject.clone())], "sym order at {subject:?}");
             }
         }

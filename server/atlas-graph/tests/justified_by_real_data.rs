@@ -22,8 +22,8 @@ fn an_edge_position_is_indexed_under_justified_by_and_no_other_relation() {
     // Arrange
     let inputs = common::PipelineInputs::read();
     let ctx = inputs.run();
-    let holds_an_edge = |side: &std::collections::BTreeMap<Position, atlas_graph_types::explore::Frontier>| {
-        side.iter().any(|(position, frontier)| matches!(position, Position::Edge(_)) || frontier.edges().any(|e| matches!(e.node, Position::Edge(_))))
+    let holds_an_edge = |side: &std::collections::BTreeMap<Position, atlas_graph_types::adjacency::Adjacency>| {
+        side.iter().any(|(position, adjacency)| matches!(position, Position::Edge(_)) || adjacency.edges().any(|e| matches!(e.node, Position::Edge(_))))
     };
 
     // Act

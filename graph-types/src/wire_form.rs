@@ -73,7 +73,7 @@ mod schema {
     use utoipa::openapi::{RefOr, Schema};
     use utoipa::{PartialSchema, ToSchema};
 
-    const EDGE_KIND: &str = "A relation between two nodes, named in the direction it is travelled: the label one frontier of a node is asked for by.";
+    const EDGE_KIND: &str = "A relation between two nodes, named in the direction it is travelled: the label one page of a node's neighbours is asked for by.";
 
     impl PartialSchema for EdgeKind {
         fn schema() -> RefOr<Schema> {

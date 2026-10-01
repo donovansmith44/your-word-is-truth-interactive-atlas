@@ -143,7 +143,7 @@ pub enum Position {
 pub enum PositionKind {
     Node(NodeKind),
     Edge(crate::edge::EdgeKind),
-    Exploration,
+    Version,
 }
 
 #[cfg(not(feature = "canon-ids"))]

@@ -126,8 +126,8 @@ fn chapter_window_completes_within_smoke_threshold() {
 
 #[test]
 #[ignore = "wall-clock gate: run serialized via scripts/timing-gates.sh (CONTENTION-1)"]
-fn frontier_page_latency_corpus_over_both_arms() {
-    use atlas_graph_types::explore::EdgeQuery;
+fn adjacency_page_latency_corpus_over_both_arms() {
+    use atlas_graph_types::adjacency::EdgeQuery;
     use atlas_graph_types::id::{NodeKind, Position};
     use atlas_graph_types::store::GraphQuery;
     use atlas_graph_types::store::{GraphPublisher, GraphStore, MemStore};

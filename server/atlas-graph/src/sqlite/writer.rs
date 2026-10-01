@@ -7,7 +7,7 @@ use std::time::{Duration, Instant, SystemTime};
 
 use atlas_graph_types::canon::ids::{any_node_id_str, position_str};
 use atlas_graph_types::canon::{Canon, CANON_VERSION};
-use atlas_graph_types::explore::EdgeMeta;
+use atlas_graph_types::adjacency::EdgeMeta;
 use atlas_graph_types::graph::Graph;
 use atlas_graph_types::id::{ContentAddressed, ContentHash};
 use atlas_graph_types::node::{Node, NodePayload};

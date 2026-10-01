@@ -1,6 +1,3 @@
-//! The per-surface provenance companion index. Every ROW carries a `ProvenanceId` but the served
-//! index entries do not -- `EdgeMeta` has no provenance, and widening it would put a string on every
-//! one of ~344k `cites` entries -- so one pre-store scan keeps what a frontier surface asks for.
 
 use std::collections::{BTreeMap, BTreeSet};
 

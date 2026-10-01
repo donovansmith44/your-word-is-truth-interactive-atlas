@@ -6,7 +6,7 @@ use atlas_graph::sqlite::manifest::read_manifest;
 use atlas_graph::sqlite::source::SectionLayout;
 use atlas_graph::sqlite::SCHEMA_VERSION;
 use atlas_graph_types::edge::{at, Direction, EdgeKind, RelationId};
-use atlas_graph_types::explore::EdgeQuery;
+use atlas_graph_types::adjacency::EdgeQuery;
 use atlas_graph_types::id::{AnyNodeId, NodeKind, Position};
 use atlas_graph_types::sections::Section;
 use atlas_graph_types::store::GraphQuery;

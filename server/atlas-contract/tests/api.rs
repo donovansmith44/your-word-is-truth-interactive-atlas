@@ -719,11 +719,11 @@ async fn a_place_that_shares_a_catechism_items_id_carries_no_catechism_prose() {
     let app = atlas_contract::app::build(Arc::new(data), graph, None);
 
     // Act
-    let (status, card) = call(&app, "/api/node/Place:demo-item-1").await;
+    let (status, record) = call(&app, "/api/node/Place:demo-item-1").await;
 
     // Assert
     assert_eq!(
-        (status, card.clone()),
+        (status, record.clone()),
         (
             StatusCode::OK,
             serde_json::json!({
@@ -732,7 +732,7 @@ async fn a_place_that_shares_a_catechism_items_id_carries_no_catechism_prose() {
                 "label": "Demo Item",
                 "provenance": "curated-places",
                 "edge_summary": [{ "kind": "mentioned-in", "count": 1 }],
-                "version": card["version"],
+                "version": record["version"],
                 "place": { "lat": 31.5, "lon": 35.5, "display_name": "Demo Item" },
             })
         )
@@ -740,7 +740,7 @@ async fn a_place_that_shares_a_catechism_items_id_carries_no_catechism_prose() {
 }
 
 #[tokio::test]
-async fn an_event_card_carries_every_section_and_note_its_event_records() {
+async fn an_event_record_carries_every_section_and_note_its_event_records() {
     // Arrange
     let mut data = demo_fixture();
     data.events.push(Event {
@@ -760,11 +760,11 @@ async fn an_event_card_carries_every_section_and_note_its_event_records() {
     let app = atlas_contract::app::build(Arc::new(data), graph, None);
 
     // Act
-    let (status, card) = call(&app, "/api/node/Event:e-sections").await;
+    let (status, record) = call(&app, "/api/node/Event:e-sections").await;
 
     // Assert
     assert_eq!(
-        (status, card["event"].clone()),
+        (status, record["event"].clone()),
         (
             StatusCode::OK,
             serde_json::json!({

@@ -7,7 +7,7 @@ use crate::edge::{
     dual, at, Attests, Direction, EdgeKind, Justification, LocatedAt, RelationId, Succession,
     SymRelationId,
 };
-use crate::explore::{EdgeQuery, Explorable, Holdings, PositionRef};
+use crate::adjacency::{EdgeQuery, Adjacent, Holdings, PositionRef};
 use crate::graph::Graph;
 use crate::id::{AnyNodeId, EventId, NodeKind, PlaceId, Position};
 use crate::text::{BibleLocus, BibleLocusRange, VerseRef};
@@ -149,7 +149,7 @@ fn step_page_agreement_pages_are_windows_over_the_total() {
 #[test]
 fn bijection_witness_same_edge_id_from_either_end() {
     let g = toy();
-    let pairs = crate::explore::inverse_entry_ids(&g, &pos(&ev("baptism")), FOLLOWS);
+    let pairs = crate::adjacency::inverse_entry_ids(&g, &pos(&ev("baptism")), FOLLOWS);
     assert!(!pairs.is_empty());
     for (fwd, inv) in pairs {
         assert_eq!(fwd, inv, "one row, two projections, one id");
@@ -187,7 +187,7 @@ fn edge_summary_includes_symmetric_kinds() {
     g.build_indexes();
 
     let item = Position::Node(crate::id::CatechismItemId::new("baptism-part").erase());
-    let summary = crate::explore::PositionRef(item.clone()).edge_summary(&g);
+    let summary = crate::adjacency::PositionRef(item.clone()).edge_summary(&g);
     let sym = EdgeKind::Symmetric(SymRelationId::CatechismLink);
     assert_eq!(summary.get(&sym), Some(&1), "symmetric kinds appear in summaries");
     let total = Holdings::focus(item).step(&g, sym);
@@ -195,7 +195,7 @@ fn edge_summary_includes_symmetric_kinds() {
 }
 
 #[test]
-fn edge_summary_counts_match_frontiers() {
+fn edge_summary_counts_match_adjacencies() {
     let g = toy();
     let n = pos(&ev("baptism"));
     let summary = PositionRef(n.clone()).edge_summary(&g);

@@ -56,7 +56,7 @@ fn occurs_rows_are_in_reading_order_and_carry_one_token_spans_with_the_right_pro
 #[test]
 fn john_3_16_has_words_in_token_order_and_logos_has_a_canonical_concordance() {
     use atlas_graph_types::edge::at;
-    use atlas_graph_types::explore::EdgeQuery;
+    use atlas_graph_types::adjacency::EdgeQuery;
     use atlas_graph_types::id::AnyNodeId;
     use atlas_graph_types::store::GraphQuery;
     let (g, _) = built();

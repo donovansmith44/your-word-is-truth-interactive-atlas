@@ -5,7 +5,7 @@
 use atlas_core::data::{Event, EventKind, EventWitness, Narrative, Place};
 use atlas_core::time::TimeRange;
 use atlas_graph_types::edge::{Direction, EdgeKind, RelationId};
-use atlas_graph_types::explore::{EdgeEntry, EdgeQuery};
+use atlas_graph_types::adjacency::{EdgeEntry, EdgeQuery};
 use atlas_graph_types::id::{AnyNodeId, Position};
 use atlas_graph_types::node::NodePayload;
 use atlas_graph_types::store::GraphQuery;

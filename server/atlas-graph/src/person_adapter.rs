@@ -74,9 +74,6 @@ pub fn normalize(ctx: &mut BuildCtx) -> PersonAdapterStats {
     stats
 }
 
-/// `verse_links` is already resolved and canon-sorted at ETL time, and this loop preserves that order
-/// row for row, which is what makes the `mentioned-in` inverse frontier canon-ordered by
-/// construction.
 pub fn merge_alias(ctx: &mut BuildCtx) -> PersonAdapterStats {
     let mut stats = PersonAdapterStats::default();
     let reclassified = crate::peoples_adapter::reclassified_person_slugs(ctx.atlas);

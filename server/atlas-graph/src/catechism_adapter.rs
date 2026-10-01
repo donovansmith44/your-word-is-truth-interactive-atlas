@@ -78,7 +78,7 @@ mod tests {
     use super::*;
     use atlas_core::data::{AtlasData, Canon, CatechismItem, CatechismPart, CatechismQuestion};
     use atlas_graph_types::edge::EdgeKind;
-    use atlas_graph_types::explore::{Explorable, PositionRef};
+    use atlas_graph_types::adjacency::{Adjacent, PositionRef};
     use atlas_graph_types::id::Position;
     use atlas_graph_types::store::GraphQuery;
     use std::collections::HashMap;
@@ -139,13 +139,13 @@ mod tests {
         let item_pos = Position::Node(catechism_item_node_id("first-commandment"));
         let kind = EdgeKind::Symmetric(atlas_graph_types::edge::SymRelationId::CatechismLink);
         let page = PositionRef(item_pos.clone())
-            .edges(&ctx.graph, &atlas_graph_types::explore::EdgeQuery { kind, cursor: None, limit: 10 });
+            .edges(&ctx.graph, &atlas_graph_types::adjacency::EdgeQuery { kind, cursor: None, limit: 10 });
         assert_eq!(page.entries.len(), 2, "the item's own frontier lists both linked loci");
 
         let vid = atlas_core::refs::VerseId::parse_canonical("EXO.20.3").unwrap();
         let verse_node_id = crate::kjv_adapter::verse_node_id(vid.book.0, vid.chapter, vid.verse);
         let verse_pos = Position::Node(verse_node_id);
-        let verse_page = PositionRef(verse_pos.clone()).edges(&ctx.graph, &atlas_graph_types::explore::EdgeQuery { kind, cursor: None, limit: 10 });
+        let verse_page = PositionRef(verse_pos.clone()).edges(&ctx.graph, &atlas_graph_types::adjacency::EdgeQuery { kind, cursor: None, limit: 10 });
         assert_eq!(verse_page.entries.len(), 1);
         assert_eq!(verse_page.entries[0].node, item_pos, "querying from the verse's own end must return the item");
 

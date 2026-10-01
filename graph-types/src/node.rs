@@ -1,4 +1,3 @@
-//! Node identity and payload; a card is a view assembled from them, not a capability.
 
 use std::collections::BTreeMap;
 
@@ -64,9 +63,6 @@ pub enum NodePayload {
     /// `legs` deliberately does not ride here: the succession edges are the one authoritative
     /// ordered chain, and a payload copy would be a second, weaker path.
     Narrative { label: String, color: String },
-    /// Coordinates ride the payload so a map plots a place with no companion lookup. An alias
-    /// has no position to index through the port, so it is a payload fact rather than a
-    /// further explorable thing. `description` stays `None` until a source attests one.
     Place { canonical: String, lat: f64, lon: f64, aliases: Vec<String>, description: Option<String> },
     /// Life years are absent for most persons: `Option`, never a fabricated sentinel.
     /// `first_year`/`last_year` are the span of the corpus's MENTIONS of the person, not a
@@ -119,7 +115,6 @@ pub struct Node {
     pub provenance: ProvenanceId,
 }
 
-/// What a node IS; what exploring it means lives in `Explorable`, deliberately apart.
 pub trait NodeData {
     fn id(&self) -> AnyNodeId;
     fn payload(&self) -> &NodePayload;
@@ -166,15 +161,8 @@ impl Node {
     }
 }
 
-#[derive(Clone, Debug)]
-pub struct Card {
-    pub id: AnyNodeId,
-    pub label: String,
-    pub provenance: ProvenanceId,
-}
-
-pub fn card(n: &dyn NodeData) -> Card {
-    let label = match n.payload() {
+pub fn label(n: &dyn NodeData) -> String {
+    match n.payload() {
         NodePayload::TextUnit { corpus, .. } => format!("text unit ({corpus})"),
         NodePayload::Container { title } => title.clone(),
         NodePayload::Event { label, .. }
@@ -193,6 +181,5 @@ pub fn card(n: &dyn NodeData) -> Card {
         NodePayload::Place { canonical, .. } => canonical.clone(),
         NodePayload::Anchor { citation, .. } => citation.clone(),
         NodePayload::LexiconEntry { lemma, .. } => lemma.clone(),
-    };
-    Card { id: n.id(), label, provenance: n.provenance().clone() }
+    }
 }
