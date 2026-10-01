@@ -83,6 +83,7 @@ Protocol: `AGENTS.md`. Plan: `docs/superpowers/plans/2026-09-30-v1-roadmap.md`.
 - **F-43 (wire): `/api/elements` percent-decodes before splitting `ids` on `,`** (`ids=X%2CX` reads two ids). Low: the law `no_served_id_carries_the_separator…` keeps `,` out of ids. Closure: split, then decode each.
 - **F-44 (rule 4): `HomeSurfaces.Of` has no production reader** (pre-existing).
 - **F-45 (FOCUS): no live popover offers an edge step** until a node kind moves to FocusView (the migrated-kind list is empty); A-EDGES is proven by bUnit + a seeded-save Playwright spec.
+- **F-46 (rule 4 / 24b): test hooks ship in production `map.js`** (`debugLiveInstanceIds`, `debugIsPointOnLand`, … ; FOCUS-6 R8 added `debugClickMap`, `debugRecordSink`, `debugSinkCalls`). Closure: test hooks live in a test-only module the production bundle does not load.
 - **F-3 (rule 25, client derivation): `client/CanonRef.cs`** — see A-BACKLOG; closes when the legacy routes retire.
 
 ---
