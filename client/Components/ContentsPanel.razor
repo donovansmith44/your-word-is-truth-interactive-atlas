@@ -48,31 +48,27 @@
         }
 
         _loadedFor = Corpus;
-        try
+        await (await _contents.Next().Fetch(() => Atlas.Contents(Corpus))).Match(
+            arrived: Show,
+            failed: () => _error = "The contents could not be loaded. Try again.",
+            superseded: () => { });
+    }
+
+    private async Task Show(BibleAtlas.Client.Contract.Contents contents)
+    {
+        var model = ContentsTreeModel.From(contents);
+        var remembered = await RememberedAsync();
+        if (remembered is { Length: > 0 })
         {
-            if (await _contents.Next().Fetch(() => Atlas.Contents(Corpus)) is not { } contents)
-            {
-                return;
-            }
-
-            var model = ContentsTreeModel.From(contents);
-            var remembered = await RememberedAsync();
-            if (remembered is { Length: > 0 })
-            {
-                model.SetExpanded(remembered.Split(',', StringSplitOptions.RemoveEmptyEntries));
-            }
-
-            if (CurrentRef is { Length: > 0 } sref)
-            {
-                model.ExpandPathTo(sref);
-            }
-
-            _model = model;
+            model.SetExpanded(remembered.Split(',', StringSplitOptions.RemoveEmptyEntries));
         }
-        catch (Exception)
+
+        if (CurrentRef is { Length: > 0 } sref)
         {
-            _error = "The contents could not be loaded. Try again.";
+            model.ExpandPathTo(sref);
         }
+
+        _model = model;
     }
 
     private async Task<string?> RememberedAsync()

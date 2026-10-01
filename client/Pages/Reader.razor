@@ -257,14 +257,10 @@
             LocusAtom.Changed += OnLocusChangedAsGuest;
         }
 
-        try
-        {
-            _toc = await _startup.Next().Fetch(() => Atlas.Books());
-        }
-        catch (Exception)
-        {
-            _errorMessage = "Couldn't load the book list — check your connection and try again.";
-        }
+        (await _startup.Next().Fetch(() => Atlas.Books())).Match(
+            arrived: toc => _toc = toc,
+            failed: () => _errorMessage = "Couldn't load the book list — check your connection and try again.",
+            superseded: () => { });
     }
 
     private void OnLocusChangedAsGuest() => _ = RefreshAsGuestAsync();
@@ -386,29 +382,18 @@
         _loadedBook = null;
         _loadedChapterNum = null;
 
-        try
-        {
-            if (await request.Fetch(() => Atlas.Chapter(_book, _chapterNum), () => Atlas.ChapterText(_book, _chapterNum)) is not { } loaded)
+        (await request.Fetch(() => Atlas.Chapter(_book, _chapterNum), () => Atlas.ChapterText(_book, _chapterNum))).Match(
+            arrived: loaded =>
             {
-                return;
-            }
+                (_chapter, _text) = loaded;
+                _loadedBook = _book;
+                _loadedChapterNum = _chapterNum;
+                _errorMessage = null;
 
-            (_chapter, _text) = loaded;
-            _loadedBook = _book;
-            _loadedChapterNum = _chapterNum;
-            _errorMessage = null;
-
-            ViewState.MountReaderChapter(_loadedBook, _loadedChapterNum.Value);
-        }
-        catch (Exception)
-        {
-            if (request.Superseded)
-            {
-                return;
-            }
-
-            _errorMessage = $"Couldn't load {_book} {_chapterNum} — check your connection and try again.";
-        }
+                ViewState.MountReaderChapter(_loadedBook, _loadedChapterNum.Value);
+            },
+            failed: () => _errorMessage = $"Couldn't load {_book} {_chapterNum} — check your connection and try again.",
+            superseded: () => { });
     }
 
     private void OnLineExplore(PopoverOpening opening)

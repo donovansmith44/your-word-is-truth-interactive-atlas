@@ -12,7 +12,7 @@ public sealed class RequestSeriesTests
         var answer = await series.Next().Fetch(() => Task.FromResult("the scene"));
 
         // Assert
-        Assert.Equal("the scene", answer);
+        Assert.Equal(new Outcome<string>.Arrived("the scene"), answer);
     }
 
     [Fact]
@@ -30,7 +30,7 @@ public sealed class RequestSeriesTests
         var answer = await pending;
 
         // Assert
-        Assert.Equal((null, true, false), (answer, first.Superseded, second.Superseded));
+        Assert.Equal(((Outcome<string>)new Outcome<string>.Superseded(), true, false), (answer, first.Superseded, second.Superseded));
     }
 
     [Fact]
@@ -77,6 +77,140 @@ public sealed class RequestSeriesTests
         var dropped = await pending;
 
         // Assert
-        Assert.Equal((("a chapter", "its text"), null), (together, dropped));
+        Assert.Equal(((Outcome<(string, string)>)new Outcome<(string, string)>.Arrived(("a chapter", "its text")), (Outcome<(string, string)>)new Outcome<(string, string)>.Superseded()), (together, dropped));
     }
+
+    [Fact]
+    public async Task A_current_request_that_fails_is_a_failure_and_never_an_exception()
+    {
+        // Arrange
+        var series = new RequestSeries();
+
+        // Act
+        var outcome = await series.Next().Fetch<string>(() => throw new HttpRequestException(Offline));
+
+        // Assert
+        Assert.Equal(new Outcome<string>.Failed(), outcome);
+    }
+
+    [Fact]
+    public async Task A_failure_arriving_after_a_newer_request_went_out_is_superseded_not_a_failure()
+    {
+        // Arrange
+        var series = new RequestSeries();
+        var slow = new TaskCompletionSource<string>();
+        var pending = series.Next().Fetch(() => slow.Task);
+
+        // Act
+        series.Next();
+        slow.SetException(new HttpRequestException(Offline));
+
+        // Assert
+        Assert.Equal(new Outcome<string>.Superseded(), await pending);
+    }
+
+    [Fact]
+    public async Task Stopping_the_series_supersedes_every_answer_still_out_whether_it_arrives_or_fails()
+    {
+        // Arrange
+        var series = new RequestSeries();
+        var arriving = new TaskCompletionSource<string>();
+        var failing = new TaskCompletionSource<string>();
+        var request = series.Next();
+        var pending = (request.Fetch(() => arriving.Task), request.Fetch(() => failing.Task));
+
+        // Act
+        series.Stop();
+        arriving.SetResult("the scene");
+        failing.SetException(new HttpRequestException(Offline));
+
+        // Assert
+        Assert.Equal(
+            ((Outcome<string>)new Outcome<string>.Superseded(), (Outcome<string>)new Outcome<string>.Superseded()),
+            (await pending.Item1, await pending.Item2));
+    }
+
+    [Fact]
+    public async Task Asking_again_after_a_failure_asks_the_server_again()
+    {
+        // Arrange
+        var series = new RequestSeries();
+        var answers = new Queue<Func<Task<string>>>([() => throw new HttpRequestException(Offline), () => Task.FromResult("the scene")]);
+        var failed = await series.Next().Fetch(answers.Dequeue());
+
+        // Act
+        var retried = await series.Next().Fetch(answers.Dequeue());
+
+        // Assert
+        Assert.Equal<Outcome<string>>([new Outcome<string>.Failed(), new Outcome<string>.Arrived("the scene")], [failed, retried]);
+    }
+
+    [Fact]
+    public void Every_outcome_is_matched_by_its_own_case()
+    {
+        // Arrange
+        var outcomes = new Outcome<string>[] { new Outcome<string>.Arrived("the scene"), new Outcome<string>.Failed(), new Outcome<string>.Superseded() };
+
+        // Act
+        var matched = outcomes.Select(outcome => outcome.Match(arrived: value => $"arrived {value}", failed: () => "failed", superseded: () => "superseded")).ToList();
+
+        // Assert
+        Assert.Equal(["arrived the scene", "failed", "superseded"], matched);
+    }
+
+    [Fact]
+    public void Every_outcome_acts_on_its_own_case()
+    {
+        // Arrange
+        var outcomes = new Outcome<string>[] { new Outcome<string>.Arrived("the scene"), new Outcome<string>.Failed(), new Outcome<string>.Superseded() };
+        var acted = new List<string>();
+
+        // Act
+        foreach (var outcome in outcomes)
+        {
+            outcome.Match(arrived: value => acted.Add($"arrived {value}"), failed: () => acted.Add("failed"), superseded: () => acted.Add("superseded"));
+        }
+
+        // Assert
+        Assert.Equal(["arrived the scene", "failed", "superseded"], acted);
+    }
+
+    [Fact]
+    public async Task Every_outcome_awaits_the_work_of_its_own_case()
+    {
+        // Arrange
+        var outcomes = new Outcome<string>[] { new Outcome<string>.Arrived("the scene"), new Outcome<string>.Failed(), new Outcome<string>.Superseded() };
+        var acted = new List<string>();
+
+        // Act
+        foreach (var outcome in outcomes)
+        {
+            await outcome.Match(
+                arrived: async value =>
+                {
+                    await Task.Yield();
+                    acted.Add($"arrived {value}");
+                },
+                failed: () => acted.Add("failed"),
+                superseded: () => acted.Add("superseded"));
+        }
+
+        // Assert
+        Assert.Equal(["arrived the scene", "failed", "superseded"], acted);
+    }
+
+    [Fact]
+    public void An_outcome_maps_its_arrival_and_keeps_every_other_case()
+    {
+        // Arrange
+        var outcomes = new Outcome<string>[] { new Outcome<string>.Arrived("the scene"), new Outcome<string>.Failed(), new Outcome<string>.Superseded() };
+
+        // Act
+        var mapped = outcomes.Select(outcome => outcome.Select(value => value.Length)).ToList();
+
+        // Assert
+        Assert.Equal<Outcome<int>>([new Outcome<int>.Arrived("the scene".Length), new Outcome<int>.Failed(), new Outcome<int>.Superseded()], mapped);
+    }
+
+    private const string Offline = "offline";
 }

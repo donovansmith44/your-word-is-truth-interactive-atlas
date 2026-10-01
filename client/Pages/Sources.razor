@@ -75,17 +75,16 @@
 
     protected override async Task OnInitializedAsync()
     {
-        try
-        {
-            _doc = await _startup.Next().Fetch(() => Atlas.Sources());
-            _byCategory = _doc!.Sources
-                .GroupBy(s => s.Category)
-                .ToDictionary(g => g.Key, g => (IReadOnlyList<SourceEntry>)g.ToList());
-        }
-        catch (Exception)
-        {
-            _error = "Couldn't load the sources list -- try refreshing the page.";
-        }
+        (await _startup.Next().Fetch(() => Atlas.Sources())).Match(
+            arrived: doc =>
+            {
+                _doc = doc;
+                _byCategory = doc.Sources
+                    .GroupBy(s => s.Category)
+                    .ToDictionary(g => g.Key, g => (IReadOnlyList<SourceEntry>)g.ToList());
+            },
+            failed: () => _error = "Couldn't load the sources list -- try refreshing the page.",
+            superseded: () => { });
     }
 
     private static readonly IReadOnlyList<SourceEntry> EmptySources = Array.Empty<SourceEntry>();

@@ -51,9 +51,9 @@
     </div>
 
     <div class="popover-body" data-testid="popover-body" @key="@($"body:{Exploration?.Current.Id}")">
-        @if (_couldNotLoad)
+        @if (_failedAttempt is { } failedAttempt)
         {
-            <p class="popover-meta">Couldn't load this — check your connection and try again.</p>
+            <CouldNotLoad OnRetry="() => Retry(failedAttempt)" />
         }
         else if (_legacy is null && Exploration is { } exploration)
         {
@@ -96,7 +96,7 @@
     private Projection<ExplorationState>? _projectionBacking;
     private Projection<ExplorationState> _projection => _projectionBacking ??= new Projection<ExplorationState>(ExplorationAtom);
     private ExplorationState _frozenSnapshot = new ExplorationState.Closed();
-    private readonly RenderedLegacyNodes _rendered = new();
+    private readonly LegacyPresentations _legacyViews = new();
     private readonly RequestSeries _requests = new();
     private OwnershipClaim? _claim;
     private IExplorable? _legacy;
@@ -119,7 +119,7 @@
     private void Focus(ExplorationState state)
     {
         _frozenSnapshot = state;
-        _legacy = Exploration is { } exploration ? _rendered.For(exploration.Current) : null;
+        _legacy = Exploration is { } exploration ? _legacyViews.Present(exploration) : null;
     }
 
     private void ApplyLocally(ExplorationIntent intent)
@@ -172,7 +172,7 @@
 
     private IReadOnlyList<Chip> _chips = [];
     private RenderFragment _body = _ => { };
-    private bool _couldNotLoad;
+    private Func<Task>? _failedAttempt;
     private bool _usingSectionRegistry;
     private IReadOnlyList<PopoverSection> _sections = [];
     private ElementReference _panelRef;
@@ -256,7 +256,7 @@
 
     private async Task Resume(Request request, SavedExploration saved)
     {
-        if (await Arriving(request, request.Fetch(() => Explorer.Resolve(saved.Trail))) is not [var start, ..] trail)
+        if (Arriving(await request.Fetch(() => Explorer.Resolve(saved.Trail)), () => Resume(_requests.Next(), saved)) is not [var start, ..] trail)
         {
             return;
         }
@@ -267,18 +267,23 @@
 
     private async Task OpenAt(Request request, PositionRef target, IExplorable? legacy)
     {
-        if (await Arriving(request, request.Fetch(() => Explorer.Resolve(target))) is not { } start)
+        if (Arriving(await request.Fetch(() => Explorer.Resolve(target)), () => OpenAt(_requests.Next(), target, legacy)) is not { } start)
         {
             return;
         }
 
-        if (legacy is not null)
+        PresentArrival(new ExplorationIntent.Open(start), legacy);
+        await LoadCurrent();
+    }
+
+    private void PresentArrival(ExplorationIntent intent, IExplorable? legacy)
+    {
+        if (legacy is not null && intent.Apply(_frozenSnapshot) is ExplorationState.Open { Exploration: var arrived })
         {
-            _rendered.Remember(start, legacy);
+            _legacyViews.Arrive(arrived, legacy);
         }
 
-        ApplyLocally(new ExplorationIntent.Open(start));
-        await LoadCurrent();
+        ApplyLocally(intent);
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -343,7 +348,7 @@
         _sections = [];
         _chips = [];
         _body = _ => { };
-        _couldNotLoad = false;
+        _failedAttempt = null;
         _usingSectionRegistry = false;
 
         if (_legacy is { } legacy && !await LoadLegacy(legacy, request))
@@ -359,64 +364,54 @@
         var applicable = PopoverSectionRegistry.Providers.Where(p => p.AppliesTo(legacy)).ToList();
         _usingSectionRegistry = applicable.Count > 0;
 
-        try
-        {
-            if (_usingSectionRegistry)
-            {
-                if (await request.Fetch(() => Task.WhenAll(applicable.Select(p => p.ResolveAsync(legacy, Atlas, this))), () => legacy.ExploreAsync(Atlas)) is not ({ } sections, { } chips))
+        return _usingSectionRegistry
+            ? (await request.Fetch(() => Task.WhenAll(applicable.Select(p => p.ResolveAsync(legacy, Atlas, this))), () => legacy.ExploreAsync(Atlas))).Match(
+                arrived: loaded =>
                 {
-                    return false;
-                }
-
-                var resolved = sections.Where(s => s is not null).Select(s => s!).ToList();
-                _sections = XrefEntryPoint ? resolved.OrderByDescending(s => s.Testid == "xrefs").ToList() : resolved;
-                _chips = chips;
-            }
-            else
-            {
-                if (await request.Fetch(() => legacy.ExploreAsync(Atlas), () => legacy.BodyAsync(Atlas)) is not ({ } chips, { } body))
+                    var resolved = loaded.Item1.OfType<PopoverSection>().ToList();
+                    _sections = XrefEntryPoint ? resolved.OrderByDescending(s => s.Testid == "xrefs").ToList() : resolved;
+                    _chips = loaded.Item2;
+                    return true;
+                },
+                failed: CouldNotLoadCurrent,
+                superseded: () => false)
+            : (await request.Fetch(() => legacy.ExploreAsync(Atlas), () => legacy.BodyAsync(Atlas))).Match(
+                arrived: loaded =>
                 {
-                    return false;
-                }
+                    (_chips, _body) = loaded;
+                    return true;
+                },
+                failed: CouldNotLoadCurrent,
+                superseded: () => false);
+    }
 
-                _chips = chips;
-                _body = body;
-            }
-        }
-        catch (Exception)
-        {
-            if (request.Superseded)
-            {
-                return false;
-            }
-
-            ShowCouldNotLoad();
-        }
-
+    private bool CouldNotLoadCurrent()
+    {
+        ShowCouldNotLoad(LoadCurrent);
         return true;
     }
 
-    private async Task<T?> Arriving<T>(Request request, Task<T> resolution)
-    {
-        try
-        {
-            return await resolution;
-        }
-        catch (Exception)
-        {
-            if (!request.Superseded)
+    private T? Arriving<T>(Outcome<T> outcome, Func<Task> retry)
+        where T : class =>
+        outcome.Match<T?>(
+            arrived: arrived => arrived,
+            failed: () =>
             {
-                ShowCouldNotLoad();
-            }
+                ShowCouldNotLoad(retry);
+                return null;
+            },
+            superseded: () => null);
 
-            return default;
-        }
-    }
-
-    private void ShowCouldNotLoad()
+    private void ShowCouldNotLoad(Func<Task> retry)
     {
         _chips = [];
-        _couldNotLoad = true;
+        _failedAttempt = retry;
+    }
+
+    private Task Retry(Func<Task> attempt)
+    {
+        _failedAttempt = null;
+        return attempt();
     }
 
     private async Task SyncNarrativeFocusAsync()
@@ -446,33 +441,19 @@
             resume: saved => Resume(_requests.Next(), saved),
             legacy: node => PushLegacyAsync(node, via));
 
-    private async Task PushLegacyAsync(IExplorable node, EdgeKind via)
+    private Task PushLegacyAsync(IExplorable node, EdgeKind via) =>
+        Arrive(new Link(via, new NodePosition(node.Identity)), node, () => PushLegacyAsync(node, via));
+
+    private Task FollowAsync(Link link) => Arrive(link, null, () => FollowAsync(link));
+
+    private async Task Arrive(Link link, IExplorable? legacy, Func<Task> retry)
     {
-        if (await Followed(new Link(via, new NodePosition(node.Identity))) is { } target)
+        if (Arriving(await _requests.Next().Fetch(() => Explorer.Follow(link)), retry) is { } target)
         {
-            _rendered.Remember(target, node);
-            await ArriveAt(via, target);
+            PresentArrival(new ExplorationIntent.Follow(new Step(link.Kind, target)), legacy);
+            await LoadCurrent();
         }
-    }
 
-    private async Task FollowAsync(Link link)
-    {
-        if (await Followed(link) is { } target)
-        {
-            await ArriveAt(link.Kind, target);
-        }
-    }
-
-    private async Task<Explorable?> Followed(Link link)
-    {
-        var request = _requests.Next();
-        return await Arriving(request, request.Fetch(() => Explorer.Follow(link)));
-    }
-
-    private async Task ArriveAt(EdgeKind via, Explorable target)
-    {
-        ApplyLocally(new ExplorationIntent.Follow(new Step(via, target)));
-        await LoadCurrent();
         StateHasChanged();
     }
 

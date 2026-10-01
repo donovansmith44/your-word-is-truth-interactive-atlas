@@ -42,10 +42,10 @@ public static class AppServices
     {
         if (LocalStore.Read<List<NodeRef>?>(js, Selection.StorageKey, null) is { } stored)
         {
-            return stored.Distinct(NodeIdentity.Comparer).ToList();
+            return stored.Distinct(PositionIdentity.Comparer).ToList();
         }
 
-        var translated = LegacySaves.Nodes(LocalStore.Read(js, LegacySaves.SelectionKey, new List<V1Node>())).Kept.Distinct(NodeIdentity.Comparer).ToList();
+        var translated = LegacySaves.Nodes(LocalStore.Read(js, LegacySaves.SelectionKey, new List<V1Node>())).Kept.Distinct(PositionIdentity.Comparer).ToList();
         LocalStore.Write(js, Selection.StorageKey, translated);
         return translated;
     }

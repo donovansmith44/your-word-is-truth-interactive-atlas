@@ -204,13 +204,7 @@
         LocusAtom.Changed += OnLocusChanged;
         _selfRef = DotNetObjectReference.Create(this);
 
-        try
-        {
-            _toc = await _startup.Next().Fetch(() => Atlas.Books());
-        }
-        catch (Exception)
-        {
-        }
+        (await _startup.Next().Fetch(() => Atlas.Books())).Match(arrived: toc => _toc = toc, failed: () => { }, superseded: () => { });
 
         await LoadChapterAsync();
     }
@@ -422,57 +416,46 @@
         _loadedBook = null;
         _loadedChapterNum = null;
 
-        try
+        (await request.Fetch(() => Atlas.Chapter(book, chapterNum), () => Atlas.ChapterText(book, chapterNum), () => Atlas.KretzmannChapter(book, chapterNum))).Match(
+            arrived: loaded => ShowChapter(book, chapterNum, loaded),
+            failed: () =>
+            {
+                _error = "Couldn't load this chapter — check your connection and try again.";
+                _loading = false;
+                StateHasChanged();
+            },
+            superseded: () => { });
+    }
+
+    private void ShowChapter(string book, int chapterNum, (Chapter Chapter, ChapterText Text, KretzmannChapter Doc) loaded)
+    {
+        var (chapter, text, doc) = loaded;
+
+        string? lastHeading = null;
+        var commentaryByVerse = new Dictionary<int, List<CommentaryItemRow>>();
+        foreach (var v in doc.Verses)
         {
-            if (await request.Fetch(() => Atlas.Chapter(book, chapterNum), () => Atlas.ChapterText(book, chapterNum), () => Atlas.KretzmannChapter(book, chapterNum)) is not { } loaded)
+            var items = new List<CommentaryItemRow>();
+            foreach (var item in v.Items)
             {
-                return;
+                var heading = item.Heading ?? "Commentary";
+                var isSectionStart = heading != lastHeading;
+                lastHeading = heading;
+                items.Add(new CommentaryItemRow(item.Id, heading, null, [], isSectionStart));
             }
-
-            var (chapter, text, doc) = loaded;
-
-            string? lastHeading = null;
-            var commentaryByVerse = new Dictionary<int, List<CommentaryItemRow>>();
-            foreach (var v in doc.Verses)
-            {
-                var items = new List<CommentaryItemRow>();
-                foreach (var item in v.Items)
-                {
-                    var heading = item.Heading ?? "Commentary";
-                    var isSectionStart = heading != lastHeading;
-                    lastHeading = heading;
-                    items.Add(new CommentaryItemRow(item.Id, heading, null, [], isSectionStart));
-                }
-                commentaryByVerse[v.Verse] = items;
-            }
-
-            _verses = chapter.Verses;
-            _rows = chapter.Verses
-                .Select(v => new MergedVerseRow(v, text.Verse(v.Number), commentaryByVerse.GetValueOrDefault(v.Number, new List<CommentaryItemRow>())))
-                .ToList();
-            _loadedBook = book;
-            _loadedChapterNum = chapterNum;
-            _loading = false;
-            _proseRequested.Clear();
-
-            // Marks this chapter as actively on screen (like Reader.razor
-            // does), so a popover opened from here -- e.g. MiniReaderExpand's
-            // "read the whole chapter" affordance -- doesn't wrongly offer to
-            // open what this page already renders in full.
-            ViewState.MountReaderChapter(book, chapterNum);
-            StateHasChanged();
+            commentaryByVerse[v.Verse] = items;
         }
-        catch (Exception)
-        {
-            if (request.Superseded)
-            {
-                return;
-            }
 
-            _error = "Couldn't load this chapter — check your connection and try again.";
-            _loading = false;
-            StateHasChanged();
-        }
+        _verses = chapter.Verses;
+        _rows = chapter.Verses
+            .Select(v => new MergedVerseRow(v, text.Verse(v.Number), commentaryByVerse.GetValueOrDefault(v.Number, new List<CommentaryItemRow>())))
+            .ToList();
+        _loadedBook = book;
+        _loadedChapterNum = chapterNum;
+        _loading = false;
+        _proseRequested.Clear();
+        ViewState.MountReaderChapter(book, chapterNum);
+        StateHasChanged();
     }
 
     [JSInvokable]
@@ -492,33 +475,21 @@
                 return;
             }
 
-            string? text;
-            try
-            {
-                if (await request.Fetch(() => Graph.Card(itemId)) is not { } card)
-                {
-                    return;
-                }
-
-                text = card.Description;
-            }
-            catch (Exception)
-            {
-                text = null;
-            }
-
-            if (request.Superseded)
-            {
-                return;
-            }
-
-            UpdateItemText(itemId, text);
-            StateHasChanged();
+            (await request.Fetch(() => Graph.Card(itemId))).Match(
+                arrived: card => ShowItemText(itemId, card.Description),
+                failed: () => ShowItemText(itemId, null),
+                superseded: () => { });
         }
         finally
         {
             _proseFetchGate.Release();
         }
+    }
+
+    private void ShowItemText(string itemId, string? text)
+    {
+        UpdateItemText(itemId, text);
+        StateHasChanged();
     }
 
     private void UpdateItemText(string itemId, string? text)

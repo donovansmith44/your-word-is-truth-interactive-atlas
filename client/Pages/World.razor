@@ -280,38 +280,13 @@
         AdoptAHandedOverExploration();
         _presentFocusClaim = Effects.Claim(new DelegateEffect<ExplorationState>(EffectNames.PresentFocus, ExplorationAtom, _ => true, PresentTheFocus));
 
-        try
-        {
-            _eras = await _startup.Next().Fetch(() => Atlas.Eras());
-        }
-        catch (Exception)
-        {
-            _errorMessage = "Couldn't load the timeline eras -- check your connection and try again.";
-        }
-
-        try
-        {
-            _landmarks = await _startup.Next().Fetch(() => Atlas.Landmarks());
-        }
-        catch (Exception)
-        {
-        }
-
-        try
-        {
-            _landMask = await _startup.Next().Fetch(() => Atlas.LandMask());
-        }
-        catch (Exception)
-        {
-        }
-
-        try
-        {
-            _polityRoster = await _startup.Next().Fetch(() => Maps.Roster());
-        }
-        catch (Exception)
-        {
-        }
+        (await _startup.Next().Fetch(() => Atlas.Eras())).Match(
+            arrived: eras => _eras = eras,
+            failed: () => _errorMessage = "Couldn't load the timeline eras -- check your connection and try again.",
+            superseded: () => { });
+        (await _startup.Next().Fetch(() => Atlas.Landmarks())).Match(arrived: landmarks => _landmarks = landmarks, failed: () => { }, superseded: () => { });
+        (await _startup.Next().Fetch(() => Atlas.LandMask())).Match(arrived: mask => _landMask = mask, failed: () => { }, superseded: () => { });
+        (await _startup.Next().Fetch(() => Maps.Roster())).Match(arrived: roster => _polityRoster = roster, failed: () => { }, superseded: () => { });
 
         await PushLandmarksIfReady();
         await PushLandMaskIfReady();
@@ -778,51 +753,56 @@
 
         try
         {
-            if (await request.Fetch(() => Maps.During(from, to)) is not { } layers)
-            {
-                return;
-            }
-
-            var scene = layers.Scene;
-            _scene = scene;
-            _polities = layers.Polities;
-            _timeWindow = scene.Window;
-            _errorMessage = null;
-            _isolated = null;
-
-            if (_mapInterop is not null)
-            {
-                await _mapInterop.SetScene(scene);
-                await _mapInterop.SetPolitiesVisible(true);
-                await _mapInterop.SetPolities(layers.Polities, from, to);
-                await JS.InvokeVoidAsync("performance.mark", "atlas:scene-rendered");
-
-                if (_lastFitMode != SceneMode.Time)
-                {
-                    await _mapInterop.FitScene();
-                    _lastFitMode = SceneMode.Time;
-                }
-
-                if (focusPlaceId is not null)
-                {
-                    var focusPlace = scene.Places.FirstOrDefault(p => p.Id == focusPlaceId);
-                    if (focusPlace is not null)
-                    {
-                        await _mapInterop.PanToPlace(focusPlace.Lat, focusPlace.Lon);
-                    }
-                }
-            }
+            await (await request.Fetch(() => Maps.During(from, to))).Match(
+                arrived: layers => ShowTimeScene(layers, from, to, focusPlaceId),
+                failed: () => _errorMessage = TimeWindowUnloaded,
+                superseded: () => { });
         }
         catch (Exception)
         {
             if (!request.Superseded)
             {
-                _errorMessage = "Couldn't load that time window -- check your connection and try again.";
+                _errorMessage = TimeWindowUnloaded;
             }
         }
         finally
         {
             StateHasChanged();
+        }
+    }
+
+    private const string TimeWindowUnloaded = "Couldn't load that time window -- check your connection and try again.";
+
+    private async Task ShowTimeScene(MapLayers layers, int from, int to, string? focusPlaceId)
+    {
+        var scene = layers.Scene;
+        _scene = scene;
+        _polities = layers.Polities;
+        _timeWindow = scene.Window;
+        _errorMessage = null;
+        _isolated = null;
+
+        if (_mapInterop is not null)
+        {
+            await _mapInterop.SetScene(scene);
+            await _mapInterop.SetPolitiesVisible(true);
+            await _mapInterop.SetPolities(layers.Polities, from, to);
+            await JS.InvokeVoidAsync("performance.mark", "atlas:scene-rendered");
+
+            if (_lastFitMode != SceneMode.Time)
+            {
+                await _mapInterop.FitScene();
+                _lastFitMode = SceneMode.Time;
+            }
+
+            if (focusPlaceId is not null)
+            {
+                var focusPlace = scene.Places.FirstOrDefault(p => p.Id == focusPlaceId);
+                if (focusPlace is not null)
+                {
+                    await _mapInterop.PanToPlace(focusPlace.Lat, focusPlace.Lon);
+                }
+            }
         }
     }
 
@@ -841,28 +821,16 @@
 
         try
         {
-            if (await request.Fetch(() => Maps.For(sref)) is not { } layers)
-            {
-                return;
-            }
-
-            _scene = layers.Scene;
-            _errorMessage = null;
-            _isolated = null;
-
-            if (_mapInterop is not null)
-            {
-                await _mapInterop.SetScene(layers.Scene);
-                await _mapInterop.FitScene();
-
-                _lastFitMode = SceneMode.Scripture;
-            }
+            await (await request.Fetch(() => Maps.For(sref))).Match(
+                arrived: ShowScriptureScene,
+                failed: () => _errorMessage = ScriptureUnloaded(sref),
+                superseded: () => { });
         }
         catch (Exception)
         {
             if (!request.Superseded)
             {
-                _errorMessage = $"Couldn't load {sref} -- check your connection and try again.";
+                _errorMessage = ScriptureUnloaded(sref);
             }
         }
         finally
@@ -873,20 +841,27 @@
         await LabelTheSlidersWindow(request);
     }
 
+    private static string ScriptureUnloaded(string sref) => $"Couldn't load {sref} -- check your connection and try again.";
+
+    private async Task ShowScriptureScene(MapLayers layers)
+    {
+        _scene = layers.Scene;
+        _errorMessage = null;
+        _isolated = null;
+
+        if (_mapInterop is not null)
+        {
+            await _mapInterop.SetScene(layers.Scene);
+            await _mapInterop.FitScene();
+
+            _lastFitMode = SceneMode.Scripture;
+        }
+    }
+
     private async Task LabelTheSlidersWindow(Request request)
     {
-        try
-        {
-            if (await SliderWindow.ServedFor(request, Atlas, _timeWindow, _from, _to) is { } window)
-            {
-                _timeWindow = window;
-            }
-
-            StateHasChanged();
-        }
-        catch (Exception)
-        {
-        }
+        (await SliderWindow.ServedFor(request, Atlas, _timeWindow, _from, _to)).Match(arrived: window => _timeWindow = window ?? _timeWindow, failed: () => { }, superseded: () => { });
+        StateHasChanged();
     }
 
     public void OnPlaceHover(string id, double x, double y)
@@ -1042,9 +1017,12 @@
             {
                 await Apply(Unfocused);
             }
-            else if (await request.Fetch(() => Explorer.Present(current, Surface.World)) is Presentation.Geography geography)
+            else
             {
-                await Apply(geography);
+                await (await request.Fetch(() => Explorer.Present(new PresentationRequest(current, Surface.World)))).Match(
+                    arrived: presentation => presentation is Presentation.Geography geography ? Apply(geography) : Task.CompletedTask,
+                    failed: () => { },
+                    superseded: () => { });
             }
         }
         catch (Exception)
@@ -1093,18 +1071,10 @@
             return;
         }
 
-        var request = _crossing.Next();
-        try
-        {
-            if (await request.Fetch(() => Explorer.Follow(link)) is { } target)
-            {
-                ExplorationAtom.Dispatch(new ExplorationIntent.Follow(new Step(link.Kind, target)));
-            }
-        }
-        catch (Exception)
-        {
-            _errorMessage = $"Couldn't reach {Positions.Of(link.Target).Label} -- check your connection and try again.";
-        }
+        (await _crossing.Next().Fetch(() => Explorer.Follow(link))).Match(
+            arrived: target => ExplorationAtom.Dispatch(new ExplorationIntent.Follow(new Step(link.Kind, target))),
+            failed: () => _errorMessage = $"Couldn't reach {Positions.Of(link.Target).Label} -- check your connection and try again.",
+            superseded: () => { });
     }
 
     public async ValueTask DisposeAsync()

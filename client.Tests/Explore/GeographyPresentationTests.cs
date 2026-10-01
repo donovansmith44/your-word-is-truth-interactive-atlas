@@ -51,7 +51,7 @@ public sealed class GeographyPresentationTests
                 .Serving(Conquest, EdgeKind.FollowsIn, null, ServedGraph.Page(EdgeKind.FollowsIn, null, JudgesMap)));
 
         // Act
-        var presented = await explorer.Present(conquest, Surface.World);
+        var presented = await explorer.Present(new PresentationRequest(conquest, Surface.World));
 
         // Assert
         Assert.Equal(
@@ -71,7 +71,7 @@ public sealed class GeographyPresentationTests
             graph => graph.Serving(Kingdom, EdgeKind.PrecedesIn, null, ServedGraph.Page(EdgeKind.PrecedesIn, null, judgesEra)));
 
         // Act
-        var presented = await explorer.Present(kingdom, Surface.World);
+        var presented = await explorer.Present(new PresentationRequest(kingdom, Surface.World));
 
         // Assert
         Assert.Equal(
@@ -88,7 +88,7 @@ public sealed class GeographyPresentationTests
             graph => graph.Serving(Patriarchs, EdgeKind.FollowsIn, null, ServedGraph.Page(EdgeKind.FollowsIn, null, JudgesMap)));
 
         // Act
-        var presented = await explorer.Present(patriarchs, Surface.World);
+        var presented = await explorer.Present(new PresentationRequest(patriarchs, Surface.World));
 
         // Assert
         Assert.Equal(
@@ -103,7 +103,7 @@ public sealed class GeographyPresentationTests
         var (explorer, bethel) = Serve(ServedGraph.Card(NodeKind.Place, Bethel, BethelLabel) with { Place = ServedGraph.PlaceAt(BethelLabel, BethelLat, BethelLon) });
 
         // Act
-        var presented = await explorer.Present(bethel, Surface.World);
+        var presented = await explorer.Present(new PresentationRequest(bethel, Surface.World));
 
         // Assert
         Assert.Equal(
@@ -118,7 +118,7 @@ public sealed class GeographyPresentationTests
         var (explorer, philistia) = Serve(ServedGraph.Card(NodeKind.Polity, Philistia, PhilistiaLabel) with { Polity = ServedGraph.Reign(PhilistiaReign) });
 
         // Act
-        var presented = await explorer.Present(philistia, Surface.World);
+        var presented = await explorer.Present(new PresentationRequest(philistia, Surface.World));
 
         // Assert
         Assert.Equal(
@@ -135,7 +135,7 @@ public sealed class GeographyPresentationTests
             .ToList();
 
         // Act
-        var breaches = await Task.WhenAll(bare.Select(served => Assert.ThrowsAsync<ContractBreach>(() => served.Explorer.Present(served.Element, Surface.World))));
+        var breaches = await Task.WhenAll(bare.Select(served => Assert.ThrowsAsync<ContractBreach>(() => served.Explorer.Present(new PresentationRequest(served.Element, Surface.World)))));
 
         // Assert
         Assert.Equal(
@@ -153,7 +153,7 @@ public sealed class GeographyPresentationTests
         });
 
         // Act
-        var presented = await explorer.Present(bethel, Surface.Popover);
+        var presented = await explorer.Present(new PresentationRequest(bethel, Surface.Popover));
 
         // Assert
         Assert.Equal(
@@ -172,7 +172,7 @@ public sealed class GeographyPresentationTests
         });
 
         // Act
-        var presented = await explorer.Present(bethel, Surface.Popover);
+        var presented = await explorer.Present(new PresentationRequest(bethel, Surface.Popover));
 
         // Assert
         Assert.Equal(
@@ -195,7 +195,7 @@ public sealed class GeographyPresentationTests
         var (explorer, philistia) = Serve(ServedGraph.Card(NodeKind.Polity, Philistia, PhilistiaLabel) with { Polity = ServedGraph.Reign(PhilistiaReign) });
 
         // Act
-        var presented = await explorer.Present(philistia, Surface.Popover);
+        var presented = await explorer.Present(new PresentationRequest(philistia, Surface.Popover));
 
         // Assert
         Assert.Equal(
@@ -210,7 +210,7 @@ public sealed class GeographyPresentationTests
         var (explorer, conquest) = Serve(ServedGraph.Card(NodeKind.Map, Conquest, ConquestLabel) with { Map = ServedGraph.MapWindow(ConquestWindow) });
 
         // Act
-        var presented = await explorer.Present(conquest, Surface.Popover);
+        var presented = await explorer.Present(new PresentationRequest(conquest, Surface.Popover));
 
         // Assert
         Assert.Equal(
@@ -225,7 +225,7 @@ public sealed class GeographyPresentationTests
         var (explorer, kingdom) = Serve(ServedGraph.Card(NodeKind.Era, Kingdom, KingdomLabel) with { Era = ServedGraph.EraWindow(KingdomWindow) });
 
         // Act
-        var presented = await explorer.Present(kingdom, Surface.Popover);
+        var presented = await explorer.Present(new PresentationRequest(kingdom, Surface.Popover));
 
         // Assert
         Assert.Equal(
@@ -240,7 +240,7 @@ public sealed class GeographyPresentationTests
         var (explorer, moses) = Serve(ServedGraph.Card(NodeKind.Person, Moses, MosesLabel));
 
         // Act
-        var presented = await explorer.Present(moses, Surface.World);
+        var presented = await explorer.Present(new PresentationRequest(moses, Surface.World));
 
         // Assert
         Assert.Null(presented);
@@ -256,7 +256,7 @@ public sealed class GeographyPresentationTests
         var edge = await explorer.Resolve(ServedGraph.AtEdge(attestedIn));
 
         // Act
-        var presented = await explorer.Present(edge, Surface.World);
+        var presented = await explorer.Present(new PresentationRequest(edge, Surface.World));
 
         // Assert
         Assert.Null(presented);

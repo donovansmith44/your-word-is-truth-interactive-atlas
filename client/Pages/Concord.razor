@@ -220,20 +220,14 @@
 
     private async Task LoadContentsAsync()
     {
-        try
-        {
-            if (await _startup.Next().Fetch(() => Atlas.Contents(Corpus.Concord)) is not { } contents)
+        (await _startup.Next().Fetch(() => Atlas.Contents(Corpus.Concord))).Match(
+            arrived: contents =>
             {
-                return;
-            }
-
-            _contents = ContentsTreeModel.From(contents);
-            SyncContentsToPosition();
-        }
-        catch (Exception)
-        {
-            _contents = null;
-        }
+                _contents = ContentsTreeModel.From(contents);
+                SyncContentsToPosition();
+            },
+            failed: () => _contents = null,
+            superseded: () => { });
     }
 
     private void SyncContentsToPosition()
@@ -323,7 +317,14 @@
 
         try
         {
-            if (await request.Fetch(() => Graph.Reading(fromRef, PageSize, dir, corpus: Corpus.Concord)) is not { } window)
+            if ((await request.Fetch(() => Graph.Reading(fromRef, PageSize, dir, corpus: Corpus.Concord))).Match<TextWindow?>(
+                    arrived: window => window,
+                    failed: () =>
+                    {
+                        _error = "Couldn't load this part of the Book of Concord — check your connection and try again.";
+                        return null;
+                    },
+                    superseded: () => null) is not { } window)
             {
                 return;
             }
@@ -346,15 +347,6 @@
             _currentRef = _units.Count > 0 ? _units[0].Ref : fromRef;
             // DefaultRef is the corpus's true first paragraph; there's nothing earlier to page back to.
             _prevRef = _units.Count > 0 && _units[0].Ref != DefaultRef ? _units[0].Ref : null;
-        }
-        catch (Exception)
-        {
-            if (request.Superseded)
-            {
-                return;
-            }
-
-            _error = "Couldn't load this part of the Book of Concord — check your connection and try again.";
         }
         finally
         {

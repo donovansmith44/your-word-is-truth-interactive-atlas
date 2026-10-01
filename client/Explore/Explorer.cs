@@ -11,7 +11,7 @@ public interface IExplorer
 
     Task<Explorable> Follow(Link link);
 
-    Task<Presentation?> Present(Explorable element, Surface surface);
+    Task<Presentation?> Present(PresentationRequest request);
 }
 
 public sealed class GraphExplorer(IExplorableClient graph) : IExplorer
@@ -31,8 +31,8 @@ public sealed class GraphExplorer(IExplorableClient graph) : IExplorer
 
     public Task<Explorable> Follow(Link link) => Resolve(link.Target);
 
-    public async Task<Presentation?> Present(Explorable element, Surface surface) =>
-        Presentation.Of(element.Kind, surface) is { } form ? await PresentAs(element, form) : null;
+    public async Task<Presentation?> Present(PresentationRequest request) =>
+        Presentation.Of(request.Element.Kind, request.Surface) is { } form ? await PresentAs(request.Element, form) : null;
 
     private static async Task<Presentation> PresentAs(Explorable element, Presentation.Form form) => form switch
     {
