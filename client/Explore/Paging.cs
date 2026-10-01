@@ -11,7 +11,7 @@ public sealed record Paging<T>(IReadOnlyList<T> Kept, int Read, int? Next, bool 
         var paging = this;
         while (paging.Read < wanted && !paging.Ended)
         {
-            paging = paging.Then(await read(paging.Next, Math.Min(wanted - paging.Read, Paging.LargestPage)), keep);
+            paging = paging.Then(await read(paging.Next, wanted - paging.Read), keep);
         }
 
         return paging;
@@ -22,7 +22,7 @@ public sealed record Paging<T>(IReadOnlyList<T> Kept, int Read, int? Next, bool 
         var paging = this;
         while (!paging.Ended)
         {
-            paging = paging.Then(await read(paging.Next, Paging.LargestPage), Paging.Everything);
+            paging = paging.Then(await read(paging.Next, int.MaxValue), Paging.Everything);
         }
 
         return paging;
@@ -39,8 +39,6 @@ public sealed record Paging<T>(IReadOnlyList<T> Kept, int Read, int? Next, bool 
 
 public static class Paging
 {
-    public const int LargestPage = 200;
-
     public static Paging<T> Unread<T>() => new([], 0, null, false);
 
     public static bool Everything<T>(T _) => true;

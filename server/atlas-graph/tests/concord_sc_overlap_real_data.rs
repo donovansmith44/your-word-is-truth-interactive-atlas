@@ -38,7 +38,7 @@ fn the_first_commandment_catechism_item_reaches_its_concord_home_over_real_data(
     let mut all_entries = Vec::new();
     let mut cursor = None;
     loop {
-        let page = PositionRef(item_pos.clone()).edges(graph, &EdgeQuery { kind, cursor, limit: 200 });
+        let page = PositionRef(item_pos.clone()).edges(graph, &EdgeQuery { kind, cursor, limit: usize::MAX });
         all_entries.extend(page.entries);
         match page.next {
             Some(n) => cursor = Some(n),

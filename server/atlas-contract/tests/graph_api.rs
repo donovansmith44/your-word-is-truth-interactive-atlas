@@ -7,6 +7,7 @@ use http_body_util::BodyExt;
 use tower::ServiceExt;
 
 use atlas_contract::error::ApiError;
+use atlas_contract::graph::LARGEST_PAGE;
 use atlas_core::data::AtlasData;
 use atlas_graph::GraphService;
 
@@ -742,7 +743,7 @@ async fn node_edges_bad_kind_and_missing_kind_are_400() {
 #[tokio::test]
 async fn node_edges_pagination_pages_are_windows_over_the_total() {
     let app = artifact_app();
-    let (_, full, _) = get(&app, "/api/node/text-unit:JHN.3.16/edges?kind=cites&limit=200").await;
+    let (_, full, _) = get(&app, &format!("/api/node/text-unit:JHN.3.16/edges?kind=cites&limit={LARGEST_PAGE}")).await;
     let full_entries = full["entries"].as_array().unwrap();
     assert!(full_entries.len() > 1, "JHN.3.16 has many real cross-references");
 
@@ -778,8 +779,8 @@ async fn bijection_witness_over_http_cites_and_cited_by_share_the_same_edge_id()
     let mut found: Option<String> = None;
     loop {
         let uri = match cursor {
-            Some(c) => format!("/api/node/{target_id}/edges?kind=cited-by&limit=200&cursor={c}"),
-            None => format!("/api/node/{target_id}/edges?kind=cited-by&limit=200"),
+            Some(c) => format!("/api/node/{target_id}/edges?kind=cited-by&limit={LARGEST_PAGE}&cursor={c}"),
+            None => format!("/api/node/{target_id}/edges?kind=cited-by&limit={LARGEST_PAGE}"),
         };
         let (st2, inverse_page, _) = get(&app, &uri).await;
         assert_eq!(st2, 200);
@@ -818,10 +819,10 @@ async fn chapter_verse_xref_count_is_always_present_and_matches_the_generic_edge
     let chapter_count = v16["xref_count"].as_u64().expect("xref_count must always be present, even at 0") as usize;
     assert!(chapter_count > 1, "JHN.3.16 must carry real, multiple cross-references in the compiled data: {chapter_count}");
 
-    let (st2, edges, _) = get(&app, "/api/node/text-unit:JHN.3.16/edges?kind=cites&limit=200").await;
+    let (st2, edges, _) = get(&app, &format!("/api/node/text-unit:JHN.3.16/edges?kind=cites&limit={LARGEST_PAGE}")).await;
     assert_eq!(st2, 200);
     let entries = edges["entries"].as_array().unwrap();
-    assert!(entries.len() < 200, "limit=200 must exceed JHN.3.16's own real total, or this test's own page needs widening");
+    assert!(entries.len() < LARGEST_PAGE, "the largest page must exceed JHN.3.16's own real total, or this test's own page needs widening");
     assert_eq!(chapter_count, entries.len(), "the chapter view's own xref_count must equal the generic edges page's own true count for the SAME verse");
 
     let (st3, record, _) = get(&app, "/api/node/text-unit:JHN.3.16").await;
@@ -880,7 +881,7 @@ async fn generic_cites_edges_are_already_votes_descending_matching_the_bespoke_v
     let bespoke: Vec<String> = verse["cross_refs"].as_array().unwrap().iter().map(|cr| first_verse_of(cr["target"].as_str().unwrap())).collect();
     assert!(bespoke.len() > 1, "need >1 real cross-references to prove an ORDER, not just a singleton");
 
-    let (st2, edges, _) = get(&app, "/api/node/text-unit:JHN.3.16/edges?kind=cites&limit=200").await;
+    let (st2, edges, _) = get(&app, &format!("/api/node/text-unit:JHN.3.16/edges?kind=cites&limit={LARGEST_PAGE}")).await;
     assert_eq!(st2, 200);
     let generic: Vec<String> = edges["entries"].as_array().unwrap().iter().map(|e| e["neighbour"]["node"]["id"].as_str().unwrap().trim_start_matches("text-unit:").to_string()).collect();
 
@@ -1569,8 +1570,8 @@ async fn every_edge_of(app: &axum::Router, id: &str, kind: &str) -> Vec<serde_js
     let mut cursor: Option<u64> = None;
     loop {
         let uri = match cursor {
-            Some(c) => format!("/api/node/{id}/edges?kind={kind}&limit=200&cursor={c}"),
-            None => format!("/api/node/{id}/edges?kind={kind}&limit=200"),
+            Some(c) => format!("/api/node/{id}/edges?kind={kind}&limit={LARGEST_PAGE}&cursor={c}"),
+            None => format!("/api/node/{id}/edges?kind={kind}&limit={LARGEST_PAGE}"),
         };
         let (status, page, _) = get(app, &uri).await;
         assert_eq!(status, StatusCode::OK, "{page}");
@@ -2322,7 +2323,6 @@ async fn the_virgin_mary_is_the_mother_of_jesus_only_and_joseph_his_father_only_
 const A_BAPTISM_VERSE: &str = "text-unit:MAT.3.16";
 const AN_UNKNOWN_PERSON: &str = "Person:nobody-at-all";
 const A_SAMPLE_VERSE: &str = "text-unit:GEN.1.1";
-const MAX_ELEMENTS: usize = 200;
 
 async fn elements(app: &axum::Router, ids: &[&str]) -> (StatusCode, serde_json::Value) {
     let (status, body, _) = get(app, &format!("/api/elements?ids={}", ids.iter().map(|id| encoded(id)).collect::<Vec<_>>().join(","))).await;
@@ -2423,6 +2423,7 @@ async fn the_element_read_answers_each_id_in_order_with_its_node_its_edge_or_its
                 },
                 { "element": "missing", "id": AN_UNKNOWN_PERSON },
             ],
+            "next": null,
             "version": verse["version"],
         })
     );
@@ -2506,29 +2507,43 @@ async fn the_node_route_and_the_element_read_serve_one_node_record() {
 }
 
 #[tokio::test]
-async fn an_element_read_beyond_the_cap_is_refused() {
+async fn an_element_read_beyond_the_cap_answers_the_first_page_and_where_the_rest_begins() {
     // Arrange
     let app = compiled_app();
-    let ids = vec![A_SAMPLE_VERSE; MAX_ELEMENTS + 1];
+    let ids = vec![A_SAMPLE_VERSE; LARGEST_PAGE + 1];
 
     // Act
     let (status, body) = elements(&app, &ids).await;
 
     // Assert
-    assert_eq!((status, body["error"]["code"].clone()), (StatusCode::BAD_REQUEST, serde_json::json!("too_many")));
+    assert_eq!((status, body["elements"].as_array().map(Vec::len), body["next"].clone()), (StatusCode::OK, Some(LARGEST_PAGE), serde_json::json!(LARGEST_PAGE)));
 }
 
 #[tokio::test]
-async fn an_element_read_at_the_cap_is_answered() {
+async fn an_element_read_continues_from_its_cursor_to_the_last_page() {
     // Arrange
     let app = compiled_app();
-    let ids = vec![A_SAMPLE_VERSE; MAX_ELEMENTS];
+    let ids = vec![A_SAMPLE_VERSE; LARGEST_PAGE + 1];
+    let asked = ids.iter().map(|id| encoded(id)).collect::<Vec<_>>().join(",");
+
+    // Act
+    let (status, body, _) = get(&app, &format!("/api/elements?ids={asked}&cursor={LARGEST_PAGE}")).await;
+
+    // Assert
+    assert_eq!((status, body["elements"].as_array().map(Vec::len), body["next"].clone()), (StatusCode::OK, Some(1), serde_json::Value::Null));
+}
+
+#[tokio::test]
+async fn an_element_read_at_the_cap_is_answered_whole() {
+    // Arrange
+    let app = compiled_app();
+    let ids = vec![A_SAMPLE_VERSE; LARGEST_PAGE];
 
     // Act
     let (status, body) = elements(&app, &ids).await;
 
     // Assert
-    assert_eq!((status, body["elements"].as_array().map(Vec::len)), (StatusCode::OK, Some(MAX_ELEMENTS)));
+    assert_eq!((status, body["elements"].as_array().map(Vec::len), body["next"].clone()), (StatusCode::OK, Some(LARGEST_PAGE), serde_json::Value::Null));
 }
 
 #[tokio::test]
@@ -2619,7 +2634,7 @@ async fn resolved(app: &axum::Router, refs: &[serde_json::Value]) -> Vec<serde_j
     ids.sort();
     ids.dedup();
     let mut records = std::collections::BTreeMap::new();
-    for chunk in ids.chunks(MAX_ELEMENTS) {
+    for chunk in ids.chunks(LARGEST_PAGE) {
         let asked: Vec<&str> = chunk.iter().map(String::as_str).collect();
         let (_, page) = elements(app, &asked).await;
         for (id, element) in chunk.iter().zip(page["elements"].as_array().unwrap()) {

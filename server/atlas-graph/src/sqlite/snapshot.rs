@@ -221,7 +221,7 @@ impl SqliteSnapshot {
                  AND NOT EXISTS (SELECT 1 FROM all_edge_index AS earlier WHERE earlier.subject = first.subject AND earlier.rel = first.rel AND earlier.dir = first.dir AND earlier.edge_id = first.edge_id AND earlier.ord < first.ord) \
                  ORDER BY ord LIMIT ?5",
             )?;
-            let mut rows = stmt.query(rusqlite::params![subject, rel, dir, start as i64, q.limit as i64 + 1])?;
+            let mut rows = stmt.query(rusqlite::params![subject, rel, dir, start as i64, i64::try_from(q.limit).unwrap_or(i64::MAX).saturating_add(1)])?;
             let mut entries = Vec::new();
             let mut next = None;
             while let Some(row) = rows.next()? {

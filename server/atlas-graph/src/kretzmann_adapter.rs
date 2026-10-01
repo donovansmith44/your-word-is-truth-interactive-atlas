@@ -113,7 +113,7 @@ pub fn chapter_commentary(query: &dyn GraphQuery, book_index: u8, chapter: u16, 
         let mut items: Vec<(AnyNodeId, Option<String>, u64)> = Vec::new();
         let mut cursor = None;
         loop {
-            let page = query.edges(&text_node, &EdgeQuery { kind: EdgeKind::Directed(RelationId::CommentsOn, Direction::Inverse), cursor, limit: 200 });
+            let page = query.edges(&text_node, &EdgeQuery { kind: EdgeKind::Directed(RelationId::CommentsOn, Direction::Inverse), cursor, limit: usize::MAX });
             for entry in &page.entries {
                 let Position::Node(item_id) = &entry.node else { continue };
                 if item_id.kind != NodeKind::CommentaryItem {
