@@ -55,7 +55,7 @@ public class GraphExplorableClientTests
     {
         var (client, handler) = MakeClient();
         handler.ResponseBody = """
-            {"kind":"cites","entries":[{"edge":"e1","neighbour":{"position":"node","node":{"id":"text-unit:ROM.3.23","kind":"TextUnit","label":"ROM.3.23"}}}],"next":null,"version":"abc123"}
+            {"kind":"cites","entries":[{"edge":"e1","neighbour":{"position":"node","node":{"id":"text-unit:ROM.3.23","kind":"TextUnit","label":"ROM.3.23"}},"end":"from"}],"next":null,"version":"abc123"}
             """;
 
         var page = await client.Edges("text-unit:JHN.3.16", EdgeKind.Cites, cursor: null, limit: 5);
@@ -74,12 +74,50 @@ public class GraphExplorableClientTests
     {
         var (client, handler) = MakeClient();
         handler.ResponseBody = """
-            {"kind":"justifies","entries":[{"edge":"JustifiedBy:00aa","neighbour":{"position":"edge","edge":{"id":"DatedBy:00ff"}}}],"next":null,"version":"abc123"}
+            {"kind":"justifies","entries":[{"edge":"JustifiedBy:00aa","neighbour":{"position":"edge","edge":{"id":"DatedBy:00ff","kind":"dated-by","label":"Solomon crowned dated by 970 BC"}},"end":"from"}],"next":null,"version":"abc123"}
             """;
 
         var page = await client.Edges("Anchor:solomon-crowned", EdgeKind.Justifies, cursor: null, limit: 5);
 
-        Assert.Equal(new EdgePosition(new EdgeRef(id: "DatedBy:00ff")), page.Entries[0].Neighbour);
+        Assert.Equal(new EdgePosition(new EdgeRef(id: "DatedBy:00ff", kind: EdgeKind.DatedBy, label: "Solomon crowned dated by 970 BC")), page.Entries[0].Neighbour);
+    }
+
+    [Fact]
+    public async Task An_edge_card_is_read_from_the_edge_endpoint_with_its_two_ends_and_its_frontier()
+    {
+        // Arrange
+        var (client, handler) = MakeClient();
+        handler.ResponseBody = """
+            {"id":"Attests:00aa","kind":"attested-in","label":"The Red Sea parted attested in EXO.14.21","from":{"position":"node","node":{"id":"Event:red_sea","kind":"Event","label":"The Red Sea parted"}},"to":{"position":"node","node":{"id":"text-unit:EXO.14.21","kind":"TextUnit","label":"EXO.14.21"}},"provenance":"kjv","edge_summary":[{"kind":"from","count":1},{"kind":"to","count":1}],"version":"abc123"}
+            """;
+
+        // Act
+        var card = await client.EdgeCard("Attests:00aa");
+
+        // Assert
+        Assert.Equal(
+            ("/api/edge/Attests:00aa", WholeValue.Of(new EdgeCard(
+                edgeSummary: [new EdgeSummaryEntry(count: 1, kind: EdgeKind.From), new EdgeSummaryEntry(count: 1, kind: EdgeKind.To)],
+                from: ServedGraph.At(NodeKind.Event, "Event:red_sea", "The Red Sea parted"),
+                id: "Attests:00aa", kind: EdgeKind.AttestedIn, label: "The Red Sea parted attested in EXO.14.21", loci: null, narrative: null, note: null,
+                provenance: "kjv", to: ServedGraph.At(NodeKind.TextUnit, "text-unit:EXO.14.21", "EXO.14.21"), version: "abc123", votes: null))),
+            (Uri.UnescapeDataString(handler.LastRequestUri!.AbsolutePath), WholeValue.Of(card)));
+    }
+
+    [Fact]
+    public async Task An_edge_s_frontier_is_paged_from_the_edge_endpoint_by_kind_limit_and_cursor()
+    {
+        // Arrange
+        var (client, handler) = MakeClient();
+        handler.ResponseBody = """{"kind":"from","entries":[],"next":null,"version":"abc123"}""";
+
+        // Act
+        await client.EdgeEdges("Attests:00aa", EdgeKind.From, cursor: 3, limit: 1);
+
+        // Assert
+        Assert.Equal(
+            ("/api/edge/Attests:00aa/edges", "?kind=from&limit=1&cursor=3"),
+            (Uri.UnescapeDataString(handler.LastRequestUri!.AbsolutePath), handler.LastRequestUri.Query));
     }
 
     [Fact]

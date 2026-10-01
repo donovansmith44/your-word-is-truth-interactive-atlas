@@ -16,6 +16,9 @@ public sealed class LegacySavesTests
     private static readonly V1Node Author = new("Author", "GEN", "Moses");
     private static readonly V1Node Year = new("Year", "hazor-1|Established", "Established 2000 BC");
 
+    private const int V2MemberOf = 1;
+    private const int V2SpouseOf = 49;
+
     private static readonly NodeRef VerseRef = ServedGraph.Ref(NodeKind.TextUnit, "text-unit:GEN.1.1", "GEN.1.1");
     private static readonly NodeRef ChapterRef = ServedGraph.Ref(NodeKind.Container, "Container:bible-chapter-GEN-1", "GEN.1");
     private static readonly NodeRef BookRef = ServedGraph.Ref(NodeKind.Container, "Container:bible-book-GEN", "GEN");
@@ -89,14 +92,14 @@ public sealed class LegacySavesTests
         Assert.Equal(
             WholeValue.Of(new Translated<SavedExploration>(
                 [
-                    new SavedExploration("seed1", "GEN.1.1 → Moses", Saved, VerseRef,
+                    new SavedExploration("seed1", "GEN.1.1 → Moses", Saved, ServedGraph.At(VerseRef),
                     [
-                        new Link(EdgeKind.MemberOf, ChapterRef),
-                        new Link(EdgeKind.Contains, VerseRef),
-                        new Link(EdgeKind.Mentions, PlaceRef),
-                        new Link(EdgeKind.SiteOf, EventRef),
-                        new Link(EdgeKind.MemberOf, PersonRef),
-                        new Link(EdgeKind.MemberOf, BookRef),
+                        new Link(EdgeKind.MemberOf, ServedGraph.At(ChapterRef)),
+                        new Link(EdgeKind.Contains, ServedGraph.At(VerseRef)),
+                        new Link(EdgeKind.Mentions, ServedGraph.At(PlaceRef)),
+                        new Link(EdgeKind.SiteOf, ServedGraph.At(EventRef)),
+                        new Link(EdgeKind.MemberOf, ServedGraph.At(PersonRef)),
+                        new Link(EdgeKind.MemberOf, ServedGraph.At(BookRef)),
                     ]),
                 ],
                 2)),
@@ -114,7 +117,7 @@ public sealed class LegacySavesTests
 
         // Assert
         Assert.Equal(
-            WholeValue.Of(new Translated<SavedExploration>([new SavedExploration("seed2", "Moses → GEN.1.1", Saved, VerseRef, [])], 2)),
+            WholeValue.Of(new Translated<SavedExploration>([new SavedExploration("seed2", "Moses → GEN.1.1", Saved, ServedGraph.At(VerseRef), [])], 2)),
             WholeValue.Of(translated));
     }
 
@@ -149,10 +152,56 @@ public sealed class LegacySavesTests
         Assert.Equal(
             WholeValue.Of(new Translated<SavedExploration>(
                 [
-                    new SavedExploration("seed1", "GEN.1.1", Saved, VerseRef, []),
-                    new SavedExploration("seed4", "Hazor", Saved, PlaceRef, []),
+                    new SavedExploration("seed1", "GEN.1.1", Saved, ServedGraph.At(VerseRef), []),
+                    new SavedExploration("seed4", "Hazor", Saved, ServedGraph.At(PlaceRef), []),
                 ],
                 3)),
+            WholeValue.Of(translated));
+    }
+
+    [Fact]
+    public void A_v2_save_reads_as_v3_with_every_node_as_a_node_position()
+    {
+        // Arrange
+        var v2 = new V2Exploration("seed5", "GEN.1.1 → Moses", Saved, VerseRef,
+        [
+            new V2Link(V2MemberOf, ChapterRef),
+            new V2Link(V2SpouseOf, PersonRef),
+        ]);
+
+        // Act
+        var translated = LegacySaves.Exploration(v2);
+
+        // Assert
+        Assert.Equal(
+            WholeValue.Of(new SavedExploration("seed5", "GEN.1.1 → Moses", Saved, ServedGraph.At(VerseRef),
+            [
+                new Link(EdgeKind.MemberOf, ServedGraph.At(ChapterRef)),
+                new Link(EdgeKind.SpouseOf, ServedGraph.At(PersonRef)),
+            ])),
+            WholeValue.Of(translated));
+    }
+
+    [Fact]
+    public void A_v2_store_reads_as_v3_save_for_save()
+    {
+        // Arrange
+        var v2 = new V2Exploration[]
+        {
+            new("seed5", "GEN.1.1", Saved, VerseRef, []),
+            new("seed6", "Hazor", Saved, PlaceRef, [new V2Link(V2MemberOf, ChapterRef)]),
+        };
+
+        // Act
+        var translated = LegacySaves.Explorations(v2);
+
+        // Assert
+        Assert.Equal(
+            WholeValue.Of(new[]
+            {
+                new SavedExploration("seed5", "GEN.1.1", Saved, ServedGraph.At(VerseRef), []),
+                new SavedExploration("seed6", "Hazor", Saved, ServedGraph.At(PlaceRef), [new Link(EdgeKind.MemberOf, ServedGraph.At(ChapterRef))]),
+            }),
             WholeValue.Of(translated));
     }
 

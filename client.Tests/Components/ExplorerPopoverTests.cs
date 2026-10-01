@@ -12,7 +12,7 @@ public sealed class ExplorerPopoverTests : BunitContext
 {
     private static readonly NodeRef Exodus = ServedGraph.Ref(NodeKind.Narrative, "Narrative:exodus", "The Exodus");
     private static readonly NodeRef Wilderness = ServedGraph.Ref(NodeKind.Narrative, "Narrative:wilderness", "The Wilderness");
-    private static readonly SavedExploration AtExodus = new("seed", "Seed", DateTimeOffset.UnixEpoch, Exodus, []);
+    private static readonly SavedExploration AtExodus = new("seed", "Seed", DateTimeOffset.UnixEpoch, ServedGraph.At(Exodus), []);
 
     private const string ExodusPresented = """
         <div class="popover-body" data-testid="popover-body">

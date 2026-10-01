@@ -12,6 +12,10 @@ public sealed class ExplorableTests
     private const string LegacyGenesis1Label = "GEN.1";
     private const int VersesInGenesis1 = 31;
     private const int SecondPageCursor = 20;
+    private const string FollowingEdge = "Succession:00aa";
+    private const string FollowingLabel = "Genesis 1 follows in Genesis 2";
+    private const string PrecedingEdge = "Succession:00bb";
+    private const string NoLabel = "";
 
     private static readonly FrontierGroup[] Genesis1Groups =
     [
@@ -23,7 +27,7 @@ public sealed class ExplorableTests
     private static readonly Explorable Genesis1 = Resolved.Node(NodeKind.Container, Genesis1Id, Genesis1Label, Genesis1Groups);
     private static readonly NodeRef Genesis2Ref = ServedGraph.Ref(NodeKind.Container, Genesis2Id, Genesis2Label);
     private static readonly NodeRef LegacyGenesis2Ref = ServedGraph.Ref(NodeKind.Container, Genesis2Id, "GEN.2");
-    private static readonly EdgeRef ADating = new(id: "DatedBy:00ff");
+    private static readonly PositionRef ADating = ServedGraph.AtEdge("DatedBy:00ff", EdgeKind.DatedBy, "Genesis 1 dated by 4004 BC");
 
     [Fact]
     public void A_resolved_node_carries_the_served_kind_id_and_label()
@@ -35,7 +39,7 @@ public sealed class ExplorableTests
         var identity = (genesis1.Kind, genesis1.Id, genesis1.Label);
 
         // Assert
-        Assert.Equal((NodeKind.Container, Genesis1Id, Genesis1Label), identity);
+        Assert.Equal((new ElementKind.Node(NodeKind.Container) as ElementKind, Genesis1Id, Genesis1Label), identity);
     }
 
     [Fact]
@@ -48,7 +52,7 @@ public sealed class ExplorableTests
         var identity = genesis1.Identity;
 
         // Assert
-        Assert.Equal(ServedGraph.Ref(NodeKind.Container, Genesis1Id, Genesis1Label), identity);
+        Assert.Equal(ServedGraph.At(NodeKind.Container, Genesis1Id, Genesis1Label), identity);
     }
 
     [Fact]
@@ -77,23 +81,64 @@ public sealed class ExplorableTests
         var page = await genesis1.Links(EdgeKind.FollowsIn);
 
         // Assert
-        Assert.Equal(new Page<Link>([new Link(EdgeKind.FollowsIn, Genesis2Ref)], SecondPageCursor), page);
+        Assert.Equal(new Page<Link>([new Link(EdgeKind.FollowsIn, ServedGraph.At(Genesis2Ref))], SecondPageCursor), page);
     }
 
     [Fact]
-    public async Task An_edge_position_on_a_frontier_page_is_not_a_link()
+    public async Task An_edge_position_on_a_frontier_page_is_a_link_to_that_edge()
     {
         // Arrange
         var graph = new ServedGraph()
             .Serving(ServedGraph.Card(NodeKind.Container, Genesis1Id, Genesis1Label, Genesis1Groups))
-            .Serving(Genesis1Id, EdgeKind.FollowsIn, null, ServedGraph.Page(EdgeKind.FollowsIn, null, new EdgePosition(ADating), new NodePosition(Genesis2Ref)));
+            .Serving(Genesis1Id, EdgeKind.FollowsIn, null, ServedGraph.Page(EdgeKind.FollowsIn, null, ADating, ServedGraph.At(Genesis2Ref)));
         var genesis1 = Resolved.Node(graph, ServedGraph.Ref(NodeKind.Container, Genesis1Id, Genesis1Label));
 
         // Act
         var page = await genesis1.Links(EdgeKind.FollowsIn);
 
         // Assert
-        Assert.Equal(new Page<Link>([new Link(EdgeKind.FollowsIn, Genesis2Ref)], null), page);
+        Assert.Equal(new Page<Link>([new Link(EdgeKind.FollowsIn, ADating), new Link(EdgeKind.FollowsIn, ServedGraph.At(Genesis2Ref))], null), page);
+    }
+
+    [Fact]
+    public async Task An_entry_steps_onto_its_edge_from_the_end_the_page_serves_its_own_node_as()
+    {
+        // Arrange
+        var graph = new ServedGraph()
+            .Serving(ServedGraph.Card(NodeKind.Container, Genesis1Id, Genesis1Label, Genesis1Groups))
+            .Serving(Genesis1Id, EdgeKind.FollowsIn, null, ServedGraph.Page(EdgeKind.FollowsIn, null,
+                (FollowingEdge, EdgeEnd.From, ServedGraph.At(Genesis2Ref)),
+                (PrecedingEdge, EdgeEnd.To, ServedGraph.At(Genesis2Ref))));
+        var genesis1 = Resolved.Node(graph, ServedGraph.Ref(NodeKind.Container, Genesis1Id, Genesis1Label));
+
+        // Act
+        var page = await genesis1.Entries(EdgeKind.FollowsIn);
+
+        // Assert
+        Assert.Equal(
+            new Page<Entry>(
+                [
+                    new Entry(new Link(EdgeKind.FollowsIn, ServedGraph.At(Genesis2Ref)), new Link(EdgeKind.SourceOf, ServedGraph.AtEdge(FollowingEdge, EdgeKind.FollowsIn, NoLabel))),
+                    new Entry(new Link(EdgeKind.FollowsIn, ServedGraph.At(Genesis2Ref)), new Link(EdgeKind.TargetOf, ServedGraph.AtEdge(PrecedingEdge, EdgeKind.PrecedesIn, NoLabel))),
+                ],
+                null),
+            page);
+    }
+
+    [Fact]
+    public async Task A_resolved_edge_pages_its_frontier_from_the_edge_itself()
+    {
+        // Arrange
+        var graph = new ServedGraph()
+            .Serving(ServedGraph.EdgeCardOf(EdgeKind.FollowsIn, FollowingEdge, FollowingLabel, ServedGraph.At(NodeKind.Container, Genesis1Id, Genesis1Label), ServedGraph.At(Genesis2Ref)))
+            .Serving(FollowingEdge, EdgeKind.To, null, ServedGraph.Page(EdgeKind.To, null, Genesis2Ref));
+        var following = Resolved.At(graph, ServedGraph.AtEdge(FollowingEdge, EdgeKind.FollowsIn, FollowingLabel));
+
+        // Act
+        var page = await following.Links(EdgeKind.To);
+
+        // Assert
+        Assert.Equal(new Page<Link>([new Link(EdgeKind.To, ServedGraph.At(Genesis2Ref))], null), page);
     }
 
     [Fact]
@@ -181,7 +226,7 @@ public sealed class ExplorableTests
     public void Two_links_to_the_same_node_under_the_same_kind_are_equal_whatever_the_labels()
     {
         // Arrange
-        var (a, b) = (new Link(EdgeKind.FollowsIn, Genesis2Ref), new Link(EdgeKind.FollowsIn, LegacyGenesis2Ref));
+        var (a, b) = (new Link(EdgeKind.FollowsIn, ServedGraph.At(Genesis2Ref)), new Link(EdgeKind.FollowsIn, ServedGraph.At(LegacyGenesis2Ref)));
 
         // Act
         var (equal, sameHash) = (a == b, a.GetHashCode() == b.GetHashCode());
@@ -194,7 +239,7 @@ public sealed class ExplorableTests
     public void Two_links_to_the_same_node_under_different_kinds_are_not_equal()
     {
         // Arrange
-        var (a, b) = (new Link(EdgeKind.FollowsIn, Genesis2Ref), new Link(EdgeKind.Contains, Genesis2Ref));
+        var (a, b) = (new Link(EdgeKind.FollowsIn, ServedGraph.At(Genesis2Ref)), new Link(EdgeKind.Contains, ServedGraph.At(Genesis2Ref)));
 
         // Act
         var equal = a == b;
@@ -207,7 +252,7 @@ public sealed class ExplorableTests
     public void Two_pages_with_the_same_links_and_next_cursor_are_equal_whatever_lists_hold_them()
     {
         // Arrange
-        var toGenesis2 = new Link(EdgeKind.FollowsIn, Genesis2Ref);
+        var toGenesis2 = new Link(EdgeKind.FollowsIn, ServedGraph.At(Genesis2Ref));
 
         // Act
         var (a, b) = (new Page<Link>([toGenesis2], SecondPageCursor), new Page<Link>(new List<Link> { toGenesis2 }, SecondPageCursor));
@@ -220,7 +265,7 @@ public sealed class ExplorableTests
     public void Two_pages_with_different_links_are_not_equal()
     {
         // Arrange
-        var toGenesis2 = new Link(EdgeKind.FollowsIn, Genesis2Ref);
+        var toGenesis2 = new Link(EdgeKind.FollowsIn, ServedGraph.At(Genesis2Ref));
 
         // Act
         var (a, b) = (new Page<Link>([toGenesis2], null), new Page<Link>([], null));

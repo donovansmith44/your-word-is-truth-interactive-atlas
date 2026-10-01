@@ -5,10 +5,10 @@ using Microsoft.JSInterop;
 
 namespace BibleAtlas.Client;
 
-public sealed record SavedExploration(string Id, string Name, DateTimeOffset CreatedUtc, NodeRef Start, IReadOnlyList<Link> Steps)
+public sealed record SavedExploration(string Id, string Name, DateTimeOffset CreatedUtc, PositionRef Start, IReadOnlyList<Link> Steps)
 {
     [JsonIgnore]
-    public IReadOnlyList<NodeRef> Nodes => [Start, .. Steps.Select(step => step.Target)];
+    public IReadOnlyList<PositionRef> Trail => [Start, .. Steps.Select(step => step.Target)];
 
     public SavedExploration UpTo(int node) => this with { Steps = Steps.Take(node).ToList() };
 
@@ -22,7 +22,7 @@ public sealed record SavedExploration(string Id, string Name, DateTimeOffset Cre
 
 public sealed class SavedExplorationsService
 {
-    public const string StorageKey = "explorations-v2";
+    public const string StorageKey = "explorations-v3";
 
     private readonly IJSInProcessRuntime _js;
     private List<SavedExploration> _items;
@@ -43,9 +43,17 @@ public sealed class SavedExplorationsService
             return;
         }
 
-        var translated = LegacySaves.Explorations(LocalStore.Read(_js, LegacySaves.ExplorationsKey, new List<V1Exploration>()));
-        _items = translated.Kept.ToList();
-        Dropped = translated.Dropped;
+        if (LocalStore.Read<List<V2Exploration>?>(_js, LegacySaves.V2ExplorationsKey, null) is { } v2)
+        {
+            _items = LegacySaves.Explorations(v2).ToList();
+        }
+        else
+        {
+            var translated = LegacySaves.Explorations(LocalStore.Read(_js, LegacySaves.ExplorationsKey, new List<V1Exploration>()));
+            _items = translated.Kept.ToList();
+            Dropped = translated.Dropped;
+        }
+
         LocalStore.Write(_js, StorageKey, _items);
     }
 

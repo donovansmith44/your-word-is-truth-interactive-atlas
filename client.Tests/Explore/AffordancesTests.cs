@@ -12,12 +12,16 @@ public sealed class AffordancesTests
 
     private static readonly IReadOnlyDictionary<EdgeKind, Affordance> NamedRows = new Dictionary<EdgeKind, Affordance>
     {
-        [EdgeKind.FollowsIn] = new Affordance.Arrows(),
-        [EdgeKind.PrecedesIn] = new Affordance.Arrows(),
+        [EdgeKind.FollowsIn] = new Affordance.Arrows(ArrowDirection.Next),
+        [EdgeKind.PrecedesIn] = new Affordance.Arrows(ArrowDirection.Previous),
         [EdgeKind.Contains] = new Affordance.InlineChildren(),
         [EdgeKind.Shows] = new Affordance.InlineChildren(),
         [EdgeKind.MemberOf] = new Affordance.UpCrumb(),
         [EdgeKind.ShownOn] = new Affordance.UpCrumb(),
+        [EdgeKind.From] = new Affordance.UpCrumb(),
+        [EdgeKind.To] = new Affordance.UpCrumb(),
+        [EdgeKind.SourceOf] = new Affordance.EntryEnd(),
+        [EdgeKind.TargetOf] = new Affordance.EntryEnd(),
         [EdgeKind.Cites] = new Affordance.SectionList(SectionStyle.Quiet, CitesShownBeforeReveal, SectionOrder.VotesRanked),
         [EdgeKind.Mentions] = new Affordance.SectionList(SectionStyle.Standard, MentionsShownBeforeReveal, SectionOrder.Canonical),
         [EdgeKind.MentionedIn] = new Affordance.SectionList(SectionStyle.Standard, MentionedInShownBeforeReveal, SectionOrder.Canonical),
@@ -47,6 +51,39 @@ public sealed class AffordancesTests
         var table = kinds.ToDictionary(k => k, Affordances.Of);
         // Assert
         Assert.Equal(expected, table);
+    }
+
+    [Fact]
+    public void Following_is_the_next_arrow_and_preceding_the_previous()
+    {
+        // Arrange
+        var succession = new[] { EdgeKind.FollowsIn, EdgeKind.PrecedesIn };
+        // Act
+        var arrows = succession.Select(Affordances.Of).ToArray();
+        // Assert
+        Assert.Equal(new Affordance[] { new Affordance.Arrows(ArrowDirection.Next), new Affordance.Arrows(ArrowDirection.Previous) }, arrows);
+    }
+
+    [Fact]
+    public void An_edge_shows_its_two_ends_as_crumbs()
+    {
+        // Arrange
+        var ends = new[] { EdgeKind.From, EdgeKind.To };
+        // Act
+        var affordances = ends.Select(Affordances.Of).ToArray();
+        // Assert
+        Assert.Equal(new Affordance[] { new Affordance.UpCrumb(), new Affordance.UpCrumb() }, affordances);
+    }
+
+    [Fact]
+    public void Stepping_onto_an_edge_is_an_entry_control_not_a_section()
+    {
+        // Arrange
+        var steps = new[] { EdgeKind.SourceOf, EdgeKind.TargetOf };
+        // Act
+        var affordances = steps.Select(Affordances.Of).ToArray();
+        // Assert
+        Assert.Equal(new Affordance[] { new Affordance.EntryEnd(), new Affordance.EntryEnd() }, affordances);
     }
 
     [Fact]

@@ -1,3 +1,5 @@
+using System.Text;
+using System.Text.Json;
 using NJsonSchema.CodeGeneration.CSharp;
 using NSwag;
 using NSwag.CodeGeneration.CSharp;
@@ -30,7 +32,37 @@ public static class ContractGeneration
         },
     };
 
+    public const string RelationsExtension = "x-atlas-relations";
+    public const string EdgeKindSchema = "EdgeKind";
+
     public static readonly IReadOnlySet<string> Unread = new HashSet<string>();
+
+    public static string EdgeKindLabels(OpenApiDocument document)
+    {
+        var relations = (IDictionary<string, object?>)document.ExtensionData![RelationsExtension]!;
+        var names = Settings(document).CSharpGeneratorSettings.EnumNameGenerator;
+        var edgeKind = document.Definitions[EdgeKindSchema];
+        var arms = new StringBuilder();
+        foreach (var (served, index) in ((object[])relations["kinds"]!).Cast<IDictionary<string, object?>>().Select((served, index) => (served, index)))
+        {
+            var kind = (string)served["kind"]!;
+            arms.Append($"            {EdgeKindSchema}.{names.Generate(index, kind, kind, edgeKind)} => {JsonSerializer.Serialize((string)served["label"]!)},\n");
+        }
+
+        return $$"""
+
+            namespace BibleAtlas.Client.Contract
+            {
+                public static class EdgeKindLabels
+                {
+                    public static string Label(this {{EdgeKindSchema}} kind) => kind switch
+                    {
+            {{arms}}        };
+                }
+            }
+
+            """;
+    }
 
     public static void CloseDiscriminatedUnions(OpenApiDocument document)
     {

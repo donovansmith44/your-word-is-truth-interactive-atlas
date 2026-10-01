@@ -4,10 +4,10 @@
 {
     @foreach (var (group, _) in Offered<Affordance.UpCrumb>())
     {
-        @foreach (var link in presented.Pages[group.Kind].Items)
+        @foreach (var link in Neighbours(presented, group.Kind))
         {
-            <button type="button" class="focus-up explorable" data-testid="@($"{Handle}-up-{group.Kind.WireName()}-{link.Target.Id}")"
-                    @onclick="() => OnFollow.InvokeAsync(link)">@link.Target.Label</button>
+            <button type="button" class="focus-up explorable" data-testid="@($"{Handle}-up-{group.Kind.WireName()}-{Id(link)}")"
+                    @onclick="() => OnFollow.InvokeAsync(link)">@Label(link)</button>
         }
     }
 
@@ -24,30 +24,23 @@
         </div>
     }
 
-    @foreach (var (group, _) in Offered<Affordance.Arrows>())
+    @foreach (var (group, arrows) in Offered<Affordance.Arrows>())
     {
-        @foreach (var link in presented.Pages[group.Kind].Items)
+        @foreach (var link in Neighbours(presented, group.Kind))
         {
-            @if (group.Kind == EdgeKind.FollowsIn)
-            {
-                <button type="button" class="focus-arrow explorable" data-testid="@($"{Handle}-next")"
-                        @onclick="() => OnFollow.InvokeAsync(link)">@link.Target.Label &rsaquo;</button>
-            }
-            else
-            {
-                <button type="button" class="focus-arrow explorable" data-testid="@($"{Handle}-prev")"
-                        @onclick="() => OnFollow.InvokeAsync(link)">&lsaquo; @link.Target.Label</button>
-            }
+            <button type="button" class="focus-arrow explorable" data-testid="@($"{Handle}-{Arrow(arrows.Direction)}")"
+                    @onclick="() => OnFollow.InvokeAsync(link)">@Arrowed(arrows.Direction, Label(link))</button>
         }
     }
 
     @foreach (var (group, _) in Offered<Affordance.InlineChildren>())
     {
         <div class="popover-section" data-testid="@($"{Handle}-children-{group.Kind.WireName()}")">
-            @foreach (var link in presented.Pages[group.Kind].Items)
+            @foreach (var entry in presented.Pages[group.Kind].Items)
             {
-                <button type="button" class="focus-child explorable" data-testid="@($"{Handle}-child-{group.Kind.WireName()}-{link.Target.Id}")"
-                        @onclick="() => OnFollow.InvokeAsync(link)">@link.Target.Label</button>
+                <button type="button" class="focus-child explorable" data-testid="@($"{Handle}-child-{group.Kind.WireName()}-{Id(entry.Neighbour)}")"
+                        @onclick="() => OnFollow.InvokeAsync(entry.Neighbour)">@Label(entry.Neighbour)</button>
+                @EntryEnd(group.Kind, entry)
             }
         </div>
     }
@@ -56,11 +49,12 @@
     {
         var section = $"{Handle}-section-{group.Kind.WireName()}";
         <div class="popover-section" data-testid="@section">
-            <p class="catechism-section-heading" data-testid="@($"{section}-heading")">@group.Kind.WireName() (@group.Count)</p>
-            @foreach (var link in presented.Pages[group.Kind].Items.Take(presented.Shown[group.Kind]))
+            <p class="catechism-section-heading" data-testid="@($"{section}-heading")">@Heading(group)</p>
+            @foreach (var entry in presented.Pages[group.Kind].Items.Take(presented.Shown[group.Kind]))
             {
-                <button type="button" class="focus-link @Register(list.Style)" data-testid="@($"{Handle}-link-{group.Kind.WireName()}-{link.Target.Id}")"
-                        @onclick="() => OnFollow.InvokeAsync(link)">@link.Target.Label</button>
+                <button type="button" class="focus-link @Register(list.Style)" data-testid="@($"{Handle}-link-{group.Kind.WireName()}-{Id(entry.Neighbour)}")"
+                        @onclick="() => OnFollow.InvokeAsync(entry.Neighbour)">@Label(entry.Neighbour)</button>
+                @EntryEnd(group.Kind, entry)
             }
             <RevealControls Total="group.Count" Default="list.InitialClamp" Step="list.InitialClamp" Shown="presented.Shown[group.Kind]"
                             ShownChanged="shown => Reveal(presented, group.Kind, shown)"
@@ -80,7 +74,7 @@
     private Explorable? _node;
     private Presented? _presented;
 
-    private sealed record Presented(Presentation? Presentation, Dictionary<EdgeKind, Page<Link>> Pages, Dictionary<EdgeKind, int> Shown);
+    private sealed record Presented(Presentation? Presentation, Dictionary<EdgeKind, Page<Entry>> Pages, Dictionary<EdgeKind, int> Shown);
 
     protected override async Task OnParametersSetAsync()
     {
@@ -92,7 +86,7 @@
         _node = Node;
         _presented = null;
         var request = _series.Next();
-        if (await request.Fetch(() => Explorer.Present(Node, Surface), () => Task.WhenAll(Node.Groups.Select(group => Node.Links(group.Kind)))) is not var (presentation, firstPages))
+        if (await request.Fetch(() => Explorer.Present(Node, Surface), () => Task.WhenAll(Node.Groups.Select(group => Node.Entries(group.Kind)))) is not var (presentation, firstPages))
         {
             return;
         }
@@ -118,18 +112,49 @@
         presented.Pages[kind] = await Filled(_series.Current, kind, presented.Pages[kind], shown);
     }
 
-    private async Task<Page<Link>> Filled(Request request, EdgeKind kind, Page<Link> loaded, int wanted)
+    private async Task<Page<Entry>> Filled(Request request, EdgeKind kind, Page<Entry> loaded, int wanted)
     {
-        while (loaded.Items.Count < wanted && loaded.Next is int cursor && await request.Fetch(() => Node.Links(kind, cursor)) is { } page)
+        while (loaded.Items.Count < wanted && loaded.Next is int cursor && await request.Fetch(() => Node.Entries(kind, cursor)) is { } page)
         {
-            loaded = new Page<Link>([.. loaded.Items, .. Offered(page).Items], page.Next);
+            loaded = new Page<Entry>([.. loaded.Items, .. Offered(page).Items], page.Next);
         }
 
         return loaded;
     }
 
-    private Page<Link> Offered(Page<Link> page) =>
-        new(page.Items.Where(link => Presentation.Offers(link, Surface)).ToList(), page.Next);
+    private Page<Entry> Offered(Page<Entry> page) =>
+        new(page.Items.Where(entry => Presentation.Offers(entry.Neighbour, Surface)).ToList(), page.Next);
+
+    private static IEnumerable<Link> Neighbours(Presented presented, EdgeKind kind) =>
+        presented.Pages[kind].Items.Select(entry => entry.Neighbour);
+
+    private static string Id(Link link) => Positions.Of(link.Target).Id;
+
+    private static string Label(Link link) => Positions.Of(link.Target).Label;
+
+    private static string Arrow(ArrowDirection direction) => direction switch
+    {
+        ArrowDirection.Next => "next",
+        ArrowDirection.Previous => "prev",
+    };
+
+    private static string Arrowed(ArrowDirection direction, string label) => direction switch
+    {
+        ArrowDirection.Next => $"{label} \u203A",
+        ArrowDirection.Previous => $"\u2039 {label}",
+    };
+
+    private string Heading(FrontierGroup group) =>
+        Surface == Surface.Popover ? $"{group.Kind.Label()} ({group.Count})" : group.Kind.Label();
+
+    private RenderFragment EntryEnd(EdgeKind kind, Entry entry) => __builder =>
+    {
+        @if (Presentation.Offers(entry.Connection, Surface))
+        {
+            <button type="button" class="focus-entry-end explorable-quiet" data-testid="@($"{Handle}-entry-end-{kind.WireName()}-{Id(entry.Connection)}")"
+                    aria-label="This connection" title="This connection" @onclick="() => OnFollow.InvokeAsync(entry.Connection)">&#8942;</button>
+        }
+    };
 
     private IEnumerable<(FrontierGroup Group, T Affordance)> Offered<T>() where T : Affordance
     {

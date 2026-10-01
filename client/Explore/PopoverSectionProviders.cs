@@ -1078,7 +1078,7 @@ public sealed class EventDateAndPlacesSection : IPopoverSectionProvider
         return new PopoverSection("event-date-places", body);
     }
 
-    internal static void RenderArrowNav(RenderTreeBuilder builder, ref int seq, IPopoverSectionContext ctx, ArrowDirection direction, string eventTestIdPrefix, string roleTestIdPrefix, string idSuffix, NarrativeAdjacentEvent? adjacent, string glyph, bool inline = false, string? inlinePrefixText = null)
+    internal static void RenderArrowNav(RenderTreeBuilder builder, ref int seq, IPopoverSectionContext ctx, NarrativeArrow direction, string eventTestIdPrefix, string roleTestIdPrefix, string idSuffix, NarrativeAdjacentEvent? adjacent, string glyph, bool inline = false, string? inlinePrefixText = null)
     {
         builder.OpenComponent<Components.ArrowNav>(seq++);
         builder.AddAttribute(seq++, "Direction", direction.Name);
@@ -1094,10 +1094,10 @@ public sealed class EventDateAndPlacesSection : IPopoverSectionProvider
     }
 }
 
-public sealed record ArrowDirection(string Name, EdgeKind Via)
+public sealed record NarrativeArrow(string Name, EdgeKind Via)
 {
-    public static readonly ArrowDirection Prior = new("prior", EdgeKind.PrecedesIn);
-    public static readonly ArrowDirection Following = new("following", EdgeKind.FollowsIn);
+    public static readonly NarrativeArrow Prior = new("prior", EdgeKind.PrecedesIn);
+    public static readonly NarrativeArrow Following = new("following", EdgeKind.FollowsIn);
 }
 
 file static class WitnessUnitsResolver
@@ -1415,8 +1415,8 @@ public sealed class EventChronologySection : IPopoverSectionProvider
 
             builder.OpenElement(seq++, "div");
             builder.AddAttribute(seq++, "class", "popover-event-nav-arrows");
-            EventDateAndPlacesSection.RenderArrowNav(builder, ref seq, ctx, ArrowDirection.Prior, "event-chrono-prior-event", "event-chrono-prior-label", "global", timeline.Prior, "◂");
-            EventDateAndPlacesSection.RenderArrowNav(builder, ref seq, ctx, ArrowDirection.Following, "event-chrono-following-event", "event-chrono-following-label", "global", timeline.Following, "▸");
+            EventDateAndPlacesSection.RenderArrowNav(builder, ref seq, ctx, NarrativeArrow.Prior, "event-chrono-prior-event", "event-chrono-prior-label", "global", timeline.Prior, "◂");
+            EventDateAndPlacesSection.RenderArrowNav(builder, ref seq, ctx, NarrativeArrow.Following, "event-chrono-following-event", "event-chrono-following-label", "global", timeline.Following, "▸");
             builder.CloseElement();
 
             builder.CloseElement();
@@ -1439,7 +1439,7 @@ public sealed class EventChronologySection : IPopoverSectionProvider
 
                     if (priorDiverges)
                     {
-                        EventDateAndPlacesSection.RenderArrowNav(builder, ref seq, ctx, ArrowDirection.Prior, "event-story-thread-prior-event", "event-story-thread-prior-label", row.NarrativeId, row.Prior, "←", inline: true);
+                        EventDateAndPlacesSection.RenderArrowNav(builder, ref seq, ctx, NarrativeArrow.Prior, "event-story-thread-prior-event", "event-story-thread-prior-label", row.NarrativeId, row.Prior, "←", inline: true);
                     }
                     if (priorDiverges && followingDiverges)
                     {
@@ -1447,7 +1447,7 @@ public sealed class EventChronologySection : IPopoverSectionProvider
                     }
                     if (followingDiverges)
                     {
-                        EventDateAndPlacesSection.RenderArrowNav(builder, ref seq, ctx, ArrowDirection.Following, "event-story-thread-following-event", "event-story-thread-following-label", row.NarrativeId, row.Following, "→", inline: true, inlinePrefixText: "next ");
+                        EventDateAndPlacesSection.RenderArrowNav(builder, ref seq, ctx, NarrativeArrow.Following, "event-story-thread-following-event", "event-story-thread-following-label", row.NarrativeId, row.Following, "→", inline: true, inlinePrefixText: "next ");
                     }
 
                     builder.CloseElement();

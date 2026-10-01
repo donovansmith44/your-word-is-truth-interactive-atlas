@@ -7,9 +7,10 @@ internal sealed class ServedGraph : IExplorableClient
 {
     public const string Provenance = "kjv";
     private const string Version = "v";
-    private const string EdgeId = "e";
+    private const string EdgeIdPrefix = "Edge:";
 
     private readonly Dictionary<string, NodeCard> _cards = [];
+    private readonly Dictionary<string, EdgeCard> _edgeCards = [];
     private readonly Dictionary<(string Id, EdgeKind Kind, int? Cursor), EdgePage> _pages = [];
 
     public int? LimitAsked { get; private set; }
@@ -17,6 +18,12 @@ internal sealed class ServedGraph : IExplorableClient
     public ServedGraph Serving(NodeCard card)
     {
         _cards[card.Id] = card;
+        return this;
+    }
+
+    public ServedGraph Serving(EdgeCard card)
+    {
+        _edgeCards[card.Id] = card;
         return this;
     }
 
@@ -28,11 +35,16 @@ internal sealed class ServedGraph : IExplorableClient
 
     public Task<NodeCard> Card(string id) => Task.FromResult(_cards[id]);
 
+    public Task<EdgeCard> EdgeCard(string id) => Task.FromResult(_edgeCards[id]);
+
     public Task<EdgePage> Edges(string id, EdgeKind kind, int? cursor = null, int limit = IExplorableClient.DefaultPageSize)
     {
         LimitAsked = limit;
         return Task.FromResult(_pages[(id, kind, cursor)]);
     }
+
+    public Task<EdgePage> EdgeEdges(string edgeId, EdgeKind kind, int? cursor = null, int limit = IExplorableClient.DefaultPageSize) =>
+        Edges(edgeId, kind, cursor, limit);
 
     public Task<TextWindow> Reading(string fromRef, int n, WindowDir dir = WindowDir.Onward, Corpus corpus = Corpus.Bible) =>
         throw new NotSupportedException();
@@ -44,14 +56,31 @@ internal sealed class ServedGraph : IExplorableClient
             @event: null, id: id, kind: kind, label: label, person: null, place: null,
             provenance: Provenance, version: Version);
 
+    public static EdgeCard EdgeCardOf(EdgeKind kind, string id, string label, PositionRef from, PositionRef to) =>
+        new(
+            edgeSummary: [new EdgeSummaryEntry(count: 1, kind: EdgeKind.From), new EdgeSummaryEntry(count: 1, kind: EdgeKind.To)],
+            from: from, id: id, kind: kind, label: label, loci: null, narrative: null, note: null,
+            provenance: Provenance, to: to, version: Version, votes: null);
+
     public static NodeRef Ref(NodeKind kind, string id, string label) => new(id: id, kind: kind, label: label);
 
+    public static PositionRef At(NodeKind kind, string id, string label) => new NodePosition(Ref(kind, id, label));
+
+    public static PositionRef At(NodeRef node) => new NodePosition(node);
+
+    public static string EdgeTo(PositionRef neighbour) => $"{EdgeIdPrefix}{Positions.Of(neighbour).Id}";
+
+    public static PositionRef AtEdge(string id, EdgeKind kind, string label) => new EdgePosition(new EdgeRef(id: id, kind: kind, label: label));
+
     public static EdgePage Page(EdgeKind kind, int? next, params NodeRef[] nodes) =>
-        Page(kind, next, nodes.Select(PositionRef (node) => new NodePosition(node)).ToArray());
+        Page(kind, next, nodes.Select(At).ToArray());
 
     public static EdgePage Page(EdgeKind kind, int? next, params PositionRef[] neighbours) =>
+        Page(kind, next, neighbours.Select(neighbour => (EdgeTo(neighbour), EdgeEnd.From, neighbour)).ToArray());
+
+    public static EdgePage Page(EdgeKind kind, int? next, params (string Edge, EdgeEnd End, PositionRef Neighbour)[] entries) =>
         new(
-            entries: neighbours.Select(neighbour => new EdgeEntry(edge: EdgeId, loci: null, narrative: null, neighbour: neighbour, note: null, parentage: null, votes: null)).ToList(),
+            entries: entries.Select(entry => new EdgeEntry(edge: entry.Edge, end: entry.End, loci: null, narrative: null, neighbour: entry.Neighbour, note: null, parentage: null, votes: null)).ToList(),
             kind: kind, next: next, version: Version);
 }
 
@@ -62,6 +91,8 @@ internal static class Resolved
 
     public static Explorable Node(NodeRef identity) => Node(identity.Kind, identity.Id, identity.Label);
 
-    public static Explorable Node(ServedGraph graph, NodeRef target) =>
+    public static Explorable Node(ServedGraph graph, NodeRef target) => At(graph, ServedGraph.At(target));
+
+    public static Explorable At(ServedGraph graph, PositionRef target) =>
         new GraphExplorer(graph).Resolve(target).GetAwaiter().GetResult();
 }

@@ -6,12 +6,20 @@ public sealed record V1Node(string Kind, string Key, string Title);
 
 public sealed record V1Exploration(string Id, string Name, DateTimeOffset CreatedUtc, List<V1Node> Nodes);
 
+public sealed record V2Link(int Kind, NodeRef Target);
+
+public sealed record V2Exploration(string Id, string Name, DateTimeOffset CreatedUtc, NodeRef Start, List<V2Link> Steps);
+
 public sealed record Translated<T>(IReadOnlyList<T> Kept, int Dropped);
 
 public static class LegacySaves
 {
     public const string ExplorationsKey = "explorations-v1";
     public const string SelectionKey = "selection-v1";
+    public const string V2ExplorationsKey = "explorations-v2";
+
+    private static readonly EdgeKind[] KindsAfterV2 = [EdgeKind.From, EdgeKind.SourceOf, EdgeKind.To, EdgeKind.TargetOf];
+    private static readonly EdgeKind[] V2Kinds = Enum.GetValues<EdgeKind>().Except(KindsAfterV2).ToArray();
 
     private const char KeySeparator = '|';
     private const char ChapterSeparator = '.';
@@ -20,6 +28,11 @@ public static class LegacySaves
         v1.Select(Exploration).Aggregate(
             new Translated<SavedExploration>([], 0),
             (sum, one) => new([.. sum.Kept, .. one.Kept], sum.Dropped + one.Dropped));
+
+    public static IReadOnlyList<SavedExploration> Explorations(IReadOnlyList<V2Exploration> v2) => v2.Select(Exploration).ToList();
+
+    public static SavedExploration Exploration(V2Exploration v2) =>
+        new(v2.Id, v2.Name, v2.CreatedUtc, new NodePosition(v2.Start), v2.Steps.Select(step => new Link(V2Kinds[step.Kind], new NodePosition(step.Target))).ToList());
 
     public static Translated<SavedExploration> Exploration(V1Exploration v1)
     {
@@ -30,8 +43,8 @@ public static class LegacySaves
             return new([], nodes.Dropped);
         }
 
-        var steps = kept.Skip(1).Select((node, before) => new Link(Via(kept[before].Kind, node.Kind), node)).ToList();
-        return new([new SavedExploration(v1.Id, v1.Name, v1.CreatedUtc, kept[0], steps)], nodes.Dropped);
+        var steps = kept.Skip(1).Select((node, before) => new Link(Via(kept[before].Kind, node.Kind), new NodePosition(node))).ToList();
+        return new([new SavedExploration(v1.Id, v1.Name, v1.CreatedUtc, new NodePosition(kept[0]), steps)], nodes.Dropped);
     }
 
     public static Translated<NodeRef> Nodes(IReadOnlyList<V1Node> v1)

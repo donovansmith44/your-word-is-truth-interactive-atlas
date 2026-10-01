@@ -1,5 +1,5 @@
 import { API } from './ports';
-import type { EdgePage } from './edges';
+import type { EdgeCard, EdgePage } from './edges';
 
 async function getJson(path: string): Promise<any> {
   const r = await fetch(`${API}${path}`);
@@ -53,6 +53,7 @@ export const api = {
     const params = new URLSearchParams({ kind, ...(opts.limit != null ? { limit: String(opts.limit) } : {}), ...(opts.cursor != null ? { cursor: String(opts.cursor) } : {}) });
     return getJson(`/api/node/${encodeURIComponent(id)}/edges?${params}`);
   },
+  edge: (id: string): Promise<EdgeCard> => getJson(`/api/edge/${encodeURIComponent(id)}`),
   // Batch CORP-1: GET /api/text -- the SAME reading-window endpoint
   // client/IExplorableClient.cs's Reading() consumes, read here directly for
   // CONTRACT-lockstep assertions (kretzmann.spec.ts/concord.spec.ts compare

@@ -14,6 +14,8 @@ public sealed class FocusViewTests : BunitContext
     private const int CitesFirstPage = 3;
     private const int CitesSecondPageCursor = 3;
     private const int SecondOfTwo = 1;
+    private const string EdenMention = "Mentions:00ee";
+    private const string EdenMentionLabel = "GEN.2.1 mentions Eden";
 
     private static readonly NodeRef Genesis = ServedGraph.Ref(NodeKind.Container, "Container:bible-book-GEN", "Genesis");
     private static readonly NodeRef Genesis1 = ServedGraph.Ref(NodeKind.Container, "Container:bible-chapter-GEN-1", "Genesis 1");
@@ -39,21 +41,28 @@ public sealed class FocusViewTests : BunitContext
         <button type="button" class="focus-arrow explorable" data-testid="popover-next">Genesis 3 ›</button>
         <div class="popover-section" data-testid="popover-children-contains">
             <button type="button" class="focus-child explorable" data-testid="popover-child-contains-text-unit:GEN.2.1">GEN.2.1</button>
+            <button type="button" class="focus-entry-end explorable-quiet" data-testid="popover-entry-end-contains-Edge:text-unit:GEN.2.1" aria-label="This connection" title="This connection">⋮</button>
             <button type="button" class="focus-child explorable" data-testid="popover-child-contains-text-unit:GEN.2.2">GEN.2.2</button>
+            <button type="button" class="focus-entry-end explorable-quiet" data-testid="popover-entry-end-contains-Edge:text-unit:GEN.2.2" aria-label="This connection" title="This connection">⋮</button>
         </div>
         <div class="popover-section" data-testid="popover-section-mentions">
-            <p class="catechism-section-heading" data-testid="popover-section-mentions-heading">mentions (2)</p>
+            <p class="catechism-section-heading" data-testid="popover-section-mentions-heading">Mentions (2)</p>
             <button type="button" class="focus-link explorable" data-testid="popover-link-mentions-Person:adam">Adam</button>
+            <button type="button" class="focus-entry-end explorable-quiet" data-testid="popover-entry-end-mentions-Edge:Person:adam" aria-label="This connection" title="This connection">⋮</button>
             <button type="button" class="focus-link explorable" data-testid="popover-link-mentions-Place:eden">Eden</button>
+            <button type="button" class="focus-entry-end explorable-quiet" data-testid="popover-entry-end-mentions-Edge:Place:eden" aria-label="This connection" title="This connection">⋮</button>
         </div>
         """;
 
     private const string CitesClampedToThree = """
         <div class="popover-section" data-testid="popover-section-cites">
-            <p class="catechism-section-heading" data-testid="popover-section-cites-heading">cites (5)</p>
+            <p class="catechism-section-heading" data-testid="popover-section-cites-heading">Cites (5)</p>
             <button type="button" class="focus-link explorable-quiet" data-testid="popover-link-cites-text-unit:JHN.1.1">JHN.1.1</button>
+            <button type="button" class="focus-entry-end explorable-quiet" data-testid="popover-entry-end-cites-Edge:text-unit:JHN.1.1" aria-label="This connection" title="This connection">⋮</button>
             <button type="button" class="focus-link explorable-quiet" data-testid="popover-link-cites-text-unit:JHN.1.2">JHN.1.2</button>
+            <button type="button" class="focus-entry-end explorable-quiet" data-testid="popover-entry-end-cites-Edge:text-unit:JHN.1.2" aria-label="This connection" title="This connection">⋮</button>
             <button type="button" class="focus-link explorable-quiet" data-testid="popover-link-cites-text-unit:JHN.1.3">JHN.1.3</button>
+            <button type="button" class="focus-entry-end explorable-quiet" data-testid="popover-entry-end-cites-Edge:text-unit:JHN.1.3" aria-label="This connection" title="This connection">⋮</button>
             <div class="popover-reveal-controls">
                 <button type="button" class="popover-reveal-link explorable-quiet" data-testid="popover-section-cites-more" aria-label="Show 2 more entries" title="Show 2 more entries">more (2)</button>
             </div>
@@ -62,12 +71,17 @@ public sealed class FocusViewTests : BunitContext
 
     private const string CitesRevealedWhole = """
         <div class="popover-section" data-testid="popover-section-cites">
-            <p class="catechism-section-heading" data-testid="popover-section-cites-heading">cites (5)</p>
+            <p class="catechism-section-heading" data-testid="popover-section-cites-heading">Cites (5)</p>
             <button type="button" class="focus-link explorable-quiet" data-testid="popover-link-cites-text-unit:JHN.1.1">JHN.1.1</button>
+            <button type="button" class="focus-entry-end explorable-quiet" data-testid="popover-entry-end-cites-Edge:text-unit:JHN.1.1" aria-label="This connection" title="This connection">⋮</button>
             <button type="button" class="focus-link explorable-quiet" data-testid="popover-link-cites-text-unit:JHN.1.2">JHN.1.2</button>
+            <button type="button" class="focus-entry-end explorable-quiet" data-testid="popover-entry-end-cites-Edge:text-unit:JHN.1.2" aria-label="This connection" title="This connection">⋮</button>
             <button type="button" class="focus-link explorable-quiet" data-testid="popover-link-cites-text-unit:JHN.1.3">JHN.1.3</button>
+            <button type="button" class="focus-entry-end explorable-quiet" data-testid="popover-entry-end-cites-Edge:text-unit:JHN.1.3" aria-label="This connection" title="This connection">⋮</button>
             <button type="button" class="focus-link explorable-quiet" data-testid="popover-link-cites-text-unit:JHN.1.4">JHN.1.4</button>
+            <button type="button" class="focus-entry-end explorable-quiet" data-testid="popover-entry-end-cites-Edge:text-unit:JHN.1.4" aria-label="This connection" title="This connection">⋮</button>
             <button type="button" class="focus-link explorable-quiet" data-testid="popover-link-cites-text-unit:JHN.1.5">JHN.1.5</button>
+            <button type="button" class="focus-entry-end explorable-quiet" data-testid="popover-entry-end-cites-Edge:text-unit:JHN.1.5" aria-label="This connection" title="This connection">⋮</button>
             <div class="popover-reveal-controls">
                 <button type="button" class="popover-reveal-link explorable-quiet" data-testid="popover-section-cites-collapse" aria-label="Show fewer entries" title="Show fewer entries">less</button>
             </div>
@@ -82,8 +96,9 @@ public sealed class FocusViewTests : BunitContext
             </dl>
         </div>
         <div class="popover-section" data-testid="popover-section-mentioned-in">
-            <p class="catechism-section-heading" data-testid="popover-section-mentioned-in-heading">mentioned-in (1)</p>
+            <p class="catechism-section-heading" data-testid="popover-section-mentioned-in-heading">Mentioned in (1)</p>
             <button type="button" class="focus-link explorable" data-testid="popover-link-mentioned-in-text-unit:GEN.2.1">GEN.2.1</button>
+            <button type="button" class="focus-entry-end explorable-quiet" data-testid="popover-entry-end-mentioned-in-Edge:text-unit:GEN.2.1" aria-label="This connection" title="This connection">⋮</button>
         </div>
         """;
 
@@ -134,14 +149,57 @@ public sealed class FocusViewTests : BunitContext
         // Assert
         Assert.Equal(
             [
-                new Link(EdgeKind.MemberOf, Genesis),
-                new Link(EdgeKind.PrecedesIn, Genesis1),
-                new Link(EdgeKind.FollowsIn, Genesis3),
-                new Link(EdgeKind.Contains, Verse2),
-                new Link(EdgeKind.Mentions, Eden),
-                new Link(EdgeKind.Cites, Citations[2]),
+                new Link(EdgeKind.MemberOf, ServedGraph.At(Genesis)),
+                new Link(EdgeKind.PrecedesIn, ServedGraph.At(Genesis1)),
+                new Link(EdgeKind.FollowsIn, ServedGraph.At(Genesis3)),
+                new Link(EdgeKind.Contains, ServedGraph.At(Verse2)),
+                new Link(EdgeKind.Mentions, ServedGraph.At(Eden)),
+                new Link(EdgeKind.Cites, ServedGraph.At(Citations[2])),
             ],
             followed);
+    }
+
+    [Fact]
+    public void An_entry_s_connection_control_steps_onto_the_edge_from_the_end_the_page_serves()
+    {
+        // Arrange
+        var followed = new List<Link>();
+        var view = Render<FocusView>(p => p
+            .Add(v => v.Node, Genesis2(Explored(Genesis2Graph())))
+            .Add(v => v.Surface, Surface.Popover)
+            .Add(v => v.OnFollow, link => followed.Add(link)));
+
+        // Act
+        view.Find("[data-testid='popover-entry-end-mentions-Edge:Place:eden']").Click();
+
+        // Assert
+        Assert.Equal([new Link(EdgeKind.SourceOf, ServedGraph.AtEdge(ServedGraph.EdgeTo(ServedGraph.At(Eden)), EdgeKind.Mentions, Eden.Label))], followed);
+    }
+
+    [Fact]
+    public void An_edge_is_its_card_under_its_two_ends_as_crumbs()
+    {
+        // Arrange
+        var graph = Explored(new ServedGraph()
+            .Serving(ServedGraph.EdgeCardOf(EdgeKind.Mentions, EdenMention, EdenMentionLabel, ServedGraph.At(Verse1), ServedGraph.At(Eden)))
+            .Serving(EdenMention, EdgeKind.From, null, ServedGraph.Page(EdgeKind.From, null, Verse1))
+            .Serving(EdenMention, EdgeKind.To, null, ServedGraph.Page(EdgeKind.To, null, Eden)));
+        var edge = Resolved.At(graph, ServedGraph.AtEdge(EdenMention, EdgeKind.Mentions, EdenMentionLabel));
+
+        // Act
+        var view = Render<FocusView>(p => p.Add(v => v.Node, edge).Add(v => v.Surface, Surface.Popover));
+
+        // Assert
+        view.MarkupMatches("""
+            <button type="button" class="focus-up explorable" data-testid="popover-up-from-text-unit:GEN.2.1">GEN.2.1</button>
+            <button type="button" class="focus-up explorable" data-testid="popover-up-to-Place:eden">Eden</button>
+            <div class="popover-section" data-testid="popover-section-card">
+                <p class="focus-title" data-testid="popover-card-title">GEN.2.1 mentions Eden</p>
+                <dl class="focus-fields">
+                    <div class="focus-field" data-testid="popover-field-Provenance"><dt>Provenance</dt><dd>kjv</dd></div>
+                </dl>
+            </div>
+            """);
     }
 
     [Fact]
@@ -194,7 +252,7 @@ public sealed class FocusViewTests : BunitContext
                 <button type="button" class="focus-child explorable" data-testid="world-child-shows-Place:eden">Eden</button>
             </div>
             <div class="popover-section" data-testid="world-section-mentioned-in">
-                <p class="catechism-section-heading" data-testid="world-section-mentioned-in-heading">mentioned-in (1)</p>
+                <p class="catechism-section-heading" data-testid="world-section-mentioned-in-heading">Mentioned in</p>
             </div>
             """);
     }
@@ -235,8 +293,8 @@ public sealed class FocusViewTests : BunitContext
         var held = new HeldGraph(WithAdam(Genesis2Graph()), EdgeKind.Mentions, null);
         var explorer = new GraphExplorer(held);
         Services.AddSingleton<IExplorer>(explorer);
-        var genesis2 = await explorer.Resolve(Genesis2Ref);
-        var adam = await explorer.Resolve(Adam);
+        var genesis2 = await explorer.Resolve(ServedGraph.At(Genesis2Ref));
+        var adam = await explorer.Resolve(ServedGraph.At(Adam));
         var view = Render<FocusView>(p => p.Add(v => v.Node, genesis2).Add(v => v.Surface, Surface.Popover));
         view.Render(p => p.Add(v => v.Node, adam));
 
@@ -255,8 +313,8 @@ public sealed class FocusViewTests : BunitContext
         var held = new HeldGraph(WithAdam(Genesis2Graph()), EdgeKind.Mentions, SecondOfTwo);
         var explorer = new GraphExplorer(held);
         Services.AddSingleton<IExplorer>(explorer);
-        var genesis2 = await explorer.Resolve(Genesis2Ref);
-        var adam = await explorer.Resolve(Adam);
+        var genesis2 = await explorer.Resolve(ServedGraph.At(Genesis2Ref));
+        var adam = await explorer.Resolve(ServedGraph.At(Adam));
         var view = Render<FocusView>(p => p.Add(v => v.Node, genesis2).Add(v => v.Surface, Surface.Popover));
         view.Render(p => p.Add(v => v.Node, adam));
 
@@ -291,6 +349,8 @@ public sealed class FocusViewTests : BunitContext
 
         public Task<NodeCard> Card(string id) => served.Card(id);
 
+        public Task<EdgeCard> EdgeCard(string id) => served.EdgeCard(id);
+
         public async Task<EdgePage> Edges(string id, EdgeKind kind, int? cursor = null, int limit = IExplorableClient.DefaultPageSize)
         {
             if (kind == heldKind && cursor == heldCursor)
@@ -300,6 +360,9 @@ public sealed class FocusViewTests : BunitContext
 
             return await served.Edges(id, kind, cursor, limit);
         }
+
+        public Task<EdgePage> EdgeEdges(string edgeId, EdgeKind kind, int? cursor = null, int limit = IExplorableClient.DefaultPageSize) =>
+            Edges(edgeId, kind, cursor, limit);
 
         public Task<TextWindow> Reading(string fromRef, int n, WindowDir dir = WindowDir.Onward, Corpus corpus = Corpus.Bible) =>
             served.Reading(fromRef, n, dir, corpus);

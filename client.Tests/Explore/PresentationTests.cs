@@ -9,14 +9,14 @@ public sealed class PresentationTests
     private const string Kjv = "kjv";
 
     [Fact]
-    public void Every_kind_is_a_card_on_the_popover_and_has_its_own_form_on_at_most_one_home_surface()
+    public void Every_node_kind_is_a_card_on_the_popover_and_has_its_own_form_on_at_most_one_home_surface()
     {
         // Arrange
         var everyKind = Enum.GetValues<NodeKind>();
 
         // Act
         var table = everyKind
-            .Select(kind => (kind, Presentation.Of(kind, Surface.World), Presentation.Of(kind, Surface.Reader), Presentation.Of(kind, Surface.Popover)))
+            .Select(kind => (kind, Presentation.Of(new ElementKind.Node(kind), Surface.World), Presentation.Of(new ElementKind.Node(kind), Surface.Reader), Presentation.Of(new ElementKind.Node(kind), Surface.Popover)))
             .ToList();
 
         // Assert
@@ -43,13 +43,56 @@ public sealed class PresentationTests
     }
 
     [Fact]
-    public void Every_kind_has_one_home_surface_derived_from_where_it_has_a_form_of_its_own()
+    public void Every_edge_kind_is_a_card_on_the_popover_and_has_no_form_anywhere_else()
+    {
+        // Arrange
+        var everyKind = Enum.GetValues<EdgeKind>();
+
+        // Act
+        var table = everyKind
+            .Select(kind => (kind, Presentation.Of(new ElementKind.Edge(kind), Surface.World), Presentation.Of(new ElementKind.Edge(kind), Surface.Reader), Presentation.Of(new ElementKind.Edge(kind), Surface.Popover)))
+            .ToList();
+
+        // Assert
+        Assert.Equal(everyKind.Select(kind => (kind, (Presentation.Form?)null, (Presentation.Form?)null, (Presentation.Form?)Presentation.Form.Card)).ToList(), table);
+    }
+
+    [Fact]
+    public void Every_edge_kind_s_home_is_the_popover()
+    {
+        // Arrange
+        var everyKind = Enum.GetValues<EdgeKind>();
+
+        // Act
+        var homes = everyKind.Select(kind => (kind, HomeSurfaces.Of(new ElementKind.Edge(kind)))).ToList();
+
+        // Assert
+        Assert.Equal(everyKind.Select(kind => (kind, Surface.Popover)).ToList(), homes);
+    }
+
+    [Fact]
+    public void Every_element_is_offered_on_the_popover()
+    {
+        // Arrange
+        var everyElement = Enum.GetValues<NodeKind>().Select(kind => ServedGraph.At(kind, kind.ToString(), kind.ToString()))
+            .Concat(Enum.GetValues<EdgeKind>().Select(kind => ServedGraph.AtEdge(kind.ToString(), kind, kind.ToString())))
+            .ToList();
+
+        // Act
+        var unoffered = everyElement.Where(target => !Presentation.Offers(new Link(EdgeKind.Mentions, target), Surface.Popover)).ToList();
+
+        // Assert
+        Assert.Empty(unoffered);
+    }
+
+    [Fact]
+    public void Every_node_kind_has_one_home_surface_derived_from_where_it_has_a_form_of_its_own()
     {
         // Arrange
         var everyKind = Enum.GetValues<NodeKind>();
 
         // Act
-        var homes = everyKind.Select(kind => (kind, HomeSurfaces.Of(kind))).ToList();
+        var homes = everyKind.Select(kind => (kind, HomeSurfaces.Of(new ElementKind.Node(kind)))).ToList();
 
         // Assert
         Assert.Equal(
@@ -78,11 +121,11 @@ public sealed class PresentationTests
     public void A_link_is_offered_on_a_surface_exactly_where_its_target_kind_has_a_form_there()
     {
         // Arrange
-        var everyLink = Enum.GetValues<NodeKind>().Select(kind => new Link(EdgeKind.Mentions, new NodeRef(id: kind.ToString(), kind: kind, label: kind.ToString()))).ToList();
+        var everyLink = Enum.GetValues<NodeKind>().Select(kind => new Link(EdgeKind.Mentions, ServedGraph.At(kind, kind.ToString(), kind.ToString()))).ToList();
 
         // Act
         var offered = Enum.GetValues<Surface>()
-            .Select(surface => (surface, string.Join(" ", everyLink.Where(link => Presentation.Offers(link, surface)).Select(link => link.Target.Kind))))
+            .Select(surface => (surface, string.Join(" ", everyLink.Where(link => Presentation.Offers(link, surface)).Select(link => Positions.Of(link.Target).Id))))
             .ToList();
 
         // Assert

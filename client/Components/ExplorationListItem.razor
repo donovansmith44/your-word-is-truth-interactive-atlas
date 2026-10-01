@@ -15,7 +15,7 @@
                 <span class="hamburger-exploration-name">@Item.Name</span>
             }
             <span class="hamburger-exploration-meta">
-                @Nodes.Count node@(Nodes.Count == 1 ? "" : "s") &middot; @Item.CreatedUtc.ToLocalTime().ToString("MMM d, yyyy")
+                @Trail.Count node@(Trail.Count == 1 ? "" : "s") &middot; @Item.CreatedUtc.ToLocalTime().ToString("MMM d, yyyy")
             </span>
         </button>
         <div class="hamburger-exploration-controls">
@@ -40,13 +40,13 @@
     @if (_expanded)
     {
         <ol class="hamburger-exploration-trail">
-            @for (var i = 0; i < Nodes.Count; i++)
+            @for (var i = 0; i < Trail.Count; i++)
             {
                 var idx = i;
                 <li>
                     <button type="button" class="hamburger-exploration-trail-node explorable" data-testid="@($"exploration-node-{idx}")"
                             @onclick="() => OnContinue.InvokeAsync(Item.UpTo(idx))">
-                        <span class="hamburger-node-title">@Nodes[idx].Label</span>
+                        <span class="hamburger-node-title">@Positions.Of(Trail[idx]).Label</span>
                     </button>
                 </li>
             }
@@ -61,7 +61,7 @@
     [Parameter, EditorRequired] public EventCallback<(string Id, string Name)> OnRename { get; set; }
     [Parameter, EditorRequired] public EventCallback<string> OnDelete { get; set; }
 
-    private IReadOnlyList<NodeRef> Nodes => Item.Nodes;
+    private IReadOnlyList<PositionRef> Trail => Item.Trail;
 
     private bool _expanded;
     private bool _renaming;

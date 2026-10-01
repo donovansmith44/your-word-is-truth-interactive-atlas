@@ -72,6 +72,17 @@ public sealed class EdgeKindsTests
         Assert.Equal(declared, symmetric);
     }
 
+    [Fact]
+    public void Every_kind_is_shown_by_the_label_x_atlas_relations_serves_for_it()
+    {
+        // Arrange
+        var served = PublishedRelations().Kinds.ToDictionary(k => WireNames.Parse<EdgeKind>(k.Kind), k => k.Label);
+        // Act
+        var labels = Enum.GetValues<EdgeKind>().ToDictionary(k => k, k => k.Label());
+        // Assert
+        Assert.Equal(served, labels);
+    }
+
     private static Relations PublishedRelations() =>
         new DeserializerBuilder()
             .WithNamingConvention(CamelCaseNamingConvention.Instance)
@@ -98,6 +109,15 @@ public sealed class EdgeKindsTests
         public List<DirectedRelation> Directed { get; set; } = [];
 
         public List<SymmetricRelation> Symmetric { get; set; } = [];
+
+        public List<ServedKind> Kinds { get; set; } = [];
+    }
+
+    private sealed class ServedKind
+    {
+        public string Kind { get; set; } = "";
+
+        public string Label { get; set; } = "";
     }
 
     private sealed class DirectedRelation

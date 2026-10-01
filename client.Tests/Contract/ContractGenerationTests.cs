@@ -59,4 +59,45 @@ public sealed class ContractGenerationTests
         // Assert
         Assert.Equal([false, false, true], new[] { union, subtypesOwnPart, unrelated }.Select(schema => schema.AllowAdditionalProperties));
     }
+
+    [Fact]
+    public void Edge_kind_labels_are_generated_as_one_total_match_over_the_relations_the_contract_lists()
+    {
+        // Arrange
+        var document = new OpenApiDocument();
+        document.Definitions[ContractGeneration.EdgeKindSchema] = new JsonSchema();
+        document.ExtensionData = new Dictionary<string, object?>
+        {
+            [ContractGeneration.RelationsExtension] = new Dictionary<string, object?>
+            {
+                ["kinds"] = new object[]
+                {
+                    new Dictionary<string, object?> { ["kind"] = "member-of", ["label"] = "Member of" },
+                    new Dictionary<string, object?> { ["kind"] = "source-of", ["label"] = "Source of" },
+                },
+            },
+        };
+
+        // Act
+        var source = ContractGeneration.EdgeKindLabels(document);
+
+        // Assert
+        Assert.Equal(
+            """
+
+            namespace BibleAtlas.Client.Contract
+            {
+                public static class EdgeKindLabels
+                {
+                    public static string Label(this EdgeKind kind) => kind switch
+                    {
+                        EdgeKind.MemberOf => "Member of",
+                        EdgeKind.SourceOf => "Source of",
+                    };
+                }
+            }
+
+            """,
+            source);
+    }
 }

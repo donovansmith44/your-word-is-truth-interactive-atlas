@@ -4,13 +4,21 @@ namespace BibleAtlas.Client.Explore;
 
 public abstract record Affordance
 {
-    public sealed record Arrows : Affordance;
+    public sealed record Arrows(ArrowDirection Direction) : Affordance;
 
     public sealed record InlineChildren : Affordance;
 
     public sealed record UpCrumb : Affordance;
 
+    public sealed record EntryEnd : Affordance;
+
     public sealed record SectionList(SectionStyle Style, int InitialClamp, SectionOrder Order) : Affordance;
+}
+
+public enum ArrowDirection
+{
+    Previous,
+    Next,
 }
 
 public enum SectionStyle
@@ -37,9 +45,11 @@ public static class Affordances
 
     public static Affordance Of(EdgeKind kind) => kind switch
     {
-        EdgeKind.FollowsIn or EdgeKind.PrecedesIn => new Affordance.Arrows(),
+        EdgeKind.FollowsIn => new Affordance.Arrows(ArrowDirection.Next),
+        EdgeKind.PrecedesIn => new Affordance.Arrows(ArrowDirection.Previous),
         EdgeKind.Contains or EdgeKind.Shows => new Affordance.InlineChildren(),
-        EdgeKind.MemberOf or EdgeKind.ShownOn => new Affordance.UpCrumb(),
+        EdgeKind.MemberOf or EdgeKind.ShownOn or EdgeKind.From or EdgeKind.To => new Affordance.UpCrumb(),
+        EdgeKind.SourceOf or EdgeKind.TargetOf => new Affordance.EntryEnd(),
         EdgeKind.Cites => Cites,
         EdgeKind.Mentions => Mentions,
         EdgeKind.MentionedIn => MentionedIn,
