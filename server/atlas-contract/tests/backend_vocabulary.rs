@@ -26,34 +26,55 @@ fn backend_sources() -> Vec<PathBuf> {
     rust_sources_under(&["server", "graph-types"])
 }
 
-fn published_contract() -> Vec<PathBuf> {
+fn is_ours(path: &Path) -> bool {
     let root = repository_root().join("contracts");
-    let mut out = vec![
-        root.join("openapi.yaml"),
-        root.join("atlas-query-contract/aqc.schema.json"),
-    ];
-    walk(
-        &root.join("atlas-query-contract/features"),
-        &|p| p.extension().is_some_and(|e| e == "feature"),
-        &mut out,
-    );
+    let relative = path.strip_prefix(&root).unwrap_or(path);
+    !relative.starts_with("atlas-edge")
+        && !relative.components().any(|part| part.as_os_str() == "dist-newstyle")
+        && path.file_name().is_none_or(|name| name != "CHANGELOG.md")
+}
+
+fn published_contract() -> Vec<PathBuf> {
+    let mut out = Vec::new();
+    walk(&repository_root().join("contracts"), &is_ours, &mut out);
     out.sort();
     out
 }
 
+fn received_wire_names() -> Vec<String> {
+    let mut received = Vec::new();
+    walk(
+        &repository_root().join("contracts/atlas-edge"),
+        &|p| p.extension().is_some_and(|e| e == "feature"),
+        &mut received,
+    );
+    let mut names: Vec<String> = received
+        .iter()
+        .flat_map(|path| {
+            let text = fs::read_to_string(path).expect("readable received suite");
+            text.split(|c: char| !(c.is_alphanumeric() || c == '-'))
+                .filter(|token| token.contains('-') && words_of(token).iter().any(|w| is_client_word(w)))
+                .map(str::to_string)
+                .collect::<Vec<_>>()
+        })
+        .collect();
+    names.sort();
+    names.dedup();
+    names
+}
+
+fn without_received_names(text: &str, received: &[String]) -> String {
+    received.iter().fold(text.to_string(), |kept, name| kept.replace(name.as_str(), ""))
+}
+
 fn contract_text(path: &Path, text: &str) -> Vec<(usize, String)> {
-    let is_feature = path.extension().is_some_and(|e| e == "feature");
+    if path.extension().is_some_and(|e| e == "json") {
+        return Vec::new();
+    }
+    let received = received_wire_names();
     text.lines()
         .enumerate()
-        .filter(|(_, line)| {
-            let t = line.trim_start();
-            !is_feature
-                || t.starts_with("Feature:")
-                || t.starts_with("Scenario:")
-                || t.starts_with("Scenario Outline:")
-                || t.starts_with('#')
-        })
-        .map(|(i, line)| (i + 1, line.to_string()))
+        .map(|(i, line)| (i + 1, without_received_names(line, &received)))
         .collect()
 }
 
@@ -107,6 +128,21 @@ fn the_published_contract_borrows_no_client_word() {
 
     // Assert
     assert!(offences.is_empty(), "{}", offences.join("\n"));
+}
+
+#[test]
+fn a_wire_name_the_received_suite_uses_is_not_an_offence_but_prose_about_it_is() {
+    // Arrange
+    let received = vec!["node-card".to_string()];
+
+    // Act
+    let kept = (
+        without_received_names("the projection node-card", &received),
+        without_received_names("a node card", &received),
+    );
+
+    // Assert
+    assert_eq!(("the projection ".to_string(), "a node card".to_string()), kept);
 }
 
 #[test]

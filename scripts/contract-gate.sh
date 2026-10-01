@@ -576,7 +576,10 @@ if [ "$FAST" -eq 0 ]; then
     the_recorded_pact_still_matches_the_live_graph \
     the_assembled_app_is_not_hollow_on_any_derived_index \
     request_keys_are_read_out_of_step_lines_exactly \
-    the_published_vocabulary_is_drawn_from_the_macros || fail=1
+    the_published_vocabulary_is_drawn_from_the_macros \
+    a_lost_juncture_is_sanctioned_only_when_the_removal_names_exactly_it \
+    the_removal_flag_reads_a_comma_separated_list_of_junctures \
+    no_removal_flag_names_no_junctures || fail=1
 
   ( cd server && env -u ATLAS_BLESS_PACT "$CARGO" test -p atlas-cli --test contract_pact_cli ) >"$cli_log" 2>&1
   check $? "provider drift: the CLI pact no longer matches the real bibex binary"

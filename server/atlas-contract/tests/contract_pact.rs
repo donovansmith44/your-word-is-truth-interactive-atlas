@@ -203,6 +203,24 @@ fn render(v: &Value) -> String {
     s
 }
 
+fn named_removals(raw: Option<&str>) -> Vec<&str> {
+    raw.map(|list| list.split(',').map(str::trim).filter(|name| !name.is_empty()).collect())
+        .unwrap_or_default()
+}
+
+fn unsanctioned_losses(committed: &[&str], recorded: &[&str], named: &[&str]) -> Vec<String> {
+    let lost: Vec<&str> = committed.iter().copied().filter(|k| !recorded.contains(k)).collect();
+    let mut off: Vec<String> = lost
+        .iter()
+        .filter(|k| !named.contains(k))
+        .chain(named.iter().filter(|k| !lost.contains(k)))
+        .map(|k| k.to_string())
+        .collect();
+    off.sort();
+    off.dedup();
+    off
+}
+
 #[tokio::test(flavor = "multi_thread")]
 async fn the_recorded_pact_still_matches_the_live_graph() {
     let pact = build_pact().await;
@@ -215,21 +233,31 @@ async fn the_recorded_pact_still_matches_the_live_graph() {
                 let empty = Map::new();
                 let o = old.get("entries").and_then(Value::as_object).unwrap_or(&empty);
                 let n = pact.get("entries").and_then(Value::as_object).unwrap_or(&empty);
-                let lost: Vec<&String> = o.keys().filter(|k| !n.contains_key(*k)).collect();
-                if !lost.is_empty() {
+                let committed_keys: Vec<&str> = o.keys().map(String::as_str).collect();
+                let recorded_keys: Vec<&str> = n.keys().map(String::as_str).collect();
+                let removal = std::env::var("ATLAS_REMOVE_JUNCTURES").ok();
+                let named = named_removals(removal.as_deref());
+                let off = unsanctioned_losses(&committed_keys, &recorded_keys, &named);
+                if !off.is_empty() {
                     panic!(
                         "REFUSING TO RE-RECORD: the committed pact answers {} juncture(s) this run \
-                         does not ask about.\n  first lost: {:?}\n\
+                         does not ask about, or the removal named juncture(s) it did not lose.\n  \
+                         unsanctioned: {:?}\n\
                          \n  The recorder derives its questions from the .feature corpus, so a corpus \
                          that shrank -- renamed, moved, emptied, or resolved away in a merge -- makes \
                          this test look like provider drift. It is not drift. Re-recording here would \
                          write a SMALLER pact and turn the gate green over expectations nobody is \
                          asking any more.\n  \
-                         Restore the corpus, or remove those expectations deliberately: the semver \
-                         gate classifies a removal MAJOR, and on a RECEIVED suite refuses it outright.",
-                        lost.len(),
-                        lost.iter().take(3).collect::<Vec<_>>()
+                         Restore the corpus, or remove those expectations deliberately by naming \
+                         exactly the junctures lost: ATLAS_REMOVE_JUNCTURES=a,b ATLAS_BLESS_PACT=1. \
+                         The semver gate classifies a removal MAJOR, and on a RECEIVED suite refuses \
+                         it outright.",
+                        off.len(),
+                        off.iter().take(3).collect::<Vec<_>>()
                     );
+                }
+                if !named.is_empty() {
+                    eprintln!("SANCTIONED REMOVAL, record these in the commit message: {}", named.join(", "));
                 }
             }
         }
@@ -384,4 +412,51 @@ fn the_published_vocabulary_is_drawn_from_the_macros() {
     for r in RelationId::ALL {
         assert_ne!(r.forward_label(), r.inverse_label(), "{r:?} has a degenerate label pair");
     }
+}
+
+#[test]
+fn a_lost_juncture_is_sanctioned_only_when_the_removal_names_exactly_it() {
+    // Arrange
+    let committed = ["a", "b", "c"];
+    let recorded = ["a"];
+
+    // Act
+    let verdicts = (
+        unsanctioned_losses(&committed, &recorded, &["b", "c"]),
+        unsanctioned_losses(&committed, &recorded, &["b"]),
+        unsanctioned_losses(&committed, &recorded, &["b", "c", "z"]),
+        unsanctioned_losses(&committed, &recorded, &[]),
+    );
+
+    // Assert
+    assert_eq!(
+        (
+            Vec::<String>::new(),
+            vec!["c".to_string()],
+            vec!["z".to_string()],
+            vec!["b".to_string(), "c".to_string()]
+        ),
+        verdicts
+    );
+}
+
+#[test]
+fn the_removal_flag_reads_a_comma_separated_list_of_junctures() {
+    // Arrange
+    let raw = " b, c ,,d";
+
+    // Act
+    let named = named_removals(Some(raw));
+
+    // Assert
+    assert_eq!(vec!["b", "c", "d"], named);
+}
+
+#[test]
+fn no_removal_flag_names_no_junctures() {
+    // Arrange / Act
+    let named = named_removals(None);
+
+    // Assert
+    assert!(named.is_empty());
 }

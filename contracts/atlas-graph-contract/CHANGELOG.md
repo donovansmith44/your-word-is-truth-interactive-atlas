@@ -34,6 +34,8 @@ hatch — and adding one to a previously-green scenario is classified
 
 ---
 
+- **0.20.1** (FOCUS-6 Task R11b, the backend vocabulary gate reaches the whole suite) — **PATCH.** Prose only: three comment/description lines say "node record" and `NodeRecord` where they said "node card" and `NodeCardOut`. No scenario, step, projection or fixture changed; the projection wire name `node-card` stays, because the received `atlas-edge` suite names it.
+
 - **0.20.0** (FOCUS-6 Task R10, the legacy place route is gone) — **MINOR under the 0.x policy (MAJOR class: a scenario and its fixture removed).**
   `GET /api/place/{id}` is no longer served: a place is read as its node (`/api/node/Place:{id}`,
   pinned by `node-place-hazor-1`) and its neighbours. REMOVED: the `detail-routes.feature`

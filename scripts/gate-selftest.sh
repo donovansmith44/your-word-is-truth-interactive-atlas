@@ -174,7 +174,7 @@ rm -rf "$FAKEPY"
 # ---------------------------------------------------------------------
 head2 "A3a: blessing a recorder directly must FAIL, not pass"
 L="$(lg a3a)"
-( cd server && ATLAS_BLESS_PACT=1 "$HOME/.cargo/bin/cargo" test -p atlas-contract --test contract_pact the_recorded_pact_still_matches >"$L" 2>&1 )
+( cd server && CARGO="$HOME/.cargo/bin/cargo" bash ../scripts/named-test.sh require prefix atlas-contract contract_pact the_recorded_pact_still_matches && ATLAS_BLESS_PACT=1 "$HOME/.cargo/bin/cargo" test -p atlas-contract --test contract_pact the_recorded_pact_still_matches >"$L" 2>&1 )
 expect_refused "ATLAS_BLESS_PACT=1 cargo test --test contract_pact" $?
 because "" "$L" "failing on purpose"
 
@@ -390,7 +390,7 @@ head2 "A9b: G3 -- ...now follow the remedy the gate used to print"
 # refuse BEFORE it writes, and the pact must be byte-identical afterwards.
 PACT_SHA_BEFORE="$(sha256sum contracts/pacts/http.json | awk '{print $1}')"
 L="$(lg a9b)"
-( cd server && ATLAS_BLESS_PACT=1 "$HOME/.cargo/bin/cargo" test -p atlas-contract --test contract_pact the_recorded_pact_still_matches >"$L" 2>&1 )
+( cd server && CARGO="$HOME/.cargo/bin/cargo" bash ../scripts/named-test.sh require prefix atlas-contract contract_pact the_recorded_pact_still_matches && ATLAS_BLESS_PACT=1 "$HOME/.cargo/bin/cargo" test -p atlas-contract --test contract_pact the_recorded_pact_still_matches >"$L" 2>&1 )
 expect_refused "ATLAS_BLESS_PACT with a shrunken corpus" $?
 because "" "$L" "REFUSING TO RE-RECORD"
 if [ "$PACT_SHA_BEFORE" = "$(sha256sum contracts/pacts/http.json | awk '{print $1}')" ]; then
