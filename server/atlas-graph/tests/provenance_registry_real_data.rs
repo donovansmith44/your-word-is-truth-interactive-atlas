@@ -135,7 +135,7 @@ fn provenance_field_decls_per_file() -> BTreeMap<String, usize> {
 fn the_sweep_covers_every_provenance_bearing_row_family() {
     let per_file = provenance_field_decls_per_file();
 
-    let expected: BTreeMap<String, usize> = [("chrono.rs", 1usize), ("edge.rs", 27), ("node.rs", 2), ("store.rs", 1)].into_iter().map(|(f, n)| (f.to_string(), n)).collect();
+    let expected: BTreeMap<String, usize> = [("chrono.rs", 1usize), ("edge.rs", 27), ("node.rs", 1), ("store.rs", 1)].into_iter().map(|(f, n)| (f.to_string(), n)).collect();
     assert_eq!(
         per_file, expected,
         "graph-types' `pub provenance:` field declarations moved. If a NEW row family appeared, add it to \
@@ -143,7 +143,7 @@ fn the_sweep_covers_every_provenance_bearing_row_family() {
     );
 
     let node_decls = per_file["node.rs"];
-    assert_eq!(node_decls, 2, "graph-types/src/node.rs's provenance fields changed ({node_decls} now, 2 pinned: Node + the Card projection)");
+    assert_eq!(node_decls, 1, "graph-types/src/node.rs's provenance fields changed ({node_decls} now, 1 pinned: Node)");
 
     let total_decls: usize = per_file.values().sum();
     let row_structs = total_decls - node_decls - per_file["store.rs"];
