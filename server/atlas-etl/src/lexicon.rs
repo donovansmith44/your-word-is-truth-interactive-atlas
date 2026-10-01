@@ -29,9 +29,6 @@ pub struct LexEntry {
     pub glosses: Vec<String>,
     /// `senses[].gloss_en` in `id` order.
     pub senses: Vec<String>,
-    /// Sorted, deduplicated atomic domain codes (Louw-Nida for Greek, SDBH
-    /// for Hebrew).
-    pub domains: Vec<String>,
     /// The Strong's id of the root entry, when upstream gives one.
     pub root: Option<String>,
 }
@@ -91,8 +88,6 @@ struct RawEntry {
     #[serde(default)]
     senses: Vec<RawSense>,
     #[serde(default)]
-    domains: Vec<String>,
-    #[serde(default)]
     root: Option<String>,
 }
 
@@ -122,8 +117,6 @@ fn non_empty(s: String) -> Option<String> {
     }
 }
 
-/// One entry file. An empty string becomes `None` on the optional fields, senses are ordered by their
-/// `id`, and domains are sorted and deduplicated.
 pub fn parse_entry(json: &str) -> Result<LexEntry> {
     let raw: RawEntry = serde_json::from_str(json).context("lexicon entry is not the expected JSON shape")?;
     if !(raw.strong.starts_with('G') || raw.strong.starts_with('H')) || raw.strong.len() < 5 {
@@ -134,9 +127,6 @@ pub fn parse_entry(json: &str) -> Result<LexEntry> {
     }
     let mut senses = raw.senses;
     senses.sort_by_key(|s| s.id);
-    let mut domains = raw.domains;
-    domains.sort();
-    domains.dedup();
     Ok(LexEntry {
         strong: raw.strong,
         lang: raw.lang,
@@ -145,7 +135,6 @@ pub fn parse_entry(json: &str) -> Result<LexEntry> {
         pos: non_empty(raw.pos),
         glosses: raw.glosses.en.into_iter().map(|g| g.text).collect(),
         senses: senses.into_iter().map(|s| s.gloss_en).collect(),
-        domains,
         root: raw.root.and_then(non_empty),
     })
 }
@@ -334,7 +323,7 @@ mod tests {
       "domains": ["33.99", "13.115", "33.99"], "root": "G3004", "sources": ["strongs-greek", "tbesg", "ln-map"]}"#;
 
     #[test]
-    fn an_entry_parses_with_senses_by_id_and_domains_sorted_unique() {
+    fn an_entry_parses_with_senses_by_id() {
         let e = parse_entry(G3056).unwrap();
         assert_eq!(e.strong, "G3056");
         assert_eq!(e.lemma, "λόγος");
@@ -342,7 +331,6 @@ mod tests {
         assert_eq!(e.pos.as_deref(), Some("G:N-M"));
         assert_eq!(e.glosses, vec!["from G3004; something said", "word"]);
         assert_eq!(e.senses, vec!["first", "second"]);
-        assert_eq!(e.domains, vec!["13.115", "33.99"]);
         assert_eq!(e.root.as_deref(), Some("G3004"));
     }
 

@@ -101,8 +101,6 @@ fn document_root<S: GraphQuery>(snap: &S, document: &AnyNodeId) -> wire::Content
     wire::ContentsRoot { id: encode_node_id(document), title: title_of(snap, document), kind: wire::ContentsRootKind::Document, group: None, r#ref, locus, children }
 }
 
-/// A top-level entry opens where its first child does. One with no child to open at is
-/// a defect in the graph, never an entry to point at nothing.
 fn opening(root: &AnyNodeId, children: &[wire::ContentsChild]) -> (String, wire::TextRef) {
     let first = children.first().unwrap_or_else(|| panic!("{} contains nothing to open at", root.raw));
     (first.r#ref.clone(), first.locus.clone())

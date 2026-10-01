@@ -72,6 +72,7 @@ data World = World
   -- ABOUT a refusal (a 400 on a malformed reference) and cannot be given
   -- either by the two transports above.
   , transportProbe :: Text -> IO (Either Text (Int, ByteString))
+  , publishedSchema :: Maybe Value
   }
 
 -- `transport` is a function and has no Show instance, so World cannot

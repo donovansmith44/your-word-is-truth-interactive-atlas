@@ -27,12 +27,16 @@ If the owner's whole message is "go" or "continue", read your GO file and follow
 - **Taking an item:** take the first `ready` item in your lane whose dependencies are `done`. Claim it by setting its status to `claimed:<agent>:<ISO time>` in a one-line commit and pushing. If the push is rejected, fetch and read the queue again: someone else may have taken it.
 - **What an item gives you:** its base commit, the files it may touch, the gates it runs, and when it counts as done. Touch nothing else.
 - **Finishing:** set it to `review` with the commit range. The other agent reviews it (PRINCIPLES 14b), then marks it `done`. Nothing is done on its author's word alone.
+- **Reviewing:** the 14b pass (D.R.Y., the Haskell bar) and the 24a category pass (a bug is a category: was the failed abstraction named, the side chosen, every site migrated, and the category CLOSED so an offender cannot be written — 24b). Offenders you find go under FINDINGS in the queue; the owner decides. Never fix one on the side.
 - **New work:** anything you find that needs doing goes into the queue as `proposed`. Never do it on the side.
 - **Blocked on the owner:** write the question under **OWNER QUESTIONS**, mark the item `blocked:owner`, and take the next item. Never sit idle, and never guess on a ruling.
 - **Running out of tokens:** before you stop, write a `handoff:` line on the item saying where you are and the exact next step, then commit and push.
 
 ## Lanes and the files each may touch
 - **Lane A (Claude):** `server/`, `client/`, `graph-types/`, `contracts/`, `data/`, `tests/`, `docs/superpowers/{specs,plans}`.
+- **The backend** (PRINCIPLES 26): closed over the data — the server composes over the compiled artifact; a domain fact in server code (an id, a name, a date, a list, a special case, a pinned inventory) is an offender; it moves into `data/` with provenance and the code reads it through the graph.
+- **Tools vs the system** (PRINCIPLES 26a): the ETL, the compile binary and `scripts/` are tools that shape raw sources into the artifact, once; the served system reads the artifact and never parses a raw file or scans text.
+- **The client** (PRINCIPLES 25): composes over the generated contract types and nothing else; no domain parsing, formatting, scanning or arithmetic on the client; less client code is the direction.
 - **Codex:**
   - all of the `map-generator` repo
   - in this repo, only `scripts/backup/`, `docs/superpowers/reports/`, `.superpowers/analysis/`, and whatever files a claimed item explicitly names
@@ -61,7 +65,7 @@ Take the lock first, following `.superpowers/LOCKS.md`. The locks are:
 - **Licensing** (owner 2026-09-29): ingest nothing that isn't public domain, CC0, or attribution-only permissive (CC BY 4.0, MIT, BSD, Apache-2.0). ShareAlike/copyleft (CC BY-SA, ODbL, GPL), NonCommercial, NoDerivatives and unlicensed sources are out. Cite the license; record attribution in `LICENSES.md`.
 
 ## Commits and branches
-- **Commits:** small, one behaviour each, with a message that states what is now true.
+- **Commits (owner, 2026-09-30: "start squashing"):** one commit per task on the main branch, squashed at landing (`git merge --squash` or `cherry-pick -n` of the lane range), with a message that states what is now true. Lane branches may hold work-in-progress commits; they are never rewritten, only squashed when landed. Red-before-green evidence lives in the task report and the ledger, not in separate commits. Queue and ledger edits ride along with the task's commit or go in one batched commit; the only stand-alone queue commit is a claim, because its push is the mutual exclusion.
 - **Codex:** pushes to `lane/codex/<item-id>` and never pushes to `worktree-bible-atlas-m1`.
 - **Landing:** Claude lands reviewed work by cherry-picking it, holding the `land` lock. Claude's own work lands the same way, after Codex has reviewed it.
 

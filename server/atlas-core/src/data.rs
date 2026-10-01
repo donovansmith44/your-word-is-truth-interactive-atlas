@@ -26,8 +26,6 @@ pub struct Canon {
 }
 
 impl Canon {
-    /// `None` for a book or chapter this canon does not carry; a canon may hold only
-    /// some of the books, so a book is found by its code rather than its position.
     pub fn verses_in(&self, book: crate::refs::BookId, chapter: u16) -> Option<u16> {
         let chapter_index = usize::from(chapter).checked_sub(1)?;
         self.books.iter().find(|b| b.code == book.code())?.chapters.get(chapter_index).copied()
@@ -61,7 +59,7 @@ pub struct Person {
     #[serde(default)]
     pub children: Vec<String>,
     #[serde(default)]
-    pub partners: Vec<String>,
+    pub spouses: Vec<String>,
     #[serde(default)]
     pub first_year: Option<i32>,
     #[serde(default)]
@@ -102,6 +100,27 @@ pub struct PeopleGroupSeed {
 pub struct PeopleGroupReclassify {
     pub person_slug: String,
     pub reason: String,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct ParentageExclusion {
+    pub parent: String,
+    pub child: String,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct BrethrenSeed {
+    pub a: String,
+    pub b: String,
+    pub justification: atlas_graph_types::edge::Justification,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct ParentageSeed {
+    pub parent: String,
+    pub child: String,
+    pub parentage: atlas_graph_types::edge::Parentage,
+    pub justification: atlas_graph_types::edge::Justification,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -197,8 +216,6 @@ pub struct Event {
 }
 
 impl Event {
-    /// The years this event spans. A titled passage has none: the undated span it
-    /// carries is the whole atlas, which is no date to show.
     pub fn date(&self) -> Option<TimeRange> {
         match self.kind {
             EventKind::Event => Some(self.when),
@@ -298,8 +315,6 @@ pub struct BookMeta {
 }
 
 impl BookMeta {
-    /// The span the book was written across. A book dated at one end only records no
-    /// span, and none is invented for it.
     pub fn written(&self) -> Result<Option<TimeRange>, crate::CoreError> {
         match (self.write_from, self.write_to) {
             (Some(from), Some(to)) => TimeRange::new(from, to).map(Some),
@@ -603,6 +618,12 @@ pub struct AtlasData {
     pub fulfillment_seeds: Vec<FulfillmentSeed>,
     #[serde(skip)]
     pub typology_seeds: Vec<TypologySeed>,
+    #[serde(skip)]
+    pub parentage_seeds: Vec<ParentageSeed>,
+    #[serde(skip)]
+    pub parentage_exclusions: Vec<ParentageExclusion>,
+    #[serde(skip)]
+    pub brethren_seeds: Vec<BrethrenSeed>,
     #[serde(skip)]
     pub event_mentions: Vec<EventMentionSeed>,
     #[serde(skip)]

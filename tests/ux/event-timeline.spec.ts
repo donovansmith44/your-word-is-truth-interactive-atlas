@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { openVerse } from './lib/verse';
 import { api } from './lib/api';
 
 // Batch HOTFIX-4 requirement 1 ("whole-DAG chronological traversal"),
@@ -188,7 +189,7 @@ test('HOTFIX-4 req 2/5, TRAV-1/CHRONO-3: a general-kind container shows no trave
   expect(positions.timeline, 'a general-kind event carries NO timeline key at all, not an empty object').toBeFalsy();
 
   await page.goto('/read/LUK/1');
-  await page.getByTestId('verse-line-1').click();
+  await openVerse(page, 1);
   await page.getByTestId('verse-event-rob_luke_preface').click();
   await expect(page.getByTestId('popover-title')).toHaveText('Luke\'s preface to Theophilus');
 
@@ -422,126 +423,31 @@ test('AFFORDANCE-1: a dated event\'s own reader heading and verse EVENT-membersh
   await expect(page.getByTestId('popover-title')).toHaveText(detail.title);
 });
 
-// ---------------------------------------------------------------------
-// TRUNC-1 (requirement 7): the 20-verse wire cap's own honest truncation
-// signal -- the owner's own temple-dedication acceptance case. Unrelated
-// to timeline/Chronology traversal -- untouched by TRAV-1.
-// ---------------------------------------------------------------------
-
-test('TRUNC-1/ACCT-COALESCE-1: the temple-dedication popover\'s 1KI.8 witness shows the +46-more affordance and opens the full chapter; the 2CH witness (fix round 1) coalesces its own 3 chapters into ONE account, disclosing truncation summed across every chapter it spans', async ({ page }) => {
+test('ACCT-RUNS-1: the temple-dedication popover lists one entry per account the graph serves, each spanning every verse its account reads, and expanding one opens its whole first chapter', async ({ page }) => {
   const detail = await api.event('1ki_temple_dedication');
-  const kingsWitness = detail.witnesses.find((w: any) => w.book === '1KI');
-  const chroniclesWitness = detail.witnesses.find((w: any) => w.book === '2CH');
-  expect(kingsWitness, '1 Kings 8 is the owner\'s own named acceptance witness').toBeTruthy();
-  // Ground truth, at the wire level: the true count vs. what's delivered.
-  const kingsGroup = kingsWitness.verse_groups.find((g: any) => g.chapter === 8);
-  expect(kingsGroup.count, '1 Kings 8 has 66 real verses').toBe(66);
-  expect(kingsGroup.verses.length, 'the wire caps the delivered verses at 20').toBe(20);
-  const missing = kingsGroup.count - kingsGroup.verses.length;
-  expect(missing).toBe(46);
+  const frontier = await api.nodeEdges('Event:1ki_temple_dedication', 'attested-in', { limit: 200 });
+  expect(frontier.next ?? null).toBeNull();
+  const accounts = [...new Map(frontier.entries.map((e: any) => [JSON.stringify(e.loci), e.loci])).values()] as any[];
+  const firstUnitOf = (book: string) => accounts.find((loci) => loci[0].from.unit.book === book)[0].from.unit;
+  const kings = firstUnitOf('1KI');
+  const chronicles = firstUnitOf('2CH');
 
-  // M-D3/U6, owner verbatim: "'read the whole chapter' affordance REMOVED
-  // when already reading that chapter" -- correctly true here of a WITNESS
-  // entry's own expand button, same as any other: opening this event via a
-  // 1KI.8 verse-line click means popover-verse-expand-event-witness-1KI.8.1-20
-  // is now the chapter the reader is already showing (nothing left for it
-  // to honestly offer -- the FULL, real chapter is already the page behind
-  // it), so it is correctly absent, not merely inert. Verified from TWO
-  // separate navigations instead of one -- this event has exactly two
-  // witnesses (1KI.8, 2CH.5-7), each needs to NOT be the reader's own
-  // displayed chapter to stay expand-testable, and no third witness exists
-  // to anchor a single neutral navigation for both at once.
-  const kingsVref = kingsWitness.verse_groups[0].verses[0];
-  const kingsV = parseVerse(kingsVref);
-  const chroniclesVref = chroniclesWitness.verse_groups[0].verses[0];
-  const chroniclesV = parseVerse(chroniclesVref);
-
-  // Pass 1: reader on 2 Chronicles -- 1 Kings 8's own witness entry is a
-  // DIFFERENT chapter, so its own truncation affordance is fully testable.
-  await page.goto(`/read/${chroniclesV.book}/${chroniclesV.chapter}`);
-  // Keyboard activation -- see openEventPopover's own comment above.
-  await page.getByTestId(`verse-line-${chroniclesV.verse}`).focus();
-  await page.keyboard.press('Enter');
-  await page.getByTestId('verse-event-1ki_temple_dedication').click();
-  await expect(page.getByTestId('popover-title')).toHaveText(detail.title);
-  await expect(page.getByTestId('popover-section-event-witnesses')).toBeVisible();
-
-  // The truncated 1 Kings 8 entry specifically: quiet "+46 more — read
-  // the chapter" affordance. O2 (2026-08-23) retired the old text-button
-  // (and its own `data-truncated` marker) in favor of RevealControls'
-  // shared down/double-down arrow pair -- the identical truncation-aware
-  // wording now lives in the button's own title/aria-label (RevealControls'
-  // MoreLabel override, MiniReaderExpand.razor's own O2 comment) rather
-  // than its visible text (an icon glyph now), still wired to the SAME
-  // MiniReaderExpand control, no parallel affordance -- clicking it opens
-  // the real, full chapter.
-  //
-  // FIX ROUND 2: this locator was the standing "pre-existing TRUNC-1
-  // noise" both prior reports disclosed -- it still expected the
-  // PRE-coalesce delivered-tail span ("1KI.8.1-20"), which
-  // ACCT-COALESCE-1's own PERF-3 correction (fix round 1) had already,
-  // correctly, replaced with the honest full span computed from the
-  // group's true Count ("1KI.8.1-66": the cap keeps the lowest-numbered
-  // 20 of 66, delivered contiguously from verse 1, so the true span end
-  // IS the count). Resolved off the wire's own ground truth rather than
-  // hardcoded, the same discipline as the 2CH half below.
-  const kingsSpan = `1KI.8.1-${kingsGroup.count}`;
-  const kingsExpand = page.getByTestId(`popover-verse-expand-event-witness-${kingsSpan}`);
-  await expect(kingsExpand).toHaveAttribute('title', `+${missing} more — read the chapter`);
-  await kingsExpand.click();
-  const chapter = await api.chapter('1KI.8');
-  await expect(page.getByTestId(/^popover-reader-verse-/).first()).toBeVisible();
-  await expect(page.getByTestId(/^popover-reader-verse-/)).toHaveCount(chapter.verses.length);
-
-  // Pass 2: reader on 1 Kings -- the 2 Chronicles witness entry is now the
-  // DIFFERENT chapter, so ITS OWN affordance is testable instead.
-  //
-  // ACCT-COALESCE-1 (fix round 1, owner bug report -- "in parallel
-  // accounts... accounts from the same book + chapter are listed. makes
-  // no sense"): this witness's own 3 VerseGroups (2CH.5/6/7, ONE curated
-  // witness row) now COALESCE into a single account, span "2CH.5.2-7.10"
-  // -- never 3 separate same-book entries. Truncation is summed across
-  // EVERY distinct chapter the coalesced block spans (chapter 5: 13
-  // verses, under cap; chapter 6: 42 real, capped at 20, 22 missing;
-  // chapter 7: 10 verses, under cap) -- 22 total, disclosed on the ONE
-  // entry's own expand affordance (PassageBlockBuilder.BuildCoalescedBlock's
-  // own "sum across every group" math, mirroring ArrowNav.ComputeTruncatedBy).
-  const ch5 = chroniclesWitness.verse_groups.find((g: any) => g.chapter === 5);
-  const ch6 = chroniclesWitness.verse_groups.find((g: any) => g.chapter === 6);
-  const ch7 = chroniclesWitness.verse_groups.find((g: any) => g.chapter === 7);
-  expect(ch5.count, '2 Chronicles 5 (within this witness) is under the cap').toBeLessThan(20);
-  expect(ch6.count, '2 Chronicles 6 is genuinely over the cap -- the SAME honest signal fires for a MIDDLE chapter of the coalesced span, not just the owner\'s own named 1 Kings case').toBeGreaterThan(20);
-  expect(ch7.count, '2 Chronicles 7 (within this witness) is under the cap').toBeLessThan(20);
-  const coalescedMissing = (ch5.count - ch5.verses.length) + (ch6.count - ch6.verses.length) + (ch7.count - ch7.verses.length);
-  expect(coalescedMissing).toBe(ch6.count - ch6.verses.length); // only ch6 contributes, but summed generically, not hardcoded to "only ch6 matters"
-
-  await page.goto(`/read/${kingsV.book}/${kingsV.chapter}`);
-  await page.getByTestId(`verse-line-${kingsV.verse}`).focus();
+  await page.goto(`/read/${chronicles.book}/${chronicles.chapter}`);
+  await page.getByTestId(`verse-line-${chronicles.verse}`).focus();
   await page.keyboard.press('Enter');
   await page.getByTestId('verse-event-1ki_temple_dedication').click();
   await expect(page.getByTestId('popover-title')).toHaveText(detail.title);
 
   const witnessesSection = page.getByTestId('popover-section-event-witnesses');
   const entries = witnessesSection.locator('[data-testid^="event-witness-"]');
-  await expect(entries).toHaveCount(2); // ONE per witness ROW (1KI + 2CH), never one per chapter
-
-  // Resolve the coalesced entry's own real span directly off the DOM
-  // (never reconstruct PassageGrouping.SpanRef's own formatting logic by
-  // hand in the test -- popover-sections.spec.ts's own established
-  // discipline) rather than guessing the testid.
-  const allTestIds = await entries.evaluateAll((els) => els.map((el) => el.getAttribute('data-testid')));
-  const chroniclesEntryTestId = allTestIds.find((id) => id?.startsWith('event-witness-2CH.'));
-  expect(chroniclesEntryTestId, 'exactly one coalesced 2CH account entry must exist').toBeTruthy();
-  const chroniclesEntry = witnessesSection.getByTestId(chroniclesEntryTestId!);
-  const chroniclesExpandBtn = chroniclesEntry.getByTestId(`popover-verse-expand-${chroniclesEntryTestId}`);
-  await expect(chroniclesExpandBtn).toHaveAttribute('title', `+${coalescedMissing} more — read the chapter`);
-
-  // Expanding opens the coalesced entry's own FIRST chapter (2 Chronicles
-  // 5, MiniReaderExpand's own one-chapter-at-a-time limit -- PassageList.razor's
-  // own FocalToOf comment has the "why" story) in full.
-  await chroniclesExpandBtn.click();
-  const chapter5 = await api.chapter('2CH.5');
-  await expect(chroniclesEntry.locator('[data-testid^="popover-reader-verse-"]')).toHaveCount(chapter5.verses.length);
+  await expect(entries).toHaveCount(accounts.length);
+  const entryIds = await entries.evaluateAll((els) => els.map((el) => el.getAttribute('data-testid')));
+  const kingsEntryId = entryIds.find((id) => id?.startsWith(`event-witness-${kings.book}.${kings.chapter}.`))!;
+  const kingsExpand = witnessesSection.getByTestId(`popover-verse-expand-${kingsEntryId}`);
+  await expect(kingsExpand).toHaveAttribute('title', 'Read the whole chapter');
+  await kingsExpand.click();
+  const chapter = await api.chapter(`${kings.book}.${kings.chapter}`);
+  await expect(witnessesSection.getByTestId(kingsEntryId).locator('[data-testid^="popover-reader-verse-"]')).toHaveCount(chapter.verses.length);
 });
 
 // ---------------------------------------------------------------------
@@ -995,7 +901,7 @@ test('EV-1/dup-death regression: MAT.8.3 cites exactly ONE event -- after ATTEST
   expect(verseOut.events.map((e: any) => e.id), 'MAT.8.3 must cite exactly one event id, never two independently-dated opinions about the identical pericope').toEqual(['mat_leper_healed']);
 
   await page.goto('/read/MAT/8');
-  await page.getByTestId('verse-line-3').click();
+  await openVerse(page, 3);
   await expect(page.getByTestId('popover-title')).toHaveText('MAT.8.3');
 
   const eventSection = page.getByTestId('popover-section-event-membership');

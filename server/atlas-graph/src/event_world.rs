@@ -259,16 +259,16 @@ pub fn place_stub_node_id(id: &str) -> atlas_graph_types::id::AnyNodeId {
 fn place_node(p: &atlas_core::data::Place, atlas: &AtlasData) -> Node {
     // The KJV aliases ride the payload because a `Named` row's object is a bare string with no `Position`
     // to index through the generic port: the payload is the queryable form.
-    let aliases: Vec<String> = atlas
-        .place_name_aliases_for(&p.id)
-        .iter()
-        .filter_map(|a| a.translations.get(crate::kjv_adapter::KJV_TRANSLATION).cloned())
-        .collect();
+    let aliases = kjv_aliases_of(atlas, &p.id);
     Node {
         id: PlaceId::new(p.id.clone()).erase(),
         payload: NodePayload::Place { canonical: p.name.clone(), lat: p.lat, lon: p.lon, aliases, description: None },
         provenance: "curated-places".to_string(),
     }
+}
+
+pub fn kjv_aliases_of(atlas: &AtlasData, place: &str) -> Vec<String> {
+    atlas.place_name_aliases_for(place).iter().filter_map(|a| a.translations.get(crate::kjv_adapter::KJV_TRANSLATION).cloned()).collect()
 }
 
 fn event_provenance(id: &str) -> &'static str {
@@ -371,24 +371,22 @@ pub fn populate_nodes_and_direct_rows(graph: &mut Graph, atlas: &AtlasData) -> E
 
         let event_id = EventId::new(e.id.clone());
 
-        for w in atlas_core::scene::witnesses_for(e) {
-            let text = match (&w.ref_note, &w.robertson_section) {
+        for a in atlas_core::scene::accounts_of(e) {
+            let text = match (&a.ref_note, &a.robertson_section) {
                 (Some(r), Some(rs)) => Some(format!("{r}; {rs}")),
                 (Some(r), None) => Some(r.clone()),
                 (None, Some(rs)) => Some(rs.clone()),
                 (None, None) => None,
             };
-            for vg in &w.verse_groups {
-                for v in &vg.verses {
-                    let Some(range) = verse_to_range(v) else { continue };
-                    graph.attests.push(Attests {
-                        event: event_id.clone(),
-                        attestation: range,
-                        provenance: "event-witnesses".to_string(),
-                        justification: Justification { text: text.clone(), grounds: BTreeSet::new() },
-                    });
-                    stats.attests_rows += 1;
-                }
+            for v in &a.verses {
+                let Some(range) = verse_to_range(v) else { continue };
+                graph.attests.push(Attests {
+                    event: event_id.clone(),
+                    attestation: range,
+                    provenance: "event-witnesses".to_string(),
+                    justification: Justification { text: text.clone(), grounds: BTreeSet::new() },
+                });
+                stats.attests_rows += 1;
             }
         }
 

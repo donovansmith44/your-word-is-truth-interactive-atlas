@@ -118,8 +118,6 @@ pub async fn eras(State(graph): State<Arc<GraphService>>) -> Json<Vec<wire::Era>
     )
 }
 
-/// An era's or a reign's years were checked as a range when they were curated; the graph
-/// carries them on as two integers.
 fn curated_span(from_year: Year, to_year: Year) -> wire::TimeRange {
     wire::TimeRange::of(TimeRange { from_year, to_year })
 }

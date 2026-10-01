@@ -15,4 +15,5 @@ Feature: edge families — the declared relations, as a consumer walks them
   Scenario: one family's page, as a consumer walks it
     When I GET /api/node/Place:hazor-1/edges?kind=site-of
     Then the consumed projection edge-page equals fixture "edges-hazor-1-site-of"
-    And every "kind" in the answer names a term the graph declares
+    And every "kind" of a node, an edge page, an edge summary or an anchor in the answer names a term the graph declares
+    And every field the schema publishes as an enum carries one of its values

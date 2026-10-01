@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { openVerse } from './lib/verse';
 import { api } from './lib/api';
 import { setZoomExact } from './lib/zoom';
 
@@ -387,7 +388,7 @@ test('TRAVERSAL-3: the place card\'s next-event traversal agrees with the popove
   // retired -- the verse popover itself now shows EVENT membership only;
   // traversal lives on the EVENT node reached from its own "EVENT" row) ---
   await page.goto('/read/NUM/13');
-  await page.getByTestId('verse-line-26').click(); // NUM.13.26, one of ex_kadesh's own curated verses
+  await openVerse(page, 26); // NUM.13.26, one of ex_kadesh's own curated verses
   await expect(page.getByTestId('popover-title')).toHaveText('NUM.13.26');
   await page.getByTestId('verse-event-ex_kadesh').click();
   await expect(page.getByTestId('popover-title')).toHaveText('Spies return to Kadesh-barnea');

@@ -10,7 +10,6 @@ path = "src/main.rs"
 [dependencies]
 atlas-contract = { path = "../atlas-contract" }
 atlas-graph = { path = "../atlas-graph" }
-atlas-etl = { path = "../atlas-etl" }
 anyhow = "1"
 axum = "0.8"
 tokio = { version = "1", features = ["rt-multi-thread", "macros", "net"] }

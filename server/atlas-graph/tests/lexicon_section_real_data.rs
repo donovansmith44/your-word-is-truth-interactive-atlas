@@ -12,9 +12,9 @@ use atlas_graph_types::sections::Section;
 use atlas_graph_types::store::GraphQuery;
 
 const PINNED: [(&str, &str); 4] = [
-    ("core", "f0088b69dccd54dfd79e43b4b961c87d"),
-    ("kjv", "a97cc311938de640be6e525f32b263b6"),
-    ("concord", "1b6b2b4cf4a9462f2d24140354973799"),
+    ("core", "c6a98eba9abf4fe3af72609e656a7418"),
+    ("kjv", "6f413a55daedb14b489139d97814d214"),
+    ("concord", "bfe52b2b8fa22a3228b5d8a8ff2e1403"),
     ("kretzmann", "cfebcd669fe2737850598fbc8b57ff24"),
 ];
 
@@ -61,7 +61,7 @@ fn the_served_sections_carry_every_entry_and_a_verses_words_in_token_order() {
     let jhn = atlas_core::canon::resolve_alias("John").unwrap().0;
     let verse = at(&atlas_graph::kjv_adapter::verse_node_id(jhn, 3, 16));
     let summary = snap.edge_summary(&verse);
-    assert_eq!(summary.get(&EdgeKind::Directed(RelationId::Occurs, Direction::Inverse)).copied(), Some(26), "26 tagged tokens, in ord (spec 7.3)");
+    assert_eq!(summary.get(&EdgeKind::Directed(RelationId::Occurs, Direction::Inverse)).copied(), Some(21), "26 tagged tokens of 21 entries: one edge per entry, in ord (spec 7.3)");
     let words = snap.edges_with_nodes(&verse, &EdgeQuery { kind: EdgeKind::Directed(RelationId::Occurs, Direction::Inverse), cursor: None, limit: 100 });
     let ids: Vec<String> = words.entries.iter().map(|e| node_of(&e.entry.node).raw).collect();
     assert_eq!(&ids[..5], &["G3779", "G1063", "G0025", "G3588", "G2316"], "token order, not id order");
@@ -83,13 +83,12 @@ fn an_entrys_concordance_is_in_canonical_order_and_the_payload_is_as_published()
     assert!(verses.windows(2).all(|w| w[0] < w[1]), "canonical reading order: {verses:?}");
     let node = snap.node(&AnyNodeId { kind: NodeKind::LexiconEntry, raw: "G3056".into() }).unwrap();
     match node.payload {
-        atlas_graph_types::node::NodePayload::LexiconEntry { strong, lang, lemma, translit, glosses, domains, root, .. } => {
+        atlas_graph_types::node::NodePayload::LexiconEntry { strong, lang, lemma, translit, glosses, root, .. } => {
             assert_eq!(strong, "G3056");
             assert_eq!(lang, "grc");
             assert_eq!(lemma, "λ\u{1f79}γος");
             assert_eq!(translit.as_deref(), Some("lógos"));
             assert_eq!(glosses[1], "word");
-            assert!(domains.contains(&"13.115".to_string()));
             assert_eq!(root.as_deref(), Some("G3004"));
         }
         other => panic!("{other:?}"),

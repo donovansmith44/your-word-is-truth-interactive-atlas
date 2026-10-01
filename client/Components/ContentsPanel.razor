@@ -36,6 +36,7 @@
     private ContentsTreeModel? _model;
     private string? _error;
     private Corpus? _loadedFor;
+    private readonly RequestSeries _contents = new();
 
     private string StorageKey => $"contents-expanded-{Corpus.WireName()}";
 
@@ -49,7 +50,11 @@
         _loadedFor = Corpus;
         try
         {
-            var contents = await Atlas.Contents(Corpus);
+            if (await _contents.Next().Fetch(() => Atlas.Contents(Corpus)) is not { } contents)
+            {
+                return;
+            }
+
             var model = ContentsTreeModel.From(contents);
             var remembered = await RememberedAsync();
             if (remembered is { Length: > 0 })

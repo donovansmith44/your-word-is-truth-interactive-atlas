@@ -199,15 +199,14 @@ public sealed class VerseTextSectionProvider : IPopoverSectionProvider
                 return null;
         }
 
-        IReadOnlyList<Verse> focalVerses;
+        IReadOnlyList<TextUnit> focalVerses;
         try
         {
-            var chapterText = await api.Chapter(book, chapter);
-            focalVerses = chapterText.Verses.Where(cv => cv.Number >= focalFrom && cv.Number <= focalTo).ToList();
+            focalVerses = (await api.ChapterText(book, chapter)).Between(focalFrom, focalTo);
         }
         catch (Exception)
         {
-            focalVerses = new List<Verse>();
+            focalVerses = [];
         }
 
         var registry = await FrontierProvenance.RegistryOrNull(api);
@@ -221,7 +220,7 @@ public sealed class VerseTextSectionProvider : IPopoverSectionProvider
             builder.AddAttribute(seq++, "FocalFromVerse", focalFrom);
             builder.AddAttribute(seq++, "FocalToVerse", focalTo);
             builder.AddAttribute(seq++, "CompactText", compactText);
-            builder.AddAttribute(seq++, "FocalVerses", (IReadOnlyList<Verse>)focalVerses);
+            builder.AddAttribute(seq++, "FocalVerses", focalVerses);
             builder.AddAttribute(seq++, "OnExplore", EventCallback.Factory.Create<IExplorable>(ctx, n => ctx.PushAsync(n)));
             builder.CloseComponent();
 
@@ -382,10 +381,10 @@ public sealed class CrossRefsSection : IPopoverSectionProvider
     private static async Task<List<PassageSourceUnit>> ResolveUnits(AtlasClient api, List<(CrossRef Xref, (string Book, int Chapter, int FromVerse, int ToVerse)? Span)> targets)
     {
         var chapterKeys = targets.Where(t => t.Span is not null).Select(t => (t.Span!.Value.Book, t.Span.Value.Chapter)).Distinct().ToList();
-        var chapters = new Dictionary<(string, int), Chapter>();
+        var chapters = new Dictionary<(string, int), ChapterText>();
         try
         {
-            var fetched = await Task.WhenAll(chapterKeys.Select(k => api.Chapter(k.Item1, k.Item2)));
+            var fetched = await Task.WhenAll(chapterKeys.Select(k => api.ChapterText(k.Item1, k.Item2)));
             foreach (var (key, chapter) in chapterKeys.Zip(fetched))
             {
                 chapters[key] = chapter;
@@ -400,15 +399,7 @@ public sealed class CrossRefsSection : IPopoverSectionProvider
         {
             if (span is { } s && chapters.TryGetValue((s.Book, s.Chapter), out var chapter))
             {
-                var verses = new List<PassageListVerse>();
-                for (var v = s.FromVerse; v <= s.ToVerse; v++)
-                {
-                    var cv = chapter.Verses.FirstOrDefault(cv => cv.Number == v);
-                    if (cv is not null)
-                    {
-                        verses.Add(new PassageListVerse($"{s.Book}.{s.Chapter}.{v}", cv.Text, Places: cv.Places, Persons: cv.Persons, WordsOfChrist: cv.WordsOfChrist));
-                    }
-                }
+                var verses = chapter.Between(s.FromVerse, s.ToVerse).Select(PassageListVerse.Of).ToList();
                 if (verses.Count > 0)
                 {
                     units.Add(new PassageSourceUnit(verses));
@@ -631,17 +622,14 @@ public sealed class CatechismScripturesSection : IPopoverSectionProvider
             return null;
         }
 
-        var mentionData = new Dictionary<string, Verse>();
+        var servedText = new Dictionary<string, TextUnit>();
         try
         {
             var chapterKeys = detail.Verses.Select(v => CanonRef.ParseVerse(v.Vref)).Select(p => (p.Book, p.Chapter)).Distinct().ToList();
-            var fetched = await Task.WhenAll(chapterKeys.Select(k => api.Chapter(k.Book, k.Chapter)));
-            foreach (var (key, chapterText) in chapterKeys.Zip(fetched))
+            var fetched = await Task.WhenAll(chapterKeys.Select(k => api.ChapterText(k.Book, k.Chapter)));
+            foreach (var unit in fetched.SelectMany(chapterText => chapterText.Units))
             {
-                foreach (var cv in chapterText.Verses)
-                {
-                    mentionData[$"{key.Book}.{key.Chapter}.{cv.Number}"] = cv;
-                }
+                servedText[unit.Ref] = unit;
             }
         }
         catch (Exception)
@@ -662,8 +650,7 @@ public sealed class CatechismScripturesSection : IPopoverSectionProvider
                 currentGroup = new List<PassageListVerse>();
                 currentQuestion = v.Question;
             }
-            var mention = mentionData.GetValueOrDefault(v.Vref);
-            currentGroup.Add(new PassageListVerse(v.Vref, v.Text, Places: mention?.Places, Persons: mention?.Persons, WordsOfChrist: mention?.WordsOfChrist));
+            currentGroup.Add(servedText.TryGetValue(v.Vref, out var unit) ? PassageListVerse.Of(unit) : new PassageListVerse(v.Vref, v.Text));
         }
         if (currentGroup is not null)
         {
@@ -756,7 +743,7 @@ public sealed class PlaceDatesSection : IPopoverSectionProvider
             return null;
         }
 
-        var versesOfEach = await Task.WhenAll(dates.Select(date => VerseTextResolver.ResolveAsync(api, date.Verses)));
+        var versesOfEach = await Task.WhenAll(dates.Select(date => VerseTextResolver.ResolveSpansAsync(api, date.Claim.Verses)));
 
         RenderFragment body = builder =>
         {
@@ -1111,42 +1098,10 @@ public sealed class EventDateAndPlacesSection : IPopoverSectionProvider
 
 file static class WitnessUnitsResolver
 {
-    public static async Task<List<PassageSourceUnit>> ResolveAsync(AtlasClient api, IReadOnlyList<EventWitness> witnesses)
+    public static async Task<List<PassageSourceUnit>> ResolveAsync(AtlasClient api, IReadOnlyList<EventAccount> accounts)
     {
-        Versification? canon = null;
-        try
-        {
-            canon = Versification.From(await api.Books());
-        }
-        catch (Exception)
-        {
-        }
-
-        var units = witnesses.Select(w =>
-        {
-            var verses = PassageBlockBuilder.FlattenWitness(w);
-            return new PassageSourceUnit(verses, CoalesceAcrossChapters: true, Canon: canon);
-        }).ToList();
-
-        List<PassageListVerse> resolvedFlat;
-        try
-        {
-            var allVrefs = witnesses.SelectMany(w => w.VerseGroups.SelectMany(g => g.Verses)).ToList();
-            resolvedFlat = await VerseTextResolver.ResolveAsync(api, allVrefs);
-        }
-        catch (Exception)
-        {
-            resolvedFlat = new List<PassageListVerse>();
-        }
-        // GroupBy + first-wins, not a raw ToDictionary: defensive against a duplicate Vref
-        // across two witnesses in the network response (which ToDictionary would throw on).
-        var resolvedByVref = resolvedFlat.GroupBy(v => v.Vref).ToDictionary(g => g.Key, g => g.First());
-        return units.Select(u => new PassageSourceUnit(
-            u.Verses.Select(v =>
-            {
-                var resolved = resolvedByVref.GetValueOrDefault(v.Vref);
-                return new PassageListVerse(v.Vref, resolved?.Text ?? "", v.GroupCount, resolved?.Places, resolved?.Persons, resolved?.WordsOfChrist);
-            }).ToList(), CoalesceAcrossChapters: u.CoalesceAcrossChapters, Canon: u.Canon)).ToList();
+        var verses = await Task.WhenAll(accounts.Select(account => VerseTextResolver.ResolveSpansAsync(api, account.Runs)));
+        return accounts.Zip(verses).Select(PassageSourceUnit (pair) => new AccountSourceUnit(pair.Second, pair.First)).ToList();
     }
 }
 
@@ -1162,29 +1117,23 @@ public sealed class EventWitnessesSection : IPopoverSectionProvider
         }
 
         EventPage detail;
+        IReadOnlyList<EventAccount> accounts;
         try
         {
             detail = await ev.DetailAsync(api);
+            accounts = await EventAccounts.ReadAsync(ctx.Graph, ev.EventId);
         }
         catch (Exception)
         {
             return null;
         }
 
-        if (detail.Witnesses.Count == 0)
+        if (accounts.Count == 0)
         {
             return null;
         }
 
-        List<PassageSourceUnit> units;
-        try
-        {
-            units = await WitnessUnitsResolver.ResolveAsync(api, detail.Witnesses);
-        }
-        catch (Exception)
-        {
-            return null;
-        }
+        var units = await WitnessUnitsResolver.ResolveAsync(api, accounts);
 
         var multi = units.Count > 1;
         var registry = await FrontierProvenance.RegistryOrNull(api);
@@ -1349,56 +1298,29 @@ public sealed class VerseParallelsSection : IPopoverSectionProvider
             return null;
         }
 
-        EventPage?[] details;
-        try
+        var own = CanonRef.BibleRefOf(ownVref);
+        var accountsOfEach = await Task.WhenAll(events.Select(async e =>
         {
-            details = await Task.WhenAll(events.Select(async e =>
+            try
             {
-                try
-                {
-                    return await new EventNode(e.Id, e.Label).DetailAsync(api);
-                }
-                catch (Exception)
-                {
-                    return null;
-                }
-            }));
-        }
-        catch (Exception)
-        {
-            return null;
-        }
-
-        var qualifying = new List<(string Label, List<EventWitness> OtherWitnesses)>();
-        foreach (var (e, detail) in events.Zip(details))
-        {
-            if (detail is null)
-            {
-                continue;
+                return await EventAccounts.ReadAsync(ctx.Graph, e.Id);
             }
-            var others = detail.Witnesses.Where(w => !w.VerseGroups.Any(g => g.Verses.Contains(ownVref))).ToList();
-            if (others.Count > 0)
+            catch (Exception)
             {
-                qualifying.Add((e.Label, others));
+                return [];
             }
-        }
+        }));
+        var qualifying = events.Zip(accountsOfEach)
+            .Select(pair => (pair.First.Label, OtherAccounts: pair.Second.Where(account => !account.Reads(own)).ToList()))
+            .Where(q => q.OtherAccounts.Count > 0)
+            .ToList();
 
         if (qualifying.Count == 0)
         {
             return null;
         }
 
-        List<List<PassageSourceUnit>> unitsPerEvent;
-        try
-        {
-            // Task.WhenAll preserves input order, so unitsPerEvent[i] lines up with
-            // qualifying[i] in the render fragment below.
-            unitsPerEvent = (await Task.WhenAll(qualifying.Select(q => WitnessUnitsResolver.ResolveAsync(api, q.OtherWitnesses)))).ToList();
-        }
-        catch (Exception)
-        {
-            return null;
-        }
+        var unitsPerEvent = await Task.WhenAll(qualifying.Select(q => WitnessUnitsResolver.ResolveAsync(api, q.OtherAccounts)));
 
         var multiEvent = qualifying.Count > 1;
 
@@ -2105,16 +2027,18 @@ public sealed class PersonFamilySection : IPopoverSectionProvider
             return null;
         }
 
-        List<NodeRef> parents, partners, children;
+        List<EdgeEntry> parents, children;
+        List<NodeRef> spouses, brethren;
         var siblings = new List<NodeRef>();
         try
         {
-            parents = (await ctx.Graph.Edges(person.PersonId, EdgeKind.ChildOf, cursor: null, limit: 200)).Entries.Select(e => e.Node).ToList();
-            partners = (await ctx.Graph.Edges(person.PersonId, EdgeKind.PartnerOf, cursor: null, limit: 200)).Entries.Select(e => e.Node).ToList();
-            children = (await ctx.Graph.Edges(person.PersonId, EdgeKind.ParentOf, cursor: null, limit: 200)).Entries.Select(e => e.Node).ToList();
-            foreach (var parent in parents)
+            parents = (await ctx.Graph.Edges(person.PersonId, EdgeKind.ChildOf, cursor: null, limit: 200)).Entries.ToList();
+            spouses = (await ctx.Graph.Edges(person.PersonId, EdgeKind.SpouseOf, cursor: null, limit: 200)).Entries.Select(e => e.Node).ToList();
+            children = (await ctx.Graph.Edges(person.PersonId, EdgeKind.ParentOf, cursor: null, limit: 200)).Entries.ToList();
+            brethren = (await ctx.Graph.Edges(person.PersonId, EdgeKind.BrethrenOf, cursor: null, limit: 200)).Entries.Select(e => e.Node).ToList();
+            foreach (var parent in parents.Where(p => Kinship.MakesSiblings(Kinship.Of(p))))
             {
-                var theirs = (await ctx.Graph.Edges(parent.Id, EdgeKind.ParentOf, cursor: null, limit: 200)).Entries.Select(e => e.Node);
+                var theirs = (await ctx.Graph.Edges(parent.Node.Id, EdgeKind.ParentOf, cursor: null, limit: 200)).Entries.Where(e => Kinship.MakesSiblings(Kinship.Of(e))).Select(e => e.Node);
                 foreach (var s in theirs)
                 {
                     if (s.Id != person.PersonId && siblings.All(x => x.Id != s.Id))
@@ -2129,7 +2053,8 @@ public sealed class PersonFamilySection : IPopoverSectionProvider
             return null;
         }
 
-        if (parents.Count + partners.Count + children.Count + siblings.Count == 0)
+        var groups = Kinship.Groups(parents, spouses, children, siblings, brethren);
+        if (groups.Count == 0)
         {
             return null;
         }
@@ -2137,19 +2062,14 @@ public sealed class PersonFamilySection : IPopoverSectionProvider
         RenderFragment body = builder =>
         {
             var seq = PersonSectionRendering.Heading(builder, 0, "FAMILY", "person-family-heading");
-            foreach (var (label, testid, people) in new[] { ("Parents", "parents", parents), ("Partners", "partners", partners), ("Children", "children", children), ("Siblings", "siblings", siblings) })
+            foreach (var group in groups)
             {
-                if (people.Count == 0)
-                {
-                    continue;
-                }
-
                 builder.OpenElement(seq++, "p");
                 builder.AddAttribute(seq++, "class", "person-family-label");
-                builder.AddAttribute(seq++, "data-testid", $"person-family-{testid}");
-                builder.AddContent(seq++, $"{label} ({people.Count})");
+                builder.AddAttribute(seq++, "data-testid", $"person-family-{group.TestId}");
+                builder.AddContent(seq++, group.Heading);
                 builder.CloseElement();
-                seq = PersonSectionRendering.Chips(builder, seq, $"person-{testid}", people.Select(p => (NodeIds.LocalPart(p), p.Label, (IExplorable)new PersonNode(p.Id, p.Label))), ctx);
+                seq = PersonSectionRendering.Chips(builder, seq, $"person-{group.TestId}", group.People.Select(p => (NodeIds.LocalPart(p), p.Label, (IExplorable)new PersonNode(p.Id, p.Label))), ctx);
             }
         };
         return new PopoverSection("person-family", body);

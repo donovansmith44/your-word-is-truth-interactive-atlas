@@ -95,14 +95,15 @@ fn insert_nodes(tx: &Transaction, nodes: &[&Node]) -> Result<(), SqliteError> {
 
 fn insert_edges(tx: &Transaction, edges: &[EdgeEntryOut]) -> Result<(), SqliteError> {
     let mut stmt = tx.prepare_cached(
-        "INSERT INTO edge_index (subject, rel, dir, ord, object, edge_id, meta_kind, meta_narrative, meta_votes, row_family, row_id) \
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        "INSERT INTO edge_index (subject, rel, dir, ord, object, edge_id, meta_kind, meta_narrative, meta_votes, meta_parentage, row_family, row_id) \
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
     )?;
     for e in edges {
-        let (meta_kind, narrative, votes): (i64, Value, Value) = match &e.meta {
-            EdgeMeta::None => (0, Value::Null, Value::Null),
-            EdgeMeta::Narrative(n) => (1, Value::Text(n.0.clone()), Value::Null),
-            EdgeMeta::Votes(v) => (2, Value::Null, Value::Integer(i64::from(*v))),
+        let (meta_kind, narrative, votes, parentage): (i64, Value, Value, Value) = match &e.meta {
+            EdgeMeta::None => (0, Value::Null, Value::Null, Value::Null),
+            EdgeMeta::Narrative(n) => (1, Value::Text(n.0.clone()), Value::Null, Value::Null),
+            EdgeMeta::Votes(v) => (2, Value::Null, Value::Integer(i64::from(*v)), Value::Null),
+            EdgeMeta::Parentage(p) => (3, Value::Null, Value::Null, Value::Text(p.name().to_string())),
         };
         stmt.execute(rusqlite::params![
             position_str(&e.subject),
@@ -114,6 +115,7 @@ fn insert_edges(tx: &Transaction, edges: &[EdgeEntryOut]) -> Result<(), SqliteEr
             meta_kind,
             narrative,
             votes,
+            parentage,
             i64::from(e.row_family.ordinal()),
             e.row_id,
         ])?;

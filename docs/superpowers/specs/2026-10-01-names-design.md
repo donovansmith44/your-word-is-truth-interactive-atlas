@@ -174,3 +174,23 @@ CONTRACT-2 Task 7a's search-name scan (`mention_spans::scan`), `event_world::kjv
 3. **Map entities:** map-generator's registry (`map_canon::Registry`) keeps "one identity per real thing, unified by written reason". Adopt its identities as this spec's `Denotable` ids for places and polities (A-MAPS-SPEC then maps nothing), or keep atlas ids and write a correspondence table?
 4. **Dated names:** is Luz/Bethel a `window` on one name's denotation (as drafted), or two names with a succession between them?
 5. **Titles for review:** which titles need your ruling before they're served? A seed list (Son of man, Angel of the LORD, the Word, the Branch, Wonderful Counsellor, the Holy One of Israel) comes from BibleData.
+
+## 10. Owner answers (2026-09-30)
+
+1. **One Name per language.** English "Israel" and Hebrew יִשְׂרָאֵל are separate `Name` nodes; they meet only through aligned original words. §2 stands.
+2. **Events are denotable** ("Pentecost", "the Passover", "the Exodus"). §3 stands.
+3. **Map entities: map-generator's registry, tentatively.** Owner: "I'm gonna say map but there may be copyright permissions that make that a more difficult answer. So we may have to see." Adopt the registry's identities for places and polities IF the licensing review (O-GPL; the owner's permissive rule) clears the sources those identities rest on; otherwise atlas ids plus a correspondence table. Decided at A-MAPS-SPEC.
+4. **Dated names are two names, succeeding** — and, generally, "we basically need a type that covers when the same thing has many names." So §3's `Denotes.window` is replaced by an entity's naming history as a first-class value:
+   ```rust
+   pub struct Naming {
+       pub entity: Denotable,
+       pub name: Designator,
+       pub window: Option<YearSpan>,
+       pub kind: NamingKind,
+       pub provenance: ProvenanceId,
+       pub justification: Justification,
+   }
+   pub enum NamingKind { Original, Renamed { from: NameId }, Also, Epithet }
+   ```
+   One entity has many `Naming`s: concurrent (`Also`: Jacob/Israel after Gen 32; Simon/Peter/Cephas; Esau/Edom), successive (`Renamed`: Luz → Bethel, Gen 28:19; Laish → Dan; Jebus → Jerusalem), or descriptive (`Epithet`). A rename is a fact with its verse and is explorable (a `Renamed` naming links the old name to the new). `Denotes` becomes the projection "this designator names this entity", derived from the namings, never stored twice.
+5. **Titles for review: open.** The owner hasn't chosen yet ("not sure yet"). Until they do, EVERY title from BibleData is held as `Unresolved(ReviewPending)`; none is served from the source's mapping.

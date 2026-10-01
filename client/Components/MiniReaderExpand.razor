@@ -28,7 +28,7 @@ else
                 {
                     <PericopeHeading Heading="@heading" TestIdSuffix="@TestIdSuffix" OnExplore="OnExplore" />
                 }
-                <VerseLine Verse="@v" Book="@Book" Chapter="@Chapter" OnExplore="OnExplore"
+                <VerseLine Verse="@v" Unit="@_text!.Verse(v.Number)" Book="@Book" Chapter="@Chapter" OnExplore="OnExplore"
                            Focal="@isFocal" Id="@(v.Number == FocalFromVerse ? _focalDomId : null)"
                            RowClass="popover-reader-verse explorable" RowTestIdPrefix="popover-reader-verse" TestIdSuffix="@TestIdSuffix"
                            VerseNumClass="popover-reader-verse-num" ShowVerseNumButton="false"
@@ -46,7 +46,7 @@ else
     <RevealControls Total="1" Default="0" Step="1" Shown="@(_expanded ? 1 : 0)" ShownChanged="OnShownChanged"
                      MoreTestId="@($"popover-verse-expand{TestIdSuffix}")" CollapseTestId="@($"popover-verse-collapse{TestIdSuffix}")"
                      RevealNoun="verses"
-                     MoreLabel="@(TruncatedBy > 0 ? $"+{TruncatedBy} more — read the chapter" : "Read the whole chapter")"
+                     MoreLabel="Read the whole chapter"
                      CollapseLabel="Show just this verse" />
 }
 
@@ -62,10 +62,10 @@ else
 
     private bool AlreadyInCurrentReaderChapter => ViewState.IsReaderChapterMounted(Book, Chapter);
 
-    [Parameter] public int TruncatedBy { get; set; }
-
     private bool _expanded;
     private Chapter? _chapter;
+    private ChapterText? _text;
+    private readonly RequestSeries _chapters = new();
     private string? _error;
     private bool _scrolledThisExpand;
     private readonly AsyncMemo<IJSObjectReference> _readerJs = new();
@@ -80,7 +80,10 @@ else
             _error = null;
             try
             {
-                _chapter = await Atlas.Chapter(Book, Chapter);
+                if (await _chapters.Next().Fetch(() => Atlas.Chapter(Book, Chapter), () => Atlas.ChapterText(Book, Chapter)) is { } loaded)
+                {
+                    (_chapter, _text) = loaded;
+                }
             }
             catch (Exception)
             {

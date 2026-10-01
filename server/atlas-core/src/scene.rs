@@ -195,7 +195,6 @@ fn quiet_places(d: &dyn SceneSource, lit: &[ScenePlace], window: TimeRange) -> V
     out
 }
 
-/// Both bounds are read off curated ranges, which hold no year zero.
 fn labelled_existence(history: Option<&PlaceHistory>) -> (Option<label::Year>, Option<label::Year>) {
     let (from, to) = resolve_existence(history);
     (from.map(label::Year::labelled), to.map(label::Year::labelled))
@@ -226,9 +225,6 @@ pub struct EventWitness {
     pub robertson_section: Option<String>,
 }
 
-/// Each of the event's accounts, its verses grouped by chapter. The single function the
-/// heading index and the event wire both call, so they cannot disagree about how many
-/// witnesses an event has.
 pub fn witnesses_for(e: &Event) -> Vec<EventWitness> {
     accounts_of(e)
         .into_iter()
@@ -236,20 +232,14 @@ pub fn witnesses_for(e: &Event) -> Vec<EventWitness> {
         .collect()
 }
 
-/// One book's account of an event with every verse of it, where a witness caps each
-/// chapter's verses for display.
 #[derive(Debug)]
 pub struct Account {
-    /// The book's three-letter code, such as `MAT`.
     pub book: String,
-    /// Individually canonical verse ids, such as `MAT.26.6`.
     pub verses: Vec<String>,
     pub ref_note: Option<String>,
     pub robertson_section: Option<String>,
 }
 
-/// The event's curated accounts; when none was curated, one per book, synthesized from
-/// the event's own verses.
 pub fn accounts_of(e: &Event) -> Vec<Account> {
     if !e.witnesses.is_empty() {
         return e

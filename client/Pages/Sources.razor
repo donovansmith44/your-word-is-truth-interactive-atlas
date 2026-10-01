@@ -71,12 +71,14 @@
     // view registry with the same mount-closure machinery.
     [Parameter] public bool? SplitMode { get; set; }
 
+    private readonly RequestSeries _startup = new();
+
     protected override async Task OnInitializedAsync()
     {
         try
         {
-            _doc = await Atlas.Sources();
-            _byCategory = _doc.Sources
+            _doc = await _startup.Next().Fetch(() => Atlas.Sources());
+            _byCategory = _doc!.Sources
                 .GroupBy(s => s.Category)
                 .ToDictionary(g => g.Key, g => (IReadOnlyList<SourceEntry>)g.ToList());
         }

@@ -1,5 +1,6 @@
 @using System.Globalization
 @inject AtlasClient Atlas
+@inject IExplorableClient Graph
 @inject IJSRuntime JS
 @implements IDisposable
 
@@ -56,7 +57,7 @@ else
             @foreach (var v in _peekVerses.Take(_peekShown))
             {
                 <p class="popover-arrow-peek-verse" data-testid="@($"{EventTestIdPrefix}-{IdSuffix}-peek-verse-{v.Vref}")">
-                    <sup class="popover-arrow-peek-verse-num">@CanonRef.ParseVerse(v.Vref).Verse</sup><MentionText Text="@v.Text" Places="@(v.Places ?? Array.Empty<PlaceRef>())" Persons="@(v.Persons ?? Array.Empty<PersonRef>())" WordsOfChrist="@(v.WordsOfChrist ?? Array.Empty<WordsOfChristSpan>())"
+                    <sup class="popover-arrow-peek-verse-num">@CanonRef.ParseVerse(v.Vref).Verse</sup><MentionText Text="@v.Text" Anchors="@(v.Anchors ?? Array.Empty<Anchor>())" WordsOfChrist="@(v.WordsOfChrist ?? Array.Empty<WordsOfChristSpan>())"
                         Verse="@CanonRef.ParseVerse(v.Vref).Verse" ClassPrefix="popover-arrow-peek-mention" TestIdSuffix="@($"-{EventTestIdPrefix}-{IdSuffix}-peek")" OnExplore="OnExplore" />
                 </p>
             }
@@ -108,24 +109,12 @@ else
         }
         try
         {
-            var detailTask = Atlas.Event(capturedId);
-            var booksTask = Atlas.Books();
-            var detail = await detailTask;
-            Versification? canon = null;
-            try
-            {
-                canon = Versification.From(await booksTask);
-            }
-            catch (Exception)
-            {
-            }
+            var accounts = await EventAccounts.ReadAsync(Graph, capturedId);
             if (_lastAdjacentId != capturedId)
             {
-                // a newer Adjacent may have already landed while this fetch was in flight -- never overwrite its state with a stale result
                 return;
             }
-            // an empty witness list must never replace the fallback refs already showing -- it is never a real state to switch to
-            _fetchedRefs = detail.Witnesses.Count > 0 ? SelectRefsFromWitnesses(detail.Witnesses, canon) : null;
+            _fetchedRefs = SelectRefs(accounts);
             StateHasChanged();
         }
         catch (Exception)
@@ -133,44 +122,10 @@ else
         }
     }
 
-    private List<RefsList.RefDescriptor> RefDescriptors => _fetchedRefs ?? SelectRefs(Adjacent?.VerseGroups);
+    private List<RefsList.RefDescriptor> RefDescriptors => _fetchedRefs ?? [];
 
-    public static List<RefsList.RefDescriptor> SelectRefs(IReadOnlyList<VerseGroup>? groups)
-    {
-        var result = new List<RefsList.RefDescriptor>();
-        if (groups is null)
-        {
-            return result;
-        }
-        foreach (var g in groups)
-        {
-            if (g.Verses.Count == 0)
-            {
-                continue;
-            }
-            // span computed via the coalesced run math, not first+Count-1 arithmetic, so a real internal gap in the delivered verses is never fabricated into a contiguous envelope
-            var verses = g.Verses.Select(v => new PassageListVerse(v, "", g.Count)).ToList();
-            var block = PassageBlockBuilder.BuildCoalescedBlock(new PassageSourceUnit(verses, CoalesceAcrossChapters: true));
-            result.Add(new RefsList.RefDescriptor(block.Span, new VerseNode(block.FirstVref)));
-        }
-        return result;
-    }
-
-    public static List<RefsList.RefDescriptor> SelectRefsFromWitnesses(IReadOnlyList<EventWitness> witnesses, Versification? canon)
-    {
-        var result = new List<RefsList.RefDescriptor>();
-        foreach (var w in witnesses)
-        {
-            var verses = PassageBlockBuilder.FlattenWitness(w);
-            if (verses.Count == 0)
-            {
-                continue;
-            }
-            var block = PassageBlockBuilder.BuildCoalescedBlock(new PassageSourceUnit(verses, CoalesceAcrossChapters: true, Canon: canon));
-            result.Add(new RefsList.RefDescriptor(block.Span, new VerseNode(block.FirstVref)));
-        }
-        return result;
-    }
+    public static List<RefsList.RefDescriptor> SelectRefs(IReadOnlyList<EventAccount> accounts) =>
+        accounts.Select(account => new RefsList.RefDescriptor(account.Reference, new VerseNode(account.FirstVerse))).ToList();
 
     private string WrapperClass => Inline ? "popover-story-thread-leg-wrap" : $"popover-event-nav-side popover-event-nav-side-{Direction}";
 

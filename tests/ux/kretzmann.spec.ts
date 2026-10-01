@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { openVerse } from './lib/verse';
 import { api } from './lib/api';
 
 // Batch CORPREAD-1b (ticket K, owner order verbatim: "we should have the
@@ -286,7 +287,7 @@ test('KRETZMANN-12 (ticket K2, "verses ... still clickable, same exploration res
   await page.goto('/kretzmann');
   await expect(page.getByTestId('verse-line-1')).toBeVisible();
 
-  await page.getByTestId('verse-line-1').click();
+  await openVerse(page, 1);
 
   await expect(page.getByTestId('popover-title')).toBeVisible();
   await expect(page.getByTestId('popover-title')).toContainText('GEN.1.1');

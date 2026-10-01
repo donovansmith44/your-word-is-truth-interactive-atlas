@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { openVerse } from './lib/verse';
 
 // Batch G2 decisions 1/2/3/4/5 (saved explorations + the hamburger menu),
 // EXPLORE-TRAIL-1 in CONTRACT.md. Every test clears localStorage once up
@@ -16,7 +17,7 @@ test.beforeEach(async ({ page }) => {
 // rename -> delete.
 test('EXPLORE-TRAIL-1: save from the popover, list in the hamburger, continue with a working back-stack, rename, delete', async ({ page }) => {
   await page.goto('/read/GEN/1');
-  await page.getByTestId('verse-line-1').click();
+  await openVerse(page, 1);
   await expect(page.getByTestId('popover-title')).toHaveText('GEN.1.1');
 
   // Grow the trail one hop (decision 1: every Push is recorded) --
@@ -89,7 +90,7 @@ test('EXPLORE-TRAIL-1: save from the popover, list in the hamburger, continue wi
 // saved-trail badge itself, live, the surface the review found broken.
 test('PERI-1 fix round 1: saving an exploration through a general-kind pericope (NUN) labels its own trail badge "Passage," never "Event"', async ({ page }) => {
   await page.goto('/read/PSA/119');
-  await page.getByTestId('verse-line-105').click();
+  await openVerse(page, 105);
   await expect(page.getByTestId('popover-title')).toHaveText('PSA.119.105');
 
   // Drill into the general-kind PASSAGE row itself -- a fresh EventNode,
@@ -193,7 +194,7 @@ test('EXPLORE-TRAIL-1: consecutive-duplicate collapse -- a seeded trail with GEN
 // the same for SavedExplorationsService across an actual RELOAD).
 test('EXPLORE-TRAIL-1 (COLD-1): a saved exploration survives a fresh page load', async ({ page }) => {
   await page.goto('/read/GEN/1');
-  await page.getByTestId('verse-line-1').click();
+  await openVerse(page, 1);
   await page.getByTestId('popover-save-exploration').click();
   await page.getByTestId('popover-close').click();
 

@@ -62,4 +62,6 @@ additional_cargo_test_args = [
   "--test", "regenerated_aqc_corpus",
   "--test", "scene_byte_identity",
   "--test", "sources_api",
+  "--test", "locus_wire",
+  "--test", "year_labels",
 ]

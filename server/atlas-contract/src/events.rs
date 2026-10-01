@@ -115,8 +115,6 @@ pub async fn event(State(data): State<Arc<AtlasData>>, State(graph): State<Arc<G
     let e: Event = atlas_graph::legacy::event_from_node(&atlas_graph::event_world::event_node_id(&id), &snap, &graph.chronology.chrono).ok_or_else(|| ApiError::not_found("event"))?;
     let e: &Event = &e;
 
-    // A general-kind passage's undated span would intersect every curated period-name
-    // range and let a period name be picked for a passage that has no date at all.
     let window = e.date();
     let places = e
         .places

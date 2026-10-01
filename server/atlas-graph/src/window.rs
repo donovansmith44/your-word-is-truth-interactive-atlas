@@ -3,7 +3,7 @@
 //! the port does not model -- lives on `GraphService` instead.
 
 use atlas_graph_types::id::AnyNodeId;
-use atlas_graph_types::node::NodePayload;
+use atlas_graph_types::node::{Node, NodePayload};
 use atlas_graph_types::store::GraphQuery;
 use atlas_graph_types::text::TranslationId;
 
@@ -45,8 +45,12 @@ pub fn render(query: &dyn GraphQuery, id: &AnyNodeId) -> Option<String> {
 /// The corpus-generic sibling of `render`: the translation key is the caller's, so a canonical layer
 /// that is not the King James Version reads through the identical port-only path.
 pub fn render_layer(query: &dyn GraphQuery, id: &AnyNodeId, translation: &str) -> Option<String> {
-    match query.node(id)?.payload {
-        NodePayload::TextUnit { renderings, .. } => renderings.get(&TranslationId(translation.to_string())).cloned(),
+    text_in(&query.node(id)?, translation).map(str::to_string)
+}
+
+pub fn text_in<'a>(node: &'a Node, translation: &str) -> Option<&'a str> {
+    match &node.payload {
+        NodePayload::TextUnit { renderings, .. } => renderings.get(&TranslationId(translation.to_string())).map(String::as_str),
         _ => None,
     }
 }

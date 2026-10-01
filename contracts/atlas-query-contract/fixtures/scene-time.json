@@ -75,8 +75,15 @@
               }
             ],
             "when": {
-              "from_year": -2091,
-              "to_year": -2090
+              "from": {
+                "label": "2091 BC",
+                "value": -2091
+              },
+              "label": "2091 – 2090 BC",
+              "to": {
+                "label": "2090 BC",
+                "value": -2090
+              }
             }
           }
         ],
@@ -113,8 +120,15 @@
               }
             ],
             "when": {
-              "from_year": -2090,
-              "to_year": -2089
+              "from": {
+                "label": "2090 BC",
+                "value": -2090
+              },
+              "label": "2090 – 2089 BC",
+              "to": {
+                "label": "2089 BC",
+                "value": -2089
+              }
             }
           }
         ],
@@ -150,8 +164,15 @@
               }
             ],
             "when": {
-              "from_year": -2092,
-              "to_year": -2091
+              "from": {
+                "label": "2092 BC",
+                "value": -2092
+              },
+              "label": "2092 – 2091 BC",
+              "to": {
+                "label": "2091 BC",
+                "value": -2091
+              }
             }
           }
         ],
@@ -179,8 +200,15 @@
               }
             ],
             "when": {
-              "from_year": -2088,
-              "to_year": -2085
+              "from": {
+                "label": "2088 BC",
+                "value": -2088
+              },
+              "label": "2088 – 2085 BC",
+              "to": {
+                "label": "2085 BC",
+                "value": -2085
+              }
             }
           }
         ],
@@ -208,8 +236,15 @@
               }
             ],
             "when": {
-              "from_year": -2091,
-              "to_year": -2091
+              "from": {
+                "label": "2091 BC",
+                "value": -2091
+              },
+              "label": "2091 BC",
+              "to": {
+                "label": "2091 BC",
+                "value": -2091
+              }
             }
           }
         ],
@@ -237,8 +272,15 @@
               }
             ],
             "when": {
-              "from_year": -2100,
-              "to_year": -2092
+              "from": {
+                "label": "2100 BC",
+                "value": -2100
+              },
+              "label": "2100 – 2092 BC",
+              "to": {
+                "label": "2092 BC",
+                "value": -2092
+              }
             }
           }
         ],
@@ -971,8 +1013,14 @@
       },
       {
         "display_name": "Jebus",
-        "existence_from": -4004,
-        "existence_to": -586,
+        "existence_from": {
+          "label": "4004 BC",
+          "value": -4004
+        },
+        "existence_to": {
+          "label": "586 BC",
+          "value": -586
+        },
         "id": "jerusalem",
         "lat": 31.776667,
         "lon": 35.234167,
@@ -1325,7 +1373,10 @@
       },
       {
         "display_name": "Nineveh",
-        "existence_from": -2242,
+        "existence_from": {
+          "label": "2242 BC",
+          "value": -2242
+        },
         "id": "nineveh",
         "lat": 36.3594,
         "lon": 43.1528,
@@ -1577,8 +1628,14 @@
       },
       {
         "display_name": "Samaria",
-        "existence_from": -929,
-        "existence_to": -722,
+        "existence_from": {
+          "label": "929 BC",
+          "value": -929
+        },
+        "existence_to": {
+          "label": "722 BC",
+          "value": -722
+        },
         "id": "samaria_1022",
         "lat": 32.331417,
         "lon": 35.228586,
@@ -1621,8 +1678,14 @@
       },
       {
         "display_name": "Shiloh",
-        "existence_from": -1399,
-        "existence_to": -1050,
+        "existence_from": {
+          "label": "1399 BC",
+          "value": -1399
+        },
+        "existence_to": {
+          "label": "1050 BC",
+          "value": -1050
+        },
         "id": "shiloh",
         "lat": 32.055703,
         "lon": 35.289536,
@@ -1906,8 +1969,15 @@
       }
     ],
     "window": {
-      "from_year": -2100,
-      "to_year": -2000
+      "from": {
+        "label": "2100 BC",
+        "value": -2100
+      },
+      "label": "2100 – 2000 BC",
+      "to": {
+        "label": "2000 BC",
+        "value": -2000
+      }
     }
   },
   "status": 200

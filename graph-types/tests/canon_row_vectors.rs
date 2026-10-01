@@ -3,9 +3,9 @@ use std::collections::BTreeSet;
 use atlas_graph_types::canon::{encode_row_in_family, Canon, RowFamily, Value, ROOT};
 use atlas_graph_types::chrono::{DatePlacement, DatedBy, Duration, PlacementBasis};
 use atlas_graph_types::edge::{
-    Analogue, Attests, Authored, CanonSuccession, CatechismLink, CommentsOn, Confesses, ContainerContent,
+    Analogue, Attests, Authored, Brethren, CanonSuccession, CatechismLink, CommentsOn, Confesses, ContainerContent,
     Contains, Corresponds, CrossRef, Fulfills, Ground, Justification, LocatedAt, MentionedEntity,
-    MapSuccession, Mentions, NamedAfter, Namesake, Occurs, ParentOf, Participates, Partners, Quotes, Shown, SpokenAt, SpokenBy,
+    MapSuccession, Mentions, NamedAfter, Namesake, Occurs, Parentage, ParentOf, Participates, Quotes, Spouses, Shown, SpokenAt, SpokenBy,
     Succession, TemporalAdjacency, Typology,
 };
 use atlas_graph_types::id::{
@@ -17,7 +17,7 @@ use atlas_graph_types::text::{
     LocusSet, TextLocus, TextRef, TokenSpan, TranslationId, VerseRef,
 };
 
-const DECLARED_ROW_FAMILIES: usize = 28;
+const DECLARED_ROW_FAMILIES: usize = 29;
 
 fn vr(book: u8, chapter: u16, verse: u16) -> VerseRef {
     VerseRef { book, chapter, verse }
@@ -115,11 +115,12 @@ fn the_row_family_manifest_is_closed_and_ordinal_indexed() {
             "analogue",
             "occurs",
             "parent_of",
-            "partners",
+            "spouses",
             "participates",
             "authored",
             "shown",
             "map_succession",
+            "brethren",
         ],
         "the table names and their ORDER are the spec's own (spec 5, then 5.7); the order IS the ordinal"
     );
@@ -290,12 +291,12 @@ fn every_row_family_round_trips_with_hand_built_data() {
     law!(
         CommentsOn {
             item: CommentaryItemId::new("kretzmann/JHN.3.16"),
-            on: blr((43, 3, 16), (43, 3, 16)),
+            on: blr((42, 3, 16), (42, 3, 16)),
             provenance: "kretzmann".into(),
             justification: Justification::default(),
         },
         RowFamily::CommentsOn,
-        r#"{"item":"CommentaryItem:kretzmann/JHN.3.16","justification":{"grounds":[],"text":null},"on":{"from":{"span":null,"unit":{"book":43,"chapter":3,"verse":16}},"to":{"span":null,"unit":{"book":43,"chapter":3,"verse":16}}},"provenance":"kretzmann"}"#
+        r#"{"item":"CommentaryItem:kretzmann/JHN.3.16","justification":{"grounds":[],"text":null},"on":{"from":{"span":null,"unit":{"book":42,"chapter":3,"verse":16}},"to":{"span":null,"unit":{"book":42,"chapter":3,"verse":16}}},"provenance":"kretzmann"}"#
     );
 
     law!(
@@ -408,14 +409,32 @@ fn every_row_family_round_trips_with_hand_built_data() {
     );
 
     law!(
-        ParentOf { parent: PersonId::new("abraham_1"), child: PersonId::new("isaac_1"), provenance: "theographic-people".into() },
+        ParentOf {
+            parent: PersonId::new("abraham_1"),
+            child: PersonId::new("isaac_1"),
+            parentage: Parentage::Natural,
+            provenance: "theographic-people".into(),
+            justification: Justification::default(),
+        },
         RowFamily::ParentOf,
-        r#"{"child":"Person:isaac_1","parent":"Person:abraham_1","provenance":"theographic-people"}"#
+        r#"{"child":"Person:isaac_1","justification":{"grounds":[],"text":null},"parent":"Person:abraham_1","parentage":"natural","provenance":"theographic-people"}"#
+    );
+
+    golden_row(
+        &ParentOf {
+            parent: PersonId::new("god_1324"),
+            child: PersonId::new("jesus_905"),
+            parentage: Parentage::Eternal,
+            provenance: "curated-parentage".into(),
+            justification: Justification { text: None, grounds: [Ground::Scripture(blr((42, 3, 16), (42, 3, 16)))].into_iter().collect() },
+        },
+        RowFamily::ParentOf,
+        r#"{"child":"Person:jesus_905","justification":{"grounds":[{"Scripture":{"from":{"span":null,"unit":{"book":42,"chapter":3,"verse":16}},"to":{"span":null,"unit":{"book":42,"chapter":3,"verse":16}}}}],"text":null},"parent":"Person:god_1324","parentage":"eternal","provenance":"curated-parentage"}"#,
     );
 
     law!(
-        Partners { a: PersonId::new("abraham_1"), b: PersonId::new("sarah_1"), provenance: "theographic-people".into() },
-        RowFamily::Partners,
+        Spouses { a: PersonId::new("abraham_1"), b: PersonId::new("sarah_1"), provenance: "theographic-people".into() },
+        RowFamily::Spouses,
         r#"{"a":"Person:abraham_1","b":"Person:sarah_1","provenance":"theographic-people"}"#
     );
 
@@ -446,6 +465,17 @@ fn every_row_family_round_trips_with_hand_built_data() {
         MapSuccession { prior: MapId::new("era-primeval"), next: MapId::new("era-patriarchs"), provenance: "curated-eras".into() },
         RowFamily::MapSuccession,
         r#"{"next":"Map:era-patriarchs","prior":"Map:era-primeval","provenance":"curated-eras"}"#
+    );
+
+    law!(
+        Brethren {
+            a: PersonId::new("james_719"),
+            b: PersonId::new("jesus_905"),
+            provenance: "curated-brethren".into(),
+            justification: Justification { text: None, grounds: [Ground::Scripture(blr((47, 1, 19), (47, 1, 19)))].into_iter().collect() },
+        },
+        RowFamily::Brethren,
+        r#"{"a":"Person:james_719","b":"Person:jesus_905","justification":{"grounds":[{"Scripture":{"from":{"span":null,"unit":{"book":47,"chapter":1,"verse":19}},"to":{"span":null,"unit":{"book":47,"chapter":1,"verse":19}}}}],"text":null},"provenance":"curated-brethren"}"#
     );
 
     assert_eq!(
@@ -691,6 +721,17 @@ fn row_decode_reports_the_failing_path() {
     }
     .encode();
     bad!(CrossRef, corrupt(&cross_ref, r#""votes":3"#, r#""votes":-1"#), "$.votes");
+
+    let parent_of = ParentOf {
+        parent: PersonId::new("a"),
+        child: PersonId::new("b"),
+        parentage: Parentage::Natural,
+        provenance: "p".into(),
+        justification: Justification::default(),
+    }
+    .encode();
+    bad!(ParentOf, corrupt(&parent_of, r#""natural""#, r#""adoptive""#), "$.parentage");
+    bad!(ParentOf, corrupt(&parent_of, r#""natural""#, "7"), "$.parentage");
 
     let contains = Contains::<BibleTag> {
         container: ContainerNodeId::new("bible/GEN.1"),

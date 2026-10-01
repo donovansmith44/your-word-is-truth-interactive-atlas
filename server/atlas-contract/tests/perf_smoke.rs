@@ -2,6 +2,7 @@ use std::path::Path;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
+use atlas_contract::graph::bible_text_units;
 use atlas_core::refs::ScriptureRef;
 use atlas_core::scene::{compose_scripture_scene, compose_time_scene};
 use atlas_core::time::TimeRange;
@@ -98,9 +99,7 @@ fn text_window_completes_within_smoke_threshold() {
     let start = graph.position_of(anchor.book.0, anchor.chapter, anchor.verse).expect("JHN.3.1 must resolve");
     let elapsed = median_of(7, || {
         let ids = window::window(&snap, atlas_graph::kjv_adapter::BIBLE_CORPUS, start, 20, WindowDir::Onward);
-        for id in &ids {
-            let _ = window::render(&snap, id);
-        }
+        let _ = bible_text_units(&graph, &snap, &ids);
     });
     println!("PERF SMOKE {}: {elapsed:?} (gate {}ms)", "text_window_completes_within_smoke_threshold", 30);
     assert!(elapsed < Duration::from_millis(30), "text_window(JHN.3, n=20) took {elapsed:?}, over the 30ms smoke gate");
@@ -118,9 +117,7 @@ fn chapter_window_completes_within_smoke_threshold() {
     let elapsed = median_of(7, || {
         if let Some((start, n)) = graph.chapter_span(book.0, 3) {
             let ids = window::window(&snap, atlas_graph::kjv_adapter::BIBLE_CORPUS, start, n, WindowDir::Onward);
-            for id in &ids {
-                let _ = window::render(&snap, id);
-            }
+            let _ = bible_text_units(&graph, &snap, &ids);
         }
     });
     println!("PERF SMOKE {}: {elapsed:?} (gate {}ms)", "chapter_window_completes_within_smoke_threshold", 50);

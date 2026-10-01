@@ -3,6 +3,7 @@
 //! and adds only the companions that port does not model, such as a reading-spine reverse lookup.
 
 use std::collections::{BTreeMap, HashMap};
+use std::ops::RangeInclusive;
 use std::path::Path;
 use std::sync::Arc;
 
@@ -17,9 +18,13 @@ use atlas_graph_types::graph::Graph;
 use atlas_graph_types::id::{AnyNodeId, NodeKind, Pid, Position};
 use atlas_graph_types::node::Node;
 use atlas_graph_types::store::{GraphPublisher, GraphQuery, GraphSnapshot, GraphStore, GraphVersion, MemSnapshot, MemStore, RowRef};
+use atlas_graph_types::text::{ConcordRef, TextRef, VerseRef};
 
+use crate::citations::CitationSpan;
+use crate::mention_spans::MentionSpan;
 use crate::sections::Section;
 use crate::sqlite::snapshot::SqliteSnapshot;
+use crate::sqlite::SqliteError;
 use crate::sqlite::source::sibling_dir;
 
 /// The port handle a `GraphService` serves through: the in-memory store's snapshot or the committed
@@ -105,10 +110,7 @@ pub struct GraphService {
     pub narrative_legs: BTreeMap<String, Vec<String>>,
     /// verse -> the one pericope heading that wins there, precomputed once rather than per request.
     pub heading_index: BTreeMap<String, crate::heading::Heading>,
-    /// FROM-verse dot-ref -> the `cites` rows it authors, in the shape the span aggregation already
-    /// takes. The port cannot serve this: an edge entry carries the target's first verse and its votes,
-    /// never the row's own `target_display`. Private now, so the from-sources paths answer as sections do.
-    mem_cross_refs: Option<HashMap<String, Vec<CrossRef>>>,
+    rows_at_locus: RowsAtLocus,
     /// Optional sections the manifest lists but this deployment lacks; empty on the in-memory arm.
     absent_sections: Vec<Section>,
     /// dot-ref -> the KJV sub-verse char-offset spans. Not derivable from the graph at all -- it needs
@@ -120,6 +122,43 @@ pub struct GraphService {
     /// `assemble` cannot give it: the two curated-JSON sidecar maps live in `AtlasData`, which this crate
     /// never loads. The server and the CLI prime it at load time, so no request pays the materialisation.
     scene_source: std::sync::OnceLock<crate::scene_source::GraphSceneSource>,
+}
+
+enum RowsAtLocus {
+    InMemory(MemRowsAtLocus),
+    Sections(Arc<SqliteSnapshot>),
+}
+
+struct MemRowsAtLocus {
+    cross_refs: HashMap<String, Vec<CrossRef>>,
+    mention_spans: BTreeMap<VerseRef, Vec<MentionSpan>>,
+    citation_spans: BTreeMap<ConcordRef, Vec<CitationSpan>>,
+}
+
+impl MemRowsAtLocus {
+    fn of(graph: &Graph) -> MemRowsAtLocus {
+        let mut rows = MemRowsAtLocus { cross_refs: HashMap::new(), mention_spans: BTreeMap::new(), citation_spans: BTreeMap::new() };
+        for row in &graph.cross_refs {
+            match &row.from.at {
+                TextRef::Bible(verse) => rows
+                    .cross_refs
+                    .entry(crate::kjv_adapter::dot_ref(verse.book, verse.chapter, verse.verse))
+                    .or_default()
+                    .push(CrossRef { target: row.target_display.clone(), votes: row.votes as i32 }),
+                TextRef::Concord(paragraph) => rows.citation_spans.entry(paragraph.clone()).or_default().extend(CitationSpan::of(row)),
+            }
+        }
+        for row in &graph.mentions {
+            if let TextRef::Bible(verse) = &row.locus.at {
+                rows.mention_spans.entry(verse.clone()).or_default().extend(MentionSpan::of(row));
+            }
+        }
+        rows
+    }
+}
+
+fn held_in<U: Ord + Clone, S: Clone>(held: &BTreeMap<U, Vec<S>>, units: &RangeInclusive<U>) -> BTreeMap<U, Vec<S>> {
+    held.range(units.clone()).filter(|(_, spans)| !spans.is_empty()).map(|(unit, spans)| (unit.clone(), spans.clone())).collect()
 }
 
 /// The longest KJV chapter has 176 verses, so this probe width is a comfortable margin.
@@ -247,11 +286,7 @@ impl GraphService {
             extras.extend(crate::sqlite::sidecars::fold_sidecars(atlas, sources).expect("assemble: the sidecars fold"));
         }
         extras.attach(&mut graph);
-        let mut cross_refs_by_from: HashMap<String, Vec<atlas_core::data::CrossRef>> = HashMap::new();
-        for row in &graph.cross_refs {
-            let Some(key) = crate::legacy::locus_dot_ref(&row.from) else { continue };
-            cross_refs_by_from.entry(key).or_default().push(atlas_core::data::CrossRef { target: row.target_display.clone(), votes: row.votes as i32 });
-        }
+        let rows_at_locus = RowsAtLocus::InMemory(MemRowsAtLocus::of(&graph));
         // The compiler publishes and serving never writes: one publish, at startup. This is also the
         // LAST pre-store scan -- `graph` moves into the store on the very next line.
         let provenance = crate::provenance::ProvenanceIndex::build(&graph);
@@ -265,7 +300,7 @@ impl GraphService {
             event_world_stats,
             narrative_legs,
             heading_index,
-            mem_cross_refs: Some(cross_refs_by_from),
+            rows_at_locus,
             absent_sections: Vec::new(),
             red_letter_spans,
             provenance,
@@ -303,14 +338,15 @@ impl GraphService {
                 ))
             })
             .map_err(|e| anyhow::anyhow!("loading the serving companions from the sections: {e}"))?;
+        let snap = Arc::new(snap);
         let service = GraphService {
-            snapshot: Snap::Sqlite(Arc::new(snap)),
+            snapshot: Snap::Sqlite(snap.clone()),
             stats,
             chronology: Chronology::from_derivation(chrono),
             event_world_stats,
             narrative_legs,
             heading_index,
-            mem_cross_refs: None,
+            rows_at_locus: RowsAtLocus::Sections(snap),
             absent_sections,
             red_letter_spans,
             provenance: crate::provenance::ProvenanceIndex::from_families(families),
@@ -326,9 +362,10 @@ impl GraphService {
     /// The cross-refs authored by the span's member verses, keyed by dot-ref, each list in row order with
     /// its original `target_display`: exactly the slice the span aggregation reads.
     pub fn cross_refs_for_span(&self, span: &ScriptureRef) -> HashMap<String, Vec<CrossRef>> {
-        match (&self.snapshot, &self.mem_cross_refs) {
-            (Snap::Sqlite(s), _) => s.with_conn(|c| crate::sqlite::serve::cross_refs_for_span(c, span)).unwrap_or_default(),
-            (Snap::Mem(_), Some(map)) => map
+        match &self.rows_at_locus {
+            RowsAtLocus::Sections(s) => s.with_conn(|c| crate::sqlite::serve::cross_refs_for_span(c, span)).unwrap_or_default(),
+            RowsAtLocus::InMemory(rows) => rows
+                .cross_refs
                 .iter()
                 .filter(|(key, _)| match ScriptureRef::parse(key) {
                     Ok(ScriptureRef::Verse(v)) => match span {
@@ -343,7 +380,20 @@ impl GraphService {
                 })
                 .map(|(k, v)| (k.clone(), v.clone()))
                 .collect(),
-            (Snap::Mem(_), None) => HashMap::new(),
+        }
+    }
+
+    pub fn mention_spans_in(&self, verses: &RangeInclusive<VerseRef>) -> Result<BTreeMap<VerseRef, Vec<MentionSpan>>, SqliteError> {
+        match &self.rows_at_locus {
+            RowsAtLocus::Sections(s) => s.with_conn(|c| crate::sqlite::serve::mention_spans_in(c, verses)),
+            RowsAtLocus::InMemory(rows) => Ok(held_in(&rows.mention_spans, verses)),
+        }
+    }
+
+    pub fn citation_spans_in(&self, paragraphs: &RangeInclusive<ConcordRef>) -> Result<BTreeMap<ConcordRef, Vec<CitationSpan>>, SqliteError> {
+        match &self.rows_at_locus {
+            RowsAtLocus::Sections(s) => s.with_conn(|c| crate::sqlite::serve::citation_spans_in(c, paragraphs)),
+            RowsAtLocus::InMemory(rows) => Ok(held_in(&rows.citation_spans, paragraphs)),
         }
     }
 
@@ -458,8 +508,6 @@ impl GraphService {
         self.snapshot.position_of(crate::concord_adapter::CONCORD_CORPUS, &crate::concord_adapter::text_unit_id(part, article, paragraph))
     }
 
-    /// Every PERSON the `mentions` relation attests at one verse, `(id, label)` in row order. Only
-    /// `Person` targets: a PeopleGroup mention is a different wire field, and the kind keeps them apart.
     pub fn persons_at_verse(&self, book: u8, chapter: u16, verse: u16) -> Vec<(String, String)> {
         use atlas_graph_types::edge::{at, Direction, EdgeKind, RelationId};
         use atlas_graph_types::explore::EdgeQuery;
@@ -482,7 +530,10 @@ impl GraphService {
             }
             match page.next {
                 Some(c) => cursor = Some(c),
-                None => break out,
+                None => {
+                    out.dedup();
+                    break out;
+                }
             }
         }
     }
@@ -694,6 +745,41 @@ mod tests {
         let svc = provenance_service(g);
         assert_eq!(svc.event_mentions_provenance("theo-249"), vec!["event-mentions".to_string()]);
         assert_eq!(svc.provenance.by_family(crate::provenance::family::MENTIONS), vec!["event-mentions".to_string(), "theographic-people".to_string()]);
+    }
+
+    #[test]
+    fn a_person_named_twice_in_a_verse_is_listed_there_once() {
+        use atlas_graph_types::edge::{MentionedEntity, Mentions};
+        use atlas_graph_types::id::PersonId;
+        use atlas_graph_types::node::{Node, NodePayload};
+        use atlas_graph_types::text::{BibleLocus, TextLocus, VerseRef};
+        // Arrange
+        let (abram, sarai) = (PersonId::new("abraham_58"), PersonId::new("sarah_1"));
+        let mut g = Graph::default();
+        for (id, label) in [(&abram, "Abram"), (&sarai, "Sarai")] {
+            let payload = NodePayload::Person {
+                label: label.into(),
+                gender: None,
+                birth_year: None,
+                death_year: None,
+                also_called: vec![],
+                description: None,
+                first_year: None,
+                last_year: None,
+                eternal: false,
+                eternal_grounds: vec![],
+            };
+            g.nodes.insert(id.clone().erase(), Node { id: id.clone().erase(), payload, provenance: "test".into() });
+        }
+        let at_word = |ord: u16| TextLocus::from(BibleLocus { unit: VerseRef { book: 0, chapter: 12, verse: 11 }, span: Some(crate::tokens::span(crate::kjv_adapter::KJV_TRANSLATION, ord, ord).expect("one word")) });
+        for (ord, person) in [(0, &abram), (9, &abram), (13, &sarai)] {
+            g.mentions.push(Mentions { locus: at_word(ord), entity: MentionedEntity::Person(person.clone()), provenance: "test".into() });
+        }
+        let svc = provenance_service(g);
+        // Act
+        let persons = svc.persons_at_verse(0, 12, 11);
+        // Assert
+        assert_eq!(persons, vec![("abraham_58".to_string(), "Abram".to_string()), ("sarah_1".to_string(), "Sarai".to_string())]);
     }
 
     #[test]

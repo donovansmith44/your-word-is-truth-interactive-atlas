@@ -565,7 +565,6 @@ fn every_payload_variant_round_trips() {
                 pos: Some("noun".into()),
                 glosses: vec!["word".into(), "speech".into()],
                 senses: vec!["a word, uttered by a living voice".into()],
-                domains: vec!["33.98".into(), "33.99".into()],
                 root: Some("G3004".into()),
             },
             provenance: "stepbible-tbesg".into(),
@@ -580,7 +579,6 @@ fn every_payload_variant_round_trips() {
                 pos: None,
                 glosses: vec![],
                 senses: vec![],
-                domains: vec![],
                 root: None,
             },
             provenance: "stepbible-tahot".into(),
@@ -719,14 +717,13 @@ fn the_lexicon_entry_vocabulary_is_present_and_pinned() {
             pos: Some("noun".into()),
             glosses: vec!["word".into(), "speech".into()],
             senses: vec!["a word, uttered by a living voice".into()],
-            domains: vec!["33.98".into(), "33.99".into()],
             root: Some("G3004".into()),
         },
         provenance: "stepbible-tbesg".into(),
     };
     assert_eq!(
         String::from_utf8(full.encode()).unwrap(),
-        r#"{"id":"LexiconEntry:G3056","payload":{"LexiconEntry":{"domains":["33.98","33.99"],"glosses":["word","speech"],"lang":"grc","lemma":"logos","pos":"noun","root":"G3004","senses":["a word, uttered by a living voice"],"strong":"G3056","translit":"logos"}},"provenance":"stepbible-tbesg"}"#
+        r#"{"id":"LexiconEntry:G3056","payload":{"LexiconEntry":{"glosses":["word","speech"],"lang":"grc","lemma":"logos","pos":"noun","root":"G3004","senses":["a word, uttered by a living voice"],"strong":"G3056","translit":"logos"}},"provenance":"stepbible-tbesg"}"#
     );
     round_trip(&full);
     let bare = Node {
@@ -739,7 +736,6 @@ fn the_lexicon_entry_vocabulary_is_present_and_pinned() {
             pos: None,
             glosses: vec![],
             senses: vec![],
-            domains: vec![],
             root: None,
         },
         provenance: "stepbible-tahot".into(),

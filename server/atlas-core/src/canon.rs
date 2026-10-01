@@ -63,11 +63,9 @@ impl Testament {
 /// `BOOKS`, so reordering the canon moves it without anyone editing it.
 const FIRST_NEW_TESTAMENT_BOOK: &str = "MAT";
 
-pub const BOOKS_IN_THE_OLD_TESTAMENT: usize = books_before(FIRST_NEW_TESTAMENT_BOOK);
+pub const BOOKS_IN_THE_OLD_TESTAMENT: usize = position_of(FIRST_NEW_TESTAMENT_BOOK);
 
-/// `BOOKS.iter().position(..)` is not available in a `const`, so the search is
-/// written out; `code_is` is the `&str` `==` a const context lacks.
-const fn books_before(code: &str) -> usize {
+pub const fn position_of(code: &str) -> usize {
     let mut index = 0;
     while index < BOOKS.len() {
         if code_is(BOOKS[index].code, code) {
@@ -75,7 +73,7 @@ const fn books_before(code: &str) -> usize {
         }
         index += 1;
     }
-    panic!("FIRST_NEW_TESTAMENT_BOOK must name a book of BOOKS")
+    panic!("the code must name a book of BOOKS")
 }
 
 const fn code_is(a: &str, b: &str) -> bool {
@@ -120,12 +118,12 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "FIRST_NEW_TESTAMENT_BOOK must name a book of BOOKS")]
+    #[should_panic(expected = "the code must name a book of BOOKS")]
     fn a_code_naming_no_book_of_the_canon_fails_loud_rather_than_counting_every_book() {
         // Arrange
         let not_a_book = "XXX";
         // Act
-        books_before(not_a_book);
+        position_of(not_a_book);
     }
 
     #[test]

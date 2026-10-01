@@ -15,7 +15,7 @@ use atlas_graph_types::node::Node;
 use super::ddl::{has_spine, row_tables_of};
 use super::rows::RowRef;
 use super::SqliteError;
-use crate::sections::{section_of_canon_succession, section_of_contains_bible, section_of_justified_by, section_of_node, Section};
+use crate::sections::{section_of_canon_succession, section_of_contains_bible, section_of_cross_ref, section_of_node, section_of_row, Section};
 
 pub const DIR_FORWARD: i64 = 0;
 pub const DIR_INVERSE: i64 = 1;
@@ -133,12 +133,13 @@ pub fn rows_of_section<'a>(g: &'a Graph, s: Section) -> Vec<(RowFamily, i64, Row
             RowFamily::Analogue => all(f, &g.analogue, RowRef::Analogue),
             RowFamily::Occurs => all(f, &g.occurs, RowRef::Occurs),
             RowFamily::ParentOf => all(f, &g.parent_of, RowRef::ParentOf),
-            RowFamily::Partners => all(f, &g.partners, RowRef::Partners),
+            RowFamily::Spouses => all(f, &g.spouses, RowRef::Spouses),
             RowFamily::Participates => all(f, &g.participates, RowRef::Participates),
             RowFamily::Authored => all(f, &g.authored, RowRef::Authored),
             RowFamily::Shown => all(f, &g.shown, RowRef::Shown),
             RowFamily::MapSuccession => all(f, &g.map_succession, RowRef::MapSuccession),
-            RowFamily::CrossRefs => all(f, &g.cross_refs, RowRef::CrossRefs),
+            RowFamily::Brethren => all(f, &g.brethren, RowRef::Brethren),
+            RowFamily::CrossRefs => split(f, &g.cross_refs, s, section_of_cross_ref, RowRef::CrossRefs),
             RowFamily::SpokenBy => all(f, &g.spoken_by, RowRef::SpokenBy),
             RowFamily::SpokenAt => all(f, &g.spoken_at, RowRef::SpokenAt),
             RowFamily::Quotes => all(f, &g.quotes, RowRef::Quotes),
@@ -152,16 +153,10 @@ pub fn rows_of_section<'a>(g: &'a Graph, s: Section) -> Vec<(RowFamily, i64, Row
 /// Edge id -> EVERY row minting it, in `row_edges` order. Two rows CAN mint one id (two tokens of
 /// one lexicon entry in one verse share `(rel, subject, object)`) and each has its own index entry,
 /// so the k-th index entry under an id belongs to the k-th row.
-pub fn edge_row_map(g: &Graph) -> BTreeMap<EdgeId, Vec<(RowFamily, i64, Option<String>)>> {
-    let mut map: BTreeMap<EdgeId, Vec<(RowFamily, i64, Option<String>)>> = BTreeMap::new();
+pub fn edge_row_map(g: &Graph) -> BTreeMap<EdgeId, Vec<(RowFamily, i64)>> {
+    let mut map: BTreeMap<EdgeId, Vec<(RowFamily, i64)>> = BTreeMap::new();
     for e in g.row_edges() {
-        let id = Graph::edge_id_of(&e);
-        let container = match e.family {
-            RowFamily::ContainsBible => Some(g.contains_bible[e.row_ord].container.0.clone()),
-            RowFamily::CanonSuccession => Some(g.canon_succession[e.row_ord].prior.0.clone()),
-            _ => None,
-        };
-        map.entry(id).or_default().push((e.family, e.row_ord as i64, container));
+        map.entry(Graph::edge_id_of(&e)).or_default().push((e.family, e.row_ord as i64));
     }
     map
 }
@@ -190,70 +185,59 @@ pub fn partition(g: &Graph) -> Result<Vec<SectionPartition<'_>>, SqliteError> {
     }
 
     let map = edge_row_map(g);
-    let rows_of = |eid: &EdgeId| -> Result<&Vec<(RowFamily, i64, Option<String>)>, SqliteError> {
+    let rows_of = |eid: &EdgeId| -> Result<&Vec<(RowFamily, i64)>, SqliteError> {
         map.get(eid).ok_or_else(|| SqliteError(format!("index entry {} names no row (edge_row_map)", eid.0)))
     };
-    // Keyed by subject as well as id and direction: a symmetric row's entries sit under BOTH ends,
-    // and within one subject the k-th entry is the k-th row minting that id.
-    let mut seen: BTreeMap<(EdgeId, i64, String), usize> = BTreeMap::new();
+    let mut ords: BTreeMap<(String, i64, i64), i64> = BTreeMap::new();
     let mut edges: Vec<Vec<EdgeEntryOut>> = vec![Vec::new(); sections.len()];
-    let mut place = |subject: &Position, rel: i64, dir: i64, ord: usize, object: &Position, eid: &EdgeId, meta: &EdgeMeta, justified: bool| -> Result<(), SqliteError> {
-        let (fam, row_id, container) = if justified {
-            // A justified-by entry runs edge -> ground node, so the forward reading has the source
-            // edge as subject and the inverse reading has it as object. Either way the row is the
-            // first behind that id, since grounds are synthesised per id.
-            let source = if dir == DIR_FORWARD { subject } else { object };
-            match source {
-                Position::Edge(source) => &rows_of(source)?[0],
-                Position::Node(n) => {
-                    return Err(SqliteError(format!(
-                        "justified-by entry (dir {dir}) whose source end is a node {}",
-                        any_node_id_str(n)
-                    )))
-                }
-            }
-        } else {
-            let rows = rows_of(eid)?;
-            let k = seen.entry((eid.clone(), dir, position_str(subject))).or_insert(0);
-            let row = rows.get(*k).ok_or_else(|| {
-                SqliteError(format!("index entry {} (dir {dir}) is the {}th under its id but only {} rows mint it", eid.0, *k + 1, rows.len()))
-            })?;
-            *k += 1;
-            row
-        };
-        let section = section_of_justified_by(*fam, container.as_deref());
-        edges[slot(section)].push(EdgeEntryOut {
+    let mut place = |subject: &Position, rel: i64, dir: i64, object: &Position, eid: &EdgeId, meta: &EdgeMeta, (row_family, row_id): (RowFamily, i64)| {
+        let ord = ords.entry((position_str(subject), rel, dir)).or_insert(0);
+        edges[slot(section_of_row(g, row_family, row_id as usize))].push(EdgeEntryOut {
             subject: subject.clone(),
             rel,
             dir,
-            ord: ord as i64,
+            ord: *ord,
             object: object.clone(),
             edge_id: eid.clone(),
             meta: meta.clone(),
-            row_family: *fam,
-            row_id: *row_id,
+            row_family,
+            row_id,
         });
-        Ok(())
+        *ord += 1;
     };
-    for (rel, ix) in &g.indexes {
-        let code = directed_rel_code(*rel);
-        let justified = *rel == RelationId::JustifiedBy;
-        for (subject, entries) in &ix.fwd {
-            for (i, (eid, object, meta)) in entries.iter().enumerate() {
-                place(subject, code, DIR_FORWARD, i, object, eid, meta, justified)?;
+    for e in g.row_edges() {
+        let eid = Graph::edge_id_of(&e);
+        let row = (e.family, e.row_ord as i64);
+        match e.rel {
+            EdgeRel::Directed(r) => {
+                let code = directed_rel_code(r);
+                place(&e.subject, code, DIR_FORWARD, &e.object, &eid, &e.meta, row);
+                place(&e.object, code, DIR_INVERSE, &e.subject, &eid, &e.meta, row);
             }
-        }
-        for (subject, entries) in &ix.inv {
-            for (i, (eid, object, meta)) in entries.iter().enumerate() {
-                place(subject, code, DIR_INVERSE, i, object, eid, meta, justified)?;
+            EdgeRel::Symmetric(s) => {
+                let code = symmetric_rel_code(s);
+                place(&e.subject, code, DIR_SYMMETRIC, &e.object, &eid, &e.meta, row);
+                place(&e.object, code, DIR_SYMMETRIC, &e.subject, &eid, &e.meta, row);
             }
         }
     }
-    for (rel, ix) in &g.symmetric_indexes {
-        let code = symmetric_rel_code(*rel);
-        for (subject, entries) in &ix.fwd {
-            for (i, (eid, object, meta)) in entries.iter().enumerate() {
-                place(subject, code, DIR_SYMMETRIC, i, object, eid, meta, false)?;
+    if let Some(ix) = g.indexes.get(&RelationId::JustifiedBy) {
+        let code = directed_rel_code(RelationId::JustifiedBy);
+        for (dir, held) in [(DIR_FORWARD, &ix.fwd), (DIR_INVERSE, &ix.inv)] {
+            for (subject, frontier) in held {
+                for entry in frontier.edges() {
+                    let source = if dir == DIR_FORWARD { subject } else { &entry.node };
+                    let row = match source {
+                        Position::Edge(source) => rows_of(source)?[0],
+                        Position::Node(n) => {
+                            return Err(SqliteError(format!(
+                                "justified-by entry (dir {dir}) whose source end is a node {}",
+                                any_node_id_str(n)
+                            )))
+                        }
+                    };
+                    place(subject, code, dir, &entry.node, &entry.edge, &entry.meta, row);
+                }
             }
         }
     }

@@ -16,8 +16,15 @@
                 }
             ],
             "when": {
-                "from_year": -1400,
-                "to_year": -1400
+                "from": {
+                    "label": "1400 BC",
+                    "value": -1400
+                },
+                "label": "1400 BC",
+                "to": {
+                    "label": "1400 BC",
+                    "value": -1400
+                }
             }
         },
         {
@@ -36,8 +43,15 @@
                 }
             ],
             "when": {
-                "from_year": -1298,
-                "to_year": -1298
+                "from": {
+                    "label": "1298 BC",
+                    "value": -1298
+                },
+                "label": "1298 BC",
+                "to": {
+                    "label": "1298 BC",
+                    "value": -1298
+                }
             }
         }
     ],

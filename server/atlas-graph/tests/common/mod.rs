@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::OnceLock;
 
-use atlas_core::data::{AtlasData, Era};
+use atlas_core::data::{AtlasData, Canon, Era};
 use atlas_core::sources::SourcesDocument;
 use atlas_etl::brainfuel::BrainFuelCorpus;
 use atlas_etl::concord::{ConcordCorpus, ScOverlapRow};
@@ -11,6 +11,7 @@ use atlas_etl::kretzmann::KretzmannCorpus;
 use atlas_etl::lexicon::LexiconCorpus;
 use atlas_etl::red_letter::RedLetterCorpus;
 use atlas_graph::concord_adapter::ConcordBundle;
+use atlas_graph::pipeline::{self, BuildCtx};
 use atlas_graph::sqlite::snapshot::SqliteSnapshot;
 use atlas_graph::sqlite::source::{CommittedZstdSource, SectionLayout};
 use atlas_graph::{BuildStats, ChronologyDerivation, EventWorldStats, GraphService};
@@ -18,6 +19,7 @@ use atlas_graph_types::graph::Graph;
 
 pub const MAPS: usize = 10;
 pub const CORPUS_ROOTS: usize = 2;
+pub const CONCORD_CITATIONS: usize = 1_246;
 
 /// A from-raw build always reads the KJV, its cross references, the atlas, brain-fuel and the
 /// Concord; these are the corpora a suite adds to that.
@@ -79,6 +81,27 @@ impl RawSources {
             self.red_letter.as_ref(),
         )
         .expect("the real committed sources must build")
+    }
+}
+
+pub struct PipelineInputs {
+    pub kjv_json: String,
+    pub xrefs_tsv: String,
+    pub canon: Canon,
+    pub verses: HashMap<String, String>,
+}
+
+impl PipelineInputs {
+    pub fn read() -> PipelineInputs {
+        let kjv_json = kjv_json();
+        let (canon, verses) = atlas_etl::kjv::parse(&kjv_json).expect("kjv.json must parse");
+        PipelineInputs { kjv_json, xrefs_tsv: cross_references_tsv(), canon, verses }
+    }
+
+    pub fn run(&self) -> BuildCtx<'_> {
+        let mut ctx = BuildCtx::new(&self.canon, &self.verses, Some(&self.kjv_json), &self.xrefs_tsv, real_atlas());
+        pipeline::run_pipeline(&mut ctx, &pipeline::pipeline()).expect("the real committed sources must build cleanly through the full pipeline");
+        ctx
     }
 }
 
@@ -180,6 +203,10 @@ pub fn compiled_dir() -> PathBuf {
 
 pub fn data_dir() -> PathBuf {
     repo_dir().join("data")
+}
+
+pub fn contract_vectors_dir() -> PathBuf {
+    repo_dir().join("contracts").join("atlas-query-contract").join("vectors")
 }
 
 pub fn graph_types_src_dir() -> PathBuf {

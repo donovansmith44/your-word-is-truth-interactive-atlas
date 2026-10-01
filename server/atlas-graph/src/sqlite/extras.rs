@@ -65,14 +65,23 @@ pub static RED_LETTER_SPAN: TableSpec = TableSpec {
     columns: &["book", "chapter", "verse", "ord", "start", "end_"],
     pk: &["book", "chapter", "verse", "ord"],
 };
+pub static KJV_TOKEN: TableSpec = TableSpec {
+    name: "kjv_token",
+    columns: &["book", "chapter", "verse", "ord", "char_start", "char_end"],
+    pk: &["book", "chapter", "verse", "ord"],
+};
 pub static CONCORD_UNIT: TableSpec =
     TableSpec { name: "concord_unit", columns: &["node_id", "part", "article", "paragraph"], pk: &["node_id"] };
+pub static CONCORD_TOKEN: TableSpec = TableSpec {
+    name: "concord_token",
+    columns: &["part", "article", "paragraph", "ord", "char_start", "char_end"],
+    pk: &["part", "article", "paragraph", "ord"],
+};
 pub static LEXICON_ENTRY: TableSpec = TableSpec {
     name: "lexicon_entry",
     columns: &["node_id", "strong", "lang", "lemma", "translit", "pos", "root_strong"],
     pk: &["node_id"],
 };
-pub static LEXICON_DOMAIN: TableSpec = TableSpec { name: "lexicon_domain", columns: &["node_id", "ord", "code"], pk: &["node_id", "ord"] };
 pub static TOKEN: TableSpec = TableSpec {
     name: "token",
     columns: &["book", "chapter", "verse", "layer", "ord", "form", "lemma", "xpos", "translit", "strong", "aligned"],
@@ -109,9 +118,9 @@ static CORE_SPECS: [&TableSpec; 26] = [
     &super::sidecars::SOURCE_ENTRY,
     &super::sidecars::PROVENANCE_ENTRY,
 ];
-static KJV_SPECS: [&TableSpec; 2] = [&VERSE, &RED_LETTER_SPAN];
-static CONCORD_SPECS: [&TableSpec; 1] = [&CONCORD_UNIT];
-static LEXICON_SPECS: [&TableSpec; 3] = [&LEXICON_ENTRY, &LEXICON_DOMAIN, &TOKEN];
+static KJV_SPECS: [&TableSpec; 3] = [&VERSE, &RED_LETTER_SPAN, &KJV_TOKEN];
+static CONCORD_SPECS: [&TableSpec; 2] = [&CONCORD_UNIT, &CONCORD_TOKEN];
+static LEXICON_SPECS: [&TableSpec; 2] = [&LEXICON_ENTRY, &TOKEN];
 
 pub fn table_specs_of(section: Section) -> &'static [&'static TableSpec] {
     match section {
@@ -216,8 +225,8 @@ impl Extras {
         red_letter: &HashMap<String, Vec<(usize, usize)>>,
     ) -> Result<Extras, SqliteError> {
         let resolved = &chrono.resolved;
-        let (mut place, mut era, mut polity_era, mut verse, mut concord) = (vec![], vec![], vec![], vec![], vec![]);
-        let (mut lexicon_entry, mut lexicon_domain) = (vec![], vec![]);
+        let (mut place, mut era, mut polity_era, mut verse, mut kjv_token, mut concord, mut concord_token) = (vec![], vec![], vec![], vec![], vec![], vec![], vec![]);
+        let mut lexicon_entry = vec![];
         for n in g.nodes.values() {
             let id = any_node_id_str(&n.id);
             match &n.payload {
@@ -238,7 +247,7 @@ impl Extras {
                         ]);
                     }
                 }
-                NodePayload::LexiconEntry { strong, lang, lemma, translit, pos, domains, root, .. } => {
+                NodePayload::LexiconEntry { strong, lang, lemma, translit, pos, root, .. } => {
                     lexicon_entry.push(vec![
                         Col::Text(id.clone()),
                         Col::Text(strong.clone()),
@@ -248,14 +257,17 @@ impl Extras {
                         opt_text(pos),
                         opt_text(root),
                     ]);
-                    for (i, code) in domains.iter().enumerate() {
-                        lexicon_domain.push(vec![Col::Text(id.clone()), Col::Int(i as i64), Col::Text(code.clone())]);
-                    }
                 }
                 NodePayload::TextUnit { .. } => {
                     if let Some((b, c, v)) = crate::kjv_adapter::decode_text_unit(&n.id) {
+                        let text = crate::kjv_adapter::kjv_text(n)
+                            .ok_or_else(|| SqliteError(format!("TextUnit {id} carries no KJV text to tokenize")))?;
+                        kjv_token.extend(token_rows([b as i64, c as i64, v as i64], text));
                         verse.push(vec![Col::Text(id), Col::Int(b as i64), Col::Int(c as i64), Col::Int(v as i64)]);
                     } else if let Some((p, a, par)) = crate::concord_adapter::decode_text_unit(&n.id) {
+                        let text = crate::concord_adapter::concord_text(n)
+                            .ok_or_else(|| SqliteError(format!("TextUnit {id} carries no Concord text to tokenize")))?;
+                        concord_token.extend(token_rows([p as i64, a as i64, par as i64], text));
                         concord.push(vec![Col::Text(id), Col::Int(p as i64), Col::Int(a as i64), Col::Int(par as i64)]);
                     } else {
                         return Err(SqliteError(format!("TextUnit {id} is neither a bible nor a concord unit")));
@@ -315,9 +327,10 @@ impl Extras {
             ExtraTable { spec: &HEADING_INDEX, rows: heading_rows },
             ExtraTable { spec: &VERSE, rows: verse },
             ExtraTable { spec: &RED_LETTER_SPAN, rows: red },
+            ExtraTable { spec: &KJV_TOKEN, rows: kjv_token },
             ExtraTable { spec: &CONCORD_UNIT, rows: concord },
+            ExtraTable { spec: &CONCORD_TOKEN, rows: concord_token },
             ExtraTable { spec: &LEXICON_ENTRY, rows: lexicon_entry },
-            ExtraTable { spec: &LEXICON_DOMAIN, rows: lexicon_domain },
         ]);
         Ok(out)
     }
@@ -345,6 +358,13 @@ impl Extras {
             .collect();
         ExtraTable { spec: &TOKEN, rows }
     }
+}
+
+fn token_rows(unit: [i64; 3], text: &str) -> impl Iterator<Item = Vec<Col>> + '_ {
+    crate::tokens::tokenize(text).into_iter().map(move |t| {
+        let [a, b, c] = unit;
+        vec![Col::Int(a), Col::Int(b), Col::Int(c), Col::Int(t.ord as i64), Col::Int(t.char_start as i64), Col::Int(t.char_end as i64)]
+    })
 }
 
 fn opt_text(v: &Option<String>) -> Col {

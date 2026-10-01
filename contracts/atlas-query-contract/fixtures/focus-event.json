@@ -30,11 +30,25 @@
         "kind": "temporal-adjacency"
       }
     ],
+    "event": {
+      "kind": "event",
+      "when": {
+        "from": {
+          "label": "2100 BC",
+          "value": -2100
+        },
+        "label": "2100 – 2092 BC",
+        "to": {
+          "label": "2092 BC",
+          "value": -2092
+        }
+      }
+    },
     "id": "Event:ab_ur",
     "kind": "Event",
     "label": "Terah's family leaves Ur",
     "provenance": "curated",
-    "version": "f3eab9b319696aeb098aaf47fffc050e"
+    "version": "03b477816961916c7e520c183cd9531c"
   },
   "status": 200
 }

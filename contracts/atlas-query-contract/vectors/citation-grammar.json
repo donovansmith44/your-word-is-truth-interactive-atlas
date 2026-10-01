@@ -1,0 +1,1612 @@
+{
+  "cases": [
+    {
+      "citations": [],
+      "name": "plain_prose_cites_nothing",
+      "text": "We believe, teach, and confess."
+    },
+    {
+      "citations": [
+        {
+          "cites": "MAT.5.3",
+          "end": 25,
+          "start": 16
+        }
+      ],
+      "name": "an_abbreviation_its_period_a_chapter_and_a_verse",
+      "text": "As Christ says, Matt. 5:3, blessed are the poor."
+    },
+    {
+      "citations": [
+        {
+          "cites": "JHN.3.16",
+          "end": 37,
+          "start": 28
+        }
+      ],
+      "name": "a_book_named_in_full",
+      "text": "For God so loved the world, John 3:16."
+    },
+    {
+      "citations": [
+        {
+          "cites": "1CO.11.23",
+          "end": 30,
+          "start": 18
+        }
+      ],
+      "name": "a_numbered_book",
+      "text": "Of the Sacrament, 1 Cor. 11:23."
+    },
+    {
+      "citations": [
+        {
+          "cites": "ROM.13.1-4",
+          "end": 28,
+          "start": 17
+        }
+      ],
+      "name": "a_range_keeps_its_whole_range",
+      "text": "Obey the rulers, Rom. 13:1-4."
+    },
+    {
+      "citations": [
+        {
+          "cites": "PSA.2.12",
+          "end": 23,
+          "start": 14
+        }
+      ],
+      "name": "a_comma_may_part_the_chapter_from_the_verse",
+      "text": "Kiss the Son, Ps. 2, 12."
+    },
+    {
+      "citations": [
+        {
+          "cites": "EPH.4.8",
+          "end": 33,
+          "start": 26
+        }
+      ],
+      "name": "the_period_after_an_abbreviation_may_be_left_out",
+      "text": "He led captivity captive, Eph 4:8."
+    },
+    {
+      "citations": [
+        {
+          "cites": "1CO.13.4",
+          "end": 42,
+          "start": 24
+        }
+      ],
+      "name": "a_longer_name_wins_over_the_shorter_it_begins_with",
+      "text": "Charity suffereth long, 1 Corinthians 13:4."
+    },
+    {
+      "citations": [],
+      "name": "an_ambiguous_abbreviation_cites_nothing",
+      "text": "Paul planted, Cor. 3:6; have this mind, Phil. 2:5."
+    },
+    {
+      "citations": [],
+      "name": "an_unlisted_abbreviation_cites_nothing",
+      "text": "Woe unto him that striveth, Is. 45:9."
+    },
+    {
+      "citations": [],
+      "name": "a_name_inside_a_longer_word_cites_nothing",
+      "text": "Regen. 1:1 is no book."
+    },
+    {
+      "citations": [],
+      "name": "names_are_matched_in_their_own_case",
+      "text": "As it is written, matt. 5:3."
+    },
+    {
+      "citations": [
+        {
+          "cites": "GAL.1.8",
+          "end": 8,
+          "start": 0
+        },
+        {
+          "cites": "MAT.7.15",
+          "end": 23,
+          "start": 13
+        }
+      ],
+      "name": "two_citations_in_one_text_are_both_found",
+      "text": "Gal. 1:8 and Matt. 7:15 warn us."
+    },
+    {
+      "citations": [],
+      "name": "a_range_that_runs_backward_cites_nothing",
+      "text": "See Matt. 5:9-3."
+    },
+    {
+      "citations": [
+        {
+          "cites": "ROM.13.8",
+          "end": 34,
+          "start": 24
+        }
+      ],
+      "name": "and_following_after_the_verse_is_inside_the_citation_which_cites_the_stated_verse_only",
+      "text": "Love is the fulfilling, Rom. 13:8f."
+    },
+    {
+      "citations": [
+        {
+          "cites": "ROM.7.14",
+          "end": 23,
+          "start": 12
+        }
+      ],
+      "name": "a_doubled_and_following_is_inside_the_citation_too",
+      "text": "Of the Law, Rom. 7:14ff, it is written."
+    },
+    {
+      "citations": [
+        {
+          "cites": "ACT.15.10",
+          "end": 29,
+          "start": 16
+        }
+      ],
+      "name": "the_latin_and_following_is_inside_the_citation_too",
+      "text": "The apostles in Acts 15:10sqq. strove."
+    },
+    {
+      "citations": [
+        {
+          "cites": "ROM.13.8",
+          "end": 33,
+          "start": 24
+        }
+      ],
+      "name": "letters_after_the_verse_that_are_no_and_following_are_left_outside_the_citation",
+      "text": "Love is the fulfilling, Rom. 13:8fold."
+    },
+    {
+      "citations": [
+        {
+          "cites": "PSA.119.105",
+          "end": 31,
+          "start": 20
+        }
+      ],
+      "name": "chapters_and_verses_run_to_three_digits",
+      "text": "Thy word is a lamp, Ps. 119:105."
+    },
+    {
+      "citations": [
+        {
+          "cites": "JHN.3.16",
+          "end": 28,
+          "start": 19
+        }
+      ],
+      "name": "offsets_count_characters_not_bytes",
+      "text": "Christ’s own word, John 3:16."
+    },
+    {
+      "citations": [
+        {
+          "cites": "GEN.1.1",
+          "end": 11,
+          "start": 0
+        }
+      ],
+      "name": "a_citation_naming_genesis",
+      "text": "Genesis 1:1"
+    },
+    {
+      "citations": [
+        {
+          "cites": "EXO.1.1",
+          "end": 10,
+          "start": 0
+        }
+      ],
+      "name": "a_citation_naming_exodus",
+      "text": "Exodus 1:1"
+    },
+    {
+      "citations": [
+        {
+          "cites": "LEV.1.1",
+          "end": 13,
+          "start": 0
+        }
+      ],
+      "name": "a_citation_naming_leviticus",
+      "text": "Leviticus 1:1"
+    },
+    {
+      "citations": [
+        {
+          "cites": "NUM.1.1",
+          "end": 11,
+          "start": 0
+        }
+      ],
+      "name": "a_citation_naming_numbers",
+      "text": "Numbers 1:1"
+    },
+    {
+      "citations": [
+        {
+          "cites": "DEU.1.1",
+          "end": 15,
+          "start": 0
+        }
+      ],
+      "name": "a_citation_naming_deuteronomy",
+      "text": "Deuteronomy 1:1"
+    },
+    {
+      "citations": [
+        {
+          "cites": "JOS.1.1",
+          "end": 10,
+          "start": 0
+        }
+      ],
+      "name": "a_citation_naming_joshua",
+      "text": "Joshua 1:1"
+    },
+    {
+      "citations": [
+        {
+          "cites": "JDG.1.1",
+          "end": 10,
+          "start": 0
+        }
+      ],
+      "name": "a_citation_naming_judges",
+      "text": "Judges 1:1"
+    },
+    {
+      "citations": [
+        {
+          "cites": "RUT.1.1",
+          "end": 8,
+          "start": 0
+        }
+      ],
+      "name": "a_citation_naming_ruth",
+      "text": "Ruth 1:1"
+    },
+    {
+      "citations": [
+        {
+          "cites": "1SA.1.1",
+          "end": 12,
+          "start": 0
+        }
+      ],
+      "name": "a_citation_naming_1_samuel",
+      "text": "1 Samuel 1:1"
+    },
+    {
+      "citations": [
+        {
+          "cites": "2SA.1.1",
+          "end": 12,
+          "start": 0
+        }
+      ],
+      "name": "a_citation_naming_2_samuel",
+      "text": "2 Samuel 1:1"
+    },
+    {
+      "citations": [
+        {
+          "cites": "1KI.1.1",
+          "end": 11,
+          "start": 0
+        }
+      ],
+      "name": "a_citation_naming_1_kings",
+      "text": "1 Kings 1:1"
+    },
+    {
+      "citations": [
+        {
+          "cites": "2KI.1.1",
+          "end": 11,
+          "start": 0
+        }
+      ],
+      "name": "a_citation_naming_2_kings",
+      "text": "2 Kings 1:1"
+    },
+    {
+      "citations": [
+        {
+          "cites": "1CH.1.1",
+          "end": 16,
+          "start": 0
+        }
+      ],
+      "name": "a_citation_naming_1_chronicles",
+      "text": "1 Chronicles 1:1"
+    },
+    {
+      "citations": [
+        {
+          "cites": "2CH.1.1",
+          "end": 16,
+          "start": 0
+        }
+      ],
+      "name": "a_citation_naming_2_chronicles",
+      "text": "2 Chronicles 1:1"
+    },
+    {
+      "citations": [
+        {
+          "cites": "EZR.1.1",
+          "end": 8,
+          "start": 0
+        }
+      ],
+      "name": "a_citation_naming_ezra",
+      "text": "Ezra 1:1"
+    },
+    {
+      "citations": [
+        {
+          "cites": "NEH.1.1",
+          "end": 12,
+          "start": 0
+        }
+      ],
+      "name": "a_citation_naming_nehemiah",
+      "text": "Nehemiah 1:1"
+    },
+    {
+      "citations": [
+        {
+          "cites": "EST.1.1",
+          "end": 10,
+          "start": 0
+        }
+      ],
+      "name": "a_citation_naming_esther",
+      "text": "Esther 1:1"
+    },
+    {
+      "citations": [
+        {
+          "cites": "JOB.1.1",
+          "end": 7,
+          "start": 0
+        }
+      ],
+      "name": "a_citation_naming_job",
+      "text": "Job 1:1"
+    },
+    {
+      "citations": [
+        {
+          "cites": "PSA.1.1",
+          "end": 10,
+          "start": 0
+        }
+      ],
+      "name": "a_citation_naming_psalms",
+      "text": "Psalms 1:1"
+    },
+    {
+      "citations": [
+        {
+          "cites": "PRO.1.1",
+          "end": 12,
+          "start": 0
+        }
+      ],
+      "name": "a_citation_naming_proverbs",
+      "text": "Proverbs 1:1"
+    },
+    {
+      "citations": [
+        {
+          "cites": "ECC.1.1",
+          "end": 16,
+          "start": 0
+        }
+      ],
+      "name": "a_citation_naming_ecclesiastes",
+      "text": "Ecclesiastes 1:1"
+    },
+    {
+      "citations": [
+        {
+          "cites": "SNG.1.1",
+          "end": 19,
+          "start": 0
+        }
+      ],
+      "name": "a_citation_naming_song_of_solomon",
+      "text": "Song of Solomon 1:1"
+    },
+    {
+      "citations": [
+        {
+          "cites": "ISA.1.1",
+          "end": 10,
+          "start": 0
+        }
+      ],
+      "name": "a_citation_naming_isaiah",
+      "text": "Isaiah 1:1"
+    },
+    {
+      "citations": [
+        {
+          "cites": "JER.1.1",
+          "end": 12,
+          "start": 0
+        }
+      ],
+      "name": "a_citation_naming_jeremiah",
+      "text": "Jeremiah 1:1"
+    },
+    {
+      "citations": [
+        {
+          "cites": "LAM.1.1",
+          "end": 16,
+          "start": 0
+        }
+      ],
+      "name": "a_citation_naming_lamentations",
+      "text": "Lamentations 1:1"
+    },
+    {
+      "citations": [
+        {
+          "cites": "EZK.1.1",
+          "end": 11,
+          "start": 0
+        }
+      ],
+      "name": "a_citation_naming_ezekiel",
+      "text": "Ezekiel 1:1"
+    },
+    {
+      "citations": [
+        {
+          "cites": "DAN.1.1",
+          "end": 10,
+          "start": 0
+        }
+      ],
+      "name": "a_citation_naming_daniel",
+      "text": "Daniel 1:1"
+    },
+    {
+      "citations": [
+        {
+          "cites": "HOS.1.1",
+          "end": 9,
+          "start": 0
+        }
+      ],
+      "name": "a_citation_naming_hosea",
+      "text": "Hosea 1:1"
+    },
+    {
+      "citations": [
+        {
+          "cites": "JOL.1.1",
+          "end": 8,
+          "start": 0
+        }
+      ],
+      "name": "a_citation_naming_joel",
+      "text": "Joel 1:1"
+    },
+    {
+      "citations": [
+        {
+          "cites": "AMO.1.1",
+          "end": 8,
+          "start": 0
+        }
+      ],
+      "name": "a_citation_naming_amos",
+      "text": "Amos 1:1"
+    },
+    {
+      "citations": [
+        {
+          "cites": "OBA.1.1",
+          "end": 11,
+          "start": 0
+        }
+      ],
+      "name": "a_citation_naming_obadiah",
+      "text": "Obadiah 1:1"
+    },
+    {
+      "citations": [
+        {
+          "cites": "JON.1.1",
+          "end": 9,
+          "start": 0
+        }
+      ],
+      "name": "a_citation_naming_jonah",
+      "text": "Jonah 1:1"
+    },
+    {
+      "citations": [
+        {
+          "cites": "MIC.1.1",
+          "end": 9,
+          "start": 0
+        }
+      ],
+      "name": "a_citation_naming_micah",
+      "text": "Micah 1:1"
+    },
+    {
+      "citations": [
+        {
+          "cites": "NAM.1.1",
+          "end": 9,
+          "start": 0
+        }
+      ],
+      "name": "a_citation_naming_nahum",
+      "text": "Nahum 1:1"
+    },
+    {
+      "citations": [
+        {
+          "cites": "HAB.1.1",
+          "end": 12,
+          "start": 0
+        }
+      ],
+      "name": "a_citation_naming_habakkuk",
+      "text": "Habakkuk 1:1"
+    },
+    {
+      "citations": [
+        {
+          "cites": "ZEP.1.1",
+          "end": 13,
+          "start": 0
+        }
+      ],
+      "name": "a_citation_naming_zephaniah",
+      "text": "Zephaniah 1:1"
+    },
+    {
+      "citations": [
+        {
+          "cites": "HAG.1.1",
+          "end": 10,
+          "start": 0
+        }
+      ],
+      "name": "a_citation_naming_haggai",
+      "text": "Haggai 1:1"
+    },
+    {
+      "citations": [
+        {
+          "cites": "ZEC.1.1",
+          "end": 13,
+          "start": 0
+        }
+      ],
+      "name": "a_citation_naming_zechariah",
+      "text": "Zechariah 1:1"
+    },
+    {
+      "citations": [
+        {
+          "cites": "MAL.1.1",
+          "end": 11,
+          "start": 0
+        }
+      ],
+      "name": "a_citation_naming_malachi",
+      "text": "Malachi 1:1"
+    },
+    {
+      "citations": [
+        {
+          "cites": "MAT.1.1",
+          "end": 11,
+          "start": 0
+        }
+      ],
+      "name": "a_citation_naming_matthew",
+      "text": "Matthew 1:1"
+    },
+    {
+      "citations": [
+        {
+          "cites": "MRK.1.1",
+          "end": 8,
+          "start": 0
+        }
+      ],
+      "name": "a_citation_naming_mark",
+      "text": "Mark 1:1"
+    },
+    {
+      "citations": [
+        {
+          "cites": "LUK.1.1",
+          "end": 8,
+          "start": 0
+        }
+      ],
+      "name": "a_citation_naming_luke",
+      "text": "Luke 1:1"
+    },
+    {
+      "citations": [
+        {
+          "cites": "JHN.1.1",
+          "end": 8,
+          "start": 0
+        }
+      ],
+      "name": "a_citation_naming_john",
+      "text": "John 1:1"
+    },
+    {
+      "citations": [
+        {
+          "cites": "ACT.1.1",
+          "end": 8,
+          "start": 0
+        }
+      ],
+      "name": "a_citation_naming_acts",
+      "text": "Acts 1:1"
+    },
+    {
+      "citations": [
+        {
+          "cites": "ROM.1.1",
+          "end": 10,
+          "start": 0
+        }
+      ],
+      "name": "a_citation_naming_romans",
+      "text": "Romans 1:1"
+    },
+    {
+      "citations": [
+        {
+          "cites": "1CO.1.1",
+          "end": 17,
+          "start": 0
+        }
+      ],
+      "name": "a_citation_naming_1_corinthians",
+      "text": "1 Corinthians 1:1"
+    },
+    {
+      "citations": [
+        {
+          "cites": "2CO.1.1",
+          "end": 17,
+          "start": 0
+        }
+      ],
+      "name": "a_citation_naming_2_corinthians",
+      "text": "2 Corinthians 1:1"
+    },
+    {
+      "citations": [
+        {
+          "cites": "GAL.1.1",
+          "end": 13,
+          "start": 0
+        }
+      ],
+      "name": "a_citation_naming_galatians",
+      "text": "Galatians 1:1"
+    },
+    {
+      "citations": [
+        {
+          "cites": "EPH.1.1",
+          "end": 13,
+          "start": 0
+        }
+      ],
+      "name": "a_citation_naming_ephesians",
+      "text": "Ephesians 1:1"
+    },
+    {
+      "citations": [
+        {
+          "cites": "PHP.1.1",
+          "end": 15,
+          "start": 0
+        }
+      ],
+      "name": "a_citation_naming_philippians",
+      "text": "Philippians 1:1"
+    },
+    {
+      "citations": [
+        {
+          "cites": "COL.1.1",
+          "end": 14,
+          "start": 0
+        }
+      ],
+      "name": "a_citation_naming_colossians",
+      "text": "Colossians 1:1"
+    },
+    {
+      "citations": [
+        {
+          "cites": "1TH.1.1",
+          "end": 19,
+          "start": 0
+        }
+      ],
+      "name": "a_citation_naming_1_thessalonians",
+      "text": "1 Thessalonians 1:1"
+    },
+    {
+      "citations": [
+        {
+          "cites": "2TH.1.1",
+          "end": 19,
+          "start": 0
+        }
+      ],
+      "name": "a_citation_naming_2_thessalonians",
+      "text": "2 Thessalonians 1:1"
+    },
+    {
+      "citations": [
+        {
+          "cites": "1TI.1.1",
+          "end": 13,
+          "start": 0
+        }
+      ],
+      "name": "a_citation_naming_1_timothy",
+      "text": "1 Timothy 1:1"
+    },
+    {
+      "citations": [
+        {
+          "cites": "2TI.1.1",
+          "end": 13,
+          "start": 0
+        }
+      ],
+      "name": "a_citation_naming_2_timothy",
+      "text": "2 Timothy 1:1"
+    },
+    {
+      "citations": [
+        {
+          "cites": "TIT.1.1",
+          "end": 9,
+          "start": 0
+        }
+      ],
+      "name": "a_citation_naming_titus",
+      "text": "Titus 1:1"
+    },
+    {
+      "citations": [
+        {
+          "cites": "PHM.1.1",
+          "end": 12,
+          "start": 0
+        }
+      ],
+      "name": "a_citation_naming_philemon",
+      "text": "Philemon 1:1"
+    },
+    {
+      "citations": [
+        {
+          "cites": "HEB.1.1",
+          "end": 11,
+          "start": 0
+        }
+      ],
+      "name": "a_citation_naming_hebrews",
+      "text": "Hebrews 1:1"
+    },
+    {
+      "citations": [
+        {
+          "cites": "JAS.1.1",
+          "end": 9,
+          "start": 0
+        }
+      ],
+      "name": "a_citation_naming_james",
+      "text": "James 1:1"
+    },
+    {
+      "citations": [
+        {
+          "cites": "1PE.1.1",
+          "end": 11,
+          "start": 0
+        }
+      ],
+      "name": "a_citation_naming_1_peter",
+      "text": "1 Peter 1:1"
+    },
+    {
+      "citations": [
+        {
+          "cites": "2PE.1.1",
+          "end": 11,
+          "start": 0
+        }
+      ],
+      "name": "a_citation_naming_2_peter",
+      "text": "2 Peter 1:1"
+    },
+    {
+      "citations": [
+        {
+          "cites": "1JN.1.1",
+          "end": 10,
+          "start": 0
+        }
+      ],
+      "name": "a_citation_naming_1_john",
+      "text": "1 John 1:1"
+    },
+    {
+      "citations": [
+        {
+          "cites": "2JN.1.1",
+          "end": 10,
+          "start": 0
+        }
+      ],
+      "name": "a_citation_naming_2_john",
+      "text": "2 John 1:1"
+    },
+    {
+      "citations": [
+        {
+          "cites": "3JN.1.1",
+          "end": 10,
+          "start": 0
+        }
+      ],
+      "name": "a_citation_naming_3_john",
+      "text": "3 John 1:1"
+    },
+    {
+      "citations": [
+        {
+          "cites": "JUD.1.1",
+          "end": 8,
+          "start": 0
+        }
+      ],
+      "name": "a_citation_naming_jude",
+      "text": "Jude 1:1"
+    },
+    {
+      "citations": [
+        {
+          "cites": "REV.1.1",
+          "end": 14,
+          "start": 0
+        }
+      ],
+      "name": "a_citation_naming_revelation",
+      "text": "Revelation 1:1"
+    },
+    {
+      "citations": [
+        {
+          "cites": "GEN.1.1",
+          "end": 7,
+          "start": 0
+        }
+      ],
+      "name": "a_citation_naming_gen",
+      "text": "Gen 1:1"
+    },
+    {
+      "citations": [
+        {
+          "cites": "EXO.1.1",
+          "end": 8,
+          "start": 0
+        }
+      ],
+      "name": "a_citation_naming_exod",
+      "text": "Exod 1:1"
+    },
+    {
+      "citations": [
+        {
+          "cites": "EXO.1.1",
+          "end": 7,
+          "start": 0
+        }
+      ],
+      "name": "a_citation_naming_exo",
+      "text": "Exo 1:1"
+    },
+    {
+      "citations": [
+        {
+          "cites": "LEV.1.1",
+          "end": 7,
+          "start": 0
+        }
+      ],
+      "name": "a_citation_naming_lev",
+      "text": "Lev 1:1"
+    },
+    {
+      "citations": [
+        {
+          "cites": "NUM.1.1",
+          "end": 7,
+          "start": 0
+        }
+      ],
+      "name": "a_citation_naming_num",
+      "text": "Num 1:1"
+    },
+    {
+      "citations": [
+        {
+          "cites": "DEU.1.1",
+          "end": 8,
+          "start": 0
+        }
+      ],
+      "name": "a_citation_naming_deut",
+      "text": "Deut 1:1"
+    },
+    {
+      "citations": [
+        {
+          "cites": "DEU.1.1",
+          "end": 7,
+          "start": 0
+        }
+      ],
+      "name": "a_citation_naming_deu",
+      "text": "Deu 1:1"
+    },
+    {
+      "citations": [
+        {
+          "cites": "JOS.1.1",
+          "end": 8,
+          "start": 0
+        }
+      ],
+      "name": "a_citation_naming_josh",
+      "text": "Josh 1:1"
+    },
+    {
+      "citations": [
+        {
+          "cites": "JDG.1.1",
+          "end": 8,
+          "start": 0
+        }
+      ],
+      "name": "a_citation_naming_judg",
+      "text": "Judg 1:1"
+    },
+    {
+      "citations": [
+        {
+          "cites": "1SA.1.1",
+          "end": 9,
+          "start": 0
+        }
+      ],
+      "name": "a_citation_naming_1_sam",
+      "text": "1 Sam 1:1"
+    },
+    {
+      "citations": [
+        {
+          "cites": "2SA.1.1",
+          "end": 9,
+          "start": 0
+        }
+      ],
+      "name": "a_citation_naming_2_sam",
+      "text": "2 Sam 1:1"
+    },
+    {
+      "citations": [
+        {
+          "cites": "1KI.1.1",
+          "end": 9,
+          "start": 0
+        }
+      ],
+      "name": "a_citation_naming_1_kgs",
+      "text": "1 Kgs 1:1"
+    },
+    {
+      "citations": [
+        {
+          "cites": "2KI.1.1",
+          "end": 9,
+          "start": 0
+        }
+      ],
+      "name": "a_citation_naming_2_kgs",
+      "text": "2 Kgs 1:1"
+    },
+    {
+      "citations": [
+        {
+          "cites": "1CH.1.1",
+          "end": 11,
+          "start": 0
+        }
+      ],
+      "name": "a_citation_naming_1_chron",
+      "text": "1 Chron 1:1"
+    },
+    {
+      "citations": [
+        {
+          "cites": "1CH.1.1",
+          "end": 9,
+          "start": 0
+        }
+      ],
+      "name": "a_citation_naming_1_chr",
+      "text": "1 Chr 1:1"
+    },
+    {
+      "citations": [
+        {
+          "cites": "2CH.1.1",
+          "end": 11,
+          "start": 0
+        }
+      ],
+      "name": "a_citation_naming_2_chron",
+      "text": "2 Chron 1:1"
+    },
+    {
+      "citations": [
+        {
+          "cites": "2CH.1.1",
+          "end": 9,
+          "start": 0
+        }
+      ],
+      "name": "a_citation_naming_2_chr",
+      "text": "2 Chr 1:1"
+    },
+    {
+      "citations": [
+        {
+          "cites": "NEH.1.1",
+          "end": 7,
+          "start": 0
+        }
+      ],
+      "name": "a_citation_naming_neh",
+      "text": "Neh 1:1"
+    },
+    {
+      "citations": [
+        {
+          "cites": "EST.1.1",
+          "end": 8,
+          "start": 0
+        }
+      ],
+      "name": "a_citation_naming_esth",
+      "text": "Esth 1:1"
+    },
+    {
+      "citations": [
+        {
+          "cites": "PSA.1.1",
+          "end": 6,
+          "start": 0
+        }
+      ],
+      "name": "a_citation_naming_ps",
+      "text": "Ps 1:1"
+    },
+    {
+      "citations": [
+        {
+          "cites": "PSA.1.1",
+          "end": 7,
+          "start": 0
+        }
+      ],
+      "name": "a_citation_naming_pss",
+      "text": "Pss 1:1"
+    },
+    {
+      "citations": [
+        {
+          "cites": "PSA.1.1",
+          "end": 9,
+          "start": 0
+        }
+      ],
+      "name": "a_citation_naming_psalm",
+      "text": "Psalm 1:1"
+    },
+    {
+      "citations": [
+        {
+          "cites": "PRO.1.1",
+          "end": 8,
+          "start": 0
+        }
+      ],
+      "name": "a_citation_naming_prov",
+      "text": "Prov 1:1"
+    },
+    {
+      "citations": [
+        {
+          "cites": "ECC.1.1",
+          "end": 8,
+          "start": 0
+        }
+      ],
+      "name": "a_citation_naming_eccl",
+      "text": "Eccl 1:1"
+    },
+    {
+      "citations": [
+        {
+          "cites": "ISA.1.1",
+          "end": 7,
+          "start": 0
+        }
+      ],
+      "name": "a_citation_naming_isa",
+      "text": "Isa 1:1"
+    },
+    {
+      "citations": [
+        {
+          "cites": "JER.1.1",
+          "end": 7,
+          "start": 0
+        }
+      ],
+      "name": "a_citation_naming_jer",
+      "text": "Jer 1:1"
+    },
+    {
+      "citations": [
+        {
+          "cites": "LAM.1.1",
+          "end": 7,
+          "start": 0
+        }
+      ],
+      "name": "a_citation_naming_lam",
+      "text": "Lam 1:1"
+    },
+    {
+      "citations": [
+        {
+          "cites": "EZK.1.1",
+          "end": 8,
+          "start": 0
+        }
+      ],
+      "name": "a_citation_naming_ezek",
+      "text": "Ezek 1:1"
+    },
+    {
+      "citations": [
+        {
+          "cites": "EZK.1.1",
+          "end": 7,
+          "start": 0
+        }
+      ],
+      "name": "a_citation_naming_eze",
+      "text": "Eze 1:1"
+    },
+    {
+      "citations": [
+        {
+          "cites": "DAN.1.1",
+          "end": 7,
+          "start": 0
+        }
+      ],
+      "name": "a_citation_naming_dan",
+      "text": "Dan 1:1"
+    },
+    {
+      "citations": [
+        {
+          "cites": "HOS.1.1",
+          "end": 7,
+          "start": 0
+        }
+      ],
+      "name": "a_citation_naming_hos",
+      "text": "Hos 1:1"
+    },
+    {
+      "citations": [
+        {
+          "cites": "OBA.1.1",
+          "end": 8,
+          "start": 0
+        }
+      ],
+      "name": "a_citation_naming_obad",
+      "text": "Obad 1:1"
+    },
+    {
+      "citations": [
+        {
+          "cites": "MIC.1.1",
+          "end": 7,
+          "start": 0
+        }
+      ],
+      "name": "a_citation_naming_mic",
+      "text": "Mic 1:1"
+    },
+    {
+      "citations": [
+        {
+          "cites": "NAM.1.1",
+          "end": 7,
+          "start": 0
+        }
+      ],
+      "name": "a_citation_naming_nah",
+      "text": "Nah 1:1"
+    },
+    {
+      "citations": [
+        {
+          "cites": "HAB.1.1",
+          "end": 7,
+          "start": 0
+        }
+      ],
+      "name": "a_citation_naming_hab",
+      "text": "Hab 1:1"
+    },
+    {
+      "citations": [
+        {
+          "cites": "ZEP.1.1",
+          "end": 8,
+          "start": 0
+        }
+      ],
+      "name": "a_citation_naming_zeph",
+      "text": "Zeph 1:1"
+    },
+    {
+      "citations": [
+        {
+          "cites": "HAG.1.1",
+          "end": 7,
+          "start": 0
+        }
+      ],
+      "name": "a_citation_naming_hag",
+      "text": "Hag 1:1"
+    },
+    {
+      "citations": [
+        {
+          "cites": "ZEC.1.1",
+          "end": 8,
+          "start": 0
+        }
+      ],
+      "name": "a_citation_naming_zech",
+      "text": "Zech 1:1"
+    },
+    {
+      "citations": [
+        {
+          "cites": "MAL.1.1",
+          "end": 7,
+          "start": 0
+        }
+      ],
+      "name": "a_citation_naming_mal",
+      "text": "Mal 1:1"
+    },
+    {
+      "citations": [
+        {
+          "cites": "MAT.1.1",
+          "end": 8,
+          "start": 0
+        }
+      ],
+      "name": "a_citation_naming_matt",
+      "text": "Matt 1:1"
+    },
+    {
+      "citations": [
+        {
+          "cites": "MAT.1.1",
+          "end": 7,
+          "start": 0
+        }
+      ],
+      "name": "a_citation_naming_mat",
+      "text": "Mat 1:1"
+    },
+    {
+      "citations": [
+        {
+          "cites": "MRK.1.1",
+          "end": 6,
+          "start": 0
+        }
+      ],
+      "name": "a_citation_naming_mk",
+      "text": "Mk 1:1"
+    },
+    {
+      "citations": [
+        {
+          "cites": "LUK.1.1",
+          "end": 6,
+          "start": 0
+        }
+      ],
+      "name": "a_citation_naming_lk",
+      "text": "Lk 1:1"
+    },
+    {
+      "citations": [
+        {
+          "cites": "ROM.1.1",
+          "end": 7,
+          "start": 0
+        }
+      ],
+      "name": "a_citation_naming_rom",
+      "text": "Rom 1:1"
+    },
+    {
+      "citations": [
+        {
+          "cites": "1CO.1.1",
+          "end": 9,
+          "start": 0
+        }
+      ],
+      "name": "a_citation_naming_1_cor",
+      "text": "1 Cor 1:1"
+    },
+    {
+      "citations": [
+        {
+          "cites": "2CO.1.1",
+          "end": 9,
+          "start": 0
+        }
+      ],
+      "name": "a_citation_naming_2_cor",
+      "text": "2 Cor 1:1"
+    },
+    {
+      "citations": [
+        {
+          "cites": "GAL.1.1",
+          "end": 7,
+          "start": 0
+        }
+      ],
+      "name": "a_citation_naming_gal",
+      "text": "Gal 1:1"
+    },
+    {
+      "citations": [
+        {
+          "cites": "EPH.1.1",
+          "end": 7,
+          "start": 0
+        }
+      ],
+      "name": "a_citation_naming_eph",
+      "text": "Eph 1:1"
+    },
+    {
+      "citations": [
+        {
+          "cites": "PHP.1.1",
+          "end": 7,
+          "start": 0
+        }
+      ],
+      "name": "a_citation_naming_php",
+      "text": "Php 1:1"
+    },
+    {
+      "citations": [
+        {
+          "cites": "COL.1.1",
+          "end": 7,
+          "start": 0
+        }
+      ],
+      "name": "a_citation_naming_col",
+      "text": "Col 1:1"
+    },
+    {
+      "citations": [
+        {
+          "cites": "1TH.1.1",
+          "end": 11,
+          "start": 0
+        }
+      ],
+      "name": "a_citation_naming_1_thess",
+      "text": "1 Thess 1:1"
+    },
+    {
+      "citations": [
+        {
+          "cites": "1TH.1.1",
+          "end": 10,
+          "start": 0
+        }
+      ],
+      "name": "a_citation_naming_1_thes",
+      "text": "1 Thes 1:1"
+    },
+    {
+      "citations": [
+        {
+          "cites": "2TH.1.1",
+          "end": 11,
+          "start": 0
+        }
+      ],
+      "name": "a_citation_naming_2_thess",
+      "text": "2 Thess 1:1"
+    },
+    {
+      "citations": [
+        {
+          "cites": "2TH.1.1",
+          "end": 10,
+          "start": 0
+        }
+      ],
+      "name": "a_citation_naming_2_thes",
+      "text": "2 Thes 1:1"
+    },
+    {
+      "citations": [
+        {
+          "cites": "1TI.1.1",
+          "end": 9,
+          "start": 0
+        }
+      ],
+      "name": "a_citation_naming_1_tim",
+      "text": "1 Tim 1:1"
+    },
+    {
+      "citations": [
+        {
+          "cites": "2TI.1.1",
+          "end": 9,
+          "start": 0
+        }
+      ],
+      "name": "a_citation_naming_2_tim",
+      "text": "2 Tim 1:1"
+    },
+    {
+      "citations": [
+        {
+          "cites": "TIT.1.1",
+          "end": 7,
+          "start": 0
+        }
+      ],
+      "name": "a_citation_naming_tit",
+      "text": "Tit 1:1"
+    },
+    {
+      "citations": [
+        {
+          "cites": "PHM.1.1",
+          "end": 10,
+          "start": 0
+        }
+      ],
+      "name": "a_citation_naming_philem",
+      "text": "Philem 1:1"
+    },
+    {
+      "citations": [
+        {
+          "cites": "HEB.1.1",
+          "end": 7,
+          "start": 0
+        }
+      ],
+      "name": "a_citation_naming_heb",
+      "text": "Heb 1:1"
+    },
+    {
+      "citations": [
+        {
+          "cites": "JAS.1.1",
+          "end": 7,
+          "start": 0
+        }
+      ],
+      "name": "a_citation_naming_jas",
+      "text": "Jas 1:1"
+    },
+    {
+      "citations": [
+        {
+          "cites": "1PE.1.1",
+          "end": 9,
+          "start": 0
+        }
+      ],
+      "name": "a_citation_naming_1_pet",
+      "text": "1 Pet 1:1"
+    },
+    {
+      "citations": [
+        {
+          "cites": "2PE.1.1",
+          "end": 9,
+          "start": 0
+        }
+      ],
+      "name": "a_citation_naming_2_pet",
+      "text": "2 Pet 1:1"
+    },
+    {
+      "citations": [
+        {
+          "cites": "REV.1.1",
+          "end": 7,
+          "start": 0
+        }
+      ],
+      "name": "a_citation_naming_rev",
+      "text": "Rev 1:1"
+    }
+  ]
+}

@@ -61,7 +61,8 @@ data Cmd
   = CmdRun { cSource :: Source, cDir :: FilePath, cBless :: Bool, cExports :: Maybe FilePath
            -- ^ where to write the per-scenario execution record the
            -- coverage reconciliation consumes (fix round 3).
-           , cResults :: Maybe FilePath }
+           , cResults :: Maybe FilePath
+           , cSchema :: Maybe FilePath }
   | CmdCheck FilePath
   | CmdVocab { vDir :: FilePath, vWrite :: Bool }
   -- Fix round 3 (review H-R2-2): the fixture grader, moved out of a
@@ -89,7 +90,9 @@ cmd = hsubparser
                                    <*> optional (strOption (long "exports" <> metavar "DIR"
                                          <> help "directory of published exports (data/exports)"))
                                    <*> optional (strOption (long "results" <> metavar "FILE"
-                                         <> help "write one machine-readable row per scenario executed")))
+                                         <> help "write one machine-readable row per scenario executed"))
+                                   <*> optional (strOption (long "schema" <> metavar "FILE"
+                                         <> help "the published JSON schema whose enums the answers are checked against")))
                        (progDesc "execute a contract directory against a server or a recorded pact"))
   <> command "check" (info (CmdCheck <$> argument str (metavar "DIR"))
                        (progDesc "totality: every step matches exactly one definition"))
@@ -175,8 +178,9 @@ main = do
   hSetEncoding stderr utf8
   c <- execParser (info (cmd <**> helper) fullDesc)
   case c of
-    CmdRun src dir bless exports resultsPath -> do
-      w <- worldFor src dir bless exports
+    CmdRun src dir bless exports resultsPath schemaPath -> do
+      schema <- traverse loadSchema schemaPath
+      w <- worldFor src dir bless exports schema
       files <- featureFiles dir
       -- One file at a time, so each ScenarioResult keeps the PATH it came
       -- from. `Run.runFeatureFiles` returns a flat list keyed by the
@@ -226,13 +230,20 @@ main = do
       (Failed _,  False) -> "failed"
       (Skipped _, _)     -> "skipped"
 
-    worldFor (Live base) dir bless ex = do
+    worldFor (Live base) dir bless ex schema = do
       mgr <- newManager defaultManagerSettings
       let b = T.pack base
       pure (World b (exportsFirst ex (httpTransport mgr b)) (dir </> "fixtures") Map.empty bless
-                   (exportsFirstRaw ex (httpTransportRaw mgr b)) (httpTransportProbe mgr b))
-    worldFor (Replay pactPath) dir bless ex = do
+                   (exportsFirstRaw ex (httpTransportRaw mgr b)) (httpTransportProbe mgr b) schema)
+    worldFor (Replay pactPath) dir bless ex schema = do
       pact <- loadPact pactPath
       pure (World (T.pack ("replay:" <> pactPath)) (exportsFirst ex (replayTransport pact))
                   (dir </> "fixtures") Map.empty bless
-                  (exportsFirstRaw ex (replayTransportRaw pact)) (replayTransportProbe pact))
+                  (exportsFirstRaw ex (replayTransportRaw pact)) (replayTransportProbe pact) schema)
+
+    loadSchema :: FilePath -> IO Value
+    loadSchema path = do
+      raw <- BS.readFile path
+      case eitherDecodeStrict raw of
+        Left e -> TIO.putStrLn ("the published schema " <> T.pack path <> " is not JSON: " <> T.pack e) >> exitFailure
+        Right v -> pure v

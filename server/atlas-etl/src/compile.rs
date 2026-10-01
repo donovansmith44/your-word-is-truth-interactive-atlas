@@ -66,6 +66,11 @@ pub fn compile(raw_dir: &Path, curated_dir: &Path) -> Result<CompileOutput> {
         person.eternal = true;
         person.eternal_grounds = grounds;
     }
+    let parentage = curated::parse_parentage(&read(&curated_dir.join("parentage.toml"))?)?;
+    let brethren_seeds = curated::parse_brethren(&read(&curated_dir.join("brethren.toml"))?)?;
+    names_only_people("parentage.toml", parentage.declared.iter().flat_map(|s| [&s.parent, &s.child]), &people_list)?;
+    names_only_people("brethren.toml", brethren_seeds.iter().flat_map(|s| [&s.a, &s.b]), &people_list)?;
+    exclusions_name_stated_pairs(&parentage.excluded, &people_list)?;
 
     let easton_json = read(&theo_dir.join("easton.json"))?;
     let (easton_list, easton_stats) = easton::parse_easton(&easton_json, &places_json)?;
@@ -294,6 +299,9 @@ pub fn compile(raw_dir: &Path, curated_dir: &Path) -> Result<CompileOutput> {
     data.named_after_seeds = named_after_seeds;
     data.fulfillment_seeds = fulfillment_seeds;
     data.typology_seeds = typology_seeds;
+    data.parentage_seeds = parentage.declared;
+    data.parentage_exclusions = parentage.excluded;
+    data.brethren_seeds = brethren_seeds;
     data.event_mentions = event_mentions;
     data.event_analogues = event_analogues;
 
@@ -644,10 +652,100 @@ fn check_curated_inputs_exist(curated_dir: &Path) -> Result<()> {
     );
 }
 
+fn names_only_people<'a>(file: &str, ids: impl IntoIterator<Item = &'a String>, people: &[atlas_core::data::Person]) -> Result<()> {
+    for id in ids {
+        if !people.iter().any(|p| p.id == *id) {
+            bail!("{file} names '{id}', which is not a Theographic person");
+        }
+    }
+    Ok(())
+}
+
+fn exclusions_name_stated_pairs(exclusions: &[atlas_core::data::ParentageExclusion], people: &[atlas_core::data::Person]) -> Result<()> {
+    for e in exclusions {
+        let stated = people.iter().any(|p| {
+            (p.id == e.child && (p.father.contains(&e.parent) || p.mother.contains(&e.parent))) || (p.id == e.parent && p.children.contains(&e.child))
+        });
+        if !stated {
+            bail!("parentage.toml excludes '{}' -> '{}', which the source does not state", e.parent, e.child);
+        }
+    }
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use atlas_core::data::{Event, EventWitness};
+
+    fn person(id: &str) -> atlas_core::data::Person {
+        atlas_core::data::Person { id: id.to_string(), ..Default::default() }
+    }
+
+    fn excluded(parent: &str, child: &str) -> atlas_core::data::ParentageExclusion {
+        atlas_core::data::ParentageExclusion { parent: parent.to_string(), child: child.to_string() }
+    }
+
+    #[test]
+    fn a_curated_file_naming_only_people_passes() {
+        // Arrange
+        let ids = ["god_1324".to_string(), "adam_78".to_string()];
+        // Act
+        let checked = names_only_people("parentage.toml", &ids, &[person("god_1324"), person("adam_78")]);
+        // Assert
+        assert!(checked.is_ok());
+    }
+
+    #[test]
+    fn a_curated_file_naming_an_unknown_person_is_refused_naming_the_file() {
+        // Arrange
+        let ids = ["jesus_905".to_string(), "nobody_1".to_string()];
+        // Act
+        let refused = names_only_people("brethren.toml", &ids, &[person("jesus_905")]).unwrap_err();
+        // Assert
+        assert_eq!(refused.to_string(), "brethren.toml names 'nobody_1', which is not a Theographic person");
+    }
+
+    #[test]
+    fn an_exclusion_of_a_pair_the_child_states_passes() {
+        // Arrange
+        let james = atlas_core::data::Person { id: "james_719".into(), mother: vec!["mary_1938".into()], ..Default::default() };
+        // Act
+        let checked = exclusions_name_stated_pairs(&[excluded("mary_1938", "james_719")], &[person("mary_1938"), james]);
+        // Assert
+        assert!(checked.is_ok());
+    }
+
+    #[test]
+    fn an_exclusion_of_a_pair_the_father_side_of_the_child_states_passes() {
+        // Arrange
+        let james = atlas_core::data::Person { id: "james_719".into(), father: vec!["joseph_1715".into()], ..Default::default() };
+        // Act
+        let checked = exclusions_name_stated_pairs(&[excluded("joseph_1715", "james_719")], &[person("joseph_1715"), james]);
+        // Assert
+        assert!(checked.is_ok());
+    }
+
+    #[test]
+    fn an_exclusion_of_a_pair_only_the_parent_states_passes() {
+        // Arrange
+        let mary = atlas_core::data::Person { id: "mary_1938".into(), children: vec!["james_719".into()], ..Default::default() };
+        // Act
+        let checked = exclusions_name_stated_pairs(&[excluded("mary_1938", "james_719")], &[mary, person("james_719")]);
+        // Assert
+        assert!(checked.is_ok());
+    }
+
+    #[test]
+    fn an_exclusion_of_a_pair_the_source_never_states_is_refused() {
+        // Arrange
+        let james = atlas_core::data::Person { id: "james_719".into(), children: vec!["mary_1938".into()], father: vec!["mary_1938".into()], ..Default::default() };
+        let mary = atlas_core::data::Person { id: "mary_1938".into(), mother: vec!["james_719".into()], ..Default::default() };
+        // Act
+        let refused = exclusions_name_stated_pairs(&[excluded("joseph_1715", "james_719"), excluded("mary_1938", "joses_1721")], &[james, mary]).unwrap_err();
+        // Assert
+        assert_eq!(refused.to_string(), "parentage.toml excludes 'joseph_1715' -> 'james_719', which the source does not state");
+    }
     use atlas_core::time::TimeRange;
 
     const CORRECTED_VERSE: &str = "MAT.8.1";

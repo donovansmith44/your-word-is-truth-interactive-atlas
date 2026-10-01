@@ -64,6 +64,17 @@ pub fn decode_text_unit(id: &AnyNodeId) -> Option<(u8, u16, u16)> {
     Some((part, article, paragraph))
 }
 
+pub fn paragraph_node(unit: ConcordRef, text: &str) -> Node {
+    let id = text_unit_id(unit.part, unit.article, unit.paragraph);
+    let mut renderings = atlas_graph_types::text::LayerMap::new();
+    renderings.insert(TranslationId(CONCORD_TRANSLATION.to_string()), text.to_string());
+    Node { id, payload: NodePayload::TextUnit { corpus: CONCORD_CORPUS, renderings }, provenance: PROVENANCE.to_string() }
+}
+
+pub fn concord_text(node: &Node) -> Option<&str> {
+    crate::window::text_in(node, CONCORD_TRANSLATION)
+}
+
 fn doc_container_id(key: &str) -> ContainerNodeId {
     ContainerNodeId::new(format!("concord-doc-{key}"))
 }
@@ -93,16 +104,12 @@ pub fn normalize(ctx: &mut BuildCtx) -> ConcordAdapterStats {
 
             for p in &article.paragraphs {
                 stats.paragraphs += 1;
-                let unit_id = text_unit_id(doc.part, article.article, p.paragraph);
-                let mut renderings = atlas_graph_types::text::LayerMap::new();
-                renderings.insert(TranslationId(CONCORD_TRANSLATION.to_string()), p.text.clone());
-                ctx.graph.nodes.insert(
-                    unit_id.clone(),
-                    Node { id: unit_id.clone(), payload: NodePayload::TextUnit { corpus: CONCORD_CORPUS, renderings }, provenance: PROVENANCE.to_string() },
-                );
-                order.push(unit_id);
+                let unit = ConcordRef { part: doc.part, article: article.article, paragraph: p.paragraph };
+                let node = paragraph_node(unit.clone(), &p.text);
+                order.push(node.id.clone());
+                ctx.graph.nodes.insert(node.id.clone(), node);
 
-                art_content.insert(Locus::whole(ConcordRef { part: doc.part, article: article.article, paragraph: p.paragraph }));
+                art_content.insert(Locus::whole(unit));
             }
 
             let art_container = article_container_id(doc.key, article.article);

@@ -7,7 +7,7 @@ use crate::edge::{
     at, Analogue, Attests, Authored, BiIndex, CanonSuccession, CatechismLink, CommentsOn, Confesses, ContainerContent, Contains, Corresponds, CrossRef,
     SpokenAt, SpokenBy,
     Fulfills,
-    LocatedAt, MapSuccession, MentionedEntity, Mentions, NamedAfter, Namesake, Occurs, ParentOf, Participates, Partners, Quotes, RelationId,
+    LocatedAt, MapSuccession, Mentions, NamedAfter, Namesake, Occurs, ParentOf, Participates, Spouses, Quotes, RelationId, Brethren,
     Shown, Succession, TemporalAdjacency, Typology,
 };
 use crate::chrono::DatedBy;
@@ -61,11 +61,12 @@ pub struct Graph {
     pub occurs: Vec<Occurs>,
     /// One row per (parent, child) pair.
     pub parent_of: Vec<ParentOf>,
-    pub partners: Vec<Partners>,
+    pub spouses: Vec<Spouses>,
     pub participates: Vec<Participates>,
     pub authored: Vec<Authored>,
     pub shown: Vec<Shown>,
     pub map_succession: Vec<MapSuccession>,
+    pub brethren: Vec<Brethren>,
 
     // Built, never authored.
     pub reading: BTreeMap<&'static str, ReadingSpine>,
@@ -230,13 +231,7 @@ impl Graph {
         }
         for (i, row) in self.mentions.iter().enumerate() {
             let s = at(&text_node(&row.locus));
-            let o = match &row.entity {
-                MentionedEntity::Place(p) => at(&p.erase()),
-                MentionedEntity::Person(p) => at(&p.erase()),
-                MentionedEntity::PeopleGroup(g) => at(&g.erase()),
-                MentionedEntity::Event(e) => at(&e.erase()),
-            };
-            push_edge(&mut out, RowFamily::Mentions, i, EdgeRel::Directed(R::Mentions), (s, o, M::None));
+            push_edge(&mut out, RowFamily::Mentions, i, EdgeRel::Directed(R::Mentions), (s, at(&row.entity.node_id()), M::None));
         }
         for (i, row) in self.cross_refs.iter().enumerate() {
             push_edge(&mut out, RowFamily::CrossRefs, i, EdgeRel::Directed(R::Cites), (
@@ -310,11 +305,18 @@ impl Graph {
             push_edge(&mut out, RowFamily::ParentOf, i, EdgeRel::Directed(RelationId::ParentOf), (
                 at(&row.parent.erase()),
                 at(&row.child.erase()),
+                M::Parentage(row.parentage),
+            ));
+        }
+        for (i, row) in self.spouses.iter().enumerate() {
+            push_edge(&mut out, RowFamily::Spouses, i, EdgeRel::Symmetric(S::Spouses), (
+                at(&row.a.erase()),
+                at(&row.b.erase()),
                 M::None,
             ));
         }
-        for (i, row) in self.partners.iter().enumerate() {
-            push_edge(&mut out, RowFamily::Partners, i, EdgeRel::Symmetric(S::Partners), (
+        for (i, row) in self.brethren.iter().enumerate() {
+            push_edge(&mut out, RowFamily::Brethren, i, EdgeRel::Symmetric(S::Brethren), (
                 at(&row.a.erase()),
                 at(&row.b.erase()),
                 M::None,
@@ -397,11 +399,12 @@ impl Graph {
             F::Analogue => self.analogue.get(row_ord).map(|r| r.provenance.as_str()),
             F::Occurs => self.occurs.get(row_ord).map(|r| r.provenance.as_str()),
             F::ParentOf => self.parent_of.get(row_ord).map(|r| r.provenance.as_str()),
-            F::Partners => self.partners.get(row_ord).map(|r| r.provenance.as_str()),
+            F::Spouses => self.spouses.get(row_ord).map(|r| r.provenance.as_str()),
             F::Participates => self.participates.get(row_ord).map(|r| r.provenance.as_str()),
             F::Authored => self.authored.get(row_ord).map(|r| r.provenance.as_str()),
             F::Shown => self.shown.get(row_ord).map(|r| r.provenance.as_str()),
             F::MapSuccession => self.map_succession.get(row_ord).map(|r| r.provenance.as_str()),
+            F::Brethren => self.brethren.get(row_ord).map(|r| r.provenance.as_str()),
         }
     }
 
@@ -504,11 +507,11 @@ impl Graph {
             for h in directed_handles {
                 let (rel, partial) = h.join().expect("index-build worker panicked");
                 let entry = indexes.entry(rel).or_default();
-                for (k, mut v) in partial.fwd {
-                    entry.fwd.entry(k).or_default().append(&mut v);
+                for (k, v) in partial.fwd {
+                    entry.fwd.entry(k).or_default().append(v);
                 }
-                for (k, mut v) in partial.inv {
-                    entry.inv.entry(k).or_default().append(&mut v);
+                for (k, v) in partial.inv {
+                    entry.inv.entry(k).or_default().append(v);
                 }
             }
 
@@ -516,12 +519,12 @@ impl Graph {
             for h in sym_handles {
                 let (rel, partial) = h.join().expect("symmetric index-build worker panicked");
                 let entry = symmetric_indexes.entry(rel).or_default();
-                for (k, mut v) in partial.fwd {
-                    entry.fwd.entry(k).or_default().append(&mut v);
+                for (k, v) in partial.fwd {
+                    entry.fwd.entry(k).or_default().append(v);
                 }
                 // Always empty for a symmetric index -- merged anyway rather than assumed.
-                for (k, mut v) in partial.inv {
-                    entry.inv.entry(k).or_default().append(&mut v);
+                for (k, v) in partial.inv {
+                    entry.inv.entry(k).or_default().append(v);
                 }
             }
 
@@ -842,6 +845,30 @@ mod tests {
         assert_eq!(event_side.entries[0].node, crate::id::Position::Node(verse_id));
         assert_eq!(event_side.entries[0].edge, verse_side.entries[0].edge, "the SAME edge id, from either end");
     }
+
+    #[test]
+    fn a_parent_of_row_carries_its_parentage_on_both_ends() {
+        // Arrange
+        let mut g = Graph::default();
+        let (father, son) = (crate::id::PersonId::new("god_1324"), crate::id::PersonId::new("jesus_905"));
+        g.parent_of.push(crate::edge::ParentOf {
+            parent: father.clone(),
+            child: son.clone(),
+            parentage: crate::edge::Parentage::Eternal,
+            provenance: ProvenanceId::from("test"),
+            justification: Default::default(),
+        });
+        g.build_indexes();
+        let query = |kind| EdgeQuery { kind, cursor: None, limit: 10 };
+        // Act
+        let children = PositionRef(crate::id::Position::Node(father.erase())).edges(&g, &query(EdgeKind::Directed(RelationId::ParentOf, Direction::Forward)));
+        let parents = PositionRef(crate::id::Position::Node(son.erase())).edges(&g, &query(EdgeKind::Directed(RelationId::ParentOf, Direction::Inverse)));
+        // Assert
+        assert_eq!(
+            (children.entries.iter().map(|e| e.meta.clone()).collect::<Vec<_>>(), parents.entries.iter().map(|e| e.meta.clone()).collect::<Vec<_>>()),
+            (vec![crate::explore::EdgeMeta::Parentage(crate::edge::Parentage::Eternal)], vec![crate::explore::EdgeMeta::Parentage(crate::edge::Parentage::Eternal)])
+        );
+    }
 }
 
 #[cfg(test)]
@@ -906,27 +933,33 @@ mod row_edge_laws {
     }
 
     #[test]
-    fn build_indexes_is_exactly_the_row_edges_placed() {
+    fn build_indexes_is_exactly_the_row_edges_placed_each_edge_once_in_first_row_order() {
         let mut g = g();
         g.build_indexes();
         let mut from_rows: BTreeMap<(EdgeRel, Position), Vec<EdgeId>> = BTreeMap::new();
+        let mut place = |rel: EdgeRel, subject: &Position, id: &EdgeId| {
+            let placed = from_rows.entry((rel, subject.clone())).or_default();
+            if !placed.contains(id) {
+                placed.push(id.clone());
+            }
+        };
         for e in g.row_edges() {
             let id = Graph::edge_id_of(&e);
-            from_rows.entry((e.rel, e.subject.clone())).or_default().push(id.clone());
+            place(e.rel, &e.subject, &id);
             match e.rel {
                 EdgeRel::Directed(_) => {}
-                EdgeRel::Symmetric(_) => from_rows.entry((e.rel, e.object.clone())).or_default().push(id),
+                EdgeRel::Symmetric(_) => place(e.rel, &e.object, &id),
             }
         }
         for (rel, ix) in &g.indexes {
-            for (subject, entries) in &ix.fwd {
-                let ids: Vec<EdgeId> = entries.iter().map(|(id, _, _)| id.clone()).collect();
+            for (subject, frontier) in &ix.fwd {
+                let ids: Vec<EdgeId> = frontier.edges().map(|e| e.edge.clone()).collect();
                 assert_eq!(ids, from_rows[&(EdgeRel::Directed(*rel), subject.clone())], "fwd order at {subject:?}");
             }
         }
         for (rel, ix) in &g.symmetric_indexes {
-            for (subject, entries) in &ix.fwd {
-                let ids: Vec<EdgeId> = entries.iter().map(|(id, _, _)| id.clone()).collect();
+            for (subject, frontier) in &ix.fwd {
+                let ids: Vec<EdgeId> = frontier.edges().map(|e| e.edge.clone()).collect();
                 assert_eq!(ids, from_rows[&(EdgeRel::Symmetric(*rel), subject.clone())], "sym order at {subject:?}");
             }
         }

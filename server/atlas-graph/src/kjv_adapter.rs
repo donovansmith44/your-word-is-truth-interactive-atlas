@@ -95,6 +95,10 @@ pub fn normalize(ctx: &mut crate::pipeline::BuildCtx) -> anyhow::Result<()> {
     Ok(())
 }
 
+pub fn kjv_text(node: &Node) -> Option<&str> {
+    crate::window::text_in(node, KJV_TRANSLATION)
+}
+
 pub fn verse_node(v: &KjvVerse) -> Node {
     let mut renderings: LayerMap = LayerMap::new();
     renderings.insert(TranslationId(KJV_TRANSLATION.to_string()), v.text.clone());

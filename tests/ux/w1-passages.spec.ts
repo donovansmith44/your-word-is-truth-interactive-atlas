@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { openVerse } from './lib/verse';
 import { api } from './lib/api';
 
 // Batch W1 ("whole-Bible titled verse containers" -- owner directive
@@ -26,7 +27,7 @@ test('req-1b NAMED CASE: Exodus 20 / Deuteronomy 5 (the Commandments) render as 
   const exoWitness = detail.witnesses.find((w: any) => w.book === 'EXO');
   const [book, chapter, verse] = exoWitness.verse_groups[0].verses[0].split('.');
   await page.goto(`/read/${book}/${chapter}`);
-  await page.getByTestId(`verse-line-${verse}`).click();
+  await openVerse(page, verse);
   await page.getByTestId('verse-event-theo-127').click();
   await expect(page.getByTestId('popover-title')).toHaveText('Ten Commandments Given');
 

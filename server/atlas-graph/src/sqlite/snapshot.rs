@@ -2,13 +2,14 @@
 //! equal the in-memory `Graph`'s -- `assert_answers_match` is the judge -- and it holds one
 //! read-only connection per worker, a query taking the first free one.
 
+use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Mutex;
 
 use atlas_graph_types::canon::ids::{any_node_id_str, parse_any_node_id, position_str};
 use atlas_graph_types::canon::Canon;
-use atlas_graph_types::edge::{Direction, EdgeId, EdgeKind};
+use atlas_graph_types::edge::{Direction, EdgeId, EdgeKind, Parentage};
 use atlas_graph_types::explore::{EdgeEntry, EdgeMeta, EdgePage, EdgeQuery, EdgeSummary, NodePage};
 use atlas_graph_types::graph::EdgeRel;
 use atlas_graph_types::id::{AnyNodeId, ContentAddressed, ContentHash, NarrativeId, NodeKind, Pid, Position};
@@ -207,37 +208,40 @@ impl SqliteSnapshot {
         }
     }
 
-    /// Paging is keyset, not OFFSET: `ord` IS the entry's position in the in-memory
-    /// `(subject, rel, dir)` list, and those positions are contiguous `0..n` across the attached
-    /// sections, so `ord >= cursor LIMIT limit + 1` reads one page plus the row that decides `next`.
     fn edges_inner(&self, p: &Position, q: &EdgeQuery) -> Result<EdgePage, SqliteError> {
         let (rel, dir, rel_name) = Self::code_of(q.kind);
         let subject = position_str(p);
         let start = q.cursor.unwrap_or(0);
         self.with_conn(|conn| {
             let mut stmt = conn.prepare_cached(
-                "SELECT object, edge_id, meta_kind, meta_narrative, meta_votes FROM all_edge_index                  WHERE subject = ?1 AND rel = ?2 AND dir = ?3 AND ord >= ?4 ORDER BY ord LIMIT ?5",
+                "SELECT ord, object, edge_id, meta_kind, meta_narrative, meta_votes, meta_parentage FROM all_edge_index AS first \
+                 WHERE subject = ?1 AND rel = ?2 AND dir = ?3 AND ord >= ?4 \
+                 AND NOT EXISTS (SELECT 1 FROM all_edge_index AS earlier WHERE earlier.subject = first.subject AND earlier.rel = first.rel AND earlier.dir = first.dir AND earlier.edge_id = first.edge_id AND earlier.ord < first.ord) \
+                 ORDER BY ord LIMIT ?5",
             )?;
             let mut rows = stmt.query(rusqlite::params![subject, rel, dir, start as i64, q.limit as i64 + 1])?;
             let mut entries = Vec::new();
-            let mut more = false;
+            let mut next = None;
             while let Some(row) = rows.next()? {
+                let ord: i64 = row.get(0)?;
                 if entries.len() == q.limit {
-                    more = true;
+                    next = Some(ord as usize);
                     break;
                 }
-                let object: String = row.get(0)?;
-                let blob: Vec<u8> = row.get(1)?;
-                let meta_kind: i64 = row.get(2)?;
-                let narrative: Option<String> = row.get(3)?;
-                let votes: Option<i64> = row.get(4)?;
-                let meta = match (meta_kind, narrative, votes) {
-                    (0, None, None) => EdgeMeta::None,
-                    (1, Some(n), None) => EdgeMeta::Narrative(NarrativeId::new(n)),
-                    (2, None, Some(v)) => EdgeMeta::Votes(
+                let object: String = row.get(1)?;
+                let blob: Vec<u8> = row.get(2)?;
+                let meta_kind: i64 = row.get(3)?;
+                let narrative: Option<String> = row.get(4)?;
+                let votes: Option<i64> = row.get(5)?;
+                let parentage: Option<String> = row.get(6)?;
+                let meta = match (meta_kind, narrative, votes, parentage.as_deref().map(Parentage::named)) {
+                    (0, None, None, None) => EdgeMeta::None,
+                    (1, Some(n), None, None) => EdgeMeta::Narrative(NarrativeId::new(n)),
+                    (2, None, Some(v), None) => EdgeMeta::Votes(
                         u32::try_from(v).map_err(|_| SqliteError(format!("meta_votes {v} out of range")))?,
                     ),
-                    (k, n, v) => return Err(SqliteError(format!("edge meta ({k}, {n:?}, {v:?}) is malformed"))),
+                    (3, None, None, Some(Some(p))) => EdgeMeta::Parentage(p),
+                    (k, n, v, _) => return Err(SqliteError(format!("edge meta ({k}, {n:?}, {v:?}, {parentage:?}) is malformed"))),
                 };
                 entries.push(EdgeEntry {
                     edge: EdgeId(format!("{rel_name}:{}", hash_from_bytes(&blob)?.hex())),
@@ -245,7 +249,6 @@ impl SqliteSnapshot {
                     meta,
                 });
             }
-            let next = if more { Some(start + entries.len()) } else { None };
             Ok(EdgePage { kind: q.kind, entries, next })
         })
     }
@@ -265,6 +268,23 @@ impl GraphQuery for SqliteSnapshot {
             })
         })
         .unwrap_or(None)
+    }
+
+    fn nodes(&self, ids: &[AnyNodeId]) -> Vec<Option<Node>> {
+        let keys: Vec<String> = ids.iter().map(any_node_id_str).collect();
+        let read = self.with_conn(|conn| {
+            let mut stmt = conn.prepare_cached("SELECT id, payload FROM all_node WHERE id IN (SELECT value FROM json_each(?1))")?;
+            let asked = serde_json::to_string(&keys).map_err(|e| SqliteError(format!("node ids as a JSON array: {e}")))?;
+            let mut rows = stmt.query([asked])?;
+            let mut held: HashMap<String, Node> = HashMap::new();
+            while let Some(row) = rows.next()? {
+                let payload: Vec<u8> = row.get(1)?;
+                held.insert(row.get(0)?, Node::decode(&payload)?);
+            }
+            Ok(held)
+        })
+        .unwrap_or_default();
+        keys.iter().map(|key| read.get(key).cloned()).collect()
     }
 
     fn derive(&self, pid: &Pid) -> Option<Vec<u8>> {
@@ -291,7 +311,7 @@ impl GraphQuery for SqliteSnapshot {
         let subject = position_str(p);
         self.with_conn(|conn| {
             let mut stmt =
-                conn.prepare_cached("SELECT rel, dir, COUNT(*) FROM all_edge_index WHERE subject = ?1 GROUP BY rel, dir")?;
+                conn.prepare_cached("SELECT rel, dir, COUNT(DISTINCT edge_id) FROM all_edge_index WHERE subject = ?1 GROUP BY rel, dir")?;
             let mut rows = stmt.query([subject.as_str()])?;
             let mut out = EdgeSummary::new();
             while let Some(row) = rows.next()? {

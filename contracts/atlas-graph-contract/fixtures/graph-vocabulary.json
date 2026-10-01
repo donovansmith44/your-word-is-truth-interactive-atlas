@@ -130,7 +130,7 @@
             "name": "Shows"
         }
     ],
-    "section_schema_version": 15,
+    "section_schema_version": 18,
     "symmetric": [
         {
             "label": "analogous-to",
@@ -153,8 +153,12 @@
             "name": "TemporalAdjacency"
         },
         {
-            "label": "partner-of",
-            "name": "Partners"
+            "label": "spouse-of",
+            "name": "Spouses"
+        },
+        {
+            "label": "brethren-of",
+            "name": "Brethren"
         }
     ]
 }

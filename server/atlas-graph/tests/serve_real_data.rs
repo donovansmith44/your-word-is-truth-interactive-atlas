@@ -1,9 +1,19 @@
 mod common;
 
-use common::{committed_sections, committed_service};
+use std::collections::BTreeMap;
+
+use common::{committed_graph, committed_sections, committed_service};
 
 use atlas_core::refs::ScriptureRef;
+use atlas_graph::citations::CitationSpan;
+use atlas_graph::concord_adapter::CONCORD_TRANSLATION;
+use atlas_graph::kjv_adapter::KJV_TRANSLATION;
+use atlas_graph::mention_spans::MentionSpan;
 use atlas_graph::sqlite::serve::*;
+use atlas_graph::tokens::span;
+use atlas_graph_types::edge::MentionedEntity;
+use atlas_graph_types::id::{PersonId, PlaceId};
+use atlas_graph_types::text::{ConcordRef, TextRef, VerseRef};
 
 #[test]
 fn the_chronology_loaded_from_event_date_is_the_artifacts() {
@@ -114,3 +124,94 @@ fn cross_refs_for_span_is_the_companions_slice() {
     assert_eq!(one.len(), 1);
 }
 
+
+const GENESIS: u8 = 0;
+const JOSHUA: u8 = 5;
+const SMALL_CATECHISM: u8 = 7;
+const FIRST_PETER: u8 = 59;
+const EPHESIANS: u8 = 48;
+const REVELATION: u8 = 65;
+
+#[test]
+fn the_sections_serve_the_located_mentions_of_one_verse_in_row_order() {
+    // Arrange
+    let jos_11_1 = VerseRef { book: JOSHUA, chapter: 11, verse: 1 };
+    let named = |entity: MentionedEntity, word: u16| MentionSpan { entity, words: span(KJV_TRANSLATION, word, word).unwrap() };
+
+    // Act
+    let spans = committed_service().mention_spans_in(&(jos_11_1.clone()..=jos_11_1.clone())).unwrap();
+
+    // Assert
+    assert_eq!(
+        spans,
+        BTreeMap::from([(
+            jos_11_1,
+            vec![
+                named(MentionedEntity::Place(PlaceId::new("achshaph")), 33),
+                named(MentionedEntity::Place(PlaceId::new("hazor-1")), 9),
+                named(MentionedEntity::Place(PlaceId::new("madon")), 21),
+                named(MentionedEntity::Place(PlaceId::new("shimron")), 27),
+                named(MentionedEntity::Person(PersonId::new("jabin_676")), 6),
+                named(MentionedEntity::Person(PersonId::new("jobab_1642")), 18),
+            ]
+        )])
+    );
+}
+
+#[test]
+fn the_sections_serve_every_located_mention_the_graph_holds_in_one_read_over_the_whole_bible() {
+    // Arrange
+    let mut held: BTreeMap<VerseRef, Vec<MentionSpan>> = BTreeMap::new();
+    for row in &committed_graph().mentions {
+        if let (TextRef::Bible(verse), Some(words)) = (&row.locus.at, &row.locus.span) {
+            held.entry(verse.clone()).or_default().push(MentionSpan { entity: row.entity.clone(), words: words.clone() });
+        }
+    }
+    let whole_bible = VerseRef { book: GENESIS, chapter: 1, verse: 1 }..=VerseRef { book: REVELATION, chapter: 22, verse: 21 };
+
+    // Act
+    let served = committed_service().mention_spans_in(&whole_bible).unwrap();
+
+    // Assert
+    assert_eq!(served, held);
+}
+
+#[test]
+fn the_sections_serve_the_citations_one_paragraph_makes_in_row_order() {
+    // Arrange
+    let for_wives = ConcordRef { part: SMALL_CATECHISM, article: 9, paragraph: 6 };
+
+    // Act
+    let spans = committed_service().citation_spans_in(&(for_wives.clone()..=for_wives.clone())).unwrap();
+
+    // Assert
+    assert_eq!(
+        spans,
+        BTreeMap::from([(
+            for_wives,
+            vec![
+                CitationSpan { cites: VerseRef { book: FIRST_PETER, chapter: 3, verse: 6 }, words: span(CONCORD_TRANSLATION, 38, 41).unwrap() },
+                CitationSpan { cites: VerseRef { book: EPHESIANS, chapter: 5, verse: 22 }, words: span(CONCORD_TRANSLATION, 42, 44).unwrap() },
+            ]
+        )])
+    );
+}
+
+#[test]
+fn the_sections_serve_every_citation_the_graph_holds_in_one_read_over_the_whole_book_of_concord() {
+    // Arrange
+    let mut held: BTreeMap<ConcordRef, Vec<CitationSpan>> = BTreeMap::new();
+    for row in &committed_graph().cross_refs {
+        if let (TextRef::Concord(paragraph), Some(words), TextRef::Bible(cites)) = (&row.from.at, &row.from.span, &row.to.at) {
+            held.entry(paragraph.clone()).or_default().push(CitationSpan { cites: cites.clone(), words: words.clone() });
+        }
+    }
+
+    let whole_book_of_concord = ConcordRef { part: u8::MIN, article: u16::MIN, paragraph: u16::MIN }..=ConcordRef { part: u8::MAX, article: u16::MAX, paragraph: u16::MAX };
+
+    // Act
+    let served = committed_service().citation_spans_in(&whole_book_of_concord).unwrap();
+
+    // Assert
+    assert_eq!((served.values().map(Vec::len).sum::<usize>(), served), (common::CONCORD_CITATIONS, held));
+}

@@ -7,12 +7,13 @@
           "id": "text-unit:ROM.5.8",
           "kind": "TextUnit",
           "label": "ROM.5.8"
-        }
+        },
+        "votes": 981
       }
     ],
     "kind": "cites",
     "next": 1,
-    "version": "f3eab9b319696aeb098aaf47fffc050e"
+    "version": "03b477816961916c7e520c183cd9531c"
   },
   "status": 200
 }

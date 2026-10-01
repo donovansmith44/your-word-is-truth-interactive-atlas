@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { openVerse } from './lib/verse';
 import { api } from './lib/api';
 
 // Batch CORPREAD-1b (ticket C, owner order verbatim: "I want to be able ot
@@ -467,7 +468,7 @@ test('D3: /concord?ref= deep-links to a paragraph, and its card reaches the Smal
 
 test('D3: from Genesis 1:1 the catechism card reaches the Book of Concord', async ({ page }) => {
   await page.goto('/read/GEN/1');
-  await page.getByTestId('verse-line-1').click();
+  await openVerse(page, 1);
   await expect(page.getByTestId('popover-title')).toContainText('GEN.1.1');
   const item = page.locator('[data-testid^="catechism-item-"]').first();
   await expect(item).toBeVisible();

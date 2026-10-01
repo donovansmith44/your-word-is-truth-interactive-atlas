@@ -1,45 +1,45 @@
 schema = 1
 compiler = "atlas-graph-compile 0.1.0 (rustc 1.97.1)"
-built = "2026-09-29T15:03:32Z"
-root = "31e118e8e6d47276ebeec3ed23d53217"
+built = "2026-09-30T13:28:33Z"
+root = "b745ec41abf7f060966f66bfe45524fb"
 raw_root = "ca285021ab2a62274ca84741bd50629c"
 
 [[section]]
 name = "core"
 required = true
-logical = "f0088b69dccd54dfd79e43b4b961c87d"
-blob = "1d0d0812304f8c00637ac91b7d711b7f3a379fd17a3eefdd4ebae91cf8d65d2d"
-bytes = 8261293
-schema_version = 15
+logical = "c6a98eba9abf4fe3af72609e656a7418"
+blob = "17ab3520c7909dec1f91681576cfd7b7b30a6dccc79813511db4c0247aa64422"
+bytes = 9784834
+schema_version = 18
 
 [[section]]
 name = "kjv"
 required = true
-logical = "a97cc311938de640be6e525f32b263b6"
-blob = "6903674e72fa9c872e33e524231986f538a10f3d729b59652b8caf8c83224700"
-bytes = 45656526
-schema_version = 15
+logical = "6f413a55daedb14b489139d97814d214"
+blob = "4fe493d1bcc4fe785cce51fbae1e40fbaa09f337956d4c8b10a8d946ab461467"
+bytes = 48419291
+schema_version = 18
 
 [[section]]
 name = "concord"
 required = false
-logical = "1b6b2b4cf4a9462f2d24140354973799"
-blob = "94e3d29dd4e10e7cc1a238b7e50dbe7589ad95af556b09ed31d59542fe51262b"
-bytes = 918051
-schema_version = 15
+logical = "bfe52b2b8fa22a3228b5d8a8ff2e1403"
+blob = "aba49c518faea2fa1d39a6b76e2cdf1e7944c007d1e864b2a0c7e33cafafe257"
+bytes = 2209422
+schema_version = 18
 
 [[section]]
 name = "kretzmann"
 required = false
 logical = "cfebcd669fe2737850598fbc8b57ff24"
-blob = "66e2e1f6521dfaac999459c44b3ac6a6d1e1e7a3bb535c9c48105018f31239cc"
-bytes = 9166273
-schema_version = 15
+blob = "a5f0b6eac6135adef95118ba98dc56dfce96b8b35d07a6867570a46f1a6e9071"
+bytes = 9165142
+schema_version = 18
 
 [[section]]
 name = "lexicon"
 required = false
-logical = "60bc8e4c31c96c6439ad52f746652294"
-blob = "60a979e8c84f75c417ec24acd23c8d21bc3d5cf682e1730bf294d9cbd0213a23"
-bytes = 42847568
-schema_version = 15
+logical = "1dc3b9dfa43d44da3eec689d3a38e288"
+blob = "c8236407ed39885c46feb2ab3098f8e251bd858dc67c86176f764b5baf6d5dfc"
+bytes = 42494246
+schema_version = 18

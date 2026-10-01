@@ -95,6 +95,7 @@ test('ST-2/R2: follow OFF -- reader chapter navigation does not touch the atlas 
   await expect(page.getByTestId('follow-chip')).toHaveAttribute('aria-pressed', 'false');
 
   const atlasPane = page.getByTestId('split-pane-atlas');
+  await expect(atlasPane.getByTestId('slider-readout')).not.toHaveValue('');
   const before = await atlasPane.getByTestId('slider-readout').inputValue();
 
   await page.getByTestId('reader-next').click();

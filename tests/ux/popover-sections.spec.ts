@@ -1,4 +1,5 @@
 import { test, expect, Page } from '@playwright/test';
+import { openVerse } from './lib/verse';
 import fc from 'fast-check';
 import { api } from './lib/api';
 import { loadToc, arbVerseRef } from './lib/canon';
@@ -46,7 +47,7 @@ test('REGISTRY-1: a verse with real cross-references shows them inline, no butto
   const v = parseVerse(vref);
 
   await page.goto(`/read/${v.book}/${v.chapter}`);
-  await page.getByTestId(`verse-line-${v.verse}`).click();
+  await openVerse(page, v.verse);
   await expect(page.getByTestId('popover-title')).toHaveText(vref);
   // Settle-wait: `popover-title` binds to Current.Title, set SYNCHRONOUSLY
   // (the click handler itself) the instant a node is pushed -- BEFORE
@@ -106,7 +107,7 @@ test('REGISTRY-1: a verse with zero cross-references shows no xrefs section at a
   const v = parseVerse(vref);
 
   await page.goto(`/read/${v.book}/${v.chapter}`);
-  await page.getByTestId(`verse-line-${v.verse}`).click();
+  await openVerse(page, v.verse);
   await expect(page.getByTestId('popover-title')).toHaveText(vref);
 
   await expect(page.getByTestId('popover-section-verse-text')).toBeVisible();
@@ -160,7 +161,7 @@ test('CATECH-1: a verse with zero catechism citations shows no catechism section
 
 test('FRONTIER-ORDER-1: a content-rich verse (MAT.26.28) shows every category in the owner\'s own ruled order', async ({ page }) => {
   await page.goto('/read/MAT/26');
-  await page.getByTestId('verse-line-28').click();
+  await openVerse(page, 28);
   await expect(page.getByTestId('popover-title')).toHaveText('MAT.26.28');
   // Settle-wait, same reasoning as REGISTRY-1's own comment above: every
   // section resolves together in one batch, and this last-in-order section
@@ -191,7 +192,7 @@ test('FRONTIER-ORDER-1: a verse with no other category present shows Verse alone
   const v = parseVerse(found.vref);
 
   await page.goto(`/read/${v.book}/${v.chapter}`);
-  await page.getByTestId(`verse-line-${v.verse}`).click();
+  await openVerse(page, v.verse);
   await expect(page.getByTestId('popover-title')).toHaveText(found.vref);
 
   await expect(page.getByTestId('popover-section-verse-text')).toBeVisible();
@@ -215,7 +216,7 @@ test('FRONTIER-ORDER-1: a verse with no other category present shows Verse alone
 
 test('CHROME-1 (STOPPED, not implemented): the verse popover\'s own four top-right chrome buttons are all still present', async ({ page }) => {
   await page.goto('/read/GEN/1');
-  await page.getByTestId('verse-line-3').click();
+  await openVerse(page, 3);
   await expect(page.getByTestId('popover-title')).toHaveText('GEN.1.3');
 
   await expect(page.getByTestId('popover-chip-book')).toBeVisible();
@@ -229,7 +230,7 @@ test('CHROME-1 (STOPPED, not implemented): the verse popover\'s own four top-rig
 // Reader to the clicked verse, even without leaving the current page.
 test('CHROME-1 trace: "Read in context" genuinely scrolls the reader to the clicked verse, even from the same page', async ({ page }) => {
   await page.goto('/read/GEN/1');
-  await page.getByTestId('verse-line-20').click();
+  await openVerse(page, 20);
   await expect(page.getByTestId('popover-title')).toHaveText('GEN.1.20');
 
   await page.evaluate(() => window.scrollTo(0, 0));
@@ -248,7 +249,7 @@ test('CHROME-1 trace: "Read in context" genuinely scrolls the reader to the clic
 
 test('CHROME-2: popover-close and popover-breadcrumb-back both show a native tooltip naming the button', async ({ page }) => {
   await page.goto('/read/GEN/1');
-  await page.getByTestId('verse-line-3').click();
+  await openVerse(page, 3);
   await expect(page.getByTestId('popover-title')).toHaveText('GEN.1.3');
   await expect(page.getByTestId('popover-close')).toHaveAttribute('title', 'Close');
 
@@ -312,7 +313,7 @@ test('HATCH-DELIVERABLE-1: EventNode\'s map chip is absent for a no-located-plac
 
 test('READER-1: expanding a verse popover fetches the whole chapter and highlights the focal verse', async ({ page }) => {
   await page.goto('/read/GEN/1');
-  await page.getByTestId('verse-line-3').click();
+  await openVerse(page, 3);
   await expect(page.getByTestId('popover-title')).toHaveText('GEN.1.3');
 
   // M-D3/U6, owner verbatim: "'read the whole chapter' affordance REMOVED
@@ -658,7 +659,7 @@ test('PARALLELS-1: a verse\'s own PARALLELS entry shows the ref-label ONLY, neve
   // of wisdom), whose ONLY other witness is 1KI.3.1-15 (15 verses) -- the
   // owner's own named example, verbatim, reproduced exactly.
   await page.goto('/read/2CH/1');
-  await page.getByTestId('verse-line-2').click();
+  await openVerse(page, 2);
   await expect(page.getByTestId('popover-title')).toHaveText('2CH.1.2');
 
   // Single QUALIFYING event (2CH.1.2 cites exactly one titled event) -- the
@@ -738,7 +739,7 @@ test('BLINK-1: hovering a place mention in the mini-reader blinks its map marker
   const marker = page.getByTestId('marker-canaan').or(page.getByTestId('quiet-marker-canaan'));
   await expect(marker).toBeAttached({ timeout: 15000 });
 
-  await page.getByTestId('verse-line-8').click();
+  await openVerse(page, 8);
   await expect(page.getByTestId('popover-verse-expand')).toHaveCount(0); // chapter-aware suppression, verified above
   const more = page.getByTestId('xrefs-more');
   await expect(more).toBeVisible();
@@ -862,7 +863,7 @@ test('MENTION-4: clicking a place mention INSIDE the mini-reader pushes a new po
   // -> VerseTextSection/PassageList -> ctx.PushAsync) independently of the
   // Reader.razor-level MENTION-1 test above.
   await page.goto('/read/GEN/12?split=world');
-  await page.getByTestId('verse-line-8').click();
+  await openVerse(page, 8);
   const more = page.getByTestId('xrefs-more');
   await expect(more).toBeVisible();
   // M-D4 fix round 1/P2: same conditional-"all" fallback as this file's
@@ -971,7 +972,7 @@ test('R-M1: a preview row\'s mentioned name (PassageList\'s own compact text -- 
 
 test('CATECH-1: the Baptism institution verse keeps its item-level citation, now alongside Batch F2\'s own question-level ones', async ({ page }) => {
   await page.goto('/read/MAT/28');
-  await page.getByTestId('verse-line-19').click();
+  await openVerse(page, 19);
   await expect(page.getByTestId('popover-title')).toHaveText('MAT.28.19');
 
   await expect(page.getByTestId('popover-section-catechism')).toBeVisible();
@@ -1037,7 +1038,7 @@ test('CATECH-1: the Baptism institution verse keeps its item-level citation, now
 
 test('CATECH-1: verse -> catechism item -> proof verse hop, with Luther\'s own verbatim heading', async ({ page }) => {
   await page.goto('/read/MAT/28');
-  await page.getByTestId('verse-line-19').click();
+  await openVerse(page, 19);
   // M-D3/U2/U6: THE SMALL CATECHISM now defaults to 2 shown -- MAT.28.19
   // cites many items (the prior test's own subject), so baptism-1 is not
   // guaranteed to be among the initial 2; reveal everything first (this
@@ -1173,7 +1174,7 @@ test('CATECH-1: a same-chapter passage selection aggregates catechism citations 
 
 test('CATECH-1/6-ARCH: a verse reachable only via the repo mapping shows a question-titled entry (Luke 12:13-14)', async ({ page }) => {
   await page.goto('/read/LUK/12');
-  await page.getByTestId('verse-line-13').click();
+  await openVerse(page, 13);
   await expect(page.getByTestId('popover-title')).toHaveText('LUK.12.13');
   await expect(page.getByTestId('popover-section-catechism')).toBeVisible();
   // M-D3/U2/U6: reveal everything first -- this test's own concern is the
@@ -1259,7 +1260,7 @@ test('CATECH-1/U2/U6: THE SMALL CATECHISM defaults to 2 shown, "more"/"all"/"les
   const total = found.detail.catechism.length;
 
   await page.goto(`/read/${v.book}/${v.chapter}`);
-  await page.getByTestId(`verse-line-${v.verse}`).click();
+  await openVerse(page, v.verse);
   await expect(page.getByTestId('popover-title')).toHaveText(found.vref);
 
   const items = page.getByTestId(/^catechism-item-/);
@@ -1338,7 +1339,7 @@ test('CATECH-1: a verse with 1-2 catechism citations shows no reveal arrow at al
   const v = parseVerse(found.vref);
 
   await page.goto(`/read/${v.book}/${v.chapter}`);
-  await page.getByTestId(`verse-line-${v.verse}`).click();
+  await openVerse(page, v.verse);
   await expect(page.getByTestId('popover-section-catechism')).toBeVisible();
 
   await expect(page.getByTestId(/^catechism-item-/)).toHaveCount(found.detail.catechism.length);
@@ -1393,7 +1394,7 @@ test('XREF-1/U2: "more"/"all" are state-adaptive text links, "less" is a one-op 
   const total = found.detail.cross_refs.length;
 
   await page.goto(`/read/${v.book}/${v.chapter}`);
-  await page.getByTestId(`verse-line-${v.verse}`).click();
+  await openVerse(page, v.verse);
   await expect(page.getByTestId('popover-title')).toHaveText(found.vref);
 
   const items = page.getByTestId(/^xref-item-/);
@@ -1464,7 +1465,7 @@ test('XREF-1: a verse with catechism context ALSO present caps cross-references 
   const v = parseVerse(found.vref);
 
   await page.goto(`/read/${v.book}/${v.chapter}`);
-  await page.getByTestId(`verse-line-${v.verse}`).click();
+  await openVerse(page, v.verse);
   await expect(page.getByTestId('popover-title')).toHaveText(found.vref);
   await expect(page.getByTestId('popover-section-catechism')).toBeVisible();
 
@@ -1539,7 +1540,7 @@ test('XREF-1/regression: a cross-reference to a same-chapter multi-verse target 
   const v = parseVerse(found.vref);
 
   await page.goto(`/read/${v.book}/${v.chapter}`);
-  await page.getByTestId(`verse-line-${v.verse}`).click();
+  await openVerse(page, v.verse);
   const items = page.getByTestId(/^xref-item-/);
   await expect(items).not.toHaveCount(0);
   const first = items.first();
@@ -1577,7 +1578,7 @@ test('XREF-1/regression: a cross-reference to a same-chapter multi-verse target 
 
 test('XREF-CLAMP-1: a cross-reference to a 15-verse target (MRK.6.1 -> LUK.4.16-30) shows exactly 2 verses, a continuation mark, and still opens the full frontier on click', async ({ page }) => {
   await page.goto('/read/MRK/6');
-  await page.getByTestId('verse-line-1').click();
+  await openVerse(page, 1);
   await expect(page.getByTestId('popover-title')).toHaveText('MRK.6.1');
 
   const entry = page.getByTestId('xref-item-LUK.4.16-30');
@@ -1630,7 +1631,7 @@ test('XREF-CLAMP-1: a cross-reference target at or under the 2-verse clamp shows
   }).target;
 
   await page.goto(`/read/${v.book}/${v.chapter}`);
-  await page.getByTestId(`verse-line-${v.verse}`).click();
+  await openVerse(page, v.verse);
   const entry = page.getByTestId(`xref-item-${target}`);
   await expect(entry).toBeVisible();
   await expect(entry.locator('[data-testid^="clamp-mark-"]')).toHaveCount(0);
@@ -1683,7 +1684,7 @@ test('EVENT-1: a verse popover shows EVENT membership (not PRIOR/FOLLOWING) -- t
   expect(detail.events.some((e: any) => e.id === 'ex_succoth')).toBeTruthy();
 
   await page.goto('/read/EXO/13');
-  await page.getByTestId('verse-line-20').click();
+  await openVerse(page, 20);
   await expect(page.getByTestId('popover-title')).toHaveText('EXO.13.20');
 
   // The "EVENT" section: present, names ex_succoth, explorable.
@@ -1750,7 +1751,7 @@ test('EVENT-1: clicking a verse\'s EVENT row opens the EventNode, whose PRIOR/FO
 
   // Now the SAME thing, live: verse -> EVENT row -> EventNode -> PRIOR/FOLLOWING.
   await page.goto('/read/EXO/13');
-  await page.getByTestId('verse-line-20').click();
+  await openVerse(page, 20);
   await page.getByTestId('verse-event-ex_succoth').click();
   await expect(page.getByTestId('popover-title')).toHaveText('First camp at Succoth');
   await expect(page.getByTestId('popover-section-event-date-places')).toBeVisible();
@@ -1806,7 +1807,7 @@ test('PERI-1: PSA.119.105\'s own popover shows NUN under PASSAGE, never EVENT', 
   expect(nun.kind).toBe('general');
 
   await page.goto('/read/PSA/119');
-  await page.getByTestId('verse-line-105').click();
+  await openVerse(page, 105);
   await expect(page.getByTestId('popover-title')).toHaveText('PSA.119.105');
 
   const passageSection = page.getByTestId('popover-section-passage-membership');
@@ -1830,7 +1831,7 @@ test('PERI-1: GAL.1.8\'s own popover shows the astonishment pericope under PASSA
   expect(astonishment.kind).toBe('general');
 
   await page.goto('/read/GAL/1');
-  await page.getByTestId('verse-line-8').click();
+  await openVerse(page, 8);
   await expect(page.getByTestId('popover-title')).toHaveText('GAL.1.8');
 
   const passageSection = page.getByTestId('popover-section-passage-membership');
@@ -1884,7 +1885,7 @@ test('EVENT-1/PASSAGE-1: the Crucifixion event shows 4 witness passages under "P
   const firstVref = matWitness.verse_groups[0].verses[0];
   const [book, chapter, verse] = firstVref.split('.');
   await page.goto(`/read/${book}/${chapter}`);
-  await page.getByTestId(`verse-line-${verse}`).click();
+  await openVerse(page, verse);
   await page.getByTestId('verse-event-pw_golgotha').click();
   await expect(page.getByTestId('popover-title')).toHaveText('The crucifixion at Golgotha');
 
@@ -1997,7 +1998,7 @@ test('ACCT-COALESCE-1: the Sermon on the Mount shows exactly 2 PARALLEL ACCOUNTS
   expect(matWitness.verse_groups.map((g: any) => g.chapter)).toEqual([5, 6, 7]);
 
   await page.goto('/read/LUK/6');
-  await page.getByTestId('verse-line-17').click();
+  await openVerse(page, 17);
   await page.getByTestId('verse-event-rob_sermon_on_the_mount').click();
   await expect(page.getByTestId('popover-title')).toHaveText('The Sermon on the Mount');
 
@@ -2032,7 +2033,7 @@ test('ACCT-COALESCE-1 counterexample: psa_014 (Psalm 14 + Psalm 53, two SEPARATE
   expect(detail.witnesses.map((w: any) => w.book)).toEqual(['PSA', 'PSA']);
 
   await page.goto('/read/PSA/14');
-  await page.getByTestId('verse-line-1').click();
+  await openVerse(page, 1);
   await page.getByTestId('verse-event-psa_014').click();
   await expect(page.getByTestId('popover-title')).toHaveText(detail.title);
 
@@ -2066,7 +2067,7 @@ test('ACCT-COALESCE-1 fix round 2 (review N-1): rob_peter_denies -- a WITHIN-wit
   expect(mrkGroup.verses, 'verse 55 belongs to ANOTHER event -- the gap is real').not.toContain('MRK.14.55');
 
   await page.goto('/read/MRK/14');
-  await page.getByTestId('verse-line-54').click();
+  await openVerse(page, 54);
   await page.getByTestId('verse-event-rob_peter_denies').click();
   await expect(page.getByTestId('popover-title')).toHaveText(detail.title);
 
@@ -2110,7 +2111,7 @@ test('ACCT-COALESCE-1 fix round 3 (review NEW-1): clicking a coalesced account w
   // contiguous, display span "MAT.5.1-7.29") explores as its first
   // chapter's own run, "MAT.5.1-48".
   await page.goto('/read/LUK/6');
-  await page.getByTestId('verse-line-17').click();
+  await openVerse(page, 17);
   await page.getByTestId('verse-event-rob_sermon_on_the_mount').click();
   await expect(page.getByTestId('popover-title')).toHaveText('The Sermon on the Mount');
   const matEntry = page.getByTestId('event-witness-MAT.5.1-7.29');
@@ -2125,7 +2126,7 @@ test('ACCT-COALESCE-1 fix round 3 (review NEW-1): clicking a coalesced account w
   // IsPassage cardinality rule) -- and that verse popover carries its own
   // real cross-references too.
   await page.goto('/read/MRK/14');
-  await page.getByTestId('verse-line-54').click();
+  await openVerse(page, 54);
   await page.getByTestId('verse-event-rob_peter_denies').click();
   const peterEntry = page.getByTestId('event-witness-MRK.14.54, 66-72');
   await expect(peterEntry).toBeVisible();
@@ -2154,7 +2155,7 @@ test('EVENT-1: a single-witness event shows the one passage with no "PARALLEL AC
   expect(detail.witnesses[0].book).toBe('JHN');
 
   await page.goto('/read/JHN/2');
-  await page.getByTestId('verse-line-13').click();
+  await openVerse(page, 13);
   await page.getByTestId('verse-event-jm_temple_cleansing').click();
   await expect(page.getByTestId('popover-title')).toHaveText('Jesus cleanses the temple for the first time');
 
@@ -2198,7 +2199,7 @@ test('EVT-3: a single-witness event\'s popover now shows its real, clamped compa
   // event's own witness chapter is never the one the reader is already
   // showing.
   await page.goto('/read/GEN/12');
-  await page.getByTestId('verse-line-8').click();
+  await openVerse(page, 8);
   // A real, live-caught race (not guessed): `.count()` is a plain snapshot,
   // it does NOT auto-retry the way `expect().toBeVisible()` does -- reading
   // it immediately after the click above can land BEFORE ExplorerPopover's
@@ -2267,7 +2268,7 @@ test('M-D1 req 3: a multi-witness event (Crucifixion) still shows other-book cla
   const firstVref = matWitness.verse_groups[0].verses[0];
   const [book, chapter, verse] = firstVref.split('.');
   await page.goto(`/read/${book}/${chapter}`);
-  await page.getByTestId(`verse-line-${verse}`).click();
+  await openVerse(page, verse);
   await page.getByTestId('verse-event-pw_golgotha').click();
 
   const witnessesSection = page.getByTestId('popover-section-event-witnesses');
@@ -2313,7 +2314,7 @@ test('EVENT-1: chronological-vs-reading-order -- a JHN-witnessed event\'s FOLLOW
   // "just keep reading John's text forward."
   const [book, chapter, verse] = johnWitness.verse_groups[0].verses[0].split('.');
   await page.goto(`/read/${book}/${chapter}`);
-  await page.getByTestId(`verse-line-${verse}`).click();
+  await openVerse(page, verse);
   await page.getByTestId('verse-event-pw_jerusalem_entry').click();
   await expect(page.getByTestId('popover-title')).toHaveText('The triumphal entry into Jerusalem');
 

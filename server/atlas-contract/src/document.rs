@@ -53,12 +53,14 @@ pub struct RenderedDocument {
     pub contents: String,
 }
 
-pub const GENERATED_DOCUMENTS: [GeneratedDocument; 5] = [
+pub const GENERATED_DOCUMENTS: [GeneratedDocument; 7] = [
     GeneratedDocument { path: "openapi.yaml", render: openapi_yaml },
     GeneratedDocument { path: "atlas-query-contract/aqc.schema.json", render: aqc_schema_json },
     GeneratedDocument { path: "atlas-graph-contract/fixtures/graph-vocabulary.json", render: graph_vocabulary_json },
     GeneratedDocument { path: "atlas-query-contract/vectors/year-labels.json", render: year_labels_json },
     GeneratedDocument { path: "atlas-query-contract/vectors/attestation-runs.json", render: attestation_runs_json },
+    GeneratedDocument { path: "atlas-query-contract/vectors/mention-spans.json", render: mention_spans_json },
+    GeneratedDocument { path: "atlas-query-contract/vectors/citation-grammar.json", render: citation_grammar_json },
 ];
 
 pub fn generated_files() -> Vec<RenderedDocument> {
@@ -127,7 +129,6 @@ pub fn aqc_schema_json() -> String {
     serde_json::to_string_pretty(&out).expect("the AQC schema serialises") + "\n"
 }
 
-/// A reference is a `$ref`, or one of the subtypes a discriminator's `mapping` names.
 fn point_references_at_shapes(value: &mut Value) {
     match value {
         Value::Object(map) => {
@@ -203,8 +204,6 @@ fn blessed_fixture(value: &Value) -> String {
     String::from_utf8(rendered).expect("serde_json emits UTF-8")
 }
 
-/// The labels a client that reads years back from what a reader types must agree
-/// with, each written out beside the years it labels.
 pub fn year_labels_json() -> String {
     let years: Vec<Year> = VECTOR_YEARS.iter().map(|value| Year::of(*value).expect("no vector year is zero")).collect();
     let ranges: Vec<Value> = VECTOR_RANGES.iter().map(|range| TimeRange::of(*range)).map(|range| json!({"from": range.from.value, "to": range.to.value, "label": range.label})).collect();
@@ -240,6 +239,222 @@ struct ClaimVector {
     when: time::TimeRange,
     note: Option<&'static str>,
 }
+
+pub fn mention_spans_json() -> String {
+    serde_json::to_string_pretty(&json!({"cases": MENTION_CASES})).expect("the mention-span vectors serialise") + "\n"
+}
+
+#[derive(Serialize)]
+struct MentionCase {
+    name: &'static str,
+    text: &'static str,
+    places: &'static [NamedEntity],
+    persons: &'static [NamedEntity],
+    mentions: &'static [FoundMention],
+}
+
+#[derive(Serialize)]
+struct NamedEntity {
+    id: &'static str,
+    name: &'static str,
+}
+
+#[derive(Serialize)]
+struct FoundMention {
+    start: usize,
+    end: usize,
+    kind: MentionKind,
+    id: &'static str,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "lowercase")]
+enum MentionKind {
+    Place,
+    Person,
+}
+
+const NO_NAMES: &[NamedEntity] = &[];
+const NO_MENTIONS: &[FoundMention] = &[];
+const JERUSALEM: NamedEntity = NamedEntity { id: "jerusalem", name: "Jerusalem" };
+
+const MENTION_CASES: [MentionCase; 13] = [
+    MentionCase {
+        name: "a_text_with_no_names_to_search_mentions_nothing",
+        text: "In the beginning God created the heaven.",
+        places: NO_NAMES,
+        persons: NO_NAMES,
+        mentions: NO_MENTIONS,
+    },
+    MentionCase { name: "an_empty_text_mentions_nothing", text: "", places: &[JERUSALEM], persons: NO_NAMES, mentions: NO_MENTIONS },
+    MentionCase {
+        name: "a_name_inside_the_text_is_one_mention",
+        text: "Abram dwelt in Hebron by the plain of Mamre.",
+        places: &[NamedEntity { id: "hebron", name: "Hebron" }],
+        persons: NO_NAMES,
+        mentions: &[FoundMention { start: 15, end: 21, kind: MentionKind::Place, id: "hebron" }],
+    },
+    MentionCase {
+        name: "a_name_at_the_very_start_is_found",
+        text: "Jerusalem was besieged.",
+        places: &[JERUSALEM],
+        persons: NO_NAMES,
+        mentions: &[FoundMention { start: 0, end: 9, kind: MentionKind::Place, id: "jerusalem" }],
+    },
+    MentionCase {
+        name: "a_name_at_the_very_end_is_found",
+        text: "They came to Jericho",
+        places: &[NamedEntity { id: "jericho", name: "Jericho" }],
+        persons: NO_NAMES,
+        mentions: &[FoundMention { start: 13, end: 20, kind: MentionKind::Place, id: "jericho" }],
+    },
+    MentionCase { name: "differently_cased_text_never_matches", text: "go up to JERUSALEM now.", places: &[JERUSALEM], persons: NO_NAMES, mentions: NO_MENTIONS },
+    MentionCase {
+        name: "exactly_cased_text_still_matches",
+        text: "go up to Jerusalem now.",
+        places: &[JERUSALEM],
+        persons: NO_NAMES,
+        mentions: &[FoundMention { start: 9, end: 18, kind: MentionKind::Place, id: "jerusalem" }],
+    },
+    MentionCase {
+        name: "two_names_apart_are_both_found",
+        text: "From Bethlehem to Jerusalem is a short journey.",
+        places: &[JERUSALEM, NamedEntity { id: "bethlehem", name: "Bethlehem" }],
+        persons: NO_NAMES,
+        mentions: &[
+            FoundMention { start: 5, end: 14, kind: MentionKind::Place, id: "bethlehem" },
+            FoundMention { start: 18, end: 27, kind: MentionKind::Place, id: "jerusalem" },
+        ],
+    },
+    MentionCase {
+        name: "longer_containing_name_wins_over_a_shorter_substring_name",
+        text: "They journeyed to Beersheba and rested.",
+        places: &[NamedEntity { id: "beersheba", name: "Beersheba" }, NamedEntity { id: "sheba", name: "Sheba" }],
+        persons: NO_NAMES,
+        mentions: &[FoundMention { start: 18, end: 27, kind: MentionKind::Place, id: "beersheba" }],
+    },
+    MentionCase {
+        name: "unmatched_place_is_simply_absent_not_an_error",
+        text: "The LORD spake unto Moses.",
+        places: &[NamedEntity { id: "egypt", name: "Egypt" }],
+        persons: NO_NAMES,
+        mentions: NO_MENTIONS,
+    },
+    MentionCase {
+        name: "place_name_longer_than_text_never_throws",
+        text: "Ur",
+        places: &[NamedEntity { id: "mesopotamia", name: "Mesopotamia" }],
+        persons: NO_NAMES,
+        mentions: NO_MENTIONS,
+    },
+    MentionCase {
+        name: "a_person_is_found_as_a_place_is",
+        text: "And Abram went down into Egypt.",
+        places: &[NamedEntity { id: "egypt", name: "Egypt" }],
+        persons: &[NamedEntity { id: "abram", name: "Abram" }],
+        mentions: &[
+            FoundMention { start: 4, end: 9, kind: MentionKind::Person, id: "abram" },
+            FoundMention { start: 25, end: 30, kind: MentionKind::Place, id: "egypt" },
+        ],
+    },
+    MentionCase {
+        name: "a_name_both_a_place_and_a_person_bear_goes_to_the_place",
+        text: "The queen of Sheba heard.",
+        places: &[NamedEntity { id: "sheba", name: "Sheba" }],
+        persons: &[NamedEntity { id: "sheba_1", name: "Sheba" }],
+        mentions: &[FoundMention { start: 13, end: 18, kind: MentionKind::Place, id: "sheba" }],
+    },
+];
+
+pub fn citation_grammar_json() -> String {
+    let named = atlas_graph::citations::book_names().into_iter().map(|(name, book)| {
+        let text = format!("{name} {FIRST}:{FIRST}");
+        json!({
+            "name": format!("a_citation_naming_{}", name.to_lowercase().replace(' ', "_")),
+            "citations": [{ "start": 0, "end": text.chars().count(), "cites": format!("{}.{FIRST}.{FIRST}", book.code()) }],
+            "text": text,
+        })
+    });
+    let cases: Vec<Value> = CITATION_CASES.iter().map(|case| json!(case)).chain(named).collect();
+    serde_json::to_string_pretty(&json!({"cases": cases})).expect("the citation-grammar vectors serialise") + "\n"
+}
+
+const FIRST: u16 = 1;
+
+#[derive(Serialize)]
+struct CitationCase {
+    name: &'static str,
+    text: &'static str,
+    citations: &'static [FoundCitation],
+}
+
+#[derive(Serialize)]
+struct FoundCitation {
+    start: usize,
+    end: usize,
+    cites: &'static str,
+}
+
+const NO_CITATIONS: &[FoundCitation] = &[];
+
+const CITATION_CASES: [CitationCase; 20] = [
+    CitationCase { name: "plain_prose_cites_nothing", text: "We believe, teach, and confess.", citations: NO_CITATIONS },
+    CitationCase {
+        name: "an_abbreviation_its_period_a_chapter_and_a_verse",
+        text: "As Christ says, Matt. 5:3, blessed are the poor.",
+        citations: &[FoundCitation { start: 16, end: 25, cites: "MAT.5.3" }],
+    },
+    CitationCase { name: "a_book_named_in_full", text: "For God so loved the world, John 3:16.", citations: &[FoundCitation { start: 28, end: 37, cites: "JHN.3.16" }] },
+    CitationCase { name: "a_numbered_book", text: "Of the Sacrament, 1 Cor. 11:23.", citations: &[FoundCitation { start: 18, end: 30, cites: "1CO.11.23" }] },
+    CitationCase { name: "a_range_keeps_its_whole_range", text: "Obey the rulers, Rom. 13:1-4.", citations: &[FoundCitation { start: 17, end: 28, cites: "ROM.13.1-4" }] },
+    CitationCase { name: "a_comma_may_part_the_chapter_from_the_verse", text: "Kiss the Son, Ps. 2, 12.", citations: &[FoundCitation { start: 14, end: 23, cites: "PSA.2.12" }] },
+    CitationCase {
+        name: "the_period_after_an_abbreviation_may_be_left_out",
+        text: "He led captivity captive, Eph 4:8.",
+        citations: &[FoundCitation { start: 26, end: 33, cites: "EPH.4.8" }],
+    },
+    CitationCase {
+        name: "a_longer_name_wins_over_the_shorter_it_begins_with",
+        text: "Charity suffereth long, 1 Corinthians 13:4.",
+        citations: &[FoundCitation { start: 24, end: 42, cites: "1CO.13.4" }],
+    },
+    CitationCase { name: "an_ambiguous_abbreviation_cites_nothing", text: "Paul planted, Cor. 3:6; have this mind, Phil. 2:5.", citations: NO_CITATIONS },
+    CitationCase { name: "an_unlisted_abbreviation_cites_nothing", text: "Woe unto him that striveth, Is. 45:9.", citations: NO_CITATIONS },
+    CitationCase { name: "a_name_inside_a_longer_word_cites_nothing", text: "Regen. 1:1 is no book.", citations: NO_CITATIONS },
+    CitationCase { name: "names_are_matched_in_their_own_case", text: "As it is written, matt. 5:3.", citations: NO_CITATIONS },
+    CitationCase {
+        name: "two_citations_in_one_text_are_both_found",
+        text: "Gal. 1:8 and Matt. 7:15 warn us.",
+        citations: &[FoundCitation { start: 0, end: 8, cites: "GAL.1.8" }, FoundCitation { start: 13, end: 23, cites: "MAT.7.15" }],
+    },
+    CitationCase { name: "a_range_that_runs_backward_cites_nothing", text: "See Matt. 5:9-3.", citations: NO_CITATIONS },
+    CitationCase {
+        name: "and_following_after_the_verse_is_inside_the_citation_which_cites_the_stated_verse_only",
+        text: "Love is the fulfilling, Rom. 13:8f.",
+        citations: &[FoundCitation { start: 24, end: 34, cites: "ROM.13.8" }],
+    },
+    CitationCase {
+        name: "a_doubled_and_following_is_inside_the_citation_too",
+        text: "Of the Law, Rom. 7:14ff, it is written.",
+        citations: &[FoundCitation { start: 12, end: 23, cites: "ROM.7.14" }],
+    },
+    CitationCase {
+        name: "the_latin_and_following_is_inside_the_citation_too",
+        text: "The apostles in Acts 15:10sqq. strove.",
+        citations: &[FoundCitation { start: 16, end: 29, cites: "ACT.15.10" }],
+    },
+    CitationCase {
+        name: "letters_after_the_verse_that_are_no_and_following_are_left_outside_the_citation",
+        text: "Love is the fulfilling, Rom. 13:8fold.",
+        citations: &[FoundCitation { start: 24, end: 33, cites: "ROM.13.8" }],
+    },
+    CitationCase {
+        name: "chapters_and_verses_run_to_three_digits",
+        text: "Thy word is a lamp, Ps. 119:105.",
+        citations: &[FoundCitation { start: 20, end: 31, cites: "PSA.119.105" }],
+    },
+    CitationCase { name: "offsets_count_characters_not_bytes", text: "Christ’s own word, John 3:16.", citations: &[FoundCitation { start: 19, end: 28, cites: "JHN.3.16" }] },
+];
 
 #[cfg(test)]
 mod tests {
@@ -303,8 +518,6 @@ mod tests {
     }
 }
 
-/// The runs an account's verses make, case by case: every verse attested, the canon
-/// they are read against, and the runs written out by hand.
 pub fn attestation_runs_json() -> String {
     let cases: Vec<Value> = runs_cases()
         .into_iter()

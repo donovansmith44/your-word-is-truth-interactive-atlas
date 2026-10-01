@@ -132,7 +132,8 @@ if ($editions -and $PSCmdlet.ShouldProcess("brain-fuel-bible: $($editions -join 
 }
 # LEX-1 (spec 2026-09-14 relational-artifact-design, section 7.1): from the
 # SAME pinned commit, the lexicon (`lexicon/{grc,hbo}`: 13,548 Strong's
-# entries -- Strong's 1890 PD; glosses/domains CC BY 4.0 STEPBible/MACULA)
+# entries -- Strong's 1890 PD; glosses CC BY 4.0 STEPBible; the domain codes
+# ride along in the files and are not read)
 # and the per-word morphology (`morph/{nt,ot}`: 452,689 CoNLL-U tokens with
 # Strong= alignment, CC BY 4.0 STEPBible). NOT `morph/lxx` (owner's standing
 # "no apocrypha for now"). Guarded separately so an existing CORP-1a vendoring

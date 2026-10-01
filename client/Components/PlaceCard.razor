@@ -182,6 +182,8 @@
     // Distinct from _lastPlaceId: this measurement is async and can still be in flight for
     // an older place after _lastPlaceId has already moved on (see OnAfterRenderAsync's stale-result guard).
     private string? _placedForId;
+    private readonly RequestSeries _place = new();
+    private readonly RequestSeries _chapters = new();
     private double _dxPx;
     private bool _flipped;
 
@@ -329,11 +331,21 @@
 
     private async Task LoadHistory()
     {
+        var request = _place.Next();
         try
         {
-            var detail = await Atlas.PlaceHistory(Place.Id, WindowFrom, WindowTo);
+            if (await request.Fetch(() => Atlas.PlaceHistory(Place.Id, WindowFrom, WindowTo)) is not { } detail)
+            {
+                return;
+            }
+
             _history = detail.History;
-            _dates = PlaceDates.Of((await Atlas.NodeCard(NodeIds.Of(NodeKind.Place, Place.Id))).Place, detail.History);
+            if (await request.Fetch(() => Atlas.NodeCard(NodeIds.Of(NodeKind.Place, Place.Id))) is not { } card)
+            {
+                return;
+            }
+
+            _dates = PlaceDates.Of(card.Place);
         }
         catch (Exception)
         {
@@ -448,7 +460,11 @@
 
         try
         {
-            var chapters = await Task.WhenAll(pairs.Select(p => Atlas.Chapter(p.Book, p.Chapter)));
+            if (await _chapters.Next().Fetch(() => Task.WhenAll(pairs.Select(p => Atlas.Chapter(p.Book, p.Chapter)))) is not { } chapters)
+            {
+                return;
+            }
+
             foreach (var chapter in chapters)
             {
                 // chapter.Ref is the code-based ref (e.g. "JDG.3"); chapter.Book is the display

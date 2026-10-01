@@ -24,9 +24,11 @@ Feature: node identity — who a node is, whatever carries it
   Scenario: a Place node, as a consumer reads it
     When I GET /api/node/Place:hazor-1
     Then the consumed projection node-card equals fixture "node-place-hazor-1"
-    And every "kind" in the answer names a term the graph declares
+    And every "kind" of a node, an edge page, an edge summary or an anchor in the answer names a term the graph declares
+    And every field the schema publishes as an enum carries one of its values
 
   Scenario: an Event node, as a consumer reads it
     When I GET /api/node/Event:ab_ur
     Then the consumed projection node-card equals fixture "node-event-ab-ur"
-    And every "kind" in the answer names a term the graph declares
+    And every "kind" of a node, an edge page, an edge summary or an anchor in the answer names a term the graph declares
+    And every field the schema publishes as an enum carries one of its values

@@ -6,6 +6,7 @@ use axum::Router;
 
 use atlas_core::data::AtlasData;
 use atlas_core::sources::SourcesDocument;
+use atlas_graph::sqlite::source::{sibling_dir, SectionLayout};
 use atlas_graph::GraphService;
 
 /// Everything a serving `Router` is built from, held as one value: a fourth
@@ -44,6 +45,17 @@ pub fn load_all(data_dir: &Path) -> Result<(GraphService, AtlasData, SourcesDocu
     let data = data.finish();
     graph.scene_source(&data);
     Ok((graph, data, sources))
+}
+
+pub fn build_from_raw(compiled_dir: &Path) -> Result<(GraphService, AtlasData)> {
+    let raw_dir = SectionLayout::under(compiled_dir).raw_dir();
+    let curated_dir = sibling_dir(compiled_dir, "curated");
+    let data = atlas_etl::compile::compile(&raw_dir, &curated_dir).with_context(|| format!("compiling {} + {}", raw_dir.display(), curated_dir.display()))?.data;
+    let graph = GraphService::build(&raw_dir, &data)
+        .with_context(|| format!("building the explorable graph from {} (kjv.json + xrefs/cross_references.txt)", raw_dir.display()))?;
+    let data = data.finish();
+    graph.scene_source(&data);
+    Ok((graph, data))
 }
 
 pub fn load_graph_and_data(data_dir: &Path) -> Result<(GraphService, AtlasData)> {

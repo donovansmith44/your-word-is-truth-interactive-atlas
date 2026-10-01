@@ -143,6 +143,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "atlas-core",
+ "atlas-graph-types",
  "serde",
  "serde_json",
  "serde_yaml",
@@ -158,6 +159,7 @@ dependencies = [
  "atlas-etl",
  "atlas-graph-types",
  "proptest",
+ "regex",
  "rusqlite",
  "serde",
  "serde_json",
@@ -168,7 +170,7 @@ dependencies = [
 
 [[package]]
 name = "atlas-graph-types"
-version = "0.6.0"
+version = "0.7.0"
 dependencies = [
  "serde",
  "utoipa",
@@ -180,7 +182,6 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "atlas-contract",
- "atlas-etl",
  "atlas-graph",
  "axum",
  "tokio",

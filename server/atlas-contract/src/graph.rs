@@ -1,4 +1,6 @@
 use std::cell::OnceCell;
+use std::collections::{BTreeMap, BTreeSet};
+use std::ops::RangeInclusive;
 use std::sync::Arc;
 
 use axum::extract::State;
@@ -12,20 +14,24 @@ use atlas_core::data::{AtlasData, Canon, Event, Place, PlaceDateClaim};
 use atlas_core::history::resolve_display_name_and_canonical;
 use atlas_core::refs::{BookId, VerseId};
 use atlas_core::scene::{accounts_of, Account};
-use atlas_graph::event_world::ChronologyDerivation;
+use atlas_graph::event_world::{event_node_id, ChronologyDerivation};
+use atlas_graph::heading::Heading;
 use atlas_graph::kjv_adapter::verse_node_id;
+use atlas_graph::mention_spans::MentionSpan;
 use atlas_graph::runs;
+use atlas_graph::tokens;
 use atlas_graph::window::{self, WindowDir};
+use atlas_graph::sqlite::SqliteError;
 use atlas_graph::GraphService;
 use atlas_graph_types::edge::{Direction, EdgeKind, RelationId};
 use atlas_graph_types::explore::{EdgeMeta, EdgeQuery};
 use atlas_graph_types::id::{AnyNodeId, NodeKind, Position};
 use atlas_graph_types::node::NodePayload;
 use atlas_graph_types::store::GraphQuery;
-use atlas_graph_types::text::{BibleLocusRange, Locus, VerseRef};
+use atlas_graph_types::text::{BibleLocusRange, ConcordRef, Locus, TokenSpan, VerseRef};
 
 use crate::error::{ApiError, FrontierRefusals, ReadingWindowRefusals, ReferenceRefusals};
-use crate::graph_wire::{describe_position, encode_node_id};
+use crate::graph_wire::{describe_nodes, describe_position, encode_node_id};
 use crate::query::{self, AsGiven, Contract, ContractParams};
 use crate::reference::{ConcordParagraphReference, NodeReference, ReadingReference, Reference};
 use crate::wire;
@@ -82,7 +88,6 @@ pub async fn node_card(
     }))
 }
 
-/// A year zero in a person's record is this atlas's own data defect, never a year to show.
 fn recorded_year(year: Option<i32>, person: &AnyNodeId) -> Result<Option<wire::Year>, ApiError> {
     year.map(wire::Year::of).transpose().map_err(|_| ApiError::internal(&format!("{} records a year zero", person.raw)))
 }
@@ -99,8 +104,6 @@ fn event_detail(event: &Event) -> wire::EventDetail {
     }
 }
 
-/// A card names a place with no years in view, so its name is the translation's own
-/// wording where one is recorded, never a period name.
 fn place_detail(place: &Place, data: &AtlasData, snap: &impl GraphQuery) -> wire::PlaceDetail {
     let history = data.place_history_for(&place.id);
     let (display_name, canonical_name) = resolve_display_name_and_canonical(&place.name, history, None, data.place_name_alias_for(&place.id));
@@ -127,8 +130,6 @@ fn date_claim(claim: &PlaceDateClaim, snap: &impl GraphQuery) -> wire::DateClaim
     wire::DateClaim::of(wire::TimeRange::of(claim.when), verses, claim.note.clone(), event)
 }
 
-/// An item's id is unique only among catechism items, so any other node that shares
-/// one is not that item.
 fn catechism_detail(id: &AnyNodeId, data: &AtlasData) -> Option<wire::CatechismDetail> {
     if id.kind != NodeKind::CatechismItem {
         return None;
@@ -143,7 +144,6 @@ fn catechism_detail(id: &AnyNodeId, data: &AtlasData) -> Option<wire::CatechismD
     })
 }
 
-/// A book dated at one end only is this atlas's own data defect, never a span to show.
 fn book_detail(id: &AnyNodeId, data: &AtlasData, snap: &impl GraphQuery) -> Result<Option<wire::BookDetail>, ApiError> {
     let Some(code) = atlas_graph::bible_container_adapter::decode_book_container(id).map(|index| BookId(index).code()) else {
         return Ok(None);
@@ -194,46 +194,67 @@ pub async fn node_edges(
     // A PeopleGroup wire id does not decode, so an entry naming one would hand the
     // caller a reference it cannot fetch a card for.
     let this_event = OnceCell::new();
-    let entries = page
-        .entries
-        .iter()
-        .filter(|e| !matches!(&e.node, Position::Node(id) if id.kind == NodeKind::PeopleGroup))
-        .map(|e| {
-            let (votes, narrative) = match &e.meta {
-                EdgeMeta::Votes(votes) => (Some(*votes), None),
-                EdgeMeta::Narrative(narrative) => (None, Some(narrative.clone())),
-                EdgeMeta::None => (None, None),
-            };
-            let (loci, note) = match (asked.kind, &e.node) {
-                (EdgeKind::Directed(RelationId::Attests, Direction::Forward), Position::Node(verse)) => {
-                    let accounts = this_event.get_or_init(|| EventAccounts::read(&node_id, &snap, &graph.chronology.chrono));
-                    let (_, account) = accounts.holding(verse);
-                    (Some(account.runs(&data.canon).to_vec()), account.note.clone())
-                }
-                (EdgeKind::Directed(RelationId::Attests, Direction::Inverse), Position::Node(event)) => {
-                    let accounts = EventAccounts::read(event, &snap, &graph.chronology.chrono);
-                    let (verse, account) = accounts.holding(&node_id);
-                    (Some(vec![wire::TextSpan::whole(wire::TextRef::of_verse(verse))]), account.note.clone())
-                }
-                _ => (None, None),
-            };
-            wire::EdgeEntry { edge: e.edge.0.clone(), node: describe_position(&e.node, &snap), votes, narrative, loci, note }
-        })
-        .collect();
+    let mut mention_loci = MentionLoci::default();
+    let mut entries = Vec::with_capacity(page.entries.len());
+    for e in page.entries.iter().filter(|e| !matches!(&e.node, Position::Node(id) if id.kind == NodeKind::PeopleGroup)) {
+        let (votes, narrative, parentage) = match &e.meta {
+            EdgeMeta::Votes(votes) => (Some(*votes), None, None),
+            EdgeMeta::Narrative(narrative) => (None, Some(narrative.clone()), None),
+            EdgeMeta::Parentage(parentage) => (None, None, Some(*parentage)),
+            EdgeMeta::None => (None, None, None),
+        };
+        let (loci, note) = match (asked.kind, &e.node) {
+            (EdgeKind::Directed(RelationId::Attests, Direction::Forward), Position::Node(verse)) => {
+                let accounts = this_event.get_or_init(|| EventAccounts::read(&node_id, &snap, &graph.chronology.chrono));
+                let (_, account) = accounts.holding(verse);
+                (Some(account.runs(&data.canon).to_vec()), account.note.clone())
+            }
+            (EdgeKind::Directed(RelationId::Attests, Direction::Inverse), Position::Node(event)) => {
+                let accounts = EventAccounts::read(event, &snap, &graph.chronology.chrono);
+                let (verse, account) = accounts.holding(&node_id);
+                (Some(vec![wire::TextSpan::whole(wire::TextRef::of_verse(verse))]), account.note.clone())
+            }
+            (EdgeKind::Directed(RelationId::Mentions, Direction::Forward), Position::Node(entity)) => (mention_loci.of(&graph, &node_id, entity)?, None),
+            (EdgeKind::Directed(RelationId::Mentions, Direction::Inverse), Position::Node(verse)) => (mention_loci.of(&graph, verse, &node_id)?, None),
+            _ => (None, None),
+        };
+        entries.push(wire::EdgeEntry { edge: e.edge.0.clone(), node: describe_position(&e.node, &snap), votes, narrative, loci, note, parentage });
+    }
 
     Ok(Json(wire::EdgePage { kind: asked.kind, entries, next: page.next, version: atlas_graph::version_hex(graph.version()) }))
 }
 
-/// An event's accounts, read once for every attestation of it a page lists. Every
-/// attestation row is built from one of these accounts, so an event the graph cannot
-/// read back, or a verse none of its accounts reads, is this atlas's own defect.
+#[derive(Default)]
+struct MentionLoci {
+    at: BTreeMap<VerseRef, Vec<MentionSpan>>,
+}
+
+impl MentionLoci {
+    fn of(&mut self, graph: &GraphService, verse: &AnyNodeId, entity: &AnyNodeId) -> Result<Option<Vec<wire::TextSpan>>, ApiError> {
+        let Some((book, chapter, number)) = atlas_graph::kjv_adapter::decode_text_unit(verse) else { return Ok(None) };
+        let at = VerseRef { book, chapter, verse: number };
+        if !self.at.contains_key(&at) {
+            let spans = graph.mention_spans_in(&(at.clone()..=at.clone())).map_err(|e| unreadable_rows("mentions", &e))?;
+            self.at.insert(at.clone(), spans.into_values().flatten().collect());
+        }
+        let loci = self.at[&at]
+            .iter()
+            .filter(|span| span.entity.node_id() == *entity)
+            .map(|span| {
+                let words = Locus { unit: at.clone(), span: Some(span.words.clone()) };
+                wire::TextSpan::of_bible_range(&BibleLocusRange { from: words.clone(), to: words })
+                    .map_err(|foreign| ApiError::internal(&format!("a mention of {} at {} lies in the {} layer, not the KJV's", entity.raw, verse.raw, foreign.layer.0)))
+            })
+            .collect::<Result<Vec<_>, _>>()?;
+        Ok((!loci.is_empty()).then_some(loci))
+    }
+}
+
 struct EventAccounts {
     event: AnyNodeId,
     accounts: Vec<AccountOf>,
 }
 
-/// One account of an event: the verses it reads, how it is cited where that needed
-/// saying, and -- only once something asks -- the runs those verses read on in.
 struct AccountOf {
     verses: Vec<VerseRef>,
     note: Option<String>,
@@ -363,21 +384,7 @@ pub async fn text_window(
         let n = asked.units();
 
         let ids = window::window(&snap, corpus.name(), start, n, dir);
-        let units: Vec<wire::TextUnit> = ids
-            .iter()
-            .filter_map(|id| {
-                let (p, a, para) = atlas_graph::concord_adapter::decode_text_unit(id)?;
-                let text = window::render_layer(&snap, id, atlas_graph::concord_adapter::CONCORD_TRANSLATION)?;
-                Some(wire::TextUnit {
-                    r#ref: format!("BoC {p}.{a}.{para}"),
-                    locus: wire::TextRef::Concord { part: p, article: a, paragraph: para },
-                    text,
-                    words_of_christ: Vec::new(),
-                    heading: None,
-                    edge_summary: unit_edge_summary(&snap, id),
-                })
-            })
-            .collect();
+        let units = concord_text_units(&graph, &snap, &ids)?;
 
         let unit_at = |pos: usize| {
             snap.reading_window(corpus.name(), pos, 1)
@@ -414,18 +421,7 @@ pub async fn text_window(
     };
 
     let ids = window::window(&snap, corpus.name(), start, n, dir);
-    let units: Vec<wire::TextUnit> = ids
-        .iter()
-        .filter_map(|id| {
-            let (b, c, v) = atlas_graph::kjv_adapter::decode_text_unit(id)?;
-            let text = window::render(&snap, id)?;
-            let r#ref = atlas_graph::kjv_adapter::dot_ref(b, c, v);
-            let words_of_christ = graph.red_letter_spans.get(&r#ref).map(|spans| spans.iter().map(|&(start, end)| crate::wire::WordsOfChristSpan { start, end }).collect()).unwrap_or_default();
-            let locus = wire::TextRef::of_verse(&VerseRef { book: b, chapter: c, verse: v });
-            let heading = graph.heading_index.get(&r#ref).cloned();
-            Some(wire::TextUnit { r#ref, locus, text, words_of_christ, heading, edge_summary: unit_edge_summary(&snap, id) })
-        })
-        .collect();
+    let units = bible_text_units(&graph, &snap, &ids)?;
 
     let unit_at = |pos: usize| {
         snap.reading_window(corpus.name(), pos, 1)
@@ -505,6 +501,102 @@ impl ContractParams for TextWindowQuery {
     }
 }
 
+const MENTIONS: EdgeKind = EdgeKind::Directed(RelationId::Mentions, Direction::Forward);
+const CITES: EdgeKind = EdgeKind::Directed(RelationId::Cites, Direction::Forward);
+
+pub fn bible_text_units(graph: &GraphService, snap: &impl GraphQuery, ids: &[AnyNodeId]) -> Result<Vec<wire::TextUnit>, ApiError> {
+    let verses: Vec<(&AnyNodeId, VerseRef)> = ids
+        .iter()
+        .filter_map(|id| atlas_graph::kjv_adapter::decode_text_unit(id).map(|(book, chapter, verse)| (id, VerseRef { book, chapter, verse })))
+        .collect();
+    let mut links = mention_links(graph, snap, verses.iter().map(|(_, verse)| verse))?;
+    Ok(verses
+        .into_iter()
+        .filter_map(|(id, verse)| {
+            let text = window::render(snap, id)?;
+            let r#ref = atlas_graph::kjv_adapter::dot_ref(verse.book, verse.chapter, verse.verse);
+            let words_of_christ = graph.red_letter_spans.get(&r#ref).map(|spans| spans.iter().map(|&(start, end)| crate::wire::WordsOfChristSpan { start, end }).collect()).unwrap_or_default();
+            let locus = wire::TextRef::of_verse(&verse);
+            let heading = graph.heading_index.get(&r#ref).map(|heading| unit_heading(heading, snap));
+            let anchors = anchors_over(&text, MENTIONS, links.remove(&verse).unwrap_or_default());
+            Some(wire::TextUnit { r#ref, locus, text, words_of_christ, heading, anchors, edge_summary: unit_edge_summary(snap, id) })
+        })
+        .collect())
+}
+
+pub fn concord_text_units(graph: &GraphService, snap: &impl GraphQuery, ids: &[AnyNodeId]) -> Result<Vec<wire::TextUnit>, ApiError> {
+    let paragraphs: Vec<(&AnyNodeId, ConcordRef)> = ids
+        .iter()
+        .filter_map(|id| atlas_graph::concord_adapter::decode_text_unit(id).map(|(part, article, paragraph)| (id, ConcordRef { part, article, paragraph })))
+        .collect();
+    let mut links = citation_links(graph, snap, paragraphs.iter().map(|(_, paragraph)| paragraph))?;
+    Ok(paragraphs
+        .into_iter()
+        .filter_map(|(id, paragraph)| {
+            let text = window::render_layer(snap, id, atlas_graph::concord_adapter::CONCORD_TRANSLATION)?;
+            let anchors = anchors_over(&text, CITES, links.remove(&paragraph).unwrap_or_default());
+            let ConcordRef { part, article, paragraph } = paragraph;
+            Some(wire::TextUnit {
+                r#ref: format!("BoC {part}.{article}.{paragraph}"),
+                locus: wire::TextRef::Concord { part, article, paragraph },
+                text,
+                words_of_christ: Vec::new(),
+                heading: None,
+                anchors,
+                edge_summary: unit_edge_summary(snap, id),
+            })
+        })
+        .collect())
+}
+
+type Links<U> = BTreeMap<U, Vec<(TokenSpan, wire::NodeRef)>>;
+
+fn mention_links<'a>(graph: &GraphService, snap: &impl GraphQuery, verses: impl Iterator<Item = &'a VerseRef> + Clone) -> Result<Links<VerseRef>, ApiError> {
+    let Some(window) = units_spanned(verses) else { return Ok(Links::new()) };
+    let spans = graph.mention_spans_in(&window).map_err(|e| unreadable_rows("mentions", &e))?;
+    let entities: BTreeSet<AnyNodeId> = spans.values().flatten().map(|span| span.entity.node_id()).collect();
+    let named = describe_nodes(&entities, snap);
+    Ok(spans.into_iter().map(|(verse, spans)| (verse, spans.into_iter().map(|span| (span.words, named[&span.entity.node_id()].clone())).collect())).collect())
+}
+
+fn citation_links<'a>(graph: &GraphService, snap: &impl GraphQuery, paragraphs: impl Iterator<Item = &'a ConcordRef> + Clone) -> Result<Links<ConcordRef>, ApiError> {
+    let Some(window) = units_spanned(paragraphs) else { return Ok(Links::new()) };
+    let spans = graph.citation_spans_in(&window).map_err(|e| unreadable_rows("citations", &e))?;
+    Ok(spans
+        .into_iter()
+        .map(|(paragraph, spans)| (paragraph, spans.into_iter().map(|span| (span.words, describe_position(&Position::Node(verse_node_id(span.cites.book, span.cites.chapter, span.cites.verse)), snap))).collect()))
+        .collect())
+}
+
+fn units_spanned<'a, U: Ord + Clone + 'a>(units: impl Iterator<Item = &'a U> + Clone) -> Option<RangeInclusive<U>> {
+    Some(units.clone().min()?.clone()..=units.max()?.clone())
+}
+
+fn unreadable_rows(rows: &str, error: &SqliteError) -> ApiError {
+    ApiError::internal(&format!("the {rows} of a reading window could not be read: {error}"))
+}
+
+fn anchors_over(text: &str, kind: EdgeKind, links: Vec<(TokenSpan, wire::NodeRef)>) -> Vec<wire::Anchor> {
+    let words = tokens::tokenize(text);
+    let mut anchors: Vec<wire::Anchor> = links
+        .into_iter()
+        .map(|(span, node)| {
+            let chars = tokens::chars_of(&span, &words).unwrap_or_else(|| panic!("the words {}..={} of {} lie past the text of the unit they are stored on", span.start, span.end, node.id));
+            wire::Anchor { start: chars.start, end: chars.end, kind, node }
+        })
+        .collect();
+    anchors.sort_by_key(|anchor| anchor.start);
+    anchors
+}
+
+fn unit_heading(heading: &Heading, snap: &impl GraphQuery) -> wire::UnitHeading {
+    wire::UnitHeading {
+        event: describe_position(&Position::Node(event_node_id(&heading.event_id)), snap),
+        kind: heading.kind,
+        is_continuation: heading.is_continuation,
+    }
+}
+
 fn unit_edge_summary(snap: &impl atlas_graph_types::store::GraphQuery, id: &atlas_graph_types::id::AnyNodeId) -> Vec<wire::EdgeSummaryEntry> {
     snap.edge_summary(&Position::Node(id.clone())).into_iter().map(|(kind, count)| wire::EdgeSummaryEntry { kind, count }).collect()
 }
@@ -520,10 +612,24 @@ pub fn routes() -> utoipa_axum::router::OpenApiRouter<crate::app::AppState> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use atlas_graph::event_world::event_node_id;
     use atlas_graph_types::graph::Graph;
 
     const GENESIS: u8 = 0;
+
+    #[test]
+    fn a_reading_window_whose_anchor_rows_cannot_be_read_is_refused_as_an_internal_error() {
+        // Arrange
+        let unreadable = SqliteError("mentions entity_kind 9 is not 0..3".to_string());
+
+        // Act
+        let refused = unreadable_rows("mentions", &unreadable);
+
+        // Assert
+        assert_eq!(
+            (refused.status, refused.code, refused.message),
+            (StatusCode::INTERNAL_SERVER_ERROR, crate::error::ErrorCode::Internal, "the mentions of a reading window could not be read: mentions entity_kind 9 is not 0..3".to_string())
+        );
+    }
 
     #[test]
     #[should_panic(expected = "Event:ab_ur attests verses, but the graph holds no such event")]
@@ -533,6 +639,17 @@ mod tests {
 
         // Act
         EventAccounts::read(&unread, &Graph::default(), &ChronologyDerivation::default());
+    }
+
+    #[test]
+    #[should_panic(expected = "the words 9..=10 of Place:hazor-1 lie past the text of the unit they are stored on")]
+    fn a_word_span_past_its_units_text_is_a_graph_defect_not_an_anchor() {
+        // Arrange
+        let past_the_end = tokens::span(atlas_graph::kjv_adapter::KJV_TRANSLATION, 9, 10).unwrap();
+        let hazor = wire::NodeRef { id: "Place:hazor-1".to_string(), kind: wire::PositionKind::Node(NodeKind::Place), label: "Hazor 1".to_string() };
+
+        // Act
+        anchors_over("In the beginning God created the heaven and the earth.", MENTIONS, vec![(past_the_end, hazor)]);
     }
 
     #[test]

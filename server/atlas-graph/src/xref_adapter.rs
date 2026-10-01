@@ -86,9 +86,6 @@ pub fn read_xrefs_ordered(
 /// dot-ref-keyed text to exist. The map checked against is rebuilt by walking the just-normalized
 /// nodes, which is exactly the filtered set that adapter inserted.
 pub fn normalize(ctx: &mut crate::pipeline::BuildCtx) -> anyhow::Result<()> {
-    use atlas_graph_types::node::NodePayload;
-    use atlas_graph_types::text::TranslationId;
-
     let verses_by_ref: HashMap<String, String> = ctx
         .graph
         .reading
@@ -99,13 +96,8 @@ pub fn normalize(ctx: &mut crate::pipeline::BuildCtx) -> anyhow::Result<()> {
                 .iter()
                 .filter_map(|id| {
                     let (b, c, v) = crate::kjv_adapter::decode_text_unit(id)?;
-                    let text = match &ctx.graph.nodes.get(id)?.payload {
-                        NodePayload::TextUnit { renderings, .. } => {
-                            renderings.get(&TranslationId(crate::kjv_adapter::KJV_TRANSLATION.to_string())).cloned()
-                        }
-                        _ => None,
-                    }?;
-                    Some((crate::kjv_adapter::dot_ref(b, c, v), text))
+                    let text = crate::kjv_adapter::kjv_text(ctx.graph.nodes.get(id)?)?;
+                    Some((crate::kjv_adapter::dot_ref(b, c, v), text.to_string()))
                 })
                 .collect()
         })

@@ -23,8 +23,7 @@ pub async fn sources(State(sources): State<Arc<SourcesDocument>>) -> Json<Source
     Json((*sources).clone())
 }
 
-/// The schema versions of the compiled data set behind the responses.
-#[utoipa::path(get, path = "/api/contract", responses((status = 200, body = wire::Contract)), tag = "meta")]
+#[utoipa::path(get, path = "/api/contract", summary = "The schema versions of the compiled data set behind the responses.", responses((status = 200, body = wire::Contract)), tag = "meta")]
 pub async fn contract() -> Json<wire::Contract> {
     Json(wire::Contract {
         manifest_schema: atlas_graph::sqlite::manifest::MANIFEST_SCHEMA,

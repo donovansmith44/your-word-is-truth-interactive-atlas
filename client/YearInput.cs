@@ -27,8 +27,6 @@ public static class YearInput
             return null;
         }
 
-        // A served range in one era names it once ("1450 – 1400 BC", "AD 1 – 100"), so an end
-        // written without an era is reckoned in the other end's.
         return (start.YearIn(end.NamedEra), end.YearIn(start.NamedEra)) is ({ } from, { } to) && from <= to
             ? new YearSpan(from, to)
             : null;

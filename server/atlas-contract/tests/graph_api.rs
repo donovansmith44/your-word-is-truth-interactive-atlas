@@ -18,12 +18,7 @@ fn real_atlas() -> (Arc<AtlasData>, Arc<GraphService>) {
     static CACHED: std::sync::OnceLock<(Arc<AtlasData>, Arc<GraphService>)> = std::sync::OnceLock::new();
     CACHED
         .get_or_init(|| {
-            let data_dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data");
-            let data = atlas_etl::compile::compile(&data_dir.join("raw"), &data_dir.join("curated"))
-                .expect("data/raw + data/curated must compile -- run `cargo run -p atlas-etl` from server/ first to verify")
-                .data;
-            let graph = GraphService::build(&data_dir.join("raw"), &data)
-                .expect("data/raw/{kjv.json,xrefs/cross_references.txt} must exist and satisfy the fidelity law");
+            let (graph, data) = atlas_contract::load::build_from_raw(&Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data/compiled")).expect("data/raw + data/curated must compile into a graph");
             (Arc::new(data), Arc::new(graph))
         })
         .clone()
@@ -439,7 +434,7 @@ async fn person_card_and_mentioned_in_frontier_are_served_by_the_generic_endpoin
     assert_eq!(body["provenance"], "theographic-people");
     let summary: Vec<serde_json::Value> = body["edge_summary"].as_array().unwrap().clone();
     let mentioned_in = summary.iter().find(|e| e["kind"] == "mentioned-in").expect("aaron_1 must carry a real mentioned-in frontier");
-    assert_eq!(mentioned_in["count"], 331, "must equal the real Theographic record's own resolved verse_links count");
+    assert_eq!(mentioned_in["count"], 331, "Aaron's 331 resolved verse links: one edge per verse, however many times the verse names him");
 
     let (st2, page, _) = get(&app, "/api/node/Person:aaron_1/edges?kind=mentioned-in&limit=3").await;
     assert_eq!(st2, 200, "{page}");
@@ -449,6 +444,137 @@ async fn person_card_and_mentioned_in_frontier_are_served_by_the_generic_endpoin
     assert_eq!(entries[1]["node"]["id"], "text-unit:EXO.4.27");
     assert_eq!(entries[2]["node"]["id"], "text-unit:EXO.4.28");
     assert_eq!(page["next"], 3, "a 331-entry frontier at limit=3 must page, not silently truncate");
+}
+
+fn committed_rows() -> &'static atlas_graph_types::graph::Graph {
+    static ROWS: std::sync::OnceLock<atlas_graph_types::graph::Graph> = std::sync::OnceLock::new();
+    ROWS.get_or_init(|| atlas_graph::sqlite::reload::committed_graph(&Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data/compiled")).expect("the committed sections read back").0)
+}
+
+fn bible_mention_rows() -> Vec<(atlas_graph_types::text::VerseRef, &'static atlas_graph_types::edge::Mentions)> {
+    committed_rows()
+        .mentions
+        .iter()
+        .filter_map(|row| match &row.locus.at {
+            atlas_graph_types::text::TextRef::Bible(verse) => Some((verse.clone(), row)),
+            atlas_graph_types::text::TextRef::Concord(_) => None,
+        })
+        .collect()
+}
+
+fn the_verse_naming_one_entity_most_often() -> (atlas_graph_types::text::VerseRef, atlas_graph_types::id::AnyNodeId) {
+    let mut rows_of_pair: std::collections::BTreeMap<(atlas_graph_types::text::VerseRef, atlas_graph_types::id::AnyNodeId), usize> = std::collections::BTreeMap::new();
+    for (verse, row) in bible_mention_rows() {
+        *rows_of_pair.entry((verse, row.entity.node_id())).or_default() += 1;
+    }
+    rows_of_pair.into_iter().max_by_key(|(_, rows)| *rows).map(|(pair, _)| pair).expect("the artifact carries mention rows")
+}
+
+fn word_span(verse: &atlas_graph_types::text::VerseRef, words: &atlas_graph_types::text::TokenSpan) -> serde_json::Value {
+    let unit = serde_json::json!({ "corpus": "bible", "book": atlas_core::refs::BookId(verse.book).code(), "chapter": verse.chapter, "verse": verse.verse });
+    serde_json::json!({ "from": { "unit": unit, "word": words.start }, "to": { "unit": unit, "word": words.end } })
+}
+
+fn loci_of(verse: &atlas_graph_types::text::VerseRef, rows: &[&atlas_graph_types::edge::Mentions]) -> serde_json::Value {
+    let spans: Vec<serde_json::Value> = rows.iter().filter_map(|row| row.locus.span.as_ref()).map(|words| word_span(verse, words)).collect();
+    if spans.is_empty() { serde_json::Value::Null } else { serde_json::Value::Array(spans) }
+}
+
+fn wire_id_of(entity: &atlas_graph_types::id::AnyNodeId) -> String {
+    atlas_contract::graph_wire::encode_node_id(entity)
+}
+
+fn wire_id_of_verse(verse: &atlas_graph_types::text::VerseRef) -> String {
+    atlas_contract::graph_wire::encode_node_id(&atlas_graph::kjv_adapter::verse_node_id(verse.book, verse.chapter, verse.verse))
+}
+
+fn node_and_loci(entries: &serde_json::Value) -> Vec<serde_json::Value> {
+    entries.as_array().unwrap().iter().map(|e| serde_json::json!({ "node": e["node"]["id"], "loci": e["loci"] })).collect()
+}
+
+#[tokio::test]
+async fn a_verses_mentions_page_lists_each_entity_once_with_every_occurrence_as_loci() {
+    // Arrange
+    let app = artifact_app();
+    let (verse, _) = the_verse_naming_one_entity_most_often();
+    let at_verse: Vec<&atlas_graph_types::edge::Mentions> = bible_mention_rows().into_iter().filter(|(v, _)| *v == verse).map(|(_, row)| row).collect();
+    let mut entities: Vec<atlas_graph_types::id::AnyNodeId> = Vec::new();
+    for row in &at_verse {
+        if !entities.contains(&row.entity.node_id()) && !matches!(row.entity, atlas_graph_types::edge::MentionedEntity::PeopleGroup(_)) {
+            entities.push(row.entity.node_id());
+        }
+    }
+    let composed: Vec<serde_json::Value> = entities
+        .iter()
+        .map(|entity| {
+            let rows: Vec<&atlas_graph_types::edge::Mentions> = at_verse.iter().copied().filter(|row| row.entity.node_id() == *entity).collect();
+            serde_json::json!({ "node": wire_id_of(entity), "loci": loci_of(&verse, &rows) })
+        })
+        .collect();
+
+    // Act
+    let (status, page, _) = get(&app, &format!("/api/node/{}/edges?kind=mentions", wire_id_of_verse(&verse))).await;
+
+    // Assert
+    assert_eq!(
+        (status, page["kind"].clone(), node_and_loci(&page["entries"]), page["next"].clone(), at_verse.len() > entities.len()),
+        (StatusCode::OK, serde_json::json!("mentions"), composed, serde_json::Value::Null, true),
+        "at {}",
+        wire_id_of_verse(&verse)
+    );
+}
+
+#[tokio::test]
+async fn a_persons_mentioned_in_page_lists_a_verse_once_and_continues_from_the_next_verses_first_row() {
+    // Arrange
+    let app = artifact_app();
+    let (verse, entity) = the_verse_naming_one_entity_most_often();
+    let verses_of_entity: Vec<atlas_graph_types::text::VerseRef> = bible_mention_rows().into_iter().filter(|(_, row)| row.entity.node_id() == entity).map(|(v, _)| v).collect();
+    let first_row = verses_of_entity.iter().position(|v| *v == verse).expect("the entity's rows include the verse");
+    let rows_at_verse: Vec<&atlas_graph_types::edge::Mentions> = bible_mention_rows().into_iter().filter(|(v, row)| *v == verse && row.entity.node_id() == entity).map(|(_, row)| row).collect();
+    let next_edges_first_row = verses_of_entity.iter().enumerate().skip(first_row).find(|(_, v)| **v != verse).map(|(ord, _)| ord);
+
+    // Act
+    let (status, page, _) = get(&app, &format!("/api/node/{}/edges?kind=mentioned-in&cursor={first_row}&limit=1", wire_id_of(&entity))).await;
+
+    // Assert
+    assert_eq!(
+        (status, page["kind"].clone(), node_and_loci(&page["entries"]), page["next"].clone(), rows_at_verse.len() > 1),
+        (
+            StatusCode::OK,
+            serde_json::json!("mentioned-in"),
+            vec![serde_json::json!({ "node": wire_id_of_verse(&verse), "loci": loci_of(&verse, &rows_at_verse) })],
+            serde_json::json!(next_edges_first_row),
+            true,
+        ),
+        "{} at {}",
+        wire_id_of(&entity),
+        wire_id_of_verse(&verse)
+    );
+}
+
+#[tokio::test]
+async fn a_persons_card_counts_the_verses_that_mention_him_not_the_times_they_name_him() {
+    // Arrange
+    let app = artifact_app();
+    let mut rows_of_entity: std::collections::BTreeMap<atlas_graph_types::id::AnyNodeId, Vec<atlas_graph_types::text::VerseRef>> = std::collections::BTreeMap::new();
+    for (verse, row) in bible_mention_rows() {
+        rows_of_entity.entry(row.entity.node_id()).or_default().push(verse);
+    }
+    let (entity, verses) = rows_of_entity.into_iter().max_by_key(|(_, verses)| verses.len()).expect("the artifact carries mention rows");
+    let distinct: std::collections::BTreeSet<&atlas_graph_types::text::VerseRef> = verses.iter().collect();
+
+    // Act
+    let (status, card, _) = get(&app, &format!("/api/node/{}", wire_id_of(&entity))).await;
+    let mentioned_in = card["edge_summary"].as_array().unwrap().iter().find(|e| e["kind"] == "mentioned-in").cloned();
+
+    // Assert
+    assert_eq!(
+        (status, mentioned_in, verses.len() > distinct.len()),
+        (StatusCode::OK, Some(serde_json::json!({ "kind": "mentioned-in", "count": distinct.len() })), true),
+        "{}",
+        wire_id_of(&entity)
+    );
 }
 
 #[tokio::test]
@@ -1241,7 +1367,7 @@ async fn person_card_carries_life_years_kin_and_events() {
     let count = |kind: &str| body["edge_summary"].as_array().unwrap().iter().find(|e| e["kind"] == kind).map(|e| e["count"].as_u64().unwrap()).unwrap_or(0);
     assert_eq!(count("child-of"), 2, "Amram and Jochebed: {}", body["edge_summary"]);
     assert_eq!(count("parent-of"), 4, "Nadab, Abihu, Eleazar, Ithamar: {}", body["edge_summary"]);
-    assert_eq!(count("partner-of"), 1, "Elisheba: {}", body["edge_summary"]);
+    assert_eq!(count("spouse-of"), 1, "Elisheba: {}", body["edge_summary"]);
     assert!(count("participates-in") >= 1, "Aaron's timeline must reach at least one real Event node: {}", body["edge_summary"]);
 
     let (st2, parents, _) = get(&app, "/api/node/Person:aaron_1/edges?kind=child-of").await;
@@ -1254,10 +1380,10 @@ async fn person_card_carries_life_years_kin_and_events() {
     assert_eq!(st3, 200, "{children}");
     assert!(children["entries"].as_array().unwrap().iter().any(|e| e["node"]["id"] == "Person:aaron_1"), "{children}");
 
-    let (st4, partners, _) = get(&app, "/api/node/Person:elisheba_1162/edges?kind=partner-of").await;
-    assert_eq!(st4, 200, "{partners}");
-    assert_eq!(partners["entries"].as_array().unwrap().len(), 1);
-    assert_eq!(partners["entries"][0]["node"]["id"], "Person:aaron_1");
+    let (st4, spouses, _) = get(&app, "/api/node/Person:elisheba_1162/edges?kind=spouse-of").await;
+    assert_eq!(st4, 200, "{spouses}");
+    assert_eq!(spouses["entries"].as_array().unwrap().len(), 1);
+    assert_eq!(spouses["entries"][0]["node"]["id"], "Person:aaron_1");
 
     let (_, event, _) = get(&app, "/api/node/Event:ab_ur").await;
     assert!(event.get("person").is_none(), "{event}");
@@ -1556,7 +1682,8 @@ async fn a_text_unit_carries_its_structured_locus_beside_its_ref() {
             "locus": { "corpus": "bible", "book": "GEN", "chapter": 1, "verse": 1 },
             "text": "In the beginning God created the heaven and the earth.",
             "words_of_christ": [],
-            "heading": { "event_id": "theo-1", "title": "Creation of all things", "kind": "event", "is_continuation": false },
+            "heading": the_creation_heading(),
+            "anchors": [god_named_at(17)],
             "edge_summary": [
                 { "kind": "member-of", "count": 1 },
                 { "kind": "attests", "count": 1 },
@@ -1587,6 +1714,7 @@ async fn a_concord_paragraph_carries_its_structured_locus_beside_its_ref() {
             "locus": { "corpus": "concord", "part": 7, "article": 2, "paragraph": 1 },
             "text": "Thou shalt have no other gods. What does this mean? \u{2013}Answer: We should fear, love, and trust in God above all things.",
             "words_of_christ": [],
+            "anchors": [],
             "edge_summary": [{ "kind": "member-of", "count": 1 }, { "kind": "catechism-link", "count": 1 }],
         }])
     );
@@ -1762,6 +1890,14 @@ fn whole_verse(book: &str, chapter: u16, verse: u16) -> serde_json::Value {
     serde_json::json!({ "from": { "unit": bible_unit(book, chapter, verse) }, "to": { "unit": bible_unit(book, chapter, verse) } })
 }
 
+fn god_named_at(start: usize) -> serde_json::Value {
+    serde_json::json!({ "start": start, "end": start + "God".chars().count(), "kind": "mentions", "node": { "id": "Person:god_1324", "kind": "Person", "label": "God" } })
+}
+
+fn the_creation_heading() -> serde_json::Value {
+    serde_json::json!({ "event": { "id": "Event:theo-1", "kind": "Event", "label": "Creation of all things" }, "kind": "event", "is_continuation": false })
+}
+
 #[tokio::test]
 async fn an_attested_in_entry_runs_its_account_on_across_every_chapter_read_to_its_end() {
     // Arrange
@@ -1788,7 +1924,7 @@ async fn an_attested_in_entry_runs_its_account_on_across_every_chapter_read_to_i
 #[tokio::test]
 async fn an_event_card_carries_the_details_the_legacy_route_served() {
     // Arrange
-    let app = artifact_app();
+    let app = compiled_app();
     let (_, legacy, _) = get(&app, "/api/event/rob_sermon_on_the_mount").await;
     // Act
     let (status, card, _) = get(&app, "/api/node/Event:rob_sermon_on_the_mount").await;
@@ -1810,7 +1946,7 @@ async fn an_event_card_carries_the_details_the_legacy_route_served() {
 #[tokio::test]
 async fn a_titled_passages_card_carries_its_kind_and_no_date() {
     // Arrange
-    let app = artifact_app();
+    let app = compiled_app();
     let (_, legacy, _) = get(&app, "/api/event/gen_line_of_cain").await;
     // Act
     let (status, card, _) = get(&app, "/api/node/Event:gen_line_of_cain").await;
@@ -1824,7 +1960,7 @@ async fn a_titled_passages_card_carries_its_kind_and_no_date() {
 #[tokio::test]
 async fn a_place_card_carries_its_coordinates_its_name_and_its_dated_founding_and_fall() {
     // Arrange
-    let app = artifact_app();
+    let app = compiled_app();
     let (_, legacy, _) = get(&app, "/api/place/jerusalem").await;
     // Act
     let (status, card, _) = get(&app, "/api/node/Place:jerusalem").await;
@@ -1858,7 +1994,7 @@ async fn a_place_card_carries_its_coordinates_its_name_and_its_dated_founding_an
 #[tokio::test]
 async fn a_catechism_card_carries_its_prose() {
     // Arrange
-    let app = artifact_app();
+    let app = compiled_app();
     let (_, legacy, _) = get(&app, "/api/catechism/item/commandment-1").await;
     // Act
     let (status, card, _) = get(&app, "/api/node/CatechismItem:commandment-1").await;
@@ -1880,7 +2016,7 @@ async fn a_catechism_card_carries_its_prose() {
 #[tokio::test]
 async fn a_place_the_kjv_names_otherwise_carries_that_name_beside_its_canonical_one() {
     // Arrange
-    let app = artifact_app();
+    let app = compiled_app();
     let (_, legacy, _) = get(&app, "/api/place/tigris").await;
     // Act
     let (status, card, _) = get(&app, "/api/node/Place:tigris").await;
@@ -1894,7 +2030,7 @@ async fn a_place_the_kjv_names_otherwise_carries_that_name_beside_its_canonical_
 #[tokio::test]
 async fn a_catechism_item_that_quotes_scripture_says_where_it_is_written() {
     // Arrange
-    let app = artifact_app();
+    let app = compiled_app();
     let (_, legacy, _) = get(&app, "/api/catechism/item/baptism-1").await;
     // Act
     let (status, card, _) = get(&app, "/api/node/CatechismItem:baptism-1").await;
@@ -1916,7 +2052,7 @@ async fn a_catechism_item_that_quotes_scripture_says_where_it_is_written() {
 #[tokio::test]
 async fn a_book_card_carries_its_authorship_and_its_writing() {
     // Arrange
-    let app = artifact_app();
+    let app = compiled_app();
     let (_, legacy, _) = get(&app, "/api/verse/NEH.1.1").await;
     // Act
     let (status, card, _) = get(&app, "/api/node/Container:bible-book-NEH").await;
@@ -1938,7 +2074,6 @@ async fn a_book_card_carries_its_authorship_and_its_writing() {
 async fn a_verse_that_opens_a_pericope_carries_its_heading_and_the_verse_after_it_none() {
     // Arrange
     let app = compiled_app();
-    let (_, legacy, _) = get(&app, "/api/chapter/GEN.1").await;
     // Act
     let (status, window, _) = get(&app, "/api/text?ref=GEN.1.1&n=2").await;
     // Assert
@@ -1952,7 +2087,8 @@ async fn a_verse_that_opens_a_pericope_carries_its_heading_and_the_verse_after_i
                     "locus": bible_unit("GEN", 1, 1),
                     "text": "In the beginning God created the heaven and the earth.",
                     "words_of_christ": [],
-                    "heading": legacy["verses"][0]["heading"],
+                    "heading": the_creation_heading(),
+                    "anchors": [god_named_at(17)],
                     "edge_summary": [
                         { "kind": "member-of", "count": 1 },
                         { "kind": "attests", "count": 1 },
@@ -1968,6 +2104,7 @@ async fn a_verse_that_opens_a_pericope_carries_its_heading_and_the_verse_after_i
                     "locus": bible_unit("GEN", 1, 2),
                     "text": "And the earth was without form and void; and darkness was upon the face of the deep. And the Spirit of God moved upon the face of the waters.",
                     "words_of_christ": [],
+                    "anchors": [god_named_at(103)],
                     "edge_summary": [
                         { "kind": "member-of", "count": 1 },
                         { "kind": "attests", "count": 1 },
@@ -1979,6 +2116,159 @@ async fn a_verse_that_opens_a_pericope_carries_its_heading_and_the_verse_after_i
                     ],
                 },
             ])
+        )
+    );
+}
+
+#[tokio::test]
+async fn a_verse_that_names_hazor_serves_an_anchor_over_the_name() {
+    // Arrange
+    let app = compiled_app();
+    // Act
+    let (status, window, _) = get(&app, "/api/text?ref=JOS.11.1").await;
+    // Assert
+    assert_eq!(
+        (status, window["units"][0]["text"].clone(), window["units"][0]["anchors"].clone()),
+        (
+            StatusCode::OK,
+            serde_json::json!("And it came to pass, when Jabin king of Hazor had heard those things, that he sent to Jobab king of Madon, and to the king of Shimron, and to the king of Achshaph,"),
+            serde_json::json!([
+                { "start": 26, "end": 31, "kind": "mentions", "node": { "id": "Person:jabin_676", "kind": "Person", "label": "Jabin" } },
+                { "start": 40, "end": 45, "kind": "mentions", "node": { "id": "Place:hazor-1", "kind": "Place", "label": "Hazor 1" } },
+                { "start": 86, "end": 91, "kind": "mentions", "node": { "id": "Person:jobab_1642", "kind": "Person", "label": "Jobab" } },
+                { "start": 100, "end": 105, "kind": "mentions", "node": { "id": "Place:madon", "kind": "Place", "label": "Madon" } },
+                { "start": 126, "end": 133, "kind": "mentions", "node": { "id": "Place:shimron", "kind": "Place", "label": "Shimron" } },
+                { "start": 154, "end": 162, "kind": "mentions", "node": { "id": "Place:achshaph", "kind": "Place", "label": "Achshaph" } },
+            ])
+        )
+    );
+}
+
+#[tokio::test]
+async fn a_small_catechism_paragraph_that_cites_scripture_serves_cites_anchors() {
+    // Arrange
+    let app = compiled_app();
+    // Act
+    let (status, window, _) = get(&app, "/api/text?ref=BoC%207.9.6&corpus=concord").await;
+    // Assert
+    assert_eq!(
+        (status, window["units"][0]["text"].clone(), window["units"][0]["anchors"].clone()),
+        (
+            StatusCode::OK,
+            serde_json::json!("For Wives. Wives, submit yourselves unto your own husbands, as unto the Lord, even as Sarah obeyed Abraham, calling him lord; whose daughters ye are, as long as ye do well, and are not afraid with any amazement. 1 Pet. 3:6; Eph. 5:22."),
+            serde_json::json!([
+                { "start": 212, "end": 222, "kind": "cites", "node": { "id": "text-unit:1PE.3.6", "kind": "TextUnit", "label": "1PE.3.6" } },
+                { "start": 224, "end": 233, "kind": "cites", "node": { "id": "text-unit:EPH.5.22", "kind": "TextUnit", "label": "EPH.5.22" } },
+            ])
+        )
+    );
+}
+
+#[tokio::test]
+async fn jesus_is_the_eternal_son_of_god_born_of_the_virgin_mary_and_the_supposed_son_of_joseph() {
+    // Arrange
+    let app = compiled_app();
+    // Act
+    let (status, page, _) = get(&app, "/api/node/Person:jesus_905/edges?kind=child-of").await;
+    // Assert
+    assert_eq!(
+        (status, page["entries"].clone()),
+        (
+            StatusCode::OK,
+            serde_json::json!([
+                { "edge": page["entries"][0]["edge"], "node": { "id": "Person:god_1324", "kind": "Person", "label": "God" }, "parentage": "eternal" },
+                { "edge": page["entries"][1]["edge"], "node": { "id": "Person:joseph_1715", "kind": "Person", "label": "Joseph (Mary's Husband)" }, "parentage": "legal" },
+                { "edge": page["entries"][2]["edge"], "node": { "id": "Person:mary_1938", "kind": "Person", "label": "Mary (Mother of Jesus)" }, "parentage": "virgin" },
+            ])
+        )
+    );
+}
+
+#[tokio::test]
+async fn abrahams_spouses_are_hagar_keturah_and_sarah() {
+    // Arrange
+    let app = compiled_app();
+    // Act
+    let (status, page, _) = get(&app, "/api/node/Person:abraham_58/edges?kind=spouse-of").await;
+    // Assert
+    assert_eq!(
+        (status, page["kind"].clone(), page["entries"].clone()),
+        (
+            StatusCode::OK,
+            serde_json::json!("spouse-of"),
+            serde_json::json!([
+                { "edge": page["entries"][0]["edge"], "node": { "id": "Person:hagar_1348", "kind": "Person", "label": "Hagar" } },
+                { "edge": page["entries"][1]["edge"], "node": { "id": "Person:keturah_1782", "kind": "Person", "label": "Keturah" } },
+                { "edge": page["entries"][2]["edge"], "node": { "id": "Person:sarah_2473", "kind": "Person", "label": "Sarah" } },
+            ])
+        )
+    );
+}
+
+#[tokio::test]
+async fn adam_and_eve_were_created_by_god_and_seth_was_born_to_them() {
+    // Arrange
+    let app = compiled_app();
+    // Act
+    let (adam_status, adam, _) = get(&app, "/api/node/Person:adam_78/edges?kind=child-of").await;
+    let (eve_status, eve, _) = get(&app, "/api/node/Person:eve_1231/edges?kind=child-of").await;
+    let (seth_status, seth, _) = get(&app, "/api/node/Person:seth_2504/edges?kind=child-of").await;
+    // Assert
+    assert_eq!(
+        (adam_status, adam["entries"].clone(), eve_status, eve["entries"].clone(), seth_status, seth["entries"].clone()),
+        (
+            StatusCode::OK,
+            serde_json::json!([{ "edge": adam["entries"][0]["edge"], "node": { "id": "Person:god_1324", "kind": "Person", "label": "God" }, "parentage": "created" }]),
+            StatusCode::OK,
+            serde_json::json!([{ "edge": eve["entries"][0]["edge"], "node": { "id": "Person:god_1324", "kind": "Person", "label": "God" }, "parentage": "created" }]),
+            StatusCode::OK,
+            serde_json::json!([
+                { "edge": seth["entries"][0]["edge"], "node": { "id": "Person:adam_78", "kind": "Person", "label": "Adam" }, "parentage": "natural" },
+                { "edge": seth["entries"][1]["edge"], "node": { "id": "Person:eve_1231", "kind": "Person", "label": "Eve" }, "parentage": "natural" },
+            ]),
+        )
+    );
+}
+
+#[tokio::test]
+async fn the_brethren_of_jesus_are_james_joses_simon_and_jude() {
+    // Arrange
+    let app = compiled_app();
+    // Act
+    let (status, page, _) = get(&app, "/api/node/Person:jesus_905/edges?kind=brethren-of").await;
+    // Assert
+    assert_eq!(
+        (status, page["entries"].clone()),
+        (
+            StatusCode::OK,
+            serde_json::json!([
+                { "edge": page["entries"][0]["edge"], "node": { "id": "Person:james_719", "kind": "Person", "label": "James (Brother of Jesus)" } },
+                { "edge": page["entries"][1]["edge"], "node": { "id": "Person:joses_1721", "kind": "Person", "label": "Joses" } },
+                { "edge": page["entries"][2]["edge"], "node": { "id": "Person:jude_1756", "kind": "Person", "label": "Jude" } },
+                { "edge": page["entries"][3]["edge"], "node": { "id": "Person:simon_2747", "kind": "Person", "label": "Simon" } },
+            ])
+        )
+    );
+}
+
+#[tokio::test]
+async fn the_virgin_mary_is_the_mother_of_jesus_only_and_joseph_his_father_only_as_was_supposed() {
+    // Arrange
+    let app = compiled_app();
+    // Act
+    let (mary_status, mary, _) = get(&app, "/api/node/Person:mary_1938/edges?kind=parent-of").await;
+    let (joseph_status, joseph, _) = get(&app, "/api/node/Person:joseph_1715/edges?kind=parent-of").await;
+    let (james_status, james, _) = get(&app, "/api/node/Person:james_719/edges?kind=child-of").await;
+    // Assert
+    assert_eq!(
+        (mary_status, mary["entries"].clone(), joseph_status, joseph["entries"].clone(), james_status, james["entries"].clone()),
+        (
+            StatusCode::OK,
+            serde_json::json!([{ "edge": mary["entries"][0]["edge"], "node": { "id": "Person:jesus_905", "kind": "Person", "label": "Jesus Christ" }, "parentage": "virgin" }]),
+            StatusCode::OK,
+            serde_json::json!([{ "edge": joseph["entries"][0]["edge"], "node": { "id": "Person:jesus_905", "kind": "Person", "label": "Jesus Christ" }, "parentage": "legal" }]),
+            StatusCode::OK,
+            serde_json::json!([]),
         )
     );
 }

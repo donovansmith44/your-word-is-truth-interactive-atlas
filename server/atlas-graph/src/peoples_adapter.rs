@@ -37,8 +37,7 @@ fn verse_locus(vref: &str) -> Option<TextLocus> {
 /// `pub(crate)` because the fulfillment adapter parses its curated Scripture grounds with this exact
 /// parser rather than a third copy of it.
 pub(crate) fn ground_locus(vref: &str) -> Option<BibleLocus> {
-    let vid = atlas_core::refs::VerseId::parse_canonical(vref).ok()?;
-    Some(BibleLocus::whole(VerseRef { book: vid.book.0, chapter: vid.chapter, verse: vid.verse }))
+    atlas_core::refs::VerseId::parse_canonical(vref).ok().map(|vid| vid.locus())
 }
 
 /// `to` defaults to `from`, a single-verse ground. `None` on an unparseable verse ref or an inverted

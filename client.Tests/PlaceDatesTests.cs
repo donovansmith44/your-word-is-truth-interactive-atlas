@@ -8,27 +8,20 @@ public sealed class PlaceDatesTests
     private const string Traditional = "traditional";
     private static readonly Year Year1003Bc = new(label: "1003 BC", value: -1003);
     private static readonly Year Year586Bc = new(label: "586 BC", value: -586);
-    private static readonly DateClaim DavidTakesZion = Claim(Year1003Bc, "c. 1003 BC", Traditional);
-    private static readonly DateClaim BabylonBurnsIt = Claim(Year586Bc, "586 BC", note: null);
-    private static readonly List<string> DavidTakesZionVerses = ["2SA.5.6", "2SA.5.7", "2SA.5.9"];
-    private static readonly List<string> BabylonBurnsItVerses = ["2KI.25.9", "2KI.25.10"];
-    private static readonly History JerusalemsHistory = new(
-        blurb: null,
-        destroyed: new PlaceDateClaim(@event: null, note: null, verses: BabylonBurnsItVerses, when: new YearSpan(-586, -586)),
-        displayName: "Jerusalem",
-        established: new PlaceDateClaim(@event: null, note: Traditional, verses: DavidTakesZionVerses, when: new YearSpan(-1003, -1003)));
+    private static readonly DateClaim DavidTakesZion = Claim(Year1003Bc, "c. 1003 BC", Traditional, Verse(BookId._2SA, 5, 7));
+    private static readonly DateClaim BabylonBurnsIt = Claim(Year586Bc, "586 BC", note: null, Verse(BookId._2KI, 25, 9));
 
     [Fact]
-    public void A_places_dates_are_the_cards_labelled_claims_with_the_verses_they_rest_on()
+    public void A_places_dates_are_the_cards_labelled_claims()
     {
         // Arrange
         var card = Jerusalem(established: DavidTakesZion, destroyed: BabylonBurnsIt);
 
         // Act
-        var dates = PlaceDates.Of(card, JerusalemsHistory);
+        var dates = PlaceDates.Of(card);
 
         // Assert
-        Assert.Equal([new PlaceDate("Established", DavidTakesZion, DavidTakesZionVerses), new PlaceDate("Destroyed", BabylonBurnsIt, BabylonBurnsItVerses)], dates);
+        Assert.Equal([new PlaceDate("Established", DavidTakesZion), new PlaceDate("Destroyed", BabylonBurnsIt)], dates);
     }
 
     [Fact]
@@ -38,10 +31,10 @@ public sealed class PlaceDatesTests
         var card = Jerusalem(established: null, destroyed: BabylonBurnsIt);
 
         // Act
-        var dates = PlaceDates.Of(card, JerusalemsHistory);
+        var dates = PlaceDates.Of(card);
 
         // Assert
-        Assert.Equal([new PlaceDate("Destroyed", BabylonBurnsIt, BabylonBurnsItVerses)], dates);
+        Assert.Equal([new PlaceDate("Destroyed", BabylonBurnsIt)], dates);
     }
 
     [Fact]
@@ -51,28 +44,18 @@ public sealed class PlaceDatesTests
         var card = Jerusalem(established: null, destroyed: null);
 
         // Act
-        var dates = new[] { PlaceDates.Of(card, JerusalemsHistory), PlaceDates.Of(null, JerusalemsHistory) };
+        var dates = new[] { PlaceDates.Of(card), PlaceDates.Of(null) };
 
         // Assert
         Assert.Equal([[], []], dates);
     }
 
-    [Fact]
-    public void A_dated_claim_whose_page_names_no_verses_rests_on_none()
-    {
-        // Arrange
-        var card = Jerusalem(established: DavidTakesZion, destroyed: null);
-
-        // Act
-        var dates = PlaceDates.Of(card, history: null);
-
-        // Assert
-        Assert.Equal([new PlaceDate("Established", DavidTakesZion, PlaceDates.NoVerses)], dates);
-    }
-
     private static PlaceDetail Jerusalem(DateClaim? established, DateClaim? destroyed) =>
         new(canonicalName: null, destroyed: destroyed, displayName: "Jerusalem", established: established, lat: 31.78, lon: 35.23);
 
-    private static DateClaim Claim(Year year, string label, string? note) =>
-        new(@event: null, label: label, note: note, verses: [], when: new TimeRange(from: year, label: year.Label, to: year));
+    private static TextSpan Verse(BookId book, int chapter, int verse) =>
+        new(from: new TextPoint(unit: new BibleRef(book, chapter, verse), word: null), to: new TextPoint(unit: new BibleRef(book, chapter, verse), word: null));
+
+    private static DateClaim Claim(Year year, string label, string? note, TextSpan verse) =>
+        new(@event: null, label: label, note: note, verses: [verse], when: new TimeRange(from: year, label: year.Label, to: year));
 }

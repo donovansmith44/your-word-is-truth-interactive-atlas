@@ -6,8 +6,8 @@
             <span class="hamburger-caret" aria-hidden="true">@(_expanded ? "▾" : "▸")</span>
             @if (_renaming)
             {
-                <input class="hamburger-rename-input" data-testid="@($"exploration-rename-input-{Item.Id}")" value="@_renameValue"
-                       @oninput="e => _renameValue = e.Value?.ToString() ?? string.Empty" @onclick:stopPropagation="true"
+                <input class="hamburger-rename-input" data-testid="@($"exploration-rename-input-{Item.Id}")" value="@_rename.Text"
+                       @oninput="e => _rename = _rename.Type(e.Value?.ToString() ?? string.Empty)" @onclick:stopPropagation="true"
                        @onkeydown="OnRenameKeyDown" @onkeydown:stopPropagation="true" @onblur="CommitRename" @ref="_renameInputRef" />
             }
             else
@@ -66,7 +66,7 @@
     private bool _expanded;
     private bool _renaming;
     private bool _confirmingDelete;
-    private string _renameValue = "";
+    private Draft _rename = Draft.Empty;
     private ElementReference _renameInputRef;
     private bool _focusRenamePending;
 
@@ -77,7 +77,7 @@
 
     private void StartRename()
     {
-        _renameValue = Item.Name;
+        _rename = Draft.Empty.Served(Item.Name);
         _renaming = true;
         _focusRenamePending = true;
     }
@@ -91,7 +91,7 @@
         }
 
         _renaming = false;
-        var trimmed = _renameValue.Trim();
+        var trimmed = _rename.Text.Trim();
         if (trimmed.Length > 0 && trimmed != Item.Name)
         {
             await OnRename.InvokeAsync((Item.Id, trimmed));

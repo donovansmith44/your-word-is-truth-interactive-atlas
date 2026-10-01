@@ -1,31 +1,14 @@
 mod common;
 
-use std::collections::HashMap;
-
-use atlas_core::data::{AtlasData, Canon};
-use atlas_graph::pipeline::{self, BuildCtx};
 use atlas_graph_types::edge::{Ground, MentionedEntity, Namesake};
 use atlas_graph_types::id::{NodeKind, PeopleGroupId, PersonId};
 use atlas_graph_types::node::NodePayload;
 
-fn build_real_ctx<'a>(kjv_json: &'a str, xrefs_tsv: &'a str, atlas: &'a AtlasData, canon: &'a Canon, verses: &'a HashMap<String, String>) -> BuildCtx<'a> {
-    let mut ctx = BuildCtx::new(canon, verses, Some(kjv_json), xrefs_tsv, atlas);
-    pipeline::run_pipeline(&mut ctx, &pipeline::pipeline()).expect("the real committed sources must build cleanly through the full pipeline (LAW-CHECK included -- reaching this line already proves check_peoples_fidelity/every_named_after_row_has_a_scripture_ground both passed)");
-    ctx
-}
-
-fn real_ctx_pieces() -> (&'static AtlasData, Canon, HashMap<String, String>, String, String) {
-    let kjv_json = common::kjv_json();
-    let xrefs_tsv = common::cross_references_tsv();
-    let atlas = common::real_atlas();
-    let (canon, verses) = atlas_etl::kjv::parse(&kjv_json).expect("kjv.json must parse");
-    (atlas, canon, verses, kjv_json, xrefs_tsv)
-}
-
 #[test]
 fn peoplegroup_node_counts_match_all_three_sources_exactly() {
-    let (atlas, canon, verses, kjv_json, xrefs_tsv) = real_ctx_pieces();
-    let ctx = build_real_ctx(&kjv_json, &xrefs_tsv, atlas, &canon, &verses);
+    let atlas = common::real_atlas();
+    let inputs = common::PipelineInputs::read();
+    let ctx = inputs.run();
 
     assert_eq!(atlas.people_groups.len(), 23, "the real committed peopleGroups.json must carry exactly 23 records");
     assert_eq!(atlas.people_group_seeds.len(), 6, "the curated nation seeds: Ammonites/Moabites/Edomites/Philistines/Amalekites/Canaanites");
@@ -46,8 +29,8 @@ fn peoplegroup_node_counts_match_all_three_sources_exactly() {
 
 #[test]
 fn reclassified_mention_rows_carry_peoplegroup_sense_at_a_real_locus() {
-    let (atlas, canon, verses, kjv_json, xrefs_tsv) = real_ctx_pieces();
-    let ctx = build_real_ctx(&kjv_json, &xrefs_tsv, atlas, &canon, &verses);
+    let inputs = common::PipelineInputs::read();
+    let ctx = inputs.run();
 
     let jebusite = PeopleGroupId::new("jebusite_748");
     let gen_10_16 = atlas_graph::kjv_adapter::dot_ref(0, 10, 16);
@@ -70,8 +53,9 @@ fn reclassified_mention_rows_carry_peoplegroup_sense_at_a_real_locus() {
 
 #[test]
 fn every_named_after_row_is_scripture_grounded_and_the_seed_counts_match_decision_3() {
-    let (atlas, canon, verses, kjv_json, xrefs_tsv) = real_ctx_pieces();
-    let ctx = build_real_ctx(&kjv_json, &xrefs_tsv, atlas, &canon, &verses);
+    let atlas = common::real_atlas();
+    let inputs = common::PipelineInputs::read();
+    let ctx = inputs.run();
 
     assert_eq!(atlas.named_after_seeds.len(), 18, "the curated people-groups.toml must author exactly 18 [[named_after]] rows");
     assert_eq!(ctx.graph.named_after.len(), 18, "every curated row's own eponym must resolve to a real Person node -- zero runtime omissions expected");
@@ -103,8 +87,8 @@ fn every_named_after_row_is_scripture_grounded_and_the_seed_counts_match_decisio
 
 #[test]
 fn a_curated_nation_seeds_description_fills_from_eastons_over_the_real_data() {
-    let (atlas, canon, verses, kjv_json, xrefs_tsv) = real_ctx_pieces();
-    let ctx = build_real_ctx(&kjv_json, &xrefs_tsv, atlas, &canon, &verses);
+    let inputs = common::PipelineInputs::read();
+    let ctx = inputs.run();
 
     let node = ctx.graph.nodes.get(&PeopleGroupId::new("ammonites").erase()).expect("the curated 'ammonites' PeopleGroup node must exist");
     match &node.payload {
@@ -123,8 +107,8 @@ fn a_curated_nation_seeds_description_fills_from_eastons_over_the_real_data() {
 
 #[test]
 fn group_description_fill_matches_the_exact_disclosed_roster() {
-    let (atlas, canon, verses, kjv_json, xrefs_tsv) = real_ctx_pieces();
-    let ctx = build_real_ctx(&kjv_json, &xrefs_tsv, atlas, &canon, &verses);
+    let inputs = common::PipelineInputs::read();
+    let ctx = inputs.run();
 
     let mut filled: Vec<String> = ctx
         .graph
@@ -148,8 +132,9 @@ fn group_description_fill_matches_the_exact_disclosed_roster() {
 
 #[test]
 fn pg1b_real_data_yields_exactly_13_mentions_rows_at_the_reported_loci() {
-    let (atlas, canon, verses, kjv_json, xrefs_tsv) = real_ctx_pieces();
-    let ctx = build_real_ctx(&kjv_json, &xrefs_tsv, atlas, &canon, &verses);
+    let atlas = common::real_atlas();
+    let inputs = common::PipelineInputs::read();
+    let ctx = inputs.run();
 
     let judah = atlas.people_groups.iter().find(|g| g.id == "tribe-of-judah").expect("Tribe of Judah must exist in the real compiled data");
     assert_eq!(judah.verse_links, vec!["PRO.25.1"], "Tribe of Judah's own one real verse -- NOT JDG.1.2");
@@ -188,8 +173,9 @@ fn pg1b_real_data_yields_exactly_13_mentions_rows_at_the_reported_loci() {
 
 #[test]
 fn reclassified_mentions_total_and_per_slug_counts_match_the_disclosed_table() {
-    let (atlas, canon, verses, kjv_json, xrefs_tsv) = real_ctx_pieces();
-    let ctx = build_real_ctx(&kjv_json, &xrefs_tsv, atlas, &canon, &verses);
+    let atlas = common::real_atlas();
+    let inputs = common::PipelineInputs::read();
+    let ctx = inputs.run();
     let total = ctx.graph.mentions.iter().filter(|r| matches!(&r.entity, MentionedEntity::PeopleGroup(_)) && r.provenance == atlas_graph::peoples_adapter::PROVENANCE_RECLASSIFIED).count();
     assert_eq!(total, 27, "total PeopleGroup mentions rows across all nine reclassified slugs");
 

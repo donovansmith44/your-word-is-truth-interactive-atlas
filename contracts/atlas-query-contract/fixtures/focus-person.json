@@ -20,7 +20,7 @@
       },
       {
         "count": 1,
-        "kind": "partner-of"
+        "kind": "spouse-of"
       }
     ],
     "id": "Person:aaron_1",
@@ -28,16 +28,28 @@
     "label": "Aaron",
     "person": {
       "also_called": [],
-      "birth_year": -1575,
-      "death_year": -1452,
+      "birth": {
+        "label": "1575 BC",
+        "value": -1575
+      },
+      "death": {
+        "label": "1452 BC",
+        "value": -1452
+      },
       "eternal": false,
       "eternal_grounds": [],
-      "first_year": -1700,
+      "first": {
+        "label": "1700 BC",
+        "value": -1700
+      },
       "gender": "Male",
-      "last_year": 64
+      "last": {
+        "label": "AD 64",
+        "value": 64
+      }
     },
     "provenance": "theographic-people",
-    "version": "f3eab9b319696aeb098aaf47fffc050e"
+    "version": "03b477816961916c7e520c183cd9531c"
   },
   "status": 200
 }

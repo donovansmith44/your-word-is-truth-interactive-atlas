@@ -1,0 +1,33 @@
+# R-C2-R9 (owner, 2026-09-30): the Lord's brethren, the KJV's own word,
+# without asserting whose sons they were. This project's own work, CC0 1.0
+# Universal.
+#
+# "Is not this the carpenter's son? is not his mother called Mary? and his
+# brethren, James, and Joses, and Simon, and Judas?" (Matt 13:55); "the
+# brother of James, and Joses, and of Juda, and Simon" (Mark 6:3); "James
+# the Lord's brother" (Gal 1:19).
+#
+# Each [[brethren]] entry is one symmetric brethren-of row between two
+# Theographic persons, with its Scripture grounds as the row's
+# justification. The compile fails loud on an unknown person or an entry
+# without grounds.
+
+[[brethren]]
+a = "jesus_905"
+b = "james_719"
+grounds = ["MAT.13.55", "MRK.6.3", "GAL.1.19"]
+
+[[brethren]]
+a = "jesus_905"
+b = "joses_1721"
+grounds = ["MAT.13.55", "MRK.6.3"]
+
+[[brethren]]
+a = "jesus_905"
+b = "simon_2747"
+grounds = ["MAT.13.55", "MRK.6.3"]
+
+[[brethren]]
+a = "jesus_905"
+b = "jude_1756"
+grounds = ["MAT.13.55", "MRK.6.3"]

@@ -3,15 +3,28 @@ using System.Text;
 
 namespace BibleAtlas.Client.Tests;
 
-internal sealed class StubbedAtlas(string body) : HttpMessageHandler
+internal sealed class StubbedAtlas(Func<string, string> bodyFor) : HttpMessageHandler
 {
+    public StubbedAtlas(string body) : this(_ => body)
+    {
+    }
+
+    public StubbedAtlas(IReadOnlyDictionary<string, string> bodies) : this(asked => bodies[asked])
+    {
+    }
+
     public List<string> Asked { get; } = [];
 
-    public AtlasClient Client() => new(new HttpClient(this) { BaseAddress = new Uri("http://localhost/") });
+    public AtlasClient Client() => new(Http());
+
+    public GraphExplorableClient Graph() => new(Http());
+
+    private HttpClient Http() => new(this) { BaseAddress = new Uri("http://localhost/") };
 
     protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
-        Asked.Add(request.RequestUri!.PathAndQuery);
-        return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(body, Encoding.UTF8, "application/json") });
+        var asked = request.RequestUri!.PathAndQuery;
+        Asked.Add(asked);
+        return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(bodyFor(asked), Encoding.UTF8, "application/json") });
     }
 }

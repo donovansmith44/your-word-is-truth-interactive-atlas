@@ -1,16 +1,16 @@
-use std::path::Path;
+mod common;
 
 use atlas_core::data::Canon;
 use atlas_graph::runs::coalesce;
 use atlas_graph_types::text::{BibleLocusRange, Locus, VerseRef};
 use serde_json::Value;
 
-const VECTORS: &str = "../../contracts/atlas-query-contract/vectors/attestation-runs.json";
+const ATTESTATION_RUNS_VECTORS: &str = "attestation-runs.json";
 
 #[test]
 fn every_attestation_runs_vector_coalesces_to_the_runs_it_names() {
     // Arrange
-    let vectors: Value = serde_json::from_str(&std::fs::read_to_string(Path::new(env!("CARGO_MANIFEST_DIR")).join(VECTORS)).expect("the attestation-runs vectors are committed"))
+    let vectors: Value = serde_json::from_str(&std::fs::read_to_string(common::contract_vectors_dir().join(ATTESTATION_RUNS_VECTORS)).expect("the attestation-runs vectors are committed"))
         .expect("the vectors are JSON");
     let cases = vectors["cases"].as_array().expect("the vectors list their cases");
     let expected: Vec<(&str, Vec<BibleLocusRange>)> = cases.iter().map(|case| (name_of(case), ranges(&case["runs"]))).collect();

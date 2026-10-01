@@ -51,13 +51,26 @@
               }
             ],
             "when": {
-              "from_year": 30,
-              "to_year": 30
+              "from": {
+                "label": "AD 30",
+                "value": 30
+              },
+              "label": "AD 30",
+              "to": {
+                "label": "AD 30",
+                "value": 30
+              }
             }
           }
         ],
-        "existence_from": -4004,
-        "existence_to": -586,
+        "existence_from": {
+          "label": "4004 BC",
+          "value": -4004
+        },
+        "existence_to": {
+          "label": "586 BC",
+          "value": -586
+        },
         "id": "jerusalem",
         "lat": 31.776667,
         "lon": 35.234167,

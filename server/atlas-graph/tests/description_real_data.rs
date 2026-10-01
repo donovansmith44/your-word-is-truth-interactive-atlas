@@ -1,26 +1,13 @@
 mod common;
 
-use std::collections::HashMap;
-
-use atlas_core::data::{AtlasData, Canon};
-use atlas_graph::pipeline::{self, BuildCtx};
 use atlas_graph_types::id::{PersonId, PlaceId};
 use atlas_graph_types::node::NodePayload;
 
-fn build_real_ctx<'a>(kjv_json: &'a str, xrefs_tsv: &'a str, atlas: &'a AtlasData, canon: &'a Canon, verses: &'a HashMap<String, String>) -> BuildCtx<'a> {
-    let mut ctx = BuildCtx::new(canon, verses, Some(kjv_json), xrefs_tsv, atlas);
-    pipeline::run_pipeline(&mut ctx, &pipeline::pipeline()).expect("the real committed sources must build cleanly through the full pipeline");
-    ctx
-}
-
 #[test]
 fn hebron_and_moses_carry_non_empty_descriptions_over_the_real_compiled_data() {
-    let kjv_json = common::kjv_json();
-    let xrefs_tsv = common::cross_references_tsv();
-    let atlas = common::real_atlas();
-    let (canon, verses) = atlas_etl::kjv::parse(&kjv_json).expect("kjv.json must parse");
+    let inputs = common::PipelineInputs::read();
 
-    let ctx = build_real_ctx(&kjv_json, &xrefs_tsv, atlas, &canon, &verses);
+    let ctx = inputs.run();
 
     let hebron_id = PlaceId::new("hebron").erase();
     let hebron = ctx.graph.nodes.get(&hebron_id).expect("a compiled Place node with id 'hebron' must exist over the real geo data");
@@ -49,12 +36,10 @@ fn hebron_and_moses_carry_non_empty_descriptions_over_the_real_compiled_data() {
 
 #[test]
 fn description_fill_rates_over_the_real_compiled_data_are_reported_honestly() {
-    let kjv_json = common::kjv_json();
-    let xrefs_tsv = common::cross_references_tsv();
     let atlas = common::real_atlas();
-    let (canon, verses) = atlas_etl::kjv::parse(&kjv_json).expect("kjv.json must parse");
+    let inputs = common::PipelineInputs::read();
 
-    let ctx = build_real_ctx(&kjv_json, &xrefs_tsv, atlas, &canon, &verses);
+    let ctx = inputs.run();
     let s = &ctx.description_stats;
 
     println!("ENT-1a DESCRIPTION FILL RATES (real compiled data):");

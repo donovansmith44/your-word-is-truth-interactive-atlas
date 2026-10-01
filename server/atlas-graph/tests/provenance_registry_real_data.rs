@@ -36,11 +36,12 @@ fn provenance_by_family(g: &atlas_graph_types::graph::Graph) -> BTreeMap<&'stati
     sweep!(analogue);
     sweep!(occurs);
     sweep!(parent_of);
-    sweep!(partners);
+    sweep!(spouses);
     sweep!(participates);
     sweep!(authored);
     sweep!(shown);
     sweep!(map_succession);
+    sweep!(brethren);
     out
 }
 
@@ -134,7 +135,7 @@ fn provenance_field_decls_per_file() -> BTreeMap<String, usize> {
 fn the_sweep_covers_every_provenance_bearing_row_family() {
     let per_file = provenance_field_decls_per_file();
 
-    let expected: BTreeMap<String, usize> = [("chrono.rs", 1usize), ("edge.rs", 26), ("node.rs", 2), ("store.rs", 1)].into_iter().map(|(f, n)| (f.to_string(), n)).collect();
+    let expected: BTreeMap<String, usize> = [("chrono.rs", 1usize), ("edge.rs", 27), ("node.rs", 2), ("store.rs", 1)].into_iter().map(|(f, n)| (f.to_string(), n)).collect();
     assert_eq!(
         per_file, expected,
         "graph-types' `pub provenance:` field declarations moved. If a NEW row family appeared, add it to \
@@ -160,7 +161,8 @@ fn the_sweep_covers_every_provenance_bearing_row_family() {
 #[test]
 fn the_runtime_index_and_the_test_sweep_name_exactly_the_same_families() {
     let g = committed_graph();
-    let swept: Vec<&str> = provenance_by_family(g).keys().copied().collect();
+    let mut swept: Vec<&str> = provenance_by_family(g).keys().copied().chain([atlas_graph::provenance::family::CONCORD_CITATIONS]).collect();
+    swept.sort();
     let indexed: Vec<&str> = atlas_graph::provenance::ProvenanceIndex::build(g).families();
     assert_eq!(
         swept, indexed,
@@ -182,14 +184,17 @@ const PINNED_INVENTORY: &[&str] = &[
     "chronology-anchors",
     "chronology-derivation",
     "concord",
+    "concord-citations",
     "concord-sc-overlap",
     "curated",
     "curated-books",
+    "curated-brethren",
     "curated-catechism",
     "curated-eras",
     "curated-fulfillment",
     "curated-named-after",
     "curated-narratives",
+    "curated-parentage",
     "curated-people-groups",
     "curated-places",
     "curated-polities",
@@ -223,7 +228,7 @@ fn the_per_family_provenance_map_of_the_real_artifact_is_pinned() {
 
     assert_eq!(actual, expected, "the artifact's per-family provenance map changed");
 
-    assert_eq!(actual["cross_refs"], vec!["openbible.info-cross-references".to_string()]);
+    assert_eq!(actual["cross_refs"], vec!["concord-citations".to_string(), "openbible.info-cross-references".to_string()]);
     assert_eq!(actual["catechism"], vec!["concord-sc-overlap".to_string(), "curated-catechism".to_string()]);
 }
 
@@ -231,6 +236,7 @@ const PINNED_FAMILIES: &[(&str, &[&str])] = &[
     ("analogue", &["attestation-corrections"]),
     ("attests", &["event-witnesses"]),
     ("authored", &["curated-books"]),
+    ("brethren", &["curated-brethren"]),
     ("canon_succession", &["concord", "kjv"]),
     ("catechism", &["concord-sc-overlap", "curated-catechism"]),
     ("comments_on", &["kretzmann"]),
@@ -238,7 +244,7 @@ const PINNED_FAMILIES: &[(&str, &[&str])] = &[
     ("contains_bible", &["kjv"]),
     ("contains_concord", &["concord"]),
     ("corresponds_bible", &[]),
-    ("cross_refs", &["openbible.info-cross-references"]),
+    ("cross_refs", &["concord-citations", "openbible.info-cross-references"]),
     ("dated_by", &["chronology-derivation"]),
     ("fulfills", &["curated-fulfillment"]),
     ("located_at", &["curated", "theographic"]),
@@ -255,10 +261,10 @@ const PINNED_FAMILIES: &[(&str, &[&str])] = &[
     ),
     ("named_after", &["curated-named-after"]),
     ("occurs", &["stepbible-tagnt", "stepbible-tahot"]),
-    ("parent_of", &["theographic-people"]),
+    ("parent_of", &["curated-parentage", "theographic-people"]),
     ("participates", &["theographic-people"]),
-    ("partners", &["theographic-people"]),
     ("shown", &["curated-eras"]),
+    ("spouses", &["theographic-people"]),
     (
         "nodes",
         &[

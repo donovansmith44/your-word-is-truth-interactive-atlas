@@ -73,6 +73,16 @@ pub fn text_locus_values(l: &TextLocus) -> [Value; 7] {
     }
 }
 
+pub fn units_values(first: &TextRef, last: &TextRef) -> [Value; 7] {
+    let [corpus, a, b, c, ..] = text_locus_values(&TextLocus { at: first.clone(), span: None });
+    let [_, last_a, last_b, last_c, ..] = text_locus_values(&TextLocus { at: last.clone(), span: None });
+    [corpus, a, b, c, last_a, last_b, last_c]
+}
+
+pub fn between_units(locus: &str) -> String {
+    format!("{locus}_corpus = ?1 AND ({locus}_a, {locus}_b, {locus}_c) BETWEEN (?2, ?3, ?4) AND (?5, ?6, ?7)")
+}
+
 /// All seven NULL when `None`.
 pub fn opt_text_locus_values(l: &Option<TextLocus>) -> [Value; 7] {
     match l {

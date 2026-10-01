@@ -83,16 +83,6 @@
       "licenses_row_key": "STEPBible TAGNT"
     },
     {
-      "id": "macula",
-      "category": "scripture",
-      "title": "MACULA Greek and Hebrew Linguistic Datasets (Clear Bible Inc.)",
-      "what_it_is": "Clear Bible's MACULA datasets: Louw-Nida section references for the Greek NT and SDBH lexical-domain codes for the Hebrew OT (semantic domains per word).",
-      "what_we_built": "Each lexicon entry carries its sorted semantic-domain codes (the lexicon section's domain table), written so a later thesaurus-by-domain query can answer from them; no endpoint reads them yet.",
-      "license": "CC BY 4.0",
-      "link": "https://github.com/Clear-Bible/macula-greek",
-      "licenses_row_key": "MACULA Greek and Hebrew"
-    },
-    {
       "id": "strongs",
       "category": "scripture",
       "title": "Strong's Exhaustive Concordance dictionaries (James Strong, 1890)",
@@ -268,7 +258,7 @@
       "id": "stepbible-tbesg",
       "source": "stepbible",
       "confidence": "Imported",
-      "locator": "lexicon entries (Strong's 1890 text + TBESG gloss + MACULA domains)"
+      "locator": "lexicon entries (Strong's 1890 text + TBESG gloss)"
     },
     {
       "id": "stepbible-tagnt",
@@ -331,6 +321,12 @@
       "locator": "Small Catechism / Book of Concord overlap"
     },
     {
+      "id": "concord-citations",
+      "source": "book-of-concord",
+      "confidence": "Derived",
+      "locator": "Scripture citations in the Book of Concord's text"
+    },
+    {
       "id": "curated",
       "source": "our-curated-work",
       "confidence": "Curated",
@@ -383,6 +379,18 @@
       "source": "our-curated-work",
       "confidence": "Curated",
       "locator": null
+    },
+    {
+      "id": "curated-parentage",
+      "source": "our-curated-work",
+      "confidence": "Curated",
+      "locator": "parentage.toml"
+    },
+    {
+      "id": "curated-brethren",
+      "source": "our-curated-work",
+      "confidence": "Curated",
+      "locator": "brethren.toml"
     },
     {
       "id": "curated-books",

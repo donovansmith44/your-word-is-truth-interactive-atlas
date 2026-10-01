@@ -427,8 +427,9 @@ alignment text, not errors). Verified by an independent Python sweep and
 pinned in `server/atlas-etl/tests/lexicon_real_data.rs`. Upstream book
 codes resolve through the SAME `data/books.json` map as the editions.
 Sources and licenses (STEPBible CC BY 4.0 -- "Credit STEPBible and link to
-https://github.com/STEPBible"; MACULA CC BY 4.0; Strong's 1890 PD):
-`LICENSES.md`'s "STEPBible / MACULA / Strong's — the lexicon section" section;
+https://github.com/STEPBible"; Strong's 1890 PD): the entries' `domains[]`
+(MACULA's Louw-Nida/SDBH codes, UBS material published CC BY-SA) are fetched
+but not read. `LICENSES.md`'s "STEPBible / Strong's — the lexicon section" section;
 upstream's own `UPSTREAM-README.md` and `licenses/` are vendored beside the
 data.
 

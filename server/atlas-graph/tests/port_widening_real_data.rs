@@ -81,7 +81,11 @@ fn oracle_persons_by_verse(g: &Graph) -> HashMap<String, Vec<(String, String)>> 
         }) else {
             continue;
         };
-        out.entry(key).or_default().push((person_id.0.clone(), label));
+        let listed = out.entry(key).or_default();
+        let person = (person_id.0.clone(), label);
+        if !listed.contains(&person) {
+            listed.push(person);
+        }
     }
     out
 }

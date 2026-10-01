@@ -52,8 +52,6 @@ fn contract_dir() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("../../contracts/atlas-query-contract")
 }
 
-/// Every file the exporter wrote, keyed by its path relative to the directory it
-/// was given, so the whole export compares in one comparison.
 fn exported_under(root: &Path) -> BTreeMap<PathBuf, Vec<u8>> {
     let mut out = BTreeMap::new();
     for dir in EXPORTED_DIRECTORIES {
@@ -67,8 +65,6 @@ fn exported_under(root: &Path) -> BTreeMap<PathBuf, Vec<u8>> {
     out
 }
 
-/// The committed file at each exported path; the committed features directory also
-/// holds hand-written features the exporter never writes, and those are not compared.
 fn committed_counterparts(exported: &BTreeMap<PathBuf, Vec<u8>>) -> BTreeMap<PathBuf, Vec<u8>> {
     exported
         .keys()
@@ -85,8 +81,6 @@ fn identity_entry_count() -> usize {
     ids.len()
 }
 
-/// A directory under Cargo's per-target scratch space, emptied when made and removed
-/// when dropped: a test never writes the repository.
 struct ScratchDirectory(PathBuf);
 
 impl ScratchDirectory {

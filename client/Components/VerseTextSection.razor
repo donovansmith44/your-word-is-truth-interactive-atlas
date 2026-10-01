@@ -1,6 +1,3 @@
-@* CompactText is the fallback whenever the chapter fetch (for FocalVerses, which carries
-   real per-verse Places/Persons) fails: the section still renders the plain, always-available
-   text rather than nothing. *@
 @using BibleAtlas.Client.Explore
 
 <div class="popover-verse-section">
@@ -11,7 +8,7 @@
                 {
                     @foreach (var v in FocalVerses)
                     {
-                        <MentionText Text="@v.Text" Places="@v.Places" Persons="@v.Persons" WordsOfChrist="@v.WordsOfChrist" Verse="@v.Number"
+                        <MentionText Text="@v.Text" Anchors="@v.Anchors" WordsOfChrist="@v.WordsOfChrist" Verse="@(((BibleRef)v.Locus).Verse)"
                                      ClassPrefix="popover-verse-mention" OnExplore="OnExplore" /><text> </text>
                     }
                 }
@@ -31,7 +28,7 @@
     [Parameter] public int FocalToVerse { get; set; }
     [Parameter, EditorRequired] public string CompactText { get; set; } = default!;
 
-    [Parameter] public IReadOnlyList<Verse> FocalVerses { get; set; } = Array.Empty<Verse>();
+    [Parameter] public IReadOnlyList<TextUnit> FocalVerses { get; set; } = Array.Empty<TextUnit>();
 
     [Parameter, EditorRequired] public EventCallback<IExplorable> OnExplore { get; set; }
 }

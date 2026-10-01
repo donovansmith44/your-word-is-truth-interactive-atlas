@@ -1,0 +1,241 @@
+{
+  "cases": [
+    {
+      "mentions": [],
+      "name": "a_text_with_no_names_to_search_mentions_nothing",
+      "persons": [],
+      "places": [],
+      "text": "In the beginning God created the heaven."
+    },
+    {
+      "mentions": [],
+      "name": "an_empty_text_mentions_nothing",
+      "persons": [],
+      "places": [
+        {
+          "id": "jerusalem",
+          "name": "Jerusalem"
+        }
+      ],
+      "text": ""
+    },
+    {
+      "mentions": [
+        {
+          "end": 21,
+          "id": "hebron",
+          "kind": "place",
+          "start": 15
+        }
+      ],
+      "name": "a_name_inside_the_text_is_one_mention",
+      "persons": [],
+      "places": [
+        {
+          "id": "hebron",
+          "name": "Hebron"
+        }
+      ],
+      "text": "Abram dwelt in Hebron by the plain of Mamre."
+    },
+    {
+      "mentions": [
+        {
+          "end": 9,
+          "id": "jerusalem",
+          "kind": "place",
+          "start": 0
+        }
+      ],
+      "name": "a_name_at_the_very_start_is_found",
+      "persons": [],
+      "places": [
+        {
+          "id": "jerusalem",
+          "name": "Jerusalem"
+        }
+      ],
+      "text": "Jerusalem was besieged."
+    },
+    {
+      "mentions": [
+        {
+          "end": 20,
+          "id": "jericho",
+          "kind": "place",
+          "start": 13
+        }
+      ],
+      "name": "a_name_at_the_very_end_is_found",
+      "persons": [],
+      "places": [
+        {
+          "id": "jericho",
+          "name": "Jericho"
+        }
+      ],
+      "text": "They came to Jericho"
+    },
+    {
+      "mentions": [],
+      "name": "differently_cased_text_never_matches",
+      "persons": [],
+      "places": [
+        {
+          "id": "jerusalem",
+          "name": "Jerusalem"
+        }
+      ],
+      "text": "go up to JERUSALEM now."
+    },
+    {
+      "mentions": [
+        {
+          "end": 18,
+          "id": "jerusalem",
+          "kind": "place",
+          "start": 9
+        }
+      ],
+      "name": "exactly_cased_text_still_matches",
+      "persons": [],
+      "places": [
+        {
+          "id": "jerusalem",
+          "name": "Jerusalem"
+        }
+      ],
+      "text": "go up to Jerusalem now."
+    },
+    {
+      "mentions": [
+        {
+          "end": 14,
+          "id": "bethlehem",
+          "kind": "place",
+          "start": 5
+        },
+        {
+          "end": 27,
+          "id": "jerusalem",
+          "kind": "place",
+          "start": 18
+        }
+      ],
+      "name": "two_names_apart_are_both_found",
+      "persons": [],
+      "places": [
+        {
+          "id": "jerusalem",
+          "name": "Jerusalem"
+        },
+        {
+          "id": "bethlehem",
+          "name": "Bethlehem"
+        }
+      ],
+      "text": "From Bethlehem to Jerusalem is a short journey."
+    },
+    {
+      "mentions": [
+        {
+          "end": 27,
+          "id": "beersheba",
+          "kind": "place",
+          "start": 18
+        }
+      ],
+      "name": "longer_containing_name_wins_over_a_shorter_substring_name",
+      "persons": [],
+      "places": [
+        {
+          "id": "beersheba",
+          "name": "Beersheba"
+        },
+        {
+          "id": "sheba",
+          "name": "Sheba"
+        }
+      ],
+      "text": "They journeyed to Beersheba and rested."
+    },
+    {
+      "mentions": [],
+      "name": "unmatched_place_is_simply_absent_not_an_error",
+      "persons": [],
+      "places": [
+        {
+          "id": "egypt",
+          "name": "Egypt"
+        }
+      ],
+      "text": "The LORD spake unto Moses."
+    },
+    {
+      "mentions": [],
+      "name": "place_name_longer_than_text_never_throws",
+      "persons": [],
+      "places": [
+        {
+          "id": "mesopotamia",
+          "name": "Mesopotamia"
+        }
+      ],
+      "text": "Ur"
+    },
+    {
+      "mentions": [
+        {
+          "end": 9,
+          "id": "abram",
+          "kind": "person",
+          "start": 4
+        },
+        {
+          "end": 30,
+          "id": "egypt",
+          "kind": "place",
+          "start": 25
+        }
+      ],
+      "name": "a_person_is_found_as_a_place_is",
+      "persons": [
+        {
+          "id": "abram",
+          "name": "Abram"
+        }
+      ],
+      "places": [
+        {
+          "id": "egypt",
+          "name": "Egypt"
+        }
+      ],
+      "text": "And Abram went down into Egypt."
+    },
+    {
+      "mentions": [
+        {
+          "end": 18,
+          "id": "sheba",
+          "kind": "place",
+          "start": 13
+        }
+      ],
+      "name": "a_name_both_a_place_and_a_person_bear_goes_to_the_place",
+      "persons": [
+        {
+          "id": "sheba_1",
+          "name": "Sheba"
+        }
+      ],
+      "places": [
+        {
+          "id": "sheba",
+          "name": "Sheba"
+        }
+      ],
+      "text": "The queen of Sheba heard."
+    }
+  ]
+}

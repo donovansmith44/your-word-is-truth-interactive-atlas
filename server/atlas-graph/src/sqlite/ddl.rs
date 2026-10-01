@@ -52,6 +52,7 @@ CREATE TABLE edge_index (
   meta_kind      INTEGER NOT NULL,
   meta_narrative TEXT,
   meta_votes     INTEGER,
+  meta_parentage TEXT,
   row_family     INTEGER NOT NULL,
   row_id         INTEGER NOT NULL,
   PRIMARY KEY (subject, rel, dir, ord)
@@ -281,22 +282,30 @@ CREATE INDEX occurs_by_locus ON occurs (locus_a, locus_b, locus_c, locus_layer, 
 const DDL_PARENT_OF: &str = "
 CREATE TABLE parent_of (
   id INTEGER PRIMARY KEY, ord INTEGER NOT NULL,
-  parent_id TEXT NOT NULL, child_id TEXT NOT NULL,
-  provenance TEXT NOT NULL
+  parent_id TEXT NOT NULL, child_id TEXT NOT NULL, parentage TEXT NOT NULL,
+  provenance TEXT NOT NULL, justification_id INTEGER
 );
 ";
 const IDX_PARENT_OF: &str = "
 CREATE UNIQUE INDEX parent_of_ord ON parent_of (ord);
 CREATE INDEX parent_of_by_child ON parent_of (child_id, ord);
 ";
-const DDL_PARTNERS: &str = "
-CREATE TABLE partners (
+const DDL_SPOUSES: &str = "
+CREATE TABLE spouses (
   id INTEGER PRIMARY KEY, ord INTEGER NOT NULL,
   a_id TEXT NOT NULL, b_id TEXT NOT NULL,
   provenance TEXT NOT NULL
 );
 ";
-const IDX_PARTNERS: &str = "CREATE UNIQUE INDEX partners_ord ON partners (ord);";
+const IDX_SPOUSES: &str = "CREATE UNIQUE INDEX spouses_ord ON spouses (ord);";
+const DDL_BRETHREN: &str = "
+CREATE TABLE brethren (
+  id INTEGER PRIMARY KEY, ord INTEGER NOT NULL,
+  a_id TEXT NOT NULL, b_id TEXT NOT NULL,
+  provenance TEXT NOT NULL, justification_id INTEGER
+);
+";
+const IDX_BRETHREN: &str = "CREATE UNIQUE INDEX brethren_ord ON brethren (ord);";
 const DDL_PARTICIPATES: &str = "
 CREATE TABLE participates (
   id INTEGER PRIMARY KEY, ord INTEGER NOT NULL,
@@ -539,6 +548,11 @@ CREATE TABLE red_letter_span (
   start INTEGER NOT NULL, end_ INTEGER NOT NULL,
   PRIMARY KEY (book, chapter, verse, ord)
 ) WITHOUT ROWID;
+CREATE TABLE kjv_token (
+  book INTEGER NOT NULL, chapter INTEGER NOT NULL, verse INTEGER NOT NULL, ord INTEGER NOT NULL,
+  char_start INTEGER NOT NULL, char_end INTEGER NOT NULL,
+  PRIMARY KEY (book, chapter, verse, ord)
+) WITHOUT ROWID;
 ";
 const EXTRA_INDEX_DDL_KJV: &str = "
 CREATE UNIQUE INDEX verse_by_ref ON verse (book, chapter, verse);
@@ -547,6 +561,11 @@ CREATE UNIQUE INDEX verse_by_ref ON verse (book, chapter, verse);
 const EXTRA_DDL_CONCORD: &str = "
 CREATE TABLE concord_unit (
   node_id TEXT PRIMARY KEY, part INTEGER NOT NULL, article INTEGER NOT NULL, paragraph INTEGER NOT NULL
+) WITHOUT ROWID;
+CREATE TABLE concord_token (
+  part INTEGER NOT NULL, article INTEGER NOT NULL, paragraph INTEGER NOT NULL, ord INTEGER NOT NULL,
+  char_start INTEGER NOT NULL, char_end INTEGER NOT NULL,
+  PRIMARY KEY (part, article, paragraph, ord)
 ) WITHOUT ROWID;
 ";
 const EXTRA_INDEX_DDL_CONCORD: &str = "
@@ -559,10 +578,6 @@ CREATE TABLE lexicon_entry (
   node_id TEXT PRIMARY KEY,
   strong TEXT NOT NULL, lang TEXT NOT NULL,
   lemma TEXT NOT NULL, translit TEXT, pos TEXT, root_strong TEXT
-) WITHOUT ROWID;
-CREATE TABLE lexicon_domain (
-  node_id TEXT NOT NULL, ord INTEGER NOT NULL, code TEXT NOT NULL,
-  PRIMARY KEY (node_id, ord)
 ) WITHOUT ROWID;
 CREATE TABLE token (
   book INTEGER NOT NULL, chapter INTEGER NOT NULL, verse INTEGER NOT NULL,
@@ -577,7 +592,6 @@ CREATE TABLE token (
 const EXTRA_INDEX_DDL_LEXICON: &str = "
 CREATE UNIQUE INDEX lexicon_by_strong ON lexicon_entry (strong);
 CREATE INDEX lexicon_by_lemma ON lexicon_entry (lang, lemma);
-CREATE INDEX domain_by_code ON lexicon_domain (code, node_id);
 ";
 
 pub fn extra_ddl(section: Section) -> &'static [&'static str] {
@@ -625,11 +639,12 @@ pub fn family_ddl(f: RowFamily) -> &'static str {
         RowFamily::Analogue => DDL_ANALOGUE,
         RowFamily::Occurs => DDL_OCCURS,
         RowFamily::ParentOf => DDL_PARENT_OF,
-        RowFamily::Partners => DDL_PARTNERS,
+        RowFamily::Spouses => DDL_SPOUSES,
         RowFamily::Participates => DDL_PARTICIPATES,
         RowFamily::Authored => DDL_AUTHORED,
         RowFamily::Shown => DDL_SHOWN,
         RowFamily::MapSuccession => DDL_MAP_SUCCESSION,
+        RowFamily::Brethren => DDL_BRETHREN,
     }
 }
 
@@ -658,11 +673,12 @@ pub fn family_index_ddl(f: RowFamily) -> &'static str {
         RowFamily::Analogue => IDX_ANALOGUE,
         RowFamily::Occurs => IDX_OCCURS,
         RowFamily::ParentOf => IDX_PARENT_OF,
-        RowFamily::Partners => IDX_PARTNERS,
+        RowFamily::Spouses => IDX_SPOUSES,
         RowFamily::Participates => IDX_PARTICIPATES,
         RowFamily::Authored => IDX_AUTHORED,
         RowFamily::Shown => IDX_SHOWN,
         RowFamily::MapSuccession => IDX_MAP_SUCCESSION,
+        RowFamily::Brethren => IDX_BRETHREN,
     }
 }
 

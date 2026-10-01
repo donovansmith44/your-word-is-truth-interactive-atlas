@@ -608,7 +608,7 @@ RESULTS="$(mktemp)"; TMPDIRS+=("$RESULTS")
 for d in "${RUN_ROOTS[@]:-}"; do
   [ -z "$d" ] && continue
   one="$(mktemp)"; TMPDIRS+=("$one")
-  "$RUNNER" run --replay contracts/pacts --exports data/exports --results "$one" "$d"
+  "$RUNNER" run --replay contracts/pacts --exports data/exports --schema contracts/atlas-query-contract/aqc.schema.json --results "$one" "$d"
   check $? "expectations: $d"
   norm_rows < "$one" >> "$RESULTS"
 done

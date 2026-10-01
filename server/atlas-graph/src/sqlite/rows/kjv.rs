@@ -1,16 +1,14 @@
-//! The row families of the `kjv` section other than `contains_bible`, which goes through
-//! `core::insert_contains`/`read_contains` over the same DDL.
-
 use atlas_graph_types::edge::{CanonSuccession, CrossRef, SpokenAt, SpokenBy};
+use atlas_graph_types::text::TextRef;
 use rusqlite::types::Value;
-use rusqlite::{Connection, Transaction};
+use rusqlite::{Connection, Row, Transaction};
 
 use super::super::columns::{
-    bible_range_values, col, opt_text_locus_values, read_bible_range, read_opt_text_locus,
-    read_text_locus, text_locus_values, JustificationWriter,
+    between_units, bible_range_values, col, opt_text_locus_values, read_bible_range, read_opt_text_locus,
+    read_text_locus, text_locus_values, units_values, JustificationWriter,
 };
 use super::super::SqliteError;
-use super::{justification_row, id_col, insert, int, read_all, read_justification_at, text, D};
+use super::{justification_row, id_col, insert, int, read_all, read_justification_at, read_where, text, D};
 
 const COLS_CANON_SUCCESSION: &str = "prior_id, next_id, provenance, justification_id";
 
@@ -53,16 +51,23 @@ pub fn insert_cross_refs(tx: &Transaction, ord: i64, row: &CrossRef) -> Result<(
 }
 
 pub fn read_cross_refs(conn: &Connection) -> Result<Vec<(i64, CrossRef)>, SqliteError> {
-    read_all(conn, "cross_refs", COLS_CROSS_REFS, |row| {
-        let votes: i64 = col(row, D + 22, "votes")?;
-        Ok(CrossRef {
-            from: read_text_locus(row, D)?,
-            to: read_text_locus(row, D + 7)?,
-            to_last: read_opt_text_locus(row, D + 14)?,
-            target_display: col(row, D + 21, "target_display")?,
-            votes: u32::try_from(votes).map_err(|_| SqliteError(format!("cross_refs votes {votes} out of range")))?,
-            provenance: col(row, D + 23, "provenance")?,
-        })
+    read_all(conn, "cross_refs", COLS_CROSS_REFS, cross_ref_row)
+}
+
+pub fn read_cross_refs_from(conn: &Connection, table: &str, first: &TextRef, last: &TextRef) -> Result<Vec<CrossRef>, SqliteError> {
+    let rows = read_where(conn, table, COLS_CROSS_REFS, &between_units("from"), units_values(first, last), cross_ref_row)?;
+    Ok(rows.into_iter().map(|(_, row)| row).collect())
+}
+
+fn cross_ref_row(row: &Row) -> Result<CrossRef, SqliteError> {
+    let votes: i64 = col(row, D + 22, "votes")?;
+    Ok(CrossRef {
+        from: read_text_locus(row, D)?,
+        to: read_text_locus(row, D + 7)?,
+        to_last: read_opt_text_locus(row, D + 14)?,
+        target_display: col(row, D + 21, "target_display")?,
+        votes: u32::try_from(votes).map_err(|_| SqliteError(format!("cross_refs votes {votes} out of range")))?,
+        provenance: col(row, D + 23, "provenance")?,
     })
 }
 

@@ -85,19 +85,18 @@ pub fn event_from_node(id: &AnyNodeId, q: &impl GraphQuery, chrono: &crate::even
     })
 }
 
-/// `verse_links` comes from `mentioned-in` INVERSE edges -- every TextUnit mentioning this place --
-/// decoded back to canonical dot-refs.
 pub fn place_from_node(id: &AnyNodeId, q: &impl GraphQuery) -> Option<Place> {
     let node = q.node(id)?;
     let NodePayload::Place { canonical, lat, lon, .. } = node.payload else { return None };
 
-    let verse_links: Vec<String> = drain(q, &Position::Node(id.clone()), EdgeKind::Directed(RelationId::Mentions, Direction::Inverse))
+    let mut verse_links: Vec<String> = drain(q, &Position::Node(id.clone()), EdgeKind::Directed(RelationId::Mentions, Direction::Inverse))
         .into_iter()
         .filter_map(|e| match e.node {
             Position::Node(tid) => crate::kjv_adapter::decode_text_unit(&tid).map(|(b, c, v)| crate::kjv_adapter::dot_ref(b, c, v)),
             Position::Edge(_) => None,
         })
         .collect();
+    verse_links.dedup();
 
     Some(Place { id: id.raw.clone(), name: canonical, lat, lon, verse_links })
 }
@@ -111,8 +110,6 @@ pub fn narrative_from_node(id: &AnyNodeId, q: &impl GraphQuery, legs: &[String])
     Some(Narrative { id: id.raw.clone(), name: label, color, legs: legs.to_vec() })
 }
 
-/// A Bible-corpus `TextLocus`'s canonical dot-ref; `None` for a Concord locus or a sub-verse span,
-/// neither of which has one.
 pub fn locus_dot_ref(l: &TextLocus) -> Option<String> {
     match &l.at {
         TextRef::Bible(v) => Some(crate::kjv_adapter::dot_ref(v.book, v.chapter, v.verse)),
@@ -122,6 +119,12 @@ pub fn locus_dot_ref(l: &TextLocus) -> Option<String> {
 
 #[cfg(test)]
 mod tests {
+    use atlas_graph_types::edge::{MentionedEntity, Mentions};
+    use atlas_graph_types::graph::Graph;
+    use atlas_graph_types::id::PlaceId;
+    use atlas_graph_types::node::Node;
+    use atlas_graph_types::text::{BibleLocus, VerseRef};
+
     use super::*;
 
     #[test]
@@ -132,5 +135,33 @@ mod tests {
         let read: Vec<EventKind> = written.iter().map(|payload_kind| event_kind(payload_kind)).collect();
         // Assert
         assert_eq!(read, vec![EventKind::Event, EventKind::General, EventKind::General]);
+    }
+
+    #[test]
+    fn a_place_named_twice_in_a_verse_links_that_verse_once() {
+        // Arrange
+        let hebron = PlaceId::new("hebron");
+        let mut graph = Graph::default();
+        graph.nodes.insert(
+            hebron.clone().erase(),
+            Node {
+                id: hebron.clone().erase(),
+                payload: NodePayload::Place { canonical: "Hebron".into(), lat: 31.5, lon: 35.1, aliases: vec![], description: None },
+                provenance: "test".into(),
+            },
+        );
+        let gen_13_18 = VerseRef { book: 0, chapter: 13, verse: 18 };
+        let at_word = |ord: u16| TextLocus::from(BibleLocus { unit: gen_13_18.clone(), span: Some(crate::tokens::span(crate::kjv_adapter::KJV_TRANSLATION, ord, ord).expect("one word")) });
+        for locus in [at_word(4), at_word(8), TextLocus::from(BibleLocus::whole(VerseRef { book: 0, chapter: 23, verse: 19 }))] {
+            graph.mentions.push(Mentions { locus, entity: MentionedEntity::Place(hebron.clone()), provenance: "test".into() });
+        }
+        graph.build_indexes();
+        // Act
+        let place = place_from_node(&hebron.erase(), &graph);
+        // Assert
+        assert_eq!(
+            place,
+            Some(Place { id: "hebron".into(), name: "Hebron".into(), lat: 31.5, lon: 35.1, verse_links: vec!["GEN.13.18".into(), "GEN.23.19".into()] })
+        );
     }
 }

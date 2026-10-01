@@ -1,18 +1,22 @@
-//! The serving companions read out of the section tables once at startup. Only the cross-refs
-//! (344k rows) are large enough to stay a per-request seek instead of being read whole.
 
 use std::collections::{BTreeMap, BTreeSet, HashMap};
+use std::ops::RangeInclusive;
 
 use atlas_core::data::CrossRef;
 use atlas_core::refs::ScriptureRef;
 use atlas_graph_types::canon::RowFamily;
 use atlas_graph_types::chrono::{PlacementBasis, ResolvedDate, ResolvedPlacement, SeqKey, TimePoint, Year};
 use atlas_graph_types::id::NodeKind;
+use atlas_graph_types::text::{ConcordRef, TextRef, VerseRef};
 use rusqlite::Connection;
 
 use super::partition::node_kind_ordinal;
+use super::rows::core::read_mentions_in;
+use super::rows::kjv::read_cross_refs_from;
 use super::SqliteError;
 use crate::build::BuildStats;
+use crate::citations::CitationSpan;
+use crate::mention_spans::MentionSpan;
 use crate::event_world::{ChronologyDerivation, EventWorldStats, SourceEventMeta};
 use crate::heading::Heading;
 use crate::kjv_adapter::dot_ref;
@@ -128,10 +132,9 @@ pub fn load_provenance_families(
     }
     for section in present {
         for family in row_tables_of(*section) {
-            let name: &'static str = family.name();
-            let mut stmt = conn.prepare(&format!("SELECT DISTINCT provenance FROM {}.{}", schema_of(*section), name))?;
+            let mut stmt = conn.prepare(&format!("SELECT DISTINCT provenance FROM {}.{}", schema_of(*section), family.name()))?;
             let ids = stmt.query_map([], |r| r.get::<_, String>(0))?;
-            let set = out.entry(name).or_default();
+            let set = out.entry(crate::provenance::family_key(*family, *section)).or_default();
             for id in ids {
                 set.insert(id?);
             }
@@ -140,6 +143,7 @@ pub fn load_provenance_families(
     for f in RowFamily::ALL {
         out.entry(f.name()).or_default();
     }
+    out.entry(crate::provenance::family::CONCORD_CITATIONS).or_default();
     Ok(out)
 }
 
@@ -162,6 +166,8 @@ pub fn load_counters(conn: &Connection, present: &[Section]) -> Result<(BuildSta
         cites_rows: if has(Section::Kjv) { count(conn, "SELECT COUNT(*) FROM kjv.cross_refs")? } else { 0 },
         cites_dropped_negative_votes: 0,
         lexicon: Default::default(),
+        mention_spans: Default::default(),
+        concord_citations: Default::default(),
     };
     let ews = EventWorldStats {
         places: count_kind(conn, NodeKind::Place)?,
@@ -180,6 +186,39 @@ pub fn load_counters(conn: &Connection, present: &[Section]) -> Result<(BuildSta
 }
 
 /// A seek on `xref_by_from`, never a scan.
+pub fn mention_spans_in(conn: &Connection, verses: &RangeInclusive<VerseRef>) -> Result<BTreeMap<VerseRef, Vec<MentionSpan>>, SqliteError> {
+    let rows = read_mentions_in(conn, &TextRef::Bible(verses.start().clone()), &TextRef::Bible(verses.end().clone()))?;
+    Ok(by_unit(rows.iter().filter_map(|row| Some((bible_unit(&row.locus.at)?, MentionSpan::of(row)?)))))
+}
+
+pub fn citation_spans_in(conn: &Connection, paragraphs: &RangeInclusive<ConcordRef>) -> Result<BTreeMap<ConcordRef, Vec<CitationSpan>>, SqliteError> {
+    let table = format!("{}.cross_refs", Section::Concord.name());
+    let rows = read_cross_refs_from(conn, &table, &TextRef::Concord(paragraphs.start().clone()), &TextRef::Concord(paragraphs.end().clone()))?;
+    Ok(by_unit(rows.iter().filter_map(|row| Some((concord_unit(&row.from.at)?, CitationSpan::of(row)?)))))
+}
+
+fn by_unit<U: Ord, S>(spans: impl Iterator<Item = (U, S)>) -> BTreeMap<U, Vec<S>> {
+    let mut out: BTreeMap<U, Vec<S>> = BTreeMap::new();
+    for (unit, span) in spans {
+        out.entry(unit).or_default().push(span);
+    }
+    out
+}
+
+fn bible_unit(at: &TextRef) -> Option<VerseRef> {
+    match at {
+        TextRef::Bible(verse) => Some(verse.clone()),
+        TextRef::Concord(_) => None,
+    }
+}
+
+fn concord_unit(at: &TextRef) -> Option<ConcordRef> {
+    match at {
+        TextRef::Concord(paragraph) => Some(paragraph.clone()),
+        TextRef::Bible(_) => None,
+    }
+}
+
 pub fn cross_refs_for_span(conn: &Connection, span: &ScriptureRef) -> Result<HashMap<String, Vec<CrossRef>>, SqliteError> {
     let base = "SELECT from_a, from_b, from_c, target_display, votes FROM kjv.cross_refs";
     let (sql, params): (String, Vec<i64>) = match span {

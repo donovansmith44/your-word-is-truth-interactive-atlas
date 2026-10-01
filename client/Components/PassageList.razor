@@ -18,7 +18,7 @@
                     <span class="popover-passage-ref-label">@entry.Block.Span</span>
                 }
                 <MiniReaderExpand Book="@BookOf(entry.Block)" Chapter="@ChapterOf(entry.Block)" FocalFromVerse="@FocalFromOf(entry.Block)" FocalToVerse="@FocalToOf(entry.Block)"
-                                   TestIdSuffix="@($"-{entry.TestId}")" TruncatedBy="@entry.Block.TruncatedBy" OnExplore="OnExplore">
+                                   TestIdSuffix="@($"-{entry.TestId}")" OnExplore="OnExplore">
                     <CompactContent>
                         @if (!SpanOnly)
                         {
@@ -29,7 +29,7 @@
                                 {
                                     @foreach (var v in shown)
                                     {
-                                        <sup class="popover-passage-verse-num">@CanonRef.ParseVerse(v.Vref).Verse</sup><MentionText Text="@v.Text" Places="@(v.Places ?? Array.Empty<PlaceRef>())" Persons="@(v.Persons ?? Array.Empty<PersonRef>())" WordsOfChrist="@(v.WordsOfChrist ?? Array.Empty<WordsOfChristSpan>())"
+                                        <sup class="popover-passage-verse-num">@CanonRef.ParseVerse(v.Vref).Verse</sup><MentionText Text="@v.Text" Anchors="@(v.Anchors ?? Array.Empty<Anchor>())" WordsOfChrist="@(v.WordsOfChrist ?? Array.Empty<WordsOfChristSpan>())"
                                                      Verse="@CanonRef.ParseVerse(v.Vref).Verse" ClassPrefix="popover-passage-mention" TestIdSuffix="@($"-{entry.TestId}")" OnExplore="OnExplore" /><text> </text>
                                     }
                                     @if (clamps)
@@ -41,7 +41,7 @@
                                 else
                                 {
                                     var lone = entry.Block.Verses[0];
-                                    <MentionText Text="@lone.Text" Places="@(lone.Places ?? Array.Empty<PlaceRef>())" Persons="@(lone.Persons ?? Array.Empty<PersonRef>())" WordsOfChrist="@(lone.WordsOfChrist ?? Array.Empty<WordsOfChristSpan>())"
+                                    <MentionText Text="@lone.Text" Anchors="@(lone.Anchors ?? Array.Empty<Anchor>())" WordsOfChrist="@(lone.WordsOfChrist ?? Array.Empty<WordsOfChristSpan>())"
                                                  Verse="@CanonRef.ParseVerse(lone.Vref).Verse" ClassPrefix="popover-passage-mention" TestIdSuffix="@($"-{entry.TestId}")" OnExplore="OnExplore" />
                                 }
                             </p>
@@ -136,7 +136,6 @@
     private static int ChapterOf(PassageBlockData b) => CanonRef.ParseVerse(b.FirstVref).Chapter;
     private static int FocalFromOf(PassageBlockData b) => CanonRef.ParseVerse(b.FirstVref).Verse;
 
-    // MiniReaderExpand only ever fetches/highlights the block's FIRST chapter, but a coalesced witness (CoalesceAcrossChapters) can span multiple chapters -- when LastVref belongs to a different chapter, this leaves the bound unbounded (int.MaxValue) rather than naming a verse number that would have no honest meaning against the fetched chapter; MiniReaderExpand's own focal check then clips to whatever the fetched chapter really has. FirstRangeEndVref (not LastVref) bounds a same-chapter account with a real internal gap, so highlighting stops at the gap instead of running through it into verses belonging to something else.
     private static int FocalToOf(PassageBlockData b)
     {
         var first = CanonRef.ParseVerse(b.FirstVref);
@@ -144,7 +143,6 @@
         return last.Chapter == first.Chapter ? last.Verse : int.MaxValue;
     }
 
-    // a coalesced account's Span can be compound ("MRK.14.54, 66-72") or cross-chapter ("MAT.5.1-7.29") -- the server's ScriptureRef parser rejects that shape, so pushing it verbatim as a PassageNode sref 400'd the Cross References / Small Catechism lookups into silently vanishing (167 of 1212 real accounts). Such a block explores by its own first contiguous same-chapter run instead (parser-safe by construction); the displayed ref stays the honest full Span.
     private IExplorable ExploreNodeOf(PassageBlockData block)
     {
         if (block.ExploreSref is string sref)

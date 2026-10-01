@@ -1,34 +1,33 @@
 @using BibleAtlas.Client.Explore
 @inject IJSRuntime JS
 
-@foreach (var seg in PlaceMentions.Scan(Text, Places, Persons))
+@foreach (var piece in Pieces)
 {
-    @if (seg.PlaceId is { } placeId)
+    @if (piece.Anchor?.Node is { Kind: PositionKind.Place } place)
     {
+        var placeId = NodeIds.LocalPart(place);
         <span class="@ClassPrefix" data-testid="@($"{ClassPrefix}-{Verse}-{placeId}{TestIdSuffix}")"
-              tabindex="0" role="button" aria-label="@($"Explore {seg.PlaceName}")"
+              tabindex="0" role="button" aria-label="@($"Explore {piece.Text}")"
               @onpointerenter="() => Blink(placeId, true)" @onpointerleave="() => Blink(placeId, false)"
               @onfocus="() => Blink(placeId, true)" @onblur="() => Blink(placeId, false)"
-              @onclick="@(e => OpenPlace(e, placeId, seg.PlaceName!))" @onclick:stopPropagation="true"
-              @onkeydown="@(e => OnPlaceKeyDown(e, placeId, seg.PlaceName!))" @onkeydown:stopPropagation="true">@seg.Text</span>
+              @onclick="@(e => Open(e, new PlaceNode(placeId, piece.Text)))" @onclick:stopPropagation="true"
+              @onkeydown="@(e => OnKeyDown(e, new PlaceNode(placeId, piece.Text)))" @onkeydown:stopPropagation="true">@piece.Text</span>
     }
-    else if (seg.PersonId is { } personId)
+    else if (piece.Anchor?.Node is { Kind: PositionKind.Person } person)
     {
-        <span class="@ClassPrefix @($"{ClassPrefix}-person")" data-testid="@($"{ClassPrefix}-person-{Verse}-{personId}{TestIdSuffix}")"
-              tabindex="0" role="button" aria-label="@($"Explore {seg.PersonName}")"
-              @onclick="@(e => OpenPerson(e, personId, seg.PersonName!))" @onclick:stopPropagation="true"
-              @onkeydown="@(e => OnPersonKeyDown(e, personId, seg.PersonName!))" @onkeydown:stopPropagation="true">@seg.Text</span>
+        <span class="@ClassPrefix @($"{ClassPrefix}-person")" data-testid="@($"{ClassPrefix}-person-{Verse}-{NodeIds.LocalPart(person)}{TestIdSuffix}")"
+              tabindex="0" role="button" aria-label="@($"Explore {person.Label}")"
+              @onclick="@(e => Open(e, new PersonNode(person.Id, person.Label)))" @onclick:stopPropagation="true"
+              @onkeydown="@(e => OnKeyDown(e, new PersonNode(person.Id, person.Label)))" @onkeydown:stopPropagation="true">@piece.Text</span>
     }
     else
     {
-        @seg.Text
+        @piece.Text
     }
 }
 
 @code {
-    [Parameter, EditorRequired] public string Text { get; set; } = default!;
-    [Parameter, EditorRequired] public IReadOnlyList<PlaceRef> Places { get; set; } = default!;
-    [Parameter, EditorRequired] public IReadOnlyList<PersonRef> Persons { get; set; } = default!;
+    [Parameter, EditorRequired] public IReadOnlyList<TextPiece> Pieces { get; set; } = default!;
     [Parameter, EditorRequired] public int Verse { get; set; }
     [Parameter, EditorRequired] public string ClassPrefix { get; set; } = default!;
     [Parameter] public string TestIdSuffix { get; set; } = "";
@@ -38,18 +37,8 @@
 
     private Task Blink(string placeId, bool active) => MapInterop.BlinkPlace(JS, placeId, active);
 
-    private Task OpenPlace(MouseEventArgs e, string placeId, string placeName)
-    {
-        var node = new PlaceNode(placeId, placeName);
-        return e.CtrlKey || e.MetaKey ? OnToggleSelect.InvokeAsync(node) : OnExplore.InvokeAsync(node);
-    }
+    private Task Open(MouseEventArgs e, IExplorable node) =>
+        e.CtrlKey || e.MetaKey ? OnToggleSelect.InvokeAsync(node) : OnExplore.InvokeAsync(node);
 
-    private Task OpenPerson(MouseEventArgs e, string personId, string personName)
-    {
-        var node = new PersonNode(NodeIds.Of(NodeKind.Person, personId), personName);
-        return e.CtrlKey || e.MetaKey ? OnToggleSelect.InvokeAsync(node) : OnExplore.InvokeAsync(node);
-    }
-
-    private Task OnPlaceKeyDown(KeyboardEventArgs e, string placeId, string placeName) => e.Key == "Enter" ? OnExplore.InvokeAsync(new PlaceNode(placeId, placeName)) : Task.CompletedTask;
-    private Task OnPersonKeyDown(KeyboardEventArgs e, string personId, string personName) => e.Key == "Enter" ? OnExplore.InvokeAsync(new PersonNode(NodeIds.Of(NodeKind.Person, personId), personName)) : Task.CompletedTask;
+    private Task OnKeyDown(KeyboardEventArgs e, IExplorable node) => e.Key == "Enter" ? OnExplore.InvokeAsync(node) : Task.CompletedTask;
 }

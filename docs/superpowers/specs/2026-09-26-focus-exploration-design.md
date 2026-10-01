@@ -499,3 +499,67 @@ Nothing open remains; the spec awaits the plans.
   in the current era, highlights its territory at the slider's current
   year, and shows its reign window on the slider so the reader can scrub
   its rise and fall. No jump, no multi-era overlay.
+
+## 12. Rulings (owner, 2026-09-30, amending §3.1–§3.3 and §3.5)
+
+- **R15 — an Explorable is explorable because it has a frontier.** "Explorable
+  essentially means that we can interactively get to another node by graph
+  traversal (i.e., get context): this is the explore monad." §3.1's
+  `Explorable(Kind, Id, Label)` plus a separate `IFrontier` is replaced by:
+  ```csharp
+  public sealed class Explorable                    // a node WITH its frontier; sealed, no presentation methods
+  {
+      public NodeKind Kind { get; }  public string Id { get; }  public string Label { get; }
+      public IReadOnlyList<FrontierGroup> Groups { get; }                   // the card's edge_summary
+      public Task<Page<Link>> Links(EdgeKind kind, int? cursor = null);     // pages this node's edges, server order
+      // equality and hash: (Kind, Id)
+  }
+  public sealed record Link(EdgeKind Kind, NodeRef Target);   // a reference, not yet explorable
+  public interface IExplorer
+  {
+      Task<Explorable> Resolve(NodeRef target);   // unit: one card fetch → the node with its frontier
+      Task<Explorable> Follow(Link link);          // bind: through one edge to the next node with its frontier
+      Task<Presentation> Present(Explorable node, Surface surface);
+  }
+  ```
+  `IFrontier` is folded in; `Explorable.From(NodeRef)` does not exist (a
+  reference is resolved, never promoted); `GraphExplorer` is the only
+  constructor of an `Explorable`. `FrontierGroup`, `Page<T>` and the three
+  frontier laws stand.
+- **R16 — presentation is a functor over the explorable, keyed by kind and
+  surface.** The same `Explorable` is presented differently on each surface
+  (a place is a region on the World view and a card in the popover) and
+  offers the same frontier on every surface. `Presentation.Of(NodeKind,
+  Surface)` with `Surface = World | Reader | Popover`, and
+  `Affordances.Of(EdgeKind)`, are the two exhaustive tables (a missing arm is
+  a build error, `client/BibleAtlas.Client.csproj`). There is no per-node
+  presentation method and no interface a node implements to present itself:
+  that is the legacy `IExplorable` design §9 retires. R9's home surfaces
+  become rows of the table.
+- **R17 — Back is the dual of the last un-returned hop** (`Breadcrumb[^1]`),
+  so Back at the bottom is a no-op and Back-after-Back never goes forward
+  (amends §3.5's literal `Links[^1]`).
+- **R18 — edges are explorable** (owner, 2026-09-30: "I already agree and want
+  explorable edges"). An edge is a graph element with a frontier of its own:
+  its two ends, its justification and provenance, and anything positioned on
+  it. So `Follow` is total and the last case of "every affordance is a
+  queried edge" closes (F-21, F1-12 retire). Types, shown for sign-off at
+  FOCUS-1's close (PRINCIPLES 12); to be built as its own batch (A-EDGES)
+  between FOCUS-1 and FOCUS-2, so FOCUS-2…9 write their rows against the
+  final table:
+  ```csharp
+  public abstract record ElementKind { Node(NodeKind); Edge(EdgeKind); }      // what an Explorable is
+  public sealed class Explorable { ElementKind Kind; string Id; string Label; Groups; Links(...); }
+  public sealed record Link(EdgeKind Kind, PositionRef Target);              // node or edge; the wire's union
+  IExplorer.Resolve(PositionRef) ; Follow(Link)                              // total
+  Presentation.Of(ElementKind, Surface)                                      // rows for edge kinds too
+  ```
+  **Amended by owner, 2026-09-30 (PRINCIPLES 27):** the "Server" paragraph
+  that stood here put the frontier into the backend (an edge card endpoint,
+  `EdgeSource`/`EdgeTarget` relations, labels composed per request) and is
+  withdrawn; that work (`lane/claude/F6-t1`, `F6-t2`) never lands. An edge's
+  frontier is derived on the client from what the graph already holds: its
+  ends are fields of the edge, read by the generic element read (nodes and
+  edges alike, many ids per call); its justification and anything positioned
+  on it are the generic neighbour read at its position. Its label is compiled
+  into the artifact and read, never composed per request or on the client.

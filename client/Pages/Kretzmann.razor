@@ -77,7 +77,7 @@
                         <PericopeHeading Heading="@heading" OnExplore="OnLineExplore" />
                     }
                     <section class="kretzmann-verse-block" data-testid="@($"kretzmann-verse-group-{row.Verse.Number}")">
-                        <VerseLine Verse="@row.Verse" Book="@_book" Chapter="@_chapterNum" OnExplore="OnLineExplore"
+                        <VerseLine Verse="@row.Verse" Unit="@row.Unit" Book="@_book" Chapter="@_chapterNum" OnExplore="OnLineExplore"
                                    Id="@($"v{row.Verse.Number}{VerseTestIdSuffix}")"
                                    RowClass="verse-line explorable kretzmann-scripture-row" RowTestIdPrefix="verse-line" TestIdSuffix="@VerseTestIdSuffix"
                                    VerseNumClass="verse-num" ShowVerseNumButton="true" VerseNumTestIdPrefix="verse-num"
@@ -99,7 +99,7 @@
                                  @onclick="@(() => OnExplore(item))" @onkeydown="@(e => OnItemKeyDown(e, item))">
                                 @if (item.Text is { } text)
                                 {
-                                    <ScriptureRefText Text="@text" Toc="@(_toc ?? EmptyToc)" ClassPrefix="kretzmann-ref"
+                                    <ScriptureRefText Text="@text" Citations="@item.Citations" ClassPrefix="kretzmann-ref"
                                                        OwnerSlug="@Slug(item.Id)" OnExplore="OnExploreNode" />
                                 }
                                 else
@@ -141,9 +141,9 @@
 }
 
 @code {
-    private sealed record CommentaryItemRow(string Id, string Heading, string? Text, bool IsSectionStart);
+    private sealed record CommentaryItemRow(string Id, string Heading, string? Text, IReadOnlyList<Anchor> Citations, bool IsSectionStart);
 
-    private sealed record MergedVerseRow(Verse Verse, List<CommentaryItemRow> CommentaryItems);
+    private sealed record MergedVerseRow(Verse Verse, TextUnit Unit, List<CommentaryItemRow> CommentaryItems);
 
     private static readonly List<CanonBook> EmptyToc = new();
 
@@ -175,7 +175,8 @@
     private List<MergedVerseRow> _rows = new();
     private bool _loading = true;
     private string? _error;
-    private int _requestId;
+    private readonly RequestSeries _startup = new();
+    private readonly RequestSeries _chapters = new();
     private IExplorable? _activeNode;
     private IEscapeHatch? _followHatchBacking;
 
@@ -205,7 +206,7 @@
 
         try
         {
-            _toc = await Atlas.Books();
+            _toc = await _startup.Next().Fetch(() => Atlas.Books());
         }
         catch (Exception)
         {
@@ -401,7 +402,7 @@
 
     private async Task LoadChapterAsync()
     {
-        var myRequest = ++_requestId;
+        var request = _chapters.Next();
         var book = _book;
         var chapterNum = _chapterNum;
         _loading = true;
@@ -423,17 +424,12 @@
 
         try
         {
-            var chapterTask = Atlas.Chapter(book, chapterNum);
-            var commentaryTask = Atlas.KretzmannChapter(book, chapterNum);
-            await Task.WhenAll(chapterTask, commentaryTask);
-
-            if (myRequest != _requestId)
+            if (await request.Fetch(() => Atlas.Chapter(book, chapterNum), () => Atlas.ChapterText(book, chapterNum), () => Atlas.KretzmannChapter(book, chapterNum)) is not { } loaded)
             {
                 return;
             }
 
-            var chapter = chapterTask.Result;
-            var doc = commentaryTask.Result;
+            var (chapter, text, doc) = loaded;
 
             string? lastHeading = null;
             var commentaryByVerse = new Dictionary<int, List<CommentaryItemRow>>();
@@ -445,14 +441,14 @@
                     var heading = item.Heading ?? "Commentary";
                     var isSectionStart = heading != lastHeading;
                     lastHeading = heading;
-                    items.Add(new CommentaryItemRow(item.Id, heading, null, isSectionStart));
+                    items.Add(new CommentaryItemRow(item.Id, heading, null, [], isSectionStart));
                 }
                 commentaryByVerse[v.Verse] = items;
             }
 
             _verses = chapter.Verses;
             _rows = chapter.Verses
-                .Select(v => new MergedVerseRow(v, commentaryByVerse.GetValueOrDefault(v.Number, new List<CommentaryItemRow>())))
+                .Select(v => new MergedVerseRow(v, text.Verse(v.Number), commentaryByVerse.GetValueOrDefault(v.Number, new List<CommentaryItemRow>())))
                 .ToList();
             _loadedBook = book;
             _loadedChapterNum = chapterNum;
@@ -468,7 +464,7 @@
         }
         catch (Exception)
         {
-            if (myRequest != _requestId)
+            if (request.Superseded)
             {
                 return;
             }
@@ -487,11 +483,11 @@
             return;
         }
 
-        var myRequest = _requestId;
+        var request = _chapters.Current;
         await _proseFetchGate.WaitAsync();
         try
         {
-            if (myRequest != _requestId)
+            if (request.Superseded)
             {
                 return;
             }
@@ -499,7 +495,11 @@
             string? text;
             try
             {
-                var card = await Graph.Card(itemId);
+                if (await request.Fetch(() => Graph.Card(itemId)) is not { } card)
+                {
+                    return;
+                }
+
                 text = card.Description;
             }
             catch (Exception)
@@ -507,7 +507,7 @@
                 text = null;
             }
 
-            if (myRequest != _requestId)
+            if (request.Superseded)
             {
                 return;
             }
@@ -525,10 +525,13 @@
     {
         _rows = _rows
             .Select(row => row.CommentaryItems.Any(i => i.Id == itemId)
-                ? row with { CommentaryItems = row.CommentaryItems.Select(i => i.Id == itemId ? i with { Text = text ?? i.Heading } : i).ToList() }
+                ? row with { CommentaryItems = row.CommentaryItems.Select(i => i.Id == itemId ? ProseOf(i, text ?? i.Heading) : i).ToList() }
                 : row)
             .ToList();
     }
+
+    private CommentaryItemRow ProseOf(CommentaryItemRow item, string prose) =>
+        item with { Text = prose, Citations = KretzmannCitationScan.Anchors(prose, _toc ?? EmptyToc) };
 
     private void OnExplore(CommentaryItemRow item) => _activeNode = new CommentaryItemNode(item.Id, item.Heading);
 

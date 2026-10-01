@@ -6,21 +6,21 @@ use std::collections::BTreeSet;
 use atlas_graph_types::chrono::{DatePlacement, DatedBy, Duration, PlacementBasis};
 use atlas_graph_types::edge::{
     Analogue, Attests, Authored, CatechismLink, ContainerContent, Contains, Corresponds, Fulfills, LocatedAt,
-    MapSuccession, MentionedEntity, Mentions, NamedAfter, Namesake, Shown, Succession, TemporalAdjacency, Typology, ParentOf, Participates, Partners};
+    MapSuccession, MentionedEntity, Mentions, NamedAfter, Namesake, Shown, Succession, TemporalAdjacency, Typology, Parentage, ParentOf, Participates, Spouses, Brethren};
 use atlas_graph_types::id::{AnchorId, AnyNodeId, ContainerNodeId, EraId, EventId, NodeId};
 use atlas_graph_types::text::{
-    BibleTag, ConcordRef, Corpus, Locus, LocusSet, TokenSpan, VerseRef,
+    BibleTag, ConcordRef, Corpus, Locus, LocusSet, TextRef, TokenSpan, VerseRef,
 };
 use rusqlite::types::Value;
-use rusqlite::{Connection, Transaction};
+use rusqlite::{Connection, Row, Transaction};
 
 use super::super::columns::{
-    bible_locus_values, bible_range_values, col, read_bible_locus, read_bible_range, read_span,
-    read_text_locus, span_values, text_locus_values, JustificationWriter,
+    between_units, bible_locus_values, bible_range_values, col, read_bible_locus, read_bible_range, read_span,
+    read_text_locus, span_values, text_locus_values, units_values, JustificationWriter,
 };
 use super::super::partition::{node_kind_of_ordinal, node_kind_ordinal};
 use super::super::SqliteError;
-use super::{justification_row, id_col, insert, int, opt_text, read_all, read_justification_at, text, D};
+use super::{justification_row, id_col, insert, int, opt_text, read_all, read_justification_at, read_where, text, D};
 
 /// The three integer columns of a `contains_*_locus` row, per corpus ref.
 pub trait Abc: Sized {
@@ -409,18 +409,25 @@ pub fn insert_mentions(tx: &Transaction, ord: i64, row: &Mentions) -> Result<(),
 }
 
 pub fn read_mentions(conn: &Connection) -> Result<Vec<(i64, Mentions)>, SqliteError> {
-    read_all(conn, "mentions", COLS_MENTIONS, |row| {
-        let kind: i64 = col(row, D + 7, "entity_kind")?;
-        let raw: String = col(row, D + 8, "entity_id")?;
-        let entity = match kind {
-            0 => MentionedEntity::Place(NodeId::new(raw)),
-            1 => MentionedEntity::Person(NodeId::new(raw)),
-            2 => MentionedEntity::PeopleGroup(NodeId::new(raw)),
-            3 => MentionedEntity::Event(NodeId::new(raw)),
-            other => return Err(SqliteError(format!("mentions entity_kind {other} is not 0..3"))),
-        };
-        Ok(Mentions { locus: read_text_locus(row, D)?, entity, provenance: col(row, D + 9, "provenance")? })
-    })
+    read_all(conn, "mentions", COLS_MENTIONS, mention_row)
+}
+
+pub fn read_mentions_in(conn: &Connection, first: &TextRef, last: &TextRef) -> Result<Vec<Mentions>, SqliteError> {
+    let rows = read_where(conn, "mentions", COLS_MENTIONS, &between_units("locus"), units_values(first, last), mention_row)?;
+    Ok(rows.into_iter().map(|(_, row)| row).collect())
+}
+
+fn mention_row(row: &Row) -> Result<Mentions, SqliteError> {
+    let kind: i64 = col(row, D + 7, "entity_kind")?;
+    let raw: String = col(row, D + 8, "entity_id")?;
+    let entity = match kind {
+        0 => MentionedEntity::Place(NodeId::new(raw)),
+        1 => MentionedEntity::Person(NodeId::new(raw)),
+        2 => MentionedEntity::PeopleGroup(NodeId::new(raw)),
+        3 => MentionedEntity::Event(NodeId::new(raw)),
+        other => return Err(SqliteError(format!("mentions entity_kind {other} is not 0..3"))),
+    };
+    Ok(Mentions { locus: read_text_locus(row, D)?, entity, provenance: col(row, D + 9, "provenance")? })
 }
 
 const COLS_CORRESPONDS_BIBLE: &str = "a_corpus, a_a, a_b, a_c, a_layer, a_start, a_end, \
@@ -468,27 +475,53 @@ pub fn read_analogue(conn: &Connection) -> Result<Vec<(i64, Analogue)>, SqliteEr
     })
 }
 
-const COLS_PARENT_OF: &str = "parent_id, child_id, provenance";
+const COLS_PARENT_OF: &str = "parent_id, child_id, parentage, provenance, justification_id";
 
-pub fn insert_parent_of(tx: &Transaction, ord: i64, row: &ParentOf) -> Result<(), SqliteError> {
-    insert(tx, "parent_of", COLS_PARENT_OF, ord, vec![text(&row.parent.0), text(&row.child.0), text(&row.provenance)])
+pub fn insert_parent_of(tx: &Transaction, jw: &mut JustificationWriter, ord: i64, row: &ParentOf) -> Result<(), SqliteError> {
+    let j = justification_row(tx, jw, &row.justification)?;
+    insert(tx, "parent_of", COLS_PARENT_OF, ord, vec![text(&row.parent.0), text(&row.child.0), text(row.parentage.name()), text(&row.provenance), j])
 }
 
 pub fn read_parent_of(conn: &Connection) -> Result<Vec<(i64, ParentOf)>, SqliteError> {
     read_all(conn, "parent_of", COLS_PARENT_OF, |row| {
-        Ok(ParentOf { parent: id_col(row, D, "parent_id")?, child: id_col(row, D + 1, "child_id")?, provenance: col(row, D + 2, "provenance")? })
+        let parentage: String = col(row, D + 2, "parentage")?;
+        Ok(ParentOf {
+            parent: id_col(row, D, "parent_id")?,
+            child: id_col(row, D + 1, "child_id")?,
+            parentage: Parentage::named(&parentage).ok_or_else(|| SqliteError(format!("parent_of parentage {parentage:?} is not a Parentage")))?,
+            provenance: col(row, D + 3, "provenance")?,
+            justification: read_justification_at(conn, row, D + 4)?,
+        })
     })
 }
 
-const COLS_PARTNERS: &str = "a_id, b_id, provenance";
+const COLS_SPOUSES: &str = "a_id, b_id, provenance";
 
-pub fn insert_partners(tx: &Transaction, ord: i64, row: &Partners) -> Result<(), SqliteError> {
-    insert(tx, "partners", COLS_PARTNERS, ord, vec![text(&row.a.0), text(&row.b.0), text(&row.provenance)])
+const COLS_BRETHREN: &str = "a_id, b_id, provenance, justification_id";
+
+pub fn insert_brethren(tx: &Transaction, jw: &mut JustificationWriter, ord: i64, row: &Brethren) -> Result<(), SqliteError> {
+    let j = justification_row(tx, jw, &row.justification)?;
+    insert(tx, "brethren", COLS_BRETHREN, ord, vec![text(&row.a.0), text(&row.b.0), text(&row.provenance), j])
 }
 
-pub fn read_partners(conn: &Connection) -> Result<Vec<(i64, Partners)>, SqliteError> {
-    read_all(conn, "partners", COLS_PARTNERS, |row| {
-        Ok(Partners { a: id_col(row, D, "a_id")?, b: id_col(row, D + 1, "b_id")?, provenance: col(row, D + 2, "provenance")? })
+pub fn read_brethren(conn: &Connection) -> Result<Vec<(i64, Brethren)>, SqliteError> {
+    read_all(conn, "brethren", COLS_BRETHREN, |row| {
+        Ok(Brethren {
+            a: id_col(row, D, "a_id")?,
+            b: id_col(row, D + 1, "b_id")?,
+            provenance: col(row, D + 2, "provenance")?,
+            justification: read_justification_at(conn, row, D + 3)?,
+        })
+    })
+}
+
+pub fn insert_spouses(tx: &Transaction, ord: i64, row: &Spouses) -> Result<(), SqliteError> {
+    insert(tx, "spouses", COLS_SPOUSES, ord, vec![text(&row.a.0), text(&row.b.0), text(&row.provenance)])
+}
+
+pub fn read_spouses(conn: &Connection) -> Result<Vec<(i64, Spouses)>, SqliteError> {
+    read_all(conn, "spouses", COLS_SPOUSES, |row| {
+        Ok(Spouses { a: id_col(row, D, "a_id")?, b: id_col(row, D + 1, "b_id")?, provenance: col(row, D + 2, "provenance")? })
     })
 }
 

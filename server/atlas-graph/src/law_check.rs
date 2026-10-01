@@ -3,7 +3,6 @@
 //! one needs a private helper, and every adapter derives its loci from real, just-built node ids.
 use std::collections::BTreeSet;
 
-use atlas_graph_types::edge::MentionedEntity;
 use atlas_graph_types::graph::Graph;
 use atlas_graph_types::id::AnyNodeId;
 
@@ -62,13 +61,7 @@ pub fn every_row_reference_resolves(graph: &Graph) -> Result<(), DanglingReferen
         }
     }
     for row in &graph.mentions {
-        let id = match &row.entity {
-            MentionedEntity::Place(p) => p.erase(),
-            MentionedEntity::Person(p) => p.erase(),
-            MentionedEntity::PeopleGroup(g) => g.erase(),
-            MentionedEntity::Event(e) => e.erase(),
-        };
-        check("mentions", "entity", id)?;
+        check("mentions", "entity", row.entity.node_id())?;
     }
     for row in &graph.catechism {
         check("catechism", "item", row.item.erase())?;
@@ -133,9 +126,13 @@ pub fn every_row_reference_resolves(graph: &Graph) -> Result<(), DanglingReferen
         check("parent_of", "parent", row.parent.erase())?;
         check("parent_of", "child", row.child.erase())?;
     }
-    for row in &graph.partners {
-        check("partners", "a", row.a.erase())?;
-        check("partners", "b", row.b.erase())?;
+    for row in &graph.spouses {
+        check("spouses", "a", row.a.erase())?;
+        check("spouses", "b", row.b.erase())?;
+    }
+    for row in &graph.brethren {
+        check("brethren", "a", row.a.erase())?;
+        check("brethren", "b", row.b.erase())?;
     }
     for row in &graph.participates {
         check("participates", "person", row.person.erase())?;
@@ -385,15 +382,16 @@ pub fn indexes_derive_exactly_from_rows(graph: &Graph) -> Result<(), String> {
     fresh.analogue = graph.analogue.clone();
     fresh.occurs = graph.occurs.clone();
     fresh.parent_of = graph.parent_of.clone();
-    fresh.partners = graph.partners.clone();
+    fresh.spouses = graph.spouses.clone();
     fresh.participates = graph.participates.clone();
     fresh.authored = graph.authored.clone();
     fresh.shown = graph.shown.clone();
     fresh.map_succession = graph.map_succession.clone();
+    fresh.brethren = graph.brethren.clone();
     fresh.build_indexes();
     crate::event_world::add_justified_by(&mut fresh);
 
-    let compare = |name: &str, served: &BTreeMap<atlas_graph_types::id::Position, Vec<(atlas_graph_types::edge::EdgeId, atlas_graph_types::id::Position, atlas_graph_types::explore::EdgeMeta)>>, rebuilt: &BTreeMap<atlas_graph_types::id::Position, Vec<(atlas_graph_types::edge::EdgeId, atlas_graph_types::id::Position, atlas_graph_types::explore::EdgeMeta)>>| -> Result<(), String> {
+    let compare = |name: &str, served: &BTreeMap<atlas_graph_types::id::Position, atlas_graph_types::explore::Frontier>, rebuilt: &BTreeMap<atlas_graph_types::id::Position, atlas_graph_types::explore::Frontier>| -> Result<(), String> {
         if served != rebuilt {
             return Err(format!("{name}: the served index diverges from a pure rebuild from rows -- something wrote into the indexes outside build_indexes/add_justified_by"));
         }
@@ -420,7 +418,7 @@ pub fn indexes_derive_exactly_from_rows(graph: &Graph) -> Result<(), String> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use atlas_graph_types::edge::{Justification, LocatedAt};
+    use atlas_graph_types::edge::{Justification, LocatedAt, MentionedEntity};
     use atlas_graph_types::id::{EventId, PlaceId};
     use atlas_graph_types::node::{Node, NodePayload};
 
@@ -437,7 +435,9 @@ mod tests {
         graph.parent_of.push(atlas_graph_types::edge::ParentOf {
             parent: atlas_graph_types::id::PersonId::new("adam_1"),
             child: atlas_graph_types::id::PersonId::new("adam_1"),
+            parentage: atlas_graph_types::edge::Parentage::Natural,
             provenance: "test".into(),
+            justification: Default::default(),
         });
 
         // Act
@@ -961,7 +961,7 @@ mod tests {
             .fwd
             .entry(s)
             .or_default()
-            .push((eid, o, atlas_graph_types::explore::EdgeMeta::None));
+            .append(atlas_graph_types::explore::Frontier::of_rows(vec![atlas_graph_types::explore::EdgeEntry { edge: eid, node: o, meta: atlas_graph_types::explore::EdgeMeta::None }]));
         assert!(indexes_derive_exactly_from_rows(&graph).is_err(), "a post-build index write must be caught");
     }
 }

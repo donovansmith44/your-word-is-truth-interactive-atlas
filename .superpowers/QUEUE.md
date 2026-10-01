@@ -7,18 +7,19 @@ Protocol: `AGENTS.md`. Plan: `docs/superpowers/plans/2026-09-30-v1-roadmap.md`.
 - **Repos:** `atlas` = this repo · `mapgen` = `map-generator`. On the owner's machine they are siblings: `~/src/bible-atlas` and `~/src/map-generator`.
 
 ## STATUS (the controller rewrites this at every landing)
-- **As of** 2026-09-30 morning. CONTRACT-2 is closing: Tasks 1–6, 7a, 8a, 9, 10a, the ETL landing and the one rebuild (schema 16, root `8d8dd1d0…`) are on `worktree-bible-atlas-m1`. Running: 7b+8b (anchors on text windows). Left: 10b, then 11 (the close).
-- **Mutation:** owed from base `13111dd` (`.superpowers/MUTATION-GATE-DEBT.md`); the roadmap defers the run to Nov 5 – Dec 31.
-- **Next for Claude:** A-C2 close → A-F1 (FOCUS-1), with A-NAMES alongside.
-- **Next for Codex:** CX-M0 → CX-M1 and CX-M2 (maps) · CX-R1 · CX-R2 · CX-R3 · CX-I1 (to the B2 step).
-- **Before "go":** O-CODEX (`codex login`).
+- **As of** 2026-09-30 afternoon. **CONTRACT-2 is CLOSED** at `678a0d2` (report: `docs/superpowers/reports/2026-09-30-contract-2-close.md`): 1,574 tests / 98 sections / 0 failures; timing gates 10/10 (gate 1 37 s → 1.0 s after an O(n²) paging fix); contract gate PASSED; semver ok; Playwright 453/2/4 (the known `world-quiet-places:211` + one load flake); AQC 0.11.0, AGC 0.15.0, graph-types 0.7.0, section schema 18, root `3e91f83b…`.
+- **The base for every new item is `678a0d2`.**
+- **Mutation:** owed (base `13111dd`; `.superpowers/MUTATION-GATE-DEBT.md`), deferred to after Nov 4 by the roadmap.
+- **Next for Claude:** A-F1 (FOCUS-1), with A-NAMES waiting on O-NAMES.
+- **Next for Codex:** CX-M0 (claimed) → CX-M1, CX-M2 · CX-R1 · CX-R2 · CX-R3 · CX-I1 (to the B2 step).
+- **Before "go":** O-CODEX (`codex login`) if not done.
 
 ## OWNER QUESTIONS (answer in one line each; agents append)
 1. **O-PUSH:** resolved 2026-09-30: `gh auth login` + `gh auth setup-git` in WSL; a push and a lock take/release from WSL both succeeded.
 2. **O-CODEX:** Codex CLI 0.159.2 is installed in WSL (`~/.local/bin/codex`, works from any shell). Run `codex login` once. It runs in `~/src` on this machine.
 3. **O-PASTOR:** Pastor Hromowyck demo: Oct 21 or 22?
-4. **O-NAMES:** Sign off the NAMES draft's types (`docs/superpowers/specs/2026-10-01-names-design.md`) and answer its §9 (5 one-line questions). It is drafted as ONE spec for the text and the maps' entity registry.
-5. **O-ORDER:** Can FOCUS-6 move up to right after FOCUS-1? Can FOCUS-4+5 and FOCUS-7+8 each close as a single batch?
+4. **O-NAMES:** 4 of 5 answered 2026-09-30 (spec §10: one Name per language; events denotable; map-generator's ids pending licensing; many names per entity as a `Naming` type). Open: which titles go on the review list (all held until you choose), and your sign-off of the amended types.
+5. **O-ORDER:** FOCUS-6 comes right after FOCUS-1 (owner, 2026-09-30). Open: can FOCUS-4+5 and FOCUS-7+8 each close as a single batch?
 6. **O-ERRATA-SEED:** List the map errors you've already noticed (map, place or polity, what's wrong). They seed CX-M2.
 7. **O-STYLE:** After CX-M1's gallery, which style (parchment / canaan / slate), and which eras get a finished map (all 10 atlas eras?)
 8. **O-GPL:** Redraw the GPL `historical-basemaps` world borders as our own CC0 work (recommended), or accept GPL? Swap the OSM rivers (ODbL) for Natural Earth (recommended)? Your licensing rule (2026-09-29) disqualifies both as they stand.
@@ -27,23 +28,74 @@ Protocol: `AGENTS.md`. Plan: `docs/superpowers/plans/2026-09-30-v1-roadmap.md`.
 11. **O-EXPLORER:** Map-generator's `codebase-explorer` branch ("The Atlas Engine", 29 commits past `origin/master`, which include all 27 of `stage1-overnight-2026-09-07`): merge it, or park it?
 12. **O-MG-LOCAL:** Your Windows copy of map-generator (`Documents/the-best-maps-ever`) has 2 commits on `master` that were never pushed: `91d089c` "A source travels with its terms…" and `089a4bf` "RCA: why 6e349a3 broke the map…". Push them as they are, hand them to CX-M0 for review, or drop them?
 13. **O-CATECHISM:** Post the license request drafted at `.superpowers/sdd/queue-name-model/catechism-license-request.md` on github.com/brain-fuel/catechism. The fallback is our own mapping from the public-domain 1921 Triglot.
-14. **O-CACHE:** FOCUS-0 owes one proof (R44): clear `data/cache/sections/*` and run `cargo test -p atlas-cli` green first time. OK to clear the cache (regenerable) in `~/src/bible-atlas`?
+14. **O-GODLINK:** with persons linked in verse text (CONTRACT-2), "God" and "LORD" are links in nearly every verse (8,587 verses for God). Keep every occurrence linked, or link only the first in a window/chapter?
+15. **O-BADGE:** FOCUS-1 drops the client-derived kind badge ("Passage"/"Verse") from the trail and selection tray and shows the served label only (rule 25). Want a served display kind on the card instead (a contract item)?
+16. **O-FINDINGS:** FOCUS-1 touches the files of F-6, F-7 (popover level), F-9 and F-12 (rewritten files). Close them inside FOCUS-1 (yes/no per finding)?
+17. **O-CHOOSER:** the map's place chooser (world-cluster-chooser:213) stays open after zooming dissolves the cluster it was opened on; it fails 2 of 3 on today's build too (not FOCUS-1's). Fix it (close the chooser when its cluster dissolves)?
+18. **O-LAND-F1:** Codex has been stalled all day, so FOCUS-1 has no reviewer. Land it on my own review, or wait for Codex?
+19. **O-F6 (five, from the FOCUS-6 plan `docs/superpowers/plans/2026-10-01-focus6-geography.md`; the plan builds the [default] if unanswered):** (a) add edge-end relations `from`/`source-of` and `to`/`target-of` (22 → 24), node cards not counting them? [yes] (b) with `PlaceCard` gone, does hovering a place still preview it, or is a click the only way in? [click only] (c) a place card's time-window content (period name/blurb, events in the window, narrative prev/next): a card that ignores the window, or one scoped to it? [ignores] (d) `/world` with nothing focused: today's free slider, or always open on a Map? [free slider] (e) crossing into the next era: follow `follows-in` when the slider is dragged past the bound, or only on an arrow click? [click]
+20. **O-EDGE-TYPES:** the client types (R18) stand, signed off 2026-09-30 ("Good go"). O-F6 (a) is WITHDRAWN (owner, 2026-09-30, PRINCIPLES 27): no `from`/`to` relations; the graph models the domain, never a view.
+21a. **O-F6R (FOCUS-6 re-plan `f0f3470`, plan OPEN 6–13; defaults build if unanswered):** 6 vocabulary gate skips string literals [skip; alt: move `event_merge.rs` tables to `data/curated/`] · 7 delete the unread `frontier.rs` FocusKind×Capability matrix [delete] · 8 rename `exploration-roundtrip.feature` (AQC major) [rename] · 9 "focus" in the gate word list [no] · 10 edge label wording [`{subject} · {kind label} · {object}`; ties to O-LABELS] · 11 widen `/api/node/{id}/edges` to edge ids vs new `/api/position/{id}/edges` [widen] · 12 `edge_summary` bundled in the element record vs its own read [bundled] · 13 `loci`/`note` on neighbour pages only [yes]
+21. **O-LABELS:** edge kinds now show display labels derived from their wire names ("attested-in" → "Attested in", "spouse-of" → "Spouse of"). Keep derived, or hand-write a curated label per kind (a data file)?
+22. **O-CACHE:** FOCUS-0 owes one proof (R44): clear `data/cache/sections/*` and run `cargo test -p atlas-cli` green first time. OK to clear the cache (regenerable) in `~/src/bible-atlas`?
+
+## FINDINGS (rules 24a/24b: open categories, each with its proposed CLOSURE; the owner decides; agents append)
+- **F-1 (rule 26, server facts in code): the canon table.** `server/atlas-core/src/canon.rs` holds the 66 books (codes, OSIS ids, names) as a static table in code. Proposed closure: the canon becomes a curated file (`data/curated/books.toml` already exists — check what it holds) compiled into the artifact's Kjv section, and `BookId`/codes are read from it; a law forbids book literals in server code. Cost: `BookId(pub u8)` and the code-string wire form re-anchor on the data.
+- **F-2 (rule 26): the attestation-pending inventory.** `server/atlas-graph/src/attestation_pending.rs` pins 889 event pairs as a `PENDING` const in code (re-swept by hand when the attests cap came off). Proposed closure: the inventory is a curated file with each pair's grounds, or is derived by the compiler as a law output, never a code literal.
+- **F-4 (rule 26a, the tool boundary): the served crate links the ETL.** `server/atlas-contract/Cargo.toml` depends on `atlas-etl`, and `atlas-contract/src/load.rs:53` calls `atlas_etl::compile::compile` for the `--build-from-raw` path; `atlas-graph` holds both the compiler and the served readers in one crate. Proposed closure: `atlas-etl` and the compile binary are tools; `atlas-contract`/`atlas-server` depend only on the artifact readers; `--build-from-raw` becomes "compile to a scratch artifact with the tool, then serve it" (in `atlas-cli` or the compile binary), so the crate graph makes the boundary unwritable.
+- **F-5 (fix wave, server): O(position) node paging** — `graph-types/src/graph.rs` `nodes_of_kind` and `atlas-graph/src/sqlite/snapshot.rs` `nodes_of_kind` (`OFFSET`) skip `start` entries per page; not material today. Closure: a per-kind id vector / keyset paging on `(kind, id)`.
+- **F-6 (fix wave, client, rule 25): two fetch layers** — `client/GraphExplorableClient.cs:7-9` holds its own `HttpClient`; `Program.cs:25` registers a scoped one nobody injects. Closure: it composes over `AtlasClient`; the registration deleted; a source law "HttpClient appears only in AtlasClient.cs / RequiredResponses.cs / Program.cs".
+- **F-7 (fix wave, client): 14 Explore-layer fetches outside the request series** (`ExplorationDescriptor.cs:40,67,119`, `PassageBlock.cs:29,57`, `PopoverSectionProviders.cs:205,246,387,629,1285`, `BookNode.cs:30`, `ChapterNode.cs:61`, `YearNode.cs:91`, `PersonNode.cs:29`). Closure: the popover owns one `RequestSeries`; `IExplorable.ExploreAsync/BodyAsync` receive a `Request`. Until then the stale-response closure is partial.
+- **F-8 (fix wave, server tests, rule 26): literal expectations in real-data tests** (`graph_api.rs:433-446`, `lexicon_real_data.rs:67-83`, every other real-data pin in `graph_api.rs`). Closure: derive from the artifact, as the wave's three new tests do.
+- **F-9 (fix wave, client + server): saved explorations resolve a date/era BY LABEL** (`ExplorationDescriptor.cs:79,122`). Closure: `DateClaim`/`Era` publish ids on the wire (server), the client stores ids, and a client law "no function takes a label and returns a node".
+- **F-10 (fix wave, client): PlaceCard's measurement guard** (`PlaceCard.razor:305-319`) — a stale-result check by hand. Closure: the card's `RequestSeries` covers it.
+- **F-11 (fix wave, client): the picker's "served change discards the draft" policy** (`ScripturePicker.razor`, `_synced`) is not named by the `Draft` type. Closure: `Draft.Follow(served)` if the owner wants it typed.
+- **F-12 (rule 9): pre-existing comments** remain around every site the wave touched; the wave added none. Closure: A-STRIP.
+- **F-13 (FOCUS-1 prep, server/ETL, the container law): no passage container exists.** The ETL mints chapter/book/bible and Concord doc/article containers only; titled passages are not nodes, so a passage cannot be an Explorable identity. FOCUS-1 uses the first verse's TextUnit (F1-3); closure: FOCUS-3's ETL mints Container nodes for titled passages.
+- **F-14 (FOCUS-1 prep, client): `FocusKind`/`FrontierMatrix` mirror the graph vocabulary as strings.** Closure: the generated `NodeKind`/`EdgeKind` enums are the only vocabulary on the client.
+- **F-15 (client): `IExplorable.Kind` is a string.** Closure: `NodeKind`.
+- **F-16 (server wire): `PositionKind` is `NodeKind` + `Edge`, so every client mapping from a served position is partial.** Closure: FOCUS-1 Task 0 (F1-2) splits the edge position into its own wire shape.
+- **F-17 (server wire): the corpus is absent from `NodeRef`/`NodeCard`,** so the client parses ids to learn it (`HomeSurfaces`). Closure: `corpus` on the wire (a CONTRACT item, FOCUS-2/3).
+- **F-18 (client): `RevealPageSize` restates the server's page clamp.** Closure: the served page size is the one declaration.
+- **F-19 (FOCUS-1, client tests): the atom set was hand-declared in 4 places in ConformanceTests** — CLOSED in FOCUS-1 T6 (derived by reflection).
+- **F-20 (client): `IIntent.Name` is read by nothing outside tests** (rule 4). Closure: delete it across all atoms, or give it a reader.
+- **F-21 (server wire): an edge position is not fetchable via `/api/node`**; only `justified-by` serves edge positions. Closure: serve them only where a Sequence presents them (the Event/narrative batch), never as frontier neighbours.
+- **F-22 (client, T3's table): `Affordance.Arrows` carries no direction.** Closure: `Arrows(ArrowDirection)`.
+- **F-23 (contract): frontier section headings are the edge kind's wire name; no served display label.** Closure: a `label` per edge kind in the vocabulary document (O-BADGE's category).
+- **F-24 (client): `SectionOrder` is read by nothing on the new path** (rule 4). Closure: the view orders by it, or it goes.
+- **F-25 (tooling): `timing-gates.sh` writes its logs into the tree.** Closure: logs under the target dir; the tests-never-write-the-repo law covers scripts.
+- **F-27 (client): the popover title shows the legacy title (`GEN`) while the trail shows the served label (`Genesis`).** Closure: every surface reads the served label (legacy titles die per kind).
+- **F-28 (client): a FocusView section heading counts links not offered on that surface.** Closure: the count comes from `Presentation.Offers`.
+- **F-29 (client): the popover's `Root`/`Saved` are two optionals, not one sum.** Closure: `PopoverOpening = Root | Saved`.
+- **F-30 (tests): `tsc` over tests/ux has 16 pre-existing errors,** so spec types aren't enforced. Closure: tsc clean and in the gate.
+- **F-31 (client): node constructors disagree on local vs wire ids** (`PersonNode` vs the rest). Closure: one typed id on the client (FOCUS-1 R36 / A-BACKLOG).
+- **F-32 (map-generator): DUPLICATE of CX-M0 step 3, which already fixes it; closed here.** The workspace does not build in WSL. Seven crates take `atlas-graph-types` by a path into the old Windows-era tree (`../../../../scratch/bible-atlas-sketch/.claude/worktrees/bible-atlas-m1/graph-types`), which no longer exists; `cargo` fails at manifest load. Closure: one dependency declaration (workspace `[workspace.dependencies]` or a git dep on bible-atlas at a pinned rev), so a machine move cannot break seven sites.
+- **F-33 (backend, rule 27): the client's exploration vocabulary lives in the backend.** 56 files under `server/` and `graph-types/` name explore/explorable/frontier (`graph-types::explore::Frontier`, `FrontierEdge`, `FrontierRefusals`, `frontier_at`, …), from CONTRACT-2 and FOCUS-1. Closure: rename to the graph's own words (adjacency, neighbours) and a gate that fails on any such name in `server/` or `graph-types/`. First task of the A-EDGES rework.
+- **F-34 (API, rule 27a): the wire has view-shaped endpoints** (node "cards" with an edge summary, per-kind routes). Audit every route against the generic read set and propose the migration; the owner rules on order (likely after Nov 4).
+- **F-35 (rule 26): event-merge tables are curated data in code** (`event_merge.rs` string literals). Closure: move to `data/curated/` with provenance; the vocabulary gate can then scan literals.
+- **F-36 (rule 27): year and time-range labels are formatted per request.** Closure: compile them as labels.
+- **F-37 (rule 27f): no budget gate at 10× size.** Closure: a synthetic 10× graph and p95/size gates over the generic reads.
+- **F-3 (rule 25, client derivation): `client/CanonRef.cs`** — see A-BACKLOG; closes when the legacy routes retire.
 
 ---
 
 ## Lane A: Claude
 
 ### A-C2: CONTRACT-2 close
-- **Status:** claimed:claude:2026-09-29
+- **Status:** done (2026-09-30, `678a0d2`)
 - **Tracked in:** `.superpowers/sdd/2026-09-29-contract2-pushdown/progress.md` (every ruling).
-- **Left:** 7b+8b (running), 10b (client reads served anchors; `PlaceMentions`/`ScriptureRefScan` retire for the Concord), 11 (strip the 290 comment lines CONTRACT-2 added; one regeneration of fixtures and pacts; AQC 0.10.0 → 0.11.0, AGC minor; standing block; gates; Playwright in WSL).
-- **Done when:** Task 11's gates are green, the push is done, the close report is written, and `MUTATION-GATE-DEBT.md` has CONTRACT-2 appended.
+- **Closed by** Task 11 plus a fix wave under rules 24/24a/24b/25/26 (every fix names its category, its failed abstraction, its side and the closure; see the close report §6a).
 
 ### A-F1: FOCUS-1
-- **Status:** blocked:A-C2
+- **Status:** review:678a0d2..3baaeb6 (branch `lane/claude/A-F1`; close report `docs/superpowers/reports/2026-09-30-focus-1-close.md` on the branch). Gates: 1,577 Rust / 572 client / 54 contract tests green; contract gate passed; AQC 0.12.0; Playwright green except the known world-quiet-places:211 and the pre-existing world-cluster-chooser:213 (O-CHOOSER). **Codex: review this range (AGENTS.md 14b + 24a/24b), then Claude lands it.**
 - **Plan:** `docs/superpowers/plans/2026-09-27-focus1-types.md` (9 tasks), plus rulings R11–R14 in the FOCUS spec.
 - **Note:** build no interaction that works only by hovering.
 - **Done when:** the plan's Task 9 gates pass and it's reviewed by Codex.
+
+### A-EDGES: edges are explorable (R18)
+- **Status:** REWORK (owner, 2026-09-30, PRINCIPLES 27). `lane/claude/F6-t1` and `F6-t2` (`86baad7`, `54079c4`, `7f1ef67`) never land: they put the frontier into the backend (edge card endpoint, `EdgeSource`/`EdgeTarget` relations, labels composed per request). Rebuilt on `3baaeb6`: the generic element read (node or edge, many ids per call), edge labels compiled into the artifact, the edge frontier derived on the client; first the closure of F-33.
+- **Ruling:** spec §12 R18 (owner, 2026-09-30). Server: an edge card and an edge's frontier in the generated document (AQC minor); wire `Link.Target: PositionRef`; client: `ElementKind = Node | Edge`, `Presentation.Of(ElementKind, Surface)` rows for every edge kind, `IExplorer.Resolve(PositionRef)`/`Follow` total. Closes F-21 and retires F1-12's filter. Types for owner sign-off at FOCUS-1's close.
+- **Done when:** `Follow` is total (a law over every served position), the edge card serves its justification, and a Playwright spec follows a verse → its attests edge → the event.
 
 ### A-NAMES: the NAMES spec (one registry of names and entities, for text and maps)
 - **Status:** blocked:owner (O-NAMES). A types-only draft is at `docs/superpowers/specs/2026-10-01-names-design.md`, with 5 open questions in its §9.
@@ -83,7 +135,7 @@ Protocol: `AGENTS.md`. Plan: `docs/superpowers/plans/2026-09-30-v1-roadmap.md`.
 
 ### A-FPLANS: write each FOCUS-n plan from FOCUS-1's actual result
 - **Status:** blocked:A-F1
-- **Order:** FOCUS-6 first if O-ORDER allows, then 2, 3, 4+5, 7+8, 9.
+- **Order:** FOCUS-6 first (owner, 2026-09-30), then 2, 3, 4+5, 7+8, 9. A-EDGES (R18) runs before FOCUS-6's plan is final, or alongside it if the tables it adds are disjoint.
 - **Assignment:** each plan names its agent, its base commit and its files. Codex takes the ones that pair against Claude's (server-heavy beside client-heavy).
 
 ### A-F3, A-F6, A-F9: FOCUS-3, FOCUS-6 (with the map switch), FOCUS-9
@@ -91,7 +143,8 @@ Protocol: `AGENTS.md`. Plan: `docs/superpowers/plans/2026-09-30-v1-roadmap.md`.
 
 ### A-REVIEW: review every Codex item in `review`
 - **Status:** standing
-- **Scope:** the PRINCIPLES 14b pass, including a grep of the diff for added comment lines. Land what passes, holding the `land` lock.
+- **Scope:** the PRINCIPLES 14b pass (D.R.Y., the Haskell bar) plus the rule 24a category pass: for every fix, was the category named, the failed abstraction named, the side chosen, every site migrated? Plus 24b: is the category CLOSED (the raw thing private, the abstraction the one door, an enum or an enumerating law), with the guarantee named? Plus a grep of the diff for added comment lines. Land what passes, holding the `land` lock.
+- **Findings, not fixes:** offenders found during any review or task (code outside the agreed abstractions, a same-category site left unmigrated) are written under **FINDINGS** below with the category and the sites; the owner decides how each is addressed. Nobody fixes one on the side.
 
 ### A-THEO: replace Theographic (CC BY-SA)
 - **Status:** proposed (ruled 2026-09-29: replace in a queued batch; credit it until then)
@@ -100,6 +153,11 @@ Protocol: `AGENTS.md`. Plan: `docs/superpowers/plans/2026-09-30-v1-roadmap.md`.
 ### A-STRIP: remove every comment from application code
 - **Status:** proposed (owner, 2026-09-30: "no comments in my app code stop doing that"; PRINCIPLES 9)
 - **Scope:** everything already in `server/`, `client/` and `graph-types/` before CONTRACT-2 (the close strips CONTRACT-2's own 290 lines). Wire descriptions the OpenAPI document needs become `#[schema(description)]`. One crate per commit; `export_contract --check` shows what the document loses.
+
+### A-TOOLS-SPLIT: the tools leave the system's repo
+- **Status:** proposed (owner, 2026-09-30: "we'll have to consider ripping those tools out of our repo and giving them their own home so that the pieces we care about are as clearly segregated as necessary"). Decide after FOCUS; pairs with A-DATA-SPEC (the artifact store) and "compiled data leaving git".
+- **Shape to evaluate:** the tools (`atlas-etl`, the compile binary, `scripts/fetch-raw`, `archive-raw`, `bibex raw bless`, the ETL laws) get their own repository, whose product is the artifact plus its manifest; `graph-types` (already a root-level, non-member crate) becomes the published interface both depend on; the system repo keeps the artifact readers, `atlas-contract`, `atlas-server`, the client, the contracts, and `bibex verify` (users care that the data is what it claims). Open questions for the design: where `data/curated` lives (tool input) and how the artifact reaches the system (the store, A-DATA-SPEC); what `--build-from-raw` becomes (F-4); whether the data laws that today run in `atlas-graph`'s compile half move with the tools. Effect: the system's test suite shrinks and speeds up; the crate graph enforces 26a by construction.
+- **The Polylith alternative (controller, 2026-09-30):** one workspace, segregated by PROJECTS, not repos. Bricks = crates with one interface module (24b's one door); bases = the binaries (`atlas-server`, the compile binary, `bibex`); projects = each deployable's brick list. The `server` project simply does not contain the ETL bricks, so 26a holds by construction, enforced by a law over `cargo tree` per deployable; the `development` project holds everything, so the two-agent workflow, one `data/`, and cross-cutting batches stay simple. The tools can still leave later; projects first makes the seam real without a repo move.
 
 ### A-BACKLOG: routed items waiting for their batch
 - **Status:** proposed; each moves into the batch named, or is planned on its own.
@@ -131,7 +189,7 @@ Protocol: `AGENTS.md`. Plan: `docs/superpowers/plans/2026-09-30-v1-roadmap.md`.
 - **Gates (in WSL, after `. ~/.bible-atlas-env`):** `CARGO_TARGET_DIR=~/mut/codex-CX-M0 nice -n 10 cargo test --workspace -j 4`; `make demo` then `curl -s localhost:8090/api/meta` answers; `make contract-gates` (GHC 9.6.7 + cabal are installed via ghcup); `make stop`.
 - **Done when:** all of the above, pushed to `lane/codex/CX-M0`, reviewed. The controller then fast-forwards `master`.
 
-- **Execution notes:** Queue read from origin/prep/v1-go until prep lands. Workspace Cargo.toml is explicitly authorized by step 3. Owner priority: audit 1446, 1406 and 1200 BC first; seed concerns are oversized Edom and Davidic-era content at 1406 BC. CX-R3/R2 await a concrete CONTRACT-2 close base.
+- **Execution notes:** Original claim interrupted before push; resumed after independent A-F1 review d170086 on lane/codex/A-F1-review. Main prep now wins. Workspace Cargo.toml is named by step 3. Owner audit priority: 1446 and 1406 BC, then possibly 1200 BC; Edom extent and Davidic content seed the register.
 
 ### CX-M1: a map gallery for choosing a style
 - **Status:** blocked:CX-M0
@@ -197,7 +255,7 @@ Protocol: `AGENTS.md`. Plan: `docs/superpowers/plans/2026-09-30-v1-roadmap.md`.
 
 ### CX-R3: prove the KJV → original-word alignment join
 - **Status:** ready
-- **Base:** the atlas at `@CLOSE@` (CONTRACT-2's close; `kjv_token` is in the tracked artifact's Kjv section: 790,892 words).
+- **Base:** the atlas at `678a0d2` (CONTRACT-2's close; `kjv_token` is in the tracked artifact's Kjv section: 790,892 words).
 - **Background:** `.superpowers/analysis/name-sources.md` already chose **BibleForgeDB** (public domain / CC0): it aligns 763,778 KJV words to specific Hebrew/Greek tokens. Its KJV edition differs from our `data/raw/kjv.json` in 452 verses; ~17.9k of its rows are flagged ERROR; its Greek needs STEPBible TAGNT's Textus Receptus.
 - **Question:** how much of OUR KJV word layer can reach a specific original token through BibleForgeDB + STEPBible TAHOT/TAGNT, and what's left?
 - **Steps:** a spike in `~/w/CX-R3` scratch space (nothing committed but the report): download BibleForgeDB and TAHOT/TAGNT into scratch; join our `kjv_token` rows (read with `sqlite3` or a small script from the unpacked Kjv section, `data/cache/sections/`) to BibleForge's words by an explicit per-verse diff, never by position; then BibleForge's original tokens to TAHOT/TAGNT tokens. Report: the percentage of our words aligned; the unaligned by kind (italic/supplied, ERROR rows, the 452 differing verses, Greek TR gaps); 20 worked examples including Gen 32:28 "Israel"; the licence text of every file used.
@@ -205,13 +263,13 @@ Protocol: `AGENTS.md`. Plan: `docs/superpowers/plans/2026-09-30-v1-roadmap.md`.
 
 ### CX-R1: the 65 overlapping-event cases
 - **Status:** ready (they surfaced when CONTRACT-2 removed the 20-verse cap on attesting verses; landed at `68fb00f`)
-- **Base:** `@CLOSE@`. **Source:** `server/atlas-graph/src/attestation_pending.rs`, whose `PENDING` inventory grew 824 → 889 pairs when the cap came off: 65 new collisions, most of them Robertson passion-week events contained in `theo-443`/`theo-448`. `git diff 68fb00f~1 68fb00f -- server/atlas-graph/src/attestation_pending.rs` lists exactly the new pairs.
+- **Base:** `678a0d2`. **Source:** `server/atlas-graph/src/attestation_pending.rs`, whose `PENDING` inventory grew 824 → 889 pairs when the cap came off: 65 new collisions, most of them Robertson passion-week events contained in `theo-443`/`theo-448`. `git diff 68fb00f~1 68fb00f -- server/atlas-graph/src/attestation_pending.rs` lists exactly the new pairs.
 - **Deliverable:** a curation sheet, one row per case: the events (id and title), their verses, the kind of overlap (containment / overlap), and a proposed resolution with its Scripture grounds, each answerable by the owner in one line.
 - **Output:** `.superpowers/analysis/overlapping-events.md` on `lane/codex/CX-R1`. Read-only on everything else.
 
 ### CX-R2: Easton doctrinal review list (for the Pastor)
 - **Status:** ready
-- **Base:** `@CLOSE@`. **Source:** `data/raw/theographic/theographic-bible-metadata-master/json/easton.json` (Easton's Bible Dictionary, 1897, Presbyterian; it supplies the `description` of places, people and people groups). Which entities use which entry: `server/atlas-etl` (grep `easton`).
+- **Base:** `678a0d2`. **Source:** `data/raw/theographic/theographic-bible-metadata-master/json/easton.json` (Easton's Bible Dictionary, 1897, Presbyterian; it supplies the `description` of places, people and people groups). Which entities use which entry: `server/atlas-etl` (grep `easton`).
 - **Deliverable:** flag every entry that touches doctrine: baptism, the Lord's Supper, election/predestination, conversion, the law and the gospel, the church and ministry, the end times, and the like. Quote the passage and say why it may conflict with Lutheran teaching. No judgment beyond flagging.
 - **Output:** `.superpowers/analysis/easton-doctrinal-review.md` on `lane/codex/CX-R2`, sorted by how prominent the entity is in the app (its node's edge count from `bibex`/the artifact).
 - **Note:** Easton is re-sourced from its public-domain original when A-THEO replaces Theographic; the review carries over (same text).
@@ -222,7 +280,7 @@ Protocol: `AGENTS.md`. Plan: `docs/superpowers/plans/2026-09-30-v1-roadmap.md`.
 
 ### CX-I1: backups
 - **Status:** ready up to the B2 step, then blocked:owner (O-B2)
-- **Base:** `@CLOSE@`. **Files:** `scripts/backup/**` (new) and its tests, `scripts/backup/test/*.bats` (bats 1.14 is at `~/.local/bin/bats`).
+- **Base:** `678a0d2`. **Files:** `scripts/backup/**` (new) and its tests, `scripts/backup/test/*.bats` (bats 1.14 is at `~/.local/bin/bats`).
 - **Tools (installed):** `restic` 0.19.1, `jq` 1.8.2 in `~/.local/bin`; `bibex` is `cargo run --release -p atlas-cli --` from `server/`.
 - **Deliverable:** `scripts/backup/backup.sh` taking restic snapshots of:
   - `data/raw`, tagged `raw:<root>` from `bibex --json verify --data-dir ../data/compiled` (`.raw.root`)

@@ -63,7 +63,7 @@ use atlas_graph::sqlite::columns::{
 };
 use atlas_graph::sqlite::ddl::{create_indexes, create_tables, logical_table_order, row_tables_of};
 use atlas_graph_types::canon::{Canon, RowFamily};
-use atlas_graph_types::edge::{Authored, Ground, Justification, MapSuccession, Occurs, ParentOf, Participates, Partners, Shown};
+use atlas_graph_types::edge::{Authored, Ground, Justification, MapSuccession, Occurs, Parentage, ParentOf, Participates, Spouses, Shown, Brethren};
 use atlas_graph_types::id::{AnchorId, MapId, SourceId, LexiconEntryId};
 use atlas_graph_types::text::{BibleTag, Locus, LocusRange, TokenSpan, TranslationId, VerseRef};
 use std::collections::BTreeSet;
@@ -96,7 +96,7 @@ fn every_section_schema_creates_in_memory_and_lists_its_tables() {
     for f in RowFamily::ALL {
         assert_eq!(
             homes.get(&f).copied().unwrap_or(0),
-            if matches!(f, RowFamily::ContainsBible | RowFamily::CanonSuccession) { 2 } else { 1 },
+            if matches!(f, RowFamily::ContainsBible | RowFamily::CanonSuccession | RowFamily::CrossRefs) { 2 } else { 1 },
             "{f:?}"
         );
     }
@@ -147,6 +147,26 @@ fn a_bible_locus_with_a_span_round_trips_through_seven_columns() {
         })
         .unwrap();
     assert_eq!(back.encode(), whole.encode());
+}
+
+#[test]
+fn a_mentions_row_naming_no_kind_of_entity_is_refused_when_a_window_reads_it() {
+    // Arrange
+    let conn = rusqlite::Connection::open_in_memory().unwrap();
+    create_tables(&conn, Section::Core).unwrap();
+    conn.execute(
+        "INSERT INTO mentions (id, ord, locus_corpus, locus_a, locus_b, locus_c, locus_layer, locus_start, locus_end, entity_kind, entity_id, provenance) \
+         VALUES (0, 0, ?1, 0, 1, 1, NULL, NULL, NULL, 9, 'hazor-1', 'test')",
+        [<BibleTag as atlas_graph_types::text::Corpus>::ID],
+    )
+    .unwrap();
+    let genesis_1_1 = VerseRef { book: 0, chapter: 1, verse: 1 };
+
+    // Act
+    let read = atlas_graph::sqlite::serve::mention_spans_in(&conn, &(genesis_1_1.clone()..=genesis_1_1)).map_err(|e| e.0);
+
+    // Assert
+    assert_eq!(read, Err("mentions entity_kind 9 is not 0..3".to_string()));
 }
 
 #[test]
@@ -376,6 +396,14 @@ fn specimen_graph() -> atlas_graph_types::graph::Graph {
         votes: 7,
         provenance: "openbible-xrefs".into(),
     });
+    g.cross_refs.push(CrossRef {
+        from: TextLocus { at: TextRef::Concord(ConcordRef { part: 1, article: 1, paragraph: 1 }), span: Some(TokenSpan::new(TranslationId("bente-dau".into()), 0, 0).unwrap()) },
+        to: tl(1, 1, 1),
+        to_last: Some(tl(1, 1, 2)),
+        target_display: "GEN.1.1-2".into(),
+        votes: 0,
+        provenance: "concord-citations".into(),
+    });
     g.quotes.push(Quotes { quoting: tl(40, 4, 4), quoted: blr((5, 8, 3), (5, 8, 3)), provenance: "curated/quotes".into() });
     g.confesses.push(Confesses {
         confessing: cl(1, 2, 3),
@@ -407,8 +435,27 @@ fn specimen_graph() -> atlas_graph_types::graph::Graph {
     g.occurs.push(Occurs { entry: LexiconEntryId::new("G3056"), locus: word(1, 1, 1, "greek_textus_receptus", 3), provenance: "stepbible-tagnt".into() });
     g.occurs.push(Occurs { entry: LexiconEntryId::new("H0430"), locus: word(1, 1, 2, "hebrew_masoretic", 2), provenance: "stepbible-tahot".into() });
 
-    g.parent_of.push(ParentOf { parent: PersonId::new("abraham_1"), child: PersonId::new("isaac_1"), provenance: "theographic-people".into() });
-    g.partners.push(Partners { a: PersonId::new("abraham_1"), b: PersonId::new("sarah_1"), provenance: "theographic-people".into() });
+    g.parent_of.push(ParentOf {
+        parent: PersonId::new("abraham_1"),
+        child: PersonId::new("isaac_1"),
+        parentage: Parentage::Natural,
+        provenance: "theographic-people".into(),
+        justification: Justification::default(),
+    });
+    g.parent_of.push(ParentOf {
+        parent: PersonId::new("god_1324"),
+        child: PersonId::new("adam_78"),
+        parentage: Parentage::Created,
+        provenance: "curated-parentage".into(),
+        justification: Justification { text: None, grounds: [Ground::Scripture(blr((41, 3, 38), (41, 3, 38)))].into_iter().collect() },
+    });
+    g.spouses.push(Spouses { a: PersonId::new("abraham_1"), b: PersonId::new("sarah_1"), provenance: "theographic-people".into() });
+    g.brethren.push(Brethren {
+        a: PersonId::new("james_719"),
+        b: PersonId::new("jesus_905"),
+        provenance: "curated-brethren".into(),
+        justification: Justification { text: None, grounds: [Ground::Scripture(blr((47, 1, 19), (47, 1, 19)))].into_iter().collect() },
+    });
     g.participates.push(Participates { person: PersonId::new("abraham_1"), event: EventId::new("jesus-baptized"), provenance: "theographic-people".into() });
     g.authored.push(Authored { book: ContainerNodeId::new("bible-book-GEN"), person: PersonId::new("moses_2108"), provenance: "books".into(), justification: Justification::default() });
     g.shown.push(Shown { map: MapId::new("era-patriarchs"), node: PlaceId::new("ur-1").erase(), provenance: "curated-eras".into() });
@@ -426,7 +473,7 @@ fn specimen_graph() -> atlas_graph_types::graph::Graph {
     for n in [
         node(NodeKind::TextUnit, "bible/1.1.1", unit("bible", "kjv", "In the beginning")),
         node(NodeKind::TextUnit, "bible/1.1.2", unit("bible", "kjv", "And the earth")),
-        node(NodeKind::TextUnit, "concord/1.1.1", unit("concord", "en", "We believe")),
+        node(NodeKind::TextUnit, "concord/1.1.1", unit("concord", "bente-dau", "We believe")),
         node(NodeKind::Container, "passage-creation", NodePayload::Container { title: "Creation".into() }),
         node(NodeKind::Container, "bible-book-GEN", NodePayload::Container { title: "Genesis".into() }),
         node(NodeKind::Container, "bible-chapter-GEN-1", NodePayload::Container { title: "Genesis 1".into() }),
@@ -459,7 +506,6 @@ fn specimen_graph() -> atlas_graph_types::graph::Graph {
                 pos: Some("G:N-M".into()),
                 glosses: vec!["word".into()],
                 senses: vec!["something said".into()],
-                domains: vec!["13.115".into(), "33.98".into()],
                 root: Some("G3004".into()),
             },
         ),
@@ -474,7 +520,6 @@ fn specimen_graph() -> atlas_graph_types::graph::Graph {
                 pos: None,
                 glosses: vec![],
                 senses: vec![],
-                domains: vec![],
                 root: None,
             },
         ),
@@ -552,11 +597,12 @@ fn rows_of_section_explicit(g: &atlas_graph_types::graph::Graph, s: Section) -> 
             RowFamily::CommentsOn => out.extend(g.comments_on.iter().map(RowRef::CommentsOn)),
             RowFamily::Occurs => out.extend(g.occurs.iter().map(RowRef::Occurs)),
             RowFamily::ParentOf => out.extend(g.parent_of.iter().map(RowRef::ParentOf)),
-            RowFamily::Partners => out.extend(g.partners.iter().map(RowRef::Partners)),
+            RowFamily::Spouses => out.extend(g.spouses.iter().map(RowRef::Spouses)),
             RowFamily::Participates => out.extend(g.participates.iter().map(RowRef::Participates)),
             RowFamily::Authored => out.extend(g.authored.iter().map(RowRef::Authored)),
             RowFamily::Shown => out.extend(g.shown.iter().map(RowRef::Shown)),
             RowFamily::MapSuccession => out.extend(g.map_succession.iter().map(RowRef::MapSuccession)),
+            RowFamily::Brethren => out.extend(g.brethren.iter().map(RowRef::Brethren)),
         }
     }
     out
@@ -601,13 +647,12 @@ fn every_index_entry_of_the_specimen_lands_in_exactly_one_section_and_names_its_
     atlas_graph::event_world::add_justified_by(&mut g);
     let parts = partition(&g).unwrap();
     let total: usize = parts.iter().map(|p| p.edges.len()).sum();
-    let in_memory: usize = g
+    let justified = g
         .indexes
-        .values()
-        .map(|ix| ix.fwd.values().map(Vec::len).sum::<usize>() + ix.inv.values().map(Vec::len).sum::<usize>())
-        .sum::<usize>()
-        + g.symmetric_indexes.values().map(|ix| ix.fwd.values().map(Vec::len).sum::<usize>()).sum::<usize>();
-    assert_eq!(total, in_memory, "no entry lost, none duplicated");
+        .get(&atlas_graph_types::edge::RelationId::JustifiedBy)
+        .map_or(0, |ix| ix.fwd.values().chain(ix.inv.values()).map(atlas_graph_types::explore::Frontier::edge_count).sum::<usize>());
+    let placed_rows = 2 * g.row_edges().len() + justified;
+    assert_eq!(total, placed_rows, "every row placed under both of its ends, every synthesised ground once; none lost, none duplicated");
     assert!(total > 0, "the specimen graph indexes something");
     let map = edge_row_map(&g);
     let justified_code = atlas_graph_types::edge::RelationId::ALL
@@ -618,9 +663,8 @@ fn every_index_entry_of_the_specimen_lands_in_exactly_one_section_and_names_its_
     for p in &parts {
         for e in &p.edges {
             if e.rel != justified_code {
-                let rows = &map[&e.edge_id];
-                let (_, _, raw) = rows.iter().find(|(fam, ord, _)| (e.row_family, e.row_id) == (*fam, *ord)).unwrap_or_else(|| panic!("entry {:?} names a row that does not mint its id", (e.row_family, e.row_id)));
-                assert_eq!(atlas_graph::sections::section_of_justified_by(e.row_family, raw.as_deref()), p.section);
+                assert!(map[&e.edge_id].contains(&(e.row_family, e.row_id)), "entry {:?} names a row that does not mint its id", (e.row_family, e.row_id));
+                assert_eq!(atlas_graph::sections::section_of_row(&g, e.row_family, e.row_id as usize), p.section);
             } else {
                 saw_justified = true;
                 let end = if e.dir == 0 { &e.subject } else { &e.object };
@@ -628,9 +672,8 @@ fn every_index_entry_of_the_specimen_lands_in_exactly_one_section_and_names_its_
                     atlas_graph_types::id::Position::Edge(id) => id,
                     other => panic!("justified-by source end must be an edge, got {other:?}"),
                 };
-                let (fam, ord, raw) = &map[source][0];
-                assert_eq!((e.row_family, e.row_id), (*fam, *ord));
-                assert_eq!(atlas_graph::sections::section_of_justified_by(*fam, raw.as_deref()), p.section);
+                assert_eq!((e.row_family, e.row_id), map[source][0]);
+                assert_eq!(atlas_graph::sections::section_of_row(&g, e.row_family, e.row_id as usize), p.section);
             }
         }
     }
@@ -783,20 +826,41 @@ fn the_sqlite_snapshot_answers_every_port_question_exactly_as_the_specimen_graph
         let entry = at(&AnyNodeId { kind: NodeKind::LexiconEntry, raw: "G3056".into() });
         let verse = at(&AnyNodeId { kind: NodeKind::TextUnit, raw: "bible/1.1.1".into() });
         let page = snap.edges_with_nodes(&entry, &EdgeQuery { kind: EdgeKind::Directed(RelationId::Occurs, Direction::Forward), cursor: None, limit: 10 });
-        assert_eq!(page.entries.len(), 2, "two tokens of one entry in one verse: two index entries (one per row)...");
-        assert_eq!(page.entries[0].entry.edge, page.entries[1].entry.edge, "...under ONE edge id (the leper lesson)");
+        assert_eq!(page.entries.len(), 1, "two tokens of one entry in one verse: ONE edge (the leper lesson)...");
         assert_eq!(page.entries[0].entry.node, verse);
         let rows = snap.rows_behind(&page.entries[0].entry.edge);
         assert_eq!(rows.len(), 2, "...with BOTH rows behind it");
         assert_eq!(rows.iter().map(|r| (r.family, r.row_id)).collect::<Vec<_>>(), [(RowFamily::Occurs, 0), (RowFamily::Occurs, 1)]);
         assert!(rows.iter().all(|r| r.provenance == "stepbible-tagnt"));
         let summary = snap.edge_summary(&verse);
-        assert_eq!(summary.get(&EdgeKind::Directed(RelationId::Occurs, Direction::Inverse)).copied(), Some(2), "`words` at the verse: its two tagged tokens");
+        assert_eq!(summary.get(&EdgeKind::Directed(RelationId::Occurs, Direction::Inverse)).copied(), Some(1), "`words` at the verse: the one entry its two tagged tokens belong to");
         let back = snap.edges_with_nodes(&verse, &EdgeQuery { kind: EdgeKind::Directed(RelationId::Occurs, Direction::Inverse), cursor: None, limit: 10 });
         assert_eq!(back.entries[0].entry.node, entry);
         assert_eq!(snap.nodes_of_kind(NodeKind::LexiconEntry, None, 5).ids.len(), 2);
     }
     assert_eq!(snap.version().0, atlas_graph_types::sections::version_root(&g), "SqliteSnapshot::version is the manifest root = the in-memory root");
+}
+
+#[test]
+fn the_sqlite_snapshot_reads_many_nodes_at_once_exactly_as_it_reads_each_one() {
+    // Arrange
+    let mut g = specimen_graph();
+    g.build_indexes();
+    atlas_graph::event_world::add_justified_by(&mut g);
+    let dir = std::env::temp_dir().join(format!("c2-nodes-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&dir);
+    write_sections(&g, &Extras::default(), "test", &layout_under(&dir)).unwrap();
+    let snap = open_written(&dir).unwrap();
+    let held: Vec<atlas_graph_types::id::AnyNodeId> = g.nodes.keys().rev().cloned().collect();
+    let absent = atlas_graph_types::id::AnyNodeId { kind: atlas_graph_types::id::NodeKind::Place, raw: "nowhere".into() };
+    let asked: Vec<atlas_graph_types::id::AnyNodeId> = held.iter().cloned().chain([absent, held[0].clone()]).collect();
+    let bytes = |node: Option<atlas_graph_types::node::Node>| node.map(|n| atlas_graph_types::id::ContentAddressed::canonical_bytes(&n));
+
+    // Act
+    let at_once: Vec<Option<Vec<u8>>> = snap.nodes(&asked).into_iter().map(bytes).collect();
+
+    // Assert
+    assert_eq!(at_once, asked.iter().map(|id| bytes(snap.node(id))).collect::<Vec<_>>());
 }
 
 #[test]
@@ -844,6 +908,40 @@ fn an_absent_optional_section_is_recorded_and_its_kinds_are_simply_uninhabited()
         "a missing REQUIRED section is refused by name and hash (spec 11): {}",
         err.0
     );
+}
+
+#[test]
+fn a_verse_naming_one_entity_twice_is_one_mention_edge_on_both_arms_with_two_rows_behind_it() {
+    // Arrange
+    use atlas_graph_types::edge::{at, Direction, EdgeKind, RelationId};
+    use atlas_graph_types::explore::EdgeQuery;
+    use atlas_graph_types::store::GraphQuery;
+    let mut g = specimen_graph();
+    g.mentions.push(Mentions {
+        locus: TextLocus { at: TextRef::Bible(vr(7, 1, 2)), span: Some(span(8, 9)) },
+        entity: MentionedEntity::PeopleGroup(PeopleGroupId::new("tribe-of-judah")),
+        provenance: "theographic".into(),
+    });
+    g.build_indexes();
+    atlas_graph::event_world::add_justified_by(&mut g);
+    let dir = std::env::temp_dir().join(format!("db2b-mention-edge-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&dir);
+    write_sections(&g, &Extras::default(), "test", &layout_under(&dir)).unwrap();
+    let snap = open_written(&dir).unwrap();
+    let verse = at(&atlas_graph::kjv_adapter::verse_node_id(7, 1, 2));
+    let judah = at(&PeopleGroupId::new("tribe-of-judah").erase());
+    let mentions = EdgeKind::Directed(RelationId::Mentions, Direction::Forward);
+    let mentioned_in = EdgeKind::Directed(RelationId::Mentions, Direction::Inverse);
+    let walk = |q: &dyn GraphQuery, p: &atlas_graph_types::id::Position, kind: EdgeKind| {
+        let page = q.edges(p, &EdgeQuery { kind, cursor: None, limit: 10 });
+        (q.edge_summary(p)[&kind], page.entries.len(), page.next, q.rows_behind(&page.entries[0].edge).len())
+    };
+
+    // Act
+    let answers = [walk(&g, &verse, mentions), walk(&snap, &verse, mentions), walk(&g, &judah, mentioned_in), walk(&snap, &judah, mentioned_in)];
+
+    // Assert
+    assert_eq!(answers, [(1, 1, None, 2); 4]);
 }
 
 #[test]
@@ -1048,6 +1146,20 @@ fn the_graph_derived_extras_of_the_specimen_round_trip_and_agree_with_the_attach
     let extras = Extras::graph_derived(&g, &chrono, &red).unwrap();
     let verse = extras.table("verse").unwrap();
     assert!(verse.rows.iter().any(|r| r == &vec![Col::Text("TextUnit:bible/1.1.1".into()), Col::Int(1), Col::Int(1), Col::Int(1)]), "{:?}", verse.rows);
+    let token = |verse: i64, ord: i64, char_start: i64, char_end: i64| {
+        vec![Col::Int(1), Col::Int(1), Col::Int(verse), Col::Int(ord), Col::Int(char_start), Col::Int(char_end)]
+    };
+    assert_eq!(
+        extras.table("kjv_token").unwrap().rows,
+        vec![
+            token(1, 0, 0, 2),
+            token(1, 1, 3, 6),
+            token(1, 2, 7, 16),
+            token(2, 0, 0, 3),
+            token(2, 1, 4, 7),
+            token(2, 2, 8, 13),
+        ]
+    );
     let ed = extras.table("event_date").unwrap();
     assert_eq!(
         ed.rows[0],
@@ -1069,6 +1181,13 @@ fn the_graph_derived_extras_of_the_specimen_round_trip_and_agree_with_the_attach
     assert_eq!(extras.table("polity_era").unwrap().rows.len(), 2);
     assert_eq!(extras.table("era").unwrap().rows.len(), 1);
     assert_eq!(extras.table("concord_unit").unwrap().rows, vec![vec![Col::Text("TextUnit:concord/1.1.1".into()), Col::Int(1), Col::Int(1), Col::Int(1)]]);
+    assert_eq!(
+        extras.table("concord_token").unwrap().rows,
+        vec![
+            vec![Col::Int(1), Col::Int(1), Col::Int(1), Col::Int(0), Col::Int(0), Col::Int(2)],
+            vec![Col::Int(1), Col::Int(1), Col::Int(1), Col::Int(1), Col::Int(3), Col::Int(10)],
+        ]
+    );
 
     extras.attach(&mut g);
     assert_eq!(g.extra_tables["place"], vec![b"{\"canonical\":\"Ur\",\"lat\":30.96,\"lon\":46.1,\"node_id\":\"Place:ur-1\"}".to_vec()]);

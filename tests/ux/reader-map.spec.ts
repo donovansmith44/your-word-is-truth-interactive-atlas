@@ -47,7 +47,7 @@ test('WORLD-8: place card title opens place history popover', async ({ page }) =
   await expect(page.getByTestId('popover-title')).toHaveText(p.display_name);
   const detail = await api.place(p.id);
   await expect(page.getByTestId('popover'))
-    .toContainText(String(Math.abs(detail.events[0].when.from_year)));
+    .toContainText(detail.events[0].when.label);
 });
 
 test('READ-5: shift-click passage selection', async ({ page }) => {

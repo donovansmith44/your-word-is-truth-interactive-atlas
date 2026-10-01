@@ -2,7 +2,7 @@ mod common;
 
 use std::collections::BTreeMap;
 
-use common::{committed_graph, CORPUS_ROOTS, MAPS};
+use common::{committed_graph, CONCORD_CITATIONS, CORPUS_ROOTS, MAPS};
 
 use atlas_graph_types::canon::ids::{parse_position, position_str};
 use atlas_graph_types::canon::{encode_row_in_family, Canon, RowFamily};
@@ -103,11 +103,12 @@ fn every_row_of_every_family_round_trips() {
         analogue,
         occurs,
         parent_of,
-        partners,
+        spouses,
         participates,
         authored,
         shown,
         map_succession,
+        brethren,
         reading: _,
         extra_tables: _,
         indexes: _,
@@ -147,11 +148,12 @@ fn every_row_of_every_family_round_trips() {
     fam!(analogue, RowFamily::Analogue);
     fam!(occurs, RowFamily::Occurs);
     fam!(parent_of, RowFamily::ParentOf);
-    fam!(partners, RowFamily::Partners);
+    fam!(spouses, RowFamily::Spouses);
     fam!(participates, RowFamily::Participates);
     fam!(authored, RowFamily::Authored);
     fam!(shown, RowFamily::Shown);
     fam!(map_succession, RowFamily::MapSuccession);
+    fam!(brethren, RowFamily::Brethren);
 
     let total: usize = counts.iter().map(|(_, n)| *n).sum();
     println!("DB-2a ROW CANON: {total} rows round-tripped across {} families", counts.len());
@@ -166,7 +168,7 @@ fn every_row_of_every_family_round_trips() {
     let expected: Vec<(RowFamily, usize)> = vec![
         (RowFamily::ContainsBible, 2_378 + BOOKS_IN_THE_BIBLE),
         (RowFamily::ContainsConcord, 270 + DOCUMENTS_IN_THE_CONCORD),
-        (RowFamily::Attests, 33_355),
+        (RowFamily::Attests, 43_067),
         (RowFamily::Succession, 13),
         (RowFamily::CanonSuccession, 1_253 + CONCORD_DOCUMENT_STEPS + CONCORD_ARTICLE_STEPS),
         (RowFamily::DatedBy, 912),
@@ -177,27 +179,28 @@ fn every_row_of_every_family_round_trips() {
         (RowFamily::Catechism, 6_568),
         (RowFamily::CommentsOn, 50_602),
         (RowFamily::SpokenBy, 470),
-        (RowFamily::SpokenAt, 6_381),
-        (RowFamily::Mentions, 35_852),
-        (RowFamily::CrossRefs, 343_558),
+        (RowFamily::SpokenAt, 6_402),
+        (RowFamily::Mentions, 41_548),
+        (RowFamily::CrossRefs, 343_558 + CONCORD_CITATIONS),
         (RowFamily::Quotes, 0),
         (RowFamily::Confesses, 0),
         (RowFamily::CorrespondsBible, 0),
         (RowFamily::TemporalAdjacency, 911),
         (RowFamily::Analogue, 1),
         (RowFamily::Occurs, 431_280),
-        (RowFamily::ParentOf, 1_776),
-        (RowFamily::Partners, 104),
+        (RowFamily::ParentOf, 1_769),
+        (RowFamily::Spouses, 104),
         (RowFamily::Participates, 714),
         (RowFamily::Authored, 32),
         (RowFamily::Shown, SHOWN_ROWS),
         (RowFamily::MapSuccession, MAP_STEPS),
+        (RowFamily::Brethren, 4),
     ];
     assert_eq!(counts, expected, "per-family row counts");
     assert_eq!(
         total,
-        917_443 + SHOWN_ROWS + MAP_STEPS + BOOKS_IN_THE_BIBLE + DOCUMENTS_IN_THE_CONCORD + CONCORD_DOCUMENT_STEPS + CONCORD_ARTICLE_STEPS,
-        "the committed graph carries exactly 917,443 rows plus what the maps show and their steps, plus each corpus root's members, plus the Concord's document and article steps"
+        932_869 + SHOWN_ROWS + MAP_STEPS + BOOKS_IN_THE_BIBLE + DOCUMENTS_IN_THE_CONCORD + CONCORD_DOCUMENT_STEPS + CONCORD_ARTICLE_STEPS + CONCORD_CITATIONS,
+        "the committed graph carries exactly 932,869 rows plus what the maps show and their steps, plus each corpus root's members, plus the Concord's document and article steps, plus its citations of Scripture"
     );
 
     assert_eq!(
@@ -371,11 +374,12 @@ fn encoding_is_deterministic_across_two_independent_builds() {
     fam!(analogue, RowFamily::Analogue);
     fam!(occurs, RowFamily::Occurs);
     fam!(parent_of, RowFamily::ParentOf);
-    fam!(partners, RowFamily::Partners);
+    fam!(spouses, RowFamily::Spouses);
     fam!(participates, RowFamily::Participates);
     fam!(authored, RowFamily::Authored);
     fam!(shown, RowFamily::Shown);
     fam!(map_succession, RowFamily::MapSuccession);
+    fam!(brethren, RowFamily::Brethren);
 
     println!(
         "DB-2a DETERMINISM: {} nodes ({node_bytes} canon bytes) + {rows} rows byte-identical across two independent builds",

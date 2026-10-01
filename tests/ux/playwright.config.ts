@@ -1,4 +1,9 @@
 import { defineConfig } from '@playwright/test';
+
+const start = (script: string) =>
+  process.platform === 'win32'
+    ? `powershell -NoProfile -ExecutionPolicy Bypass -File ${script}.ps1`
+    : `sh ${script}.sh`;
 export default defineConfig({
   // 60s was too tight for SCENE-1/2 + ARROW-1..7 (api-scene.spec.ts) at the
   // default FC_NUM_RUNS=150: measured against a live release-mode server,
@@ -48,9 +53,9 @@ export default defineConfig({
     // release build/link on a first run (or after a Rust change) can take
     // meaningfully longer than a cold debug build, so the boot budget is
     // raised to absorb that rather than risk a spurious webServer timeout.
-    { command: 'powershell -NoProfile -ExecutionPolicy Bypass -File start-api.ps1',
+    { command: start('start-api'),
       url: 'http://localhost:8000/health', reuseExistingServer: true, timeout: 300_000 },
-    { command: 'powershell -NoProfile -ExecutionPolicy Bypass -File start-client.ps1',
+    { command: start('start-client'),
       url: 'http://localhost:5000', reuseExistingServer: true, timeout: 180_000 },
   ],
 });

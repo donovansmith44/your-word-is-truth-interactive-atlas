@@ -10,6 +10,7 @@ public sealed class AtlasClient
     private readonly HttpClient _http;
     private readonly LruCache<string, Scene> _sceneCache = new(capacity: 48);
     private readonly LruCache<string, Chapter> _chapterCache = new(capacity: 24);
+    private readonly LruCache<string, Explore.ChapterText> _chapterTextCache = new(capacity: 24);
     private readonly LruCache<string, Polities> _politiesCache = new(capacity: 12);
     private readonly LruCache<string, PlacePage> _placeHistoryCache = new(capacity: 24);
     private readonly LruCache<string, IReadOnlyList<CrossRef>> _xrefsCache = new(capacity: 24);
@@ -81,6 +82,19 @@ public sealed class AtlasClient
 
         var result = await _http.GetRequired<Chapter>($"api/chapter/{key}");
         _chapterCache.Put(key, result);
+        return result;
+    }
+
+    public async Task<Explore.ChapterText> ChapterText(string book, int chapter)
+    {
+        var key = $"{book}.{chapter}";
+        if (_chapterTextCache.TryGet(key, out var cached))
+        {
+            return cached;
+        }
+
+        var result = new Explore.ChapterText(await _http.GetRequired<TextWindow>($"api/text?ref={key}&scope={TextScope.Chapter.WireName()}"));
+        _chapterTextCache.Put(key, result);
         return result;
     }
 
