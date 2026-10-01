@@ -38,7 +38,7 @@
 --     pretending otherwise.
 --
 --   * WHOLE-BODY PINS of the atlas's own detail routes: @books@,
---     @chapter@, @kretzmann-chapter@, @verse@, @catechism-item@,
+--     @chapter@, @kretzmann-chapter@, @verse@, @catechism-item@, @place@,
 --     @narrative-event@. Each is @Keep@, because "pinned whole" IS the
 --     whole body: their only consumer today is the atlas's own client,
 --     which reads every field, and a @Fields@ list restating each route's
@@ -355,6 +355,7 @@ projections = Map.fromList
   , ("kretzmann-chapter", Keep)
   , ("verse", Keep)
   , ("catechism-item", Keep)
+  , ("place", Keep)
   , ("narrative-event", Keep)
 
   -- ------- CARTOGRAPHIC: map-generator's OWN consumed projection -------

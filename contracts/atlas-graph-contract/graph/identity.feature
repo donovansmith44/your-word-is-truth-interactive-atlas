@@ -19,7 +19,7 @@ Feature: node identity — who a node is, whatever carries it
   themselves.
 
   Vocabulary:
-    | projection | any of: books, catechism-item, catechism-list, chapter, contract, edge-page, eras, event, export-format, gazetteer, kretzmann-chapter, land-mask, landmarks, narrative-event, narratives, node-card, polities, sources, verse, version-root, vocabulary, xref-list |
+    | projection | any of: books, catechism-item, catechism-list, chapter, contract, edge-page, eras, event, export-format, gazetteer, kretzmann-chapter, land-mask, landmarks, narrative-event, narratives, node-card, place, polities, sources, verse, version-root, vocabulary, xref-list |
 
   Scenario: a Place node, as a consumer reads it
     When I GET /api/node/Place:hazor-1

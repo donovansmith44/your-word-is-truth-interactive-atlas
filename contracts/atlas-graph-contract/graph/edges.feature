@@ -11,7 +11,7 @@ Feature: edge families — the declared relations, as a consumer walks them
   consumer that walks a family reads it to decide whether to stop.
 
   Vocabulary:
-    | projection | any of: books, catechism-item, catechism-list, chapter, contract, edge-page, eras, event, export-format, gazetteer, kretzmann-chapter, land-mask, landmarks, narrative-event, narratives, node-card, polities, sources, verse, version-root, vocabulary, xref-list |
+    | projection | any of: books, catechism-item, catechism-list, chapter, contract, edge-page, eras, event, export-format, gazetteer, kretzmann-chapter, land-mask, landmarks, narrative-event, narratives, node-card, place, polities, sources, verse, version-root, vocabulary, xref-list |
 
   Scenario: one family's page, as a consumer walks it
     When I GET /api/node/Place:hazor-1/edges?kind=site-of

@@ -37,7 +37,8 @@ hatch — and adding one to a previously-green scenario is classified
 - **0.20.0** (FOCUS-6 Task R10, the legacy place route is gone) — **MINOR under the 0.x policy (MAJOR class: a scenario and its fixture removed).**
   `GET /api/place/{id}` is no longer served: a place is read as its node (`/api/node/Place:{id}`,
   pinned by `node-place-hazor-1`) and its neighbours. REMOVED: the `detail-routes.feature`
-  scenario `a place`, its fixture `place-hazor-1` and the `place` projection. Every `PlaceRef`
+  scenario `a place` and its fixture `place-hazor-1`. The runner keeps its `place` projection
+  because the received `atlas-edge` suite's vocabulary enumerates it. Every `PlaceRef`
   a chapter or an event serves gains `node: NodeRef`, the graph's own reference to the place;
   any fixture that pins one is re-blessed with it.
 
