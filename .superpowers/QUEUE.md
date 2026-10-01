@@ -10,7 +10,7 @@ Protocol: `AGENTS.md`. Plan: `docs/superpowers/plans/2026-09-30-v1-roadmap.md`.
 - **As of** 2026-09-30 afternoon. **CONTRACT-2 is CLOSED** at `678a0d2` (report: `docs/superpowers/reports/2026-09-30-contract-2-close.md`): 1,574 tests / 98 sections / 0 failures; timing gates 10/10 (gate 1 37 s → 1.0 s after an O(n²) paging fix); contract gate PASSED; semver ok; Playwright 453/2/4 (the known `world-quiet-places:211` + one load flake); AQC 0.11.0, AGC 0.15.0, graph-types 0.7.0, section schema 18, root `3e91f83b…`.
 - **The base for every new item is `678a0d2`.**
 - **Mutation:** owed (base `13111dd`; `.superpowers/MUTATION-GATE-DEBT.md`), deferred to after Nov 4 by the roadmap.
-- **Next for Claude:** A-F1 (FOCUS-1), with A-NAMES waiting on O-NAMES.
+- **Next for Claude:** land A-F1 (FOCUS-1) after Codex's review, then A-F6 (FOCUS-6, in review); then FOCUS-2. A-NAMES waits on O-NAMES.
 - **Next for Codex:** CX-M0 (claimed) → CX-M1, CX-M2 · CX-R1 · CX-R2 · CX-R3 · CX-I1 (to the B2 step).
 - **Before "go":** O-CODEX (`codex login`) if not done.
 
@@ -115,7 +115,7 @@ Protocol: `AGENTS.md`. Plan: `docs/superpowers/plans/2026-09-30-v1-roadmap.md`.
 - **Done when:** the plan's Task 9 gates pass and it's reviewed by Codex.
 
 ### A-EDGES: edges are explorable (R18)
-- **Status:** REWORK (owner, 2026-09-30, PRINCIPLES 27). `lane/claude/F6-t1` and `F6-t2` (`86baad7`, `54079c4`, `7f1ef67`) never land: they put the frontier into the backend (edge card endpoint, `EdgeSource`/`EdgeTarget` relations, labels composed per request). Rebuilt on `3baaeb6`: the generic element read (node or edge, many ids per call), edge labels compiled into the artifact, the edge frontier derived on the client; first the closure of F-33.
+- **Status:** review — inside FOCUS-6 (`lane/claude/F6-int`, see A-F6). History: REWORK (owner, 2026-09-30, PRINCIPLES 27). `lane/claude/F6-t1` and `F6-t2` (`86baad7`, `54079c4`, `7f1ef67`) never land: they put the frontier into the backend (edge card endpoint, `EdgeSource`/`EdgeTarget` relations, labels composed per request). Rebuilt on `3baaeb6`: the generic element read (node or edge, many ids per call), edge labels compiled into the artifact, the edge frontier derived on the client; first the closure of F-33.
 - **Ruling:** spec §12 R18 (owner, 2026-09-30). Server: an edge card and an edge's frontier in the generated document (AQC minor); wire `Link.Target: PositionRef`; client: `ElementKind = Node | Edge`, `Presentation.Of(ElementKind, Surface)` rows for every edge kind, `IExplorer.Resolve(PositionRef)`/`Follow` total. Closes F-21 and retires F1-12's filter. Types for owner sign-off at FOCUS-1's close.
 - **Done when:** `Follow` is total (a law over every served position), the edge card serves its justification, and a Playwright spec follows a verse → its attests edge → the event.
 
@@ -160,8 +160,12 @@ Protocol: `AGENTS.md`. Plan: `docs/superpowers/plans/2026-09-30-v1-roadmap.md`.
 - **Order:** FOCUS-6 first (owner, 2026-09-30), then 2, 3, 4+5, 7+8, 9. A-EDGES (R18) runs before FOCUS-6's plan is final, or alongside it if the tables it adds are disjoint.
 - **Assignment:** each plan names its agent, its base commit and its files. Codex takes the ones that pair against Claude's (server-heavy beside client-heavy).
 
-### A-F3, A-F6, A-F9: FOCUS-3, FOCUS-6 (with the map switch), FOCUS-9
-- **Status:** blocked:A-FPLANS (FOCUS-6's map half is also blocked on the MAPS migration)
+### A-F6: FOCUS-6 (Geography + explorable edges, re-planned under rule 27)
+- **Status:** review:`3baaeb6..4ff1775` on `lane/claude/F6-int` (stacked on FOCUS-1; lands after it, one squashed commit per task). Close report `docs/superpowers/reports/2026-10-01-focus-6-close.md`. Gates: workspace 1,476 pass + 1 declared red (`scene_byte_identity`, O-GOLDEN-R4); graph-types 147; client 621; contract 55; contract-gate PASSED; timing 11/11; Playwright 459 pass, 2 carried reds, 3 skipped. Mutation waits for the owner's window. Landing needs: Codex review, FOCUS-1 landed, O-GOLDEN-R4.
+- **Review scope for Codex:** the close report's task table; rule 27 (nothing derived per request that the data alone determines; no client construct in the graph); 24a/24b per category listed in the report.
+
+### A-F3, A-F9: FOCUS-3, FOCUS-9
+- **Status:** blocked:A-FPLANS
 
 ### A-REVIEW: review every Codex item in `review`
 - **Status:** standing
