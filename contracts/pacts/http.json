@@ -3224,7 +3224,7 @@
     "GET /api/contract": {
       "body": {
         "manifest_schema": 1,
-        "section_schema_version": 20
+        "section_schema_version": 21
       },
       "status": 200
     },
@@ -3758,7 +3758,7 @@
             "verse": 31
           }
         ],
-        "version": "54e5f25a1dbe0dd48531bf700a949fc3"
+        "version": "fa3efe2128354f3b2a34f64dee35fbf0"
       },
       "status": 200
     },
@@ -5049,7 +5049,7 @@
         "kind": "Event",
         "label": "Terah's family leaves Ur",
         "provenance": "curated",
-        "version": "54e5f25a1dbe0dd48531bf700a949fc3"
+        "version": "fa3efe2128354f3b2a34f64dee35fbf0"
       },
       "status": 200
     },
@@ -5072,14 +5072,14 @@
         ],
         "id": "Place:hazor-1",
         "kind": "Place",
-        "label": "Hazor 1",
+        "label": "Hazor",
         "place": {
           "display_name": "Hazor",
           "lat": 33.018333,
           "lon": 35.569167
         },
         "provenance": "curated-places",
-        "version": "54e5f25a1dbe0dd48531bf700a949fc3"
+        "version": "fa3efe2128354f3b2a34f64dee35fbf0"
       },
       "status": 200
     },
@@ -5090,7 +5090,7 @@
             "edge": {
               "id": "LocatedAt:ba554caa302fbfebb1c80f4267da7c35",
               "kind": "located-at",
-              "label": "Hazor is defeated and burned · Located at · Hazor 1"
+              "label": "Hazor is defeated and burned · Located at · Hazor"
             },
             "neighbour": {
               "node": {
@@ -5105,7 +5105,7 @@
             "edge": {
               "id": "LocatedAt:741c521c9d67d4ae5a1c2a1d96c114cb",
               "kind": "located-at",
-              "label": "Subjugation by Jabin · Located at · Hazor 1"
+              "label": "Subjugation by Jabin · Located at · Hazor"
             },
             "neighbour": {
               "node": {
@@ -5119,7 +5119,7 @@
         ],
         "kind": "site-of",
         "next": null,
-        "version": "54e5f25a1dbe0dd48531bf700a949fc3"
+        "version": "fa3efe2128354f3b2a34f64dee35fbf0"
       },
       "status": 200
     },
@@ -11664,7 +11664,7 @@
             "name": "Shows"
           }
         ],
-        "section_schema_version": 20,
+        "section_schema_version": 21,
         "symmetric": [
           {
             "display": "Analogous to",

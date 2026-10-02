@@ -407,8 +407,9 @@ async fn anchor_record_carries_its_citation_and_dates_adjacency() {
     let (st, body, _) = get(&app, "/api/node/Anchor:solomon-crowned").await;
     assert_eq!(st, 200, "{body}");
     assert_eq!(body["kind"], "Anchor");
-    let label = body["label"].as_str().unwrap();
-    assert!(label.contains("Source:"), "an Anchor's own card label IS its citation: {label}");
+    assert_eq!(body["label"], "Solomon anointed king", "an Anchor's label is its curated name");
+    let citation = body["description"].as_str().unwrap();
+    assert!(citation.starts_with("Solomon anointed king — 1015 BC. Source:"), "an Anchor's record carries its citation: {citation}");
 
     let (st2, dates, _) = get(&app, "/api/node/Anchor:solomon-crowned/edges?kind=dates").await;
     assert_eq!(st2, 200, "{dates}");
@@ -2179,7 +2180,7 @@ async fn a_verse_that_names_hazor_serves_an_anchor_over_the_name() {
             serde_json::json!("And it came to pass, when Jabin king of Hazor had heard those things, that he sent to Jobab king of Madon, and to the king of Shimron, and to the king of Achshaph,"),
             serde_json::json!([
                 { "start": 26, "end": 31, "kind": "mentions", "node": { "id": "Person:jabin_676", "kind": "Person", "label": "Jabin" } },
-                { "start": 40, "end": 45, "kind": "mentions", "node": { "id": "Place:hazor-1", "kind": "Place", "label": "Hazor 1" } },
+                { "start": 40, "end": 45, "kind": "mentions", "node": { "id": "Place:hazor-1", "kind": "Place", "label": "Hazor" } },
                 { "start": 86, "end": 91, "kind": "mentions", "node": { "id": "Person:jobab_1642", "kind": "Person", "label": "Jobab" } },
                 { "start": 100, "end": 105, "kind": "mentions", "node": { "id": "Place:madon", "kind": "Place", "label": "Madon" } },
                 { "start": 126, "end": 133, "kind": "mentions", "node": { "id": "Place:shimron", "kind": "Place", "label": "Shimron" } },

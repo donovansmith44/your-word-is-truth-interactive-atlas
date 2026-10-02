@@ -508,7 +508,7 @@ fn node_plain_output_is_byte_unchanged_by_the_json_addition() {
 fn edges_plain_output_is_byte_unchanged_by_the_json_addition() {
     let o = run_with_data_dir(&["edges", "Event:ab_ur", "--kind", "located-at"]);
     assert!(o.status.success(), "stderr: {}", stderr(&o));
-    let expected = "LocatedAt:dafbb7c28eb80653a693de9906dc0669 Place        Place:ur-1                   Ur 1\n(end of list)\n";
+    let expected = "LocatedAt:dafbb7c28eb80653a693de9906dc0669 Place        Place:ur-1                   Ur\n(end of list)\n";
     assert_eq!(stdout(&o), expected, "edges's plain output must be byte-identical to its pre-BIBEX-1 form");
 }
 

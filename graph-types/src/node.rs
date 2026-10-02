@@ -115,24 +115,6 @@ pub struct Node {
     pub provenance: ProvenanceId,
 }
 
-pub trait NodeData {
-    fn id(&self) -> AnyNodeId;
-    fn payload(&self) -> &NodePayload;
-    fn provenance(&self) -> &ProvenanceId;
-}
-
-impl NodeData for Node {
-    fn id(&self) -> AnyNodeId {
-        self.id.clone()
-    }
-    fn payload(&self) -> &NodePayload {
-        &self.payload
-    }
-    fn provenance(&self) -> &ProvenanceId {
-        &self.provenance
-    }
-}
-
 impl ContentAddressed for Node {
     /// A debug print is not a promise in principle, but the fixtures pin this one, so it
     /// must not move while the feature is off.
@@ -161,25 +143,3 @@ impl Node {
     }
 }
 
-pub fn label(n: &dyn NodeData) -> String {
-    match n.payload() {
-        NodePayload::TextUnit { corpus, .. } => format!("text unit ({corpus})"),
-        NodePayload::Container { title } => title.clone(),
-        NodePayload::Event { label, .. }
-        | NodePayload::Narrative { label, .. }
-        | NodePayload::Person { label, .. }
-        | NodePayload::Era { label, .. }
-        | NodePayload::Map { label, .. }
-        | NodePayload::Polity { label, .. }
-        | NodePayload::CatechismItem { label }
-        | NodePayload::Source { label }
-        | NodePayload::Translation { label }
-        | NodePayload::PeopleGroup { label, .. } => label.clone(),
-        NodePayload::CommentaryItem { heading, .. } => {
-            heading.clone().unwrap_or_else(|| "Commentary".to_string())
-        }
-        NodePayload::Place { canonical, .. } => canonical.clone(),
-        NodePayload::Anchor { citation, .. } => citation.clone(),
-        NodePayload::LexiconEntry { lemma, .. } => lemma.clone(),
-    }
-}

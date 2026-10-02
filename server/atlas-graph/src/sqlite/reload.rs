@@ -4,7 +4,7 @@
 
 use std::path::Path;
 
-use atlas_graph_types::canon::ids::parse_any_node_id;
+use atlas_graph_types::canon::ids::{parse_any_node_id, parse_position};
 use atlas_graph_types::canon::Canon;
 use atlas_graph_types::graph::{Graph, ReadingSpine};
 use atlas_graph_types::node::Node;
@@ -89,6 +89,15 @@ pub fn graph_from_sections(layout: &SectionLayout, manifest: &Manifest, present:
                 g.nodes.insert(node.id.clone(), node);
             }
         }
+        {
+            let mut stmt = conn.prepare("SELECT position, label FROM label")?;
+            let mut rows = stmt.query([])?;
+            while let Some(r) = rows.next()? {
+                let position: String = r.get(0)?;
+                let position = parse_position(&position, "label").map_err(|e| SqliteError(format!("{}: label {position}: {e}", ms.name)))?;
+                g.labels.insert(position, r.get(1)?);
+            }
+        }
         for family in row_tables_of(section) {
             rows_by_family.entry(*family).or_default().extend(read_rows(&conn, *family)?);
         }
@@ -118,7 +127,7 @@ pub fn graph_from_sections(layout: &SectionLayout, manifest: &Manifest, present:
     }
     g.build_indexes();
     crate::event_world::add_justified_by(&mut g);
-    crate::labels::compile(&mut g);
+    g.edges_by_id = g.edge_records();
     Ok(g)
 }
 

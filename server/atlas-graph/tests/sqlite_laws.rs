@@ -1473,7 +1473,9 @@ fn a_place_date_claim_round_trips_through_the_sidecar_with_the_event_it_names() 
 fn every_held_position_answers_one_compiled_label_and_every_edge_its_record_from_the_sections() {
     // Arrange
     let mut g = every_end_held(specimen_graph());
-    atlas_graph::labels::compile(&mut g);
+    let atlas = atlas_core::data::AtlasData::default();
+    let geography = atlas_graph::geography::Geography::compile(&g, &atlas);
+    atlas_graph::labels::compile(&mut g, &atlas_graph::labels::ReaderNames::of(&geography, &atlas));
     let dir = std::env::temp_dir().join(format!("f6-labels-{}", std::process::id()));
     let _ = std::fs::remove_dir_all(&dir);
     write_sections(&g, &Extras::default(), "test", &layout_under(&dir)).unwrap();
@@ -1494,11 +1496,14 @@ fn every_end_held(mut g: atlas_graph_types::graph::Graph) -> atlas_graph_types::
     use atlas_graph_types::node::{Node, NodePayload};
     g.build_indexes();
     atlas_graph::event_world::add_justified_by(&mut g);
+    let atlas = atlas_core::data::AtlasData::default();
+    let geography = atlas_graph::geography::Geography::default();
+    let names = atlas_graph::labels::ReaderNames::of(&geography, &atlas);
     let unheld: Vec<_> = g
         .positions()
         .into_iter()
         .filter_map(|p| match p {
-            Position::Node(id) if !g.nodes.contains_key(&id) && atlas_graph::labels::node_label(&id, None).is_none() => Some(id),
+            Position::Node(id) if !g.nodes.contains_key(&id) && atlas_graph::labels::node_label(&id, None, &names).is_none() => Some(id),
             _ => None,
         })
         .collect();
