@@ -240,7 +240,7 @@
 
     private static IEnumerable<(FrontierGroup Group, T Affordance)> Offered<T>(PresentationRequest request) where T : Affordance
     {
-        foreach (var group in request.Element.Groups)
+        foreach (var group in Affordances.InRuledOrder(request.Element.Groups))
         {
             if (Affordances.Of(group.Kind) is T affordance)
             {

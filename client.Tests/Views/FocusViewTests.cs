@@ -70,6 +70,9 @@ public sealed class FocusViewTests : BunitContext
             <span class="focus-entry"><button type="button" class="focus-child explorable" data-testid="popover-child-contains-text-unit:GEN.2.2">GEN.2.2</button>{{EdgeStep(EdgeKind.Contains, Verse2)}}</span>
             {{Worded($"popover-words-contains-{Verse2.Id}", Verse2)}}
         </div>
+        """;
+
+    private static readonly string Genesis2Mentions = $$"""
         <div class="popover-section" data-testid="popover-section-mentions">
             <p class="catechism-section-heading" data-testid="popover-section-mentions-heading">Mentions (2)</p>
             <span class="focus-entry"><button type="button" class="focus-link explorable" data-testid="popover-link-mentions-Person:adam">Adam</button>{{EdgeStep(EdgeKind.Mentions, Adam)}}</span>
@@ -196,7 +199,7 @@ public sealed class FocusViewTests : BunitContext
         var view = Render<FocusView>(p => p.Add(v => v.Node, genesis2).Add(v => v.Surface, Surface.Popover));
 
         // Assert
-        view.MarkupMatches(Genesis2Card + CitesFirstPageShown);
+        view.MarkupMatches(Genesis2Card + CitesFirstPageShown + Genesis2Mentions);
     }
 
     [Fact]
@@ -209,7 +212,7 @@ public sealed class FocusViewTests : BunitContext
         view.Find("[data-testid='popover-section-cites-more']").Click();
 
         // Assert
-        view.MarkupMatches(Genesis2Card + CitesRevealedWhole);
+        view.MarkupMatches(Genesis2Card + CitesRevealedWhole + Genesis2Mentions);
     }
 
     [Fact]
@@ -265,8 +268,7 @@ public sealed class FocusViewTests : BunitContext
             WholeValue.Of(new[]
             {
                 (EdgeKind.MemberOf, Genesis), (EdgeKind.PrecedesIn, Genesis1), (EdgeKind.FollowsIn, Genesis3), (EdgeKind.Contains, Verse1), (EdgeKind.Contains, Verse2),
-                (EdgeKind.Mentions, Adam), (EdgeKind.Mentions, Eden),
-            }.Concat(Citations[..CitesFirstPage].Select(citation => (EdgeKind.Cites, citation))).Select(entry => new Link(entry.Item1, ServedGraph.AtEdge(ServedGraph.EdgeTo(entry.Item1, ServedGraph.At(entry.Item2)))))),
+            }.Concat(Citations[..CitesFirstPage].Select(citation => (EdgeKind.Cites, citation))).Concat([(EdgeKind.Mentions, Adam), (EdgeKind.Mentions, Eden)]).Select(entry => new Link(entry.Item1, ServedGraph.AtEdge(ServedGraph.EdgeTo(entry.Item1, ServedGraph.At(entry.Item2)))))),
             WholeValue.Of(followed));
     }
 
@@ -393,7 +395,7 @@ public sealed class FocusViewTests : BunitContext
         view.Render(p => p.Add(v => v.Node, Genesis2(graph)));
 
         // Assert
-        view.MarkupMatches(Genesis2Card + CitesRevealedWhole);
+        view.MarkupMatches(Genesis2Card + CitesRevealedWhole + Genesis2Mentions);
     }
 
     [Fact]
@@ -489,7 +491,7 @@ public sealed class FocusViewTests : BunitContext
         await view.Find("[data-testid='could-not-load-retry']").ClickAsync(new());
 
         // Assert
-        view.MarkupMatches(Genesis2Card + CitesFirstPageShown);
+        view.MarkupMatches(Genesis2Card + CitesFirstPageShown + Genesis2Mentions);
     }
 
     [Fact]
@@ -902,9 +904,9 @@ public sealed class FocusViewTests : BunitContext
                 "popover-section-text", "popover-text", $"popover-anchor-mentions-{World.Id}-{FirstAnchor}", "popover-field-Provenance",
                 "popover-next", EdgeStepHandle(EdgeKind.FollowsIn, John317),
                 "popover-prev", EdgeStepHandle(EdgeKind.PrecedesIn, John315),
-                "popover-section-cites", "popover-section-cites-heading", $"popover-link-cites-{Romans58.Id}", EdgeStepHandle(EdgeKind.Cites, Romans58), $"popover-words-cites-{Romans58.Id}-text",
                 "popover-section-attests", "popover-section-attests-heading", $"popover-link-attests-{Nicodemus.Id}", EdgeStepHandle(EdgeKind.Attests, Nicodemus),
                 "popover-section-catechism-link", "popover-section-catechism-link-heading", $"popover-link-catechism-link-{SecondArticle.Id}", EdgeStepHandle(EdgeKind.CatechismLink, SecondArticle),
+                "popover-section-cites", "popover-section-cites-heading", $"popover-link-cites-{Romans58.Id}", EdgeStepHandle(EdgeKind.Cites, Romans58), $"popover-words-cites-{Romans58.Id}-text",
             ],
             view.FindAll("[data-testid]").Select(element => element.GetAttribute("data-testid")).ToList());
     }
@@ -968,6 +970,34 @@ public sealed class FocusViewTests : BunitContext
 
         // Assert
         Assert.Equal((0, 0), (graph.ElementReads - resolving, view.FindAll("[data-testid='popover-section-attests'] .focus-text").Count));
+    }
+
+    [Fact]
+    public void A_verses_groups_show_as_its_text_then_attests_catechism_link_and_cites_then_the_rest_in_served_order()
+    {
+        // Arrange
+        var graph = new ServedGraph()
+            .Serving(ServedGraph.TextCard(
+                John316,
+                John316Text,
+                new FrontierGroup(EdgeKind.Cites, 1),
+                new FrontierGroup(EdgeKind.CitedBy, 1),
+                new FrontierGroup(EdgeKind.Mentions, 1),
+                new FrontierGroup(EdgeKind.CatechismLink, 1),
+                new FrontierGroup(EdgeKind.Attests, 1)))
+            .Serving(John316.Id, EdgeKind.Cites, null, ServedGraph.Page(EdgeKind.Cites, null, Romans58))
+            .Serving(John316.Id, EdgeKind.CitedBy, null, ServedGraph.Page(EdgeKind.CitedBy, null, John317))
+            .Serving(John316.Id, EdgeKind.Mentions, null, ServedGraph.Page(EdgeKind.Mentions, null, World))
+            .Serving(John316.Id, EdgeKind.CatechismLink, null, ServedGraph.Page(EdgeKind.CatechismLink, null, SecondArticle))
+            .Serving(John316.Id, EdgeKind.Attests, null, ServedGraph.Page(EdgeKind.Attests, null, Nicodemus));
+
+        // Act
+        var view = Render<FocusView>(p => p.Add(v => v.Node, Resolved.Node(graph, John316)).Add(v => v.Surface, Surface.Popover));
+
+        // Assert
+        Assert.Equal(
+            ["popover-section-text", "popover-section-attests", "popover-section-catechism-link", "popover-section-cites", "popover-section-cited-by", "popover-section-mentions"],
+            view.FindAll("[data-testid^='popover-section-']").Select(element => element.GetAttribute("data-testid")).Where(id => !id!.EndsWith("-heading")).ToList());
     }
 
     [Fact]
