@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { api } from './lib/api';
+import { popoverSectionsHolding } from './lib/popover';
 
 // Batch ATTEST-1 -- ACCOUNTS vs. MENTIONS, and the Analogue relation.
 //
@@ -182,9 +183,7 @@ test('ATTEST-1 (L4, owner report 1): Matthew\'s leper is its own event, joined t
   // reader last saw it. Read off the real rendered DOM order, so a future
   // provider slipping in between fails here as well as in
   // PopoverSectionRegistryTests.
-  const sectionIds = await page.locator('[data-testid^="popover-section-"]').evaluateAll(
-    (els) => els.map((e) => e.getAttribute('data-testid'))
-  );
+  const sectionIds = await popoverSectionsHolding(page, ['popover-section-event-witnesses', 'popover-section-event-analogues']);
   const pIdx = sectionIds.indexOf('popover-section-event-witnesses');
   const aIdx = sectionIds.indexOf('popover-section-event-analogues');
   expect(pIdx, 'PARALLEL ACCOUNTS must be rendered').toBeGreaterThanOrEqual(0);

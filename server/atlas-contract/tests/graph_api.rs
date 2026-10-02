@@ -766,6 +766,54 @@ async fn node_edges_pagination_pages_are_windows_over_the_total() {
 }
 
 #[tokio::test]
+async fn every_neighbour_page_names_the_page_before_it_and_reading_there_answers_that_page() {
+    // Arrange
+    let app = artifact_app();
+    let at = |cursor: Option<u64>| match cursor {
+        Some(c) => format!("/api/node/Person:aaron_1/edges?kind=mentioned-in&limit=20&cursor={c}"),
+        None => "/api/node/Person:aaron_1/edges?kind=mentioned-in&limit=20".to_string(),
+    };
+    let mut pages = vec![get(&app, &at(None)).await.1];
+    while let Some(next) = pages[pages.len() - 1]["next"].as_u64() {
+        pages.push(get(&app, &at(Some(next))).await.1);
+    }
+
+    let edges = |page: &serde_json::Value| page["entries"].as_array().unwrap().iter().map(|entry| entry["edge"]["id"].to_string()).collect::<Vec<_>>();
+
+    // Act
+    let mut before = Vec::new();
+    for page in &pages {
+        before.push(match page["previous"].as_u64() {
+            Some(previous) => Some(edges(&get(&app, &at(Some(previous))).await.1)),
+            None => None,
+        });
+    }
+
+    // Assert
+    let expected: Vec<Option<Vec<String>>> = [None, None].into_iter().chain(pages.iter().skip(1).take(pages.len() - 2).map(|page| Some(edges(page)))).collect();
+    assert_eq!((pages.len() > 2, before), (true, expected));
+}
+
+#[tokio::test]
+async fn an_element_read_names_the_page_of_ids_before_it() {
+    // Arrange
+    let app = compiled_app();
+    let ids = vec![A_SAMPLE_VERSE; 2 * LARGEST_PAGE + 1];
+    let asked = ids.iter().map(|id| encoded(id)).collect::<Vec<_>>().join(",");
+
+    // Act
+    let (_, first, _) = get(&app, &format!("/api/elements?ids={asked}")).await;
+    let (_, second, _) = get(&app, &format!("/api/elements?ids={asked}&cursor={LARGEST_PAGE}")).await;
+    let (_, third, _) = get(&app, &format!("/api/elements?ids={asked}&cursor={}", 2 * LARGEST_PAGE)).await;
+
+    // Assert
+    assert_eq!(
+        [&first, &second, &third].map(|page| page.get("previous").cloned()),
+        [Some(serde_json::Value::Null), Some(serde_json::Value::Null), Some(serde_json::json!(LARGEST_PAGE))]
+    );
+}
+
+#[tokio::test]
 async fn bijection_witness_over_http_cites_and_cited_by_share_the_same_edge_id() {
     let app = compiled_app();
 
@@ -1516,6 +1564,7 @@ async fn an_anchor_justifies_the_dating_it_grounds_and_that_neighbour_is_the_edg
         serde_json::json!({
             "kind": "justifies",
             "entries": [{ "edge": page["entries"][0]["edge"], "neighbour": { "position": "edge", "edge": dates["entries"][0]["edge"] } }],
+            "previous": null,
             "next": null,
             "version": dates["version"],
         })
@@ -1640,6 +1689,7 @@ async fn genesis_is_a_member_of_the_bible_root() {
         serde_json::json!({
             "kind": "member-of",
             "entries": [ { "edge": page["entries"][0]["edge"].clone(), "neighbour": { "position": "node", "node": { "id": BIBLE_ROOT, "kind": "Container", "label": "The Holy Bible" } } } ],
+            "previous": null,
             "next": null,
             "version": version,
         })
@@ -1668,6 +1718,7 @@ async fn the_small_catechism_is_followed_by_the_large_and_the_commandments_by_th
         serde_json::json!({
             "kind": "follows-in",
             "entries": [ { "edge": documents["entries"][0]["edge"].clone(), "neighbour": { "position": "node", "node": { "id": LARGE_CATECHISM, "kind": "Container", "label": "The Large Catechism" } } } ],
+            "previous": null,
             "next": null,
             "version": documents["version"].clone(),
         })
@@ -1677,6 +1728,7 @@ async fn the_small_catechism_is_followed_by_the_large_and_the_commandments_by_th
         serde_json::json!({
             "kind": "follows-in",
             "entries": [ { "edge": articles["entries"][0]["edge"].clone(), "neighbour": { "position": "node", "node": { "id": THE_CREED, "kind": "Container", "label": "II. The Creed" } } } ],
+            "previous": null,
             "next": null,
             "version": articles["version"].clone(),
         })
@@ -2423,6 +2475,7 @@ async fn the_element_read_answers_each_id_in_order_with_its_node_its_edge_or_its
                 },
                 { "element": "missing", "id": AN_UNKNOWN_PERSON },
             ],
+            "previous": null,
             "next": null,
             "version": verse["version"],
         })

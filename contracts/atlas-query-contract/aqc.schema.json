@@ -780,6 +780,13 @@
             "null"
           ]
         },
+        "previous": {
+          "minimum": 0,
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
         "version": {
           "type": "string"
         }
@@ -951,6 +958,13 @@
           "type": "array"
         },
         "next": {
+          "minimum": 0,
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "previous": {
           "minimum": 0,
           "type": [
             "integer",
@@ -2988,5 +3002,5 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "description": "Derived from contracts/openapi.yaml by export_contract; do not edit.",
   "title": "Atlas Query Contract -- shapes",
-  "version": "0.19.1"
+  "version": "0.20.0"
 }

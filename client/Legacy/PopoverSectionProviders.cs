@@ -16,7 +16,7 @@ public sealed class ChapterCardSection : IPopoverSectionProvider
 
     public bool AppliesTo(IExplorable node) => node.Kind == "Chapter";
 
-    public async Task<PopoverSection?> ResolveAsync(IExplorable node, AtlasClient api, IPopoverSectionContext ctx)
+    public async Task<PopoverSection?> ResolveAsync(IExplorable node, Explorable current, AtlasClient api, IPopoverSectionContext ctx)
     {
         if (node is not ChapterNode chapterNode)
         {
@@ -144,7 +144,7 @@ public sealed class YearFrontierSection : IPopoverSectionProvider
 {
     public bool AppliesTo(IExplorable node) => node.Kind == "Year";
 
-    public Task<PopoverSection?> ResolveAsync(IExplorable node, AtlasClient api, IPopoverSectionContext ctx) =>
+    public Task<PopoverSection?> ResolveAsync(IExplorable node, Explorable current, AtlasClient api, IPopoverSectionContext ctx) =>
         node is YearNode year ? year.ResolveFrontierAsync(api, ctx) : Task.FromResult<PopoverSection?>(null);
 }
 
@@ -152,7 +152,7 @@ public sealed class VerseTextSectionProvider : IPopoverSectionProvider
 {
     public bool AppliesTo(IExplorable node) => node.Kind is "Verse" or "Passage";
 
-    public async Task<PopoverSection?> ResolveAsync(IExplorable node, AtlasClient api, IPopoverSectionContext ctx)
+    public async Task<PopoverSection?> ResolveAsync(IExplorable node, Explorable current, AtlasClient api, IPopoverSectionContext ctx)
     {
         string book;
         int chapter, focalFrom, focalTo;
@@ -193,13 +193,13 @@ public sealed class VerseTextSectionProvider : IPopoverSectionProvider
         {
             var seq = 0;
             builder.OpenComponent<Components.VerseTextSection>(seq++);
-            builder.AddAttribute(seq++, "Book", book);
-            builder.AddAttribute(seq++, "Chapter", chapter);
-            builder.AddAttribute(seq++, "FocalFromVerse", focalFrom);
-            builder.AddAttribute(seq++, "FocalToVerse", focalTo);
-            builder.AddAttribute(seq++, "CompactText", compactText);
-            builder.AddAttribute(seq++, "FocalVerses", focalVerses);
-            builder.AddAttribute(seq++, "OnExplore", EventCallback.Factory.Create<PopoverOpening>(ctx, opening => ctx.PushAsync(opening, EdgeKind.Mentions)));
+            builder.AddAttribute(seq++, nameof(Components.VerseTextSection.Book), book);
+            builder.AddAttribute(seq++, nameof(Components.VerseTextSection.Chapter), chapter);
+            builder.AddAttribute(seq++, nameof(Components.VerseTextSection.FocalFromVerse), focalFrom);
+            builder.AddAttribute(seq++, nameof(Components.VerseTextSection.FocalToVerse), focalTo);
+            builder.AddAttribute(seq++, nameof(Components.VerseTextSection.CompactText), compactText);
+            builder.AddAttribute(seq++, nameof(Components.VerseTextSection.FocalVerses), focalVerses);
+            builder.AddAttribute(seq++, nameof(Components.VerseTextSection.OnExplore), EventCallback.Factory.Create<PopoverOpening>(ctx, opening => ctx.PushAsync(opening, EdgeKind.Mentions)));
             builder.CloseComponent();
 
             seq = FrontierProvenance.Affordance(
@@ -252,11 +252,11 @@ internal static class FrontierProvenance
         string register)
     {
         builder.OpenComponent<Components.ProvenanceAffordance>(seq++);
-        builder.AddAttribute(seq++, "Provenance", provenance);
-        builder.AddAttribute(seq++, "TestId", testId);
-        builder.AddAttribute(seq++, "ButtonLabel", buttonLabel);
-        builder.AddAttribute(seq++, "Register", register);
-        builder.AddAttribute(seq++, "Sources", sources);
+        builder.AddAttribute(seq++, nameof(Components.ProvenanceAffordance.Provenance), provenance);
+        builder.AddAttribute(seq++, nameof(Components.ProvenanceAffordance.TestId), testId);
+        builder.AddAttribute(seq++, nameof(Components.ProvenanceAffordance.ButtonLabel), buttonLabel);
+        builder.AddAttribute(seq++, nameof(Components.ProvenanceAffordance.Register), register);
+        builder.AddAttribute(seq++, nameof(Components.ProvenanceAffordance.Sources), sources);
         builder.CloseComponent();
         return seq;
     }
@@ -274,7 +274,7 @@ public sealed class CrossRefsSection : IPopoverSectionProvider
 
     public bool AppliesTo(IExplorable node) => node.Kind is "Verse" or "Passage";
 
-    public async Task<PopoverSection?> ResolveAsync(IExplorable node, AtlasClient api, IPopoverSectionContext ctx)
+    public async Task<PopoverSection?> ResolveAsync(IExplorable node, Explorable current, AtlasClient api, IPopoverSectionContext ctx)
     {
         IReadOnlyList<CrossRef> xrefs;
         IReadOnlyList<string> xrefProvenance = Array.Empty<string>();
@@ -320,18 +320,18 @@ public sealed class CrossRefsSection : IPopoverSectionProvider
                 xrefProvenance, registry, "xrefs-provenance", "Sources for these cross references");
 
             builder.OpenComponent<Components.PassageList>(seq++);
-            builder.AddAttribute(seq++, "Units", (IReadOnlyList<PassageSourceUnit>)units);
-            builder.AddAttribute(seq++, "TrueTotal", xrefs.Count);
-            builder.AddAttribute(seq++, "ResolveRemainingAsync", (Func<Task<IReadOnlyList<PassageSourceUnit>>>)(async () => await ResolveUnits(api, lazySpans)));
-            builder.AddAttribute(seq++, "RefTestIdPrefix", "xref-item");
-            builder.AddAttribute(seq++, "Cap", ctx.XrefEntryPoint ? XrefsShown : (ctx.OtherContextSectionCount > 0 ? 2 : XrefsShown));
-            builder.AddAttribute(seq++, "MoreTestId", "xrefs-more");
-            builder.AddAttribute(seq++, "CollapseTestId", "xrefs-collapse");
-            builder.AddAttribute(seq++, "RevealNoun", "cross-references");
-            builder.AddAttribute(seq++, "ClampVerses", Components.PassageList.StandardVerseClamp);
-            builder.AddAttribute(seq++, "ExploreAsVerse", true);
-            builder.AddAttribute(seq++, "OnExplore", EventCallback.Factory.Create<PopoverOpening>(ctx, opening => ctx.PushAsync(opening, EdgeKind.Cites)));
-            builder.AddAttribute(seq++, "OnToggleSelect", EventCallback.Factory.Create<NodeRef>(ctx, node => ctx.ToggleSelectAsync(node)));
+            builder.AddAttribute(seq++, nameof(Components.PassageList.Units), (IReadOnlyList<PassageSourceUnit>)units);
+            builder.AddAttribute(seq++, nameof(Components.PassageList.TrueTotal), xrefs.Count);
+            builder.AddAttribute(seq++, nameof(Components.PassageList.ResolveRemainingAsync), (Func<Task<IReadOnlyList<PassageSourceUnit>>>)(async () => await ResolveUnits(api, lazySpans)));
+            builder.AddAttribute(seq++, nameof(Components.PassageList.RefTestIdPrefix), "xref-item");
+            builder.AddAttribute(seq++, nameof(Components.PassageList.Cap), ctx.XrefEntryPoint ? XrefsShown : (ctx.OtherContextSectionCount > 0 ? 2 : XrefsShown));
+            builder.AddAttribute(seq++, nameof(Components.PassageList.MoreTestId), "xrefs-more");
+            builder.AddAttribute(seq++, nameof(Components.PassageList.CollapseTestId), "xrefs-collapse");
+            builder.AddAttribute(seq++, nameof(Components.PassageList.RevealNoun), "cross-references");
+            builder.AddAttribute(seq++, nameof(Components.PassageList.ClampVerses), Components.PassageList.StandardVerseClamp);
+            builder.AddAttribute(seq++, nameof(Components.PassageList.ExploreAsVerse), true);
+            builder.AddAttribute(seq++, nameof(Components.PassageList.OnExplore), EventCallback.Factory.Create<PopoverOpening>(ctx, opening => ctx.PushAsync(opening, EdgeKind.Cites)));
+            builder.AddAttribute(seq++, nameof(Components.PassageList.OnToggleSelect), EventCallback.Factory.Create<NodeRef>(ctx, node => ctx.ToggleSelectAsync(node)));
             builder.CloseComponent();
         };
         return new PopoverSection("xrefs", body);
@@ -369,7 +369,7 @@ public sealed class CatechismSeamSection : IPopoverSectionProvider
 {
     public bool AppliesTo(IExplorable node) => node.Kind is "Verse" or "Passage";
 
-    public async Task<PopoverSection?> ResolveAsync(IExplorable node, AtlasClient api, IPopoverSectionContext ctx)
+    public async Task<PopoverSection?> ResolveAsync(IExplorable node, Explorable current, AtlasClient api, IPopoverSectionContext ctx)
     {
         IReadOnlyList<CatechismRef> items;
         IReadOnlyList<string> catechismProvenance = Array.Empty<string>();
@@ -406,9 +406,9 @@ public sealed class CatechismSeamSection : IPopoverSectionProvider
                 catechismProvenance, registry, "catechism-provenance", "Sources for this catechism mapping");
 
             builder.OpenComponent<Components.CatechismList>(seq++);
-            builder.AddAttribute(seq++, "Items", items);
-            builder.AddAttribute(seq++, "Cap", CatechismDefaultCap);
-            builder.AddAttribute(seq++, "OnExplore", EventCallback.Factory.Create<PopoverOpening>(ctx, opening => ctx.PushAsync(opening, EdgeKind.CatechismLink)));
+            builder.AddAttribute(seq++, nameof(Components.CatechismList.Items), items);
+            builder.AddAttribute(seq++, nameof(Components.CatechismList.Cap), CatechismDefaultCap);
+            builder.AddAttribute(seq++, nameof(Components.CatechismList.OnExplore), EventCallback.Factory.Create<PopoverOpening>(ctx, opening => ctx.PushAsync(opening, EdgeKind.CatechismLink)));
             builder.CloseComponent();
         };
         return new PopoverSection("catechism", body);
@@ -444,7 +444,7 @@ public sealed class CatechismTextSection : IPopoverSectionProvider
 {
     public bool AppliesTo(IExplorable node) => node.Kind == "Catechism";
 
-    public async Task<PopoverSection?> ResolveAsync(IExplorable node, AtlasClient api, IPopoverSectionContext ctx)
+    public async Task<PopoverSection?> ResolveAsync(IExplorable node, Explorable current, AtlasClient api, IPopoverSectionContext ctx)
     {
         if (node is not CatechismNode item)
         {
@@ -473,7 +473,7 @@ public sealed class CatechismExplanationSection : IPopoverSectionProvider
 {
     public bool AppliesTo(IExplorable node) => node.Kind == "Catechism";
 
-    public async Task<PopoverSection?> ResolveAsync(IExplorable node, AtlasClient api, IPopoverSectionContext ctx)
+    public async Task<PopoverSection?> ResolveAsync(IExplorable node, Explorable current, AtlasClient api, IPopoverSectionContext ctx)
     {
         if (node is not CatechismNode item)
         {
@@ -495,7 +495,7 @@ public sealed class CatechismWhereWrittenSection : IPopoverSectionProvider
 {
     public bool AppliesTo(IExplorable node) => node.Kind == "Catechism";
 
-    public async Task<PopoverSection?> ResolveAsync(IExplorable node, AtlasClient api, IPopoverSectionContext ctx)
+    public async Task<PopoverSection?> ResolveAsync(IExplorable node, Explorable current, AtlasClient api, IPopoverSectionContext ctx)
     {
         if (node is not CatechismNode item)
         {
@@ -522,7 +522,7 @@ public sealed class CatechismScripturesSection : IPopoverSectionProvider
 {
     public bool AppliesTo(IExplorable node) => node.Kind == "Catechism";
 
-    public async Task<PopoverSection?> ResolveAsync(IExplorable node, AtlasClient api, IPopoverSectionContext ctx)
+    public async Task<PopoverSection?> ResolveAsync(IExplorable node, Explorable current, AtlasClient api, IPopoverSectionContext ctx)
     {
         if (node is not CatechismNode item)
         {
@@ -575,9 +575,9 @@ public sealed class CatechismScripturesSection : IPopoverSectionProvider
             builder.CloseElement();
 
             builder.OpenComponent<Components.PassageList>(seq++);
-            builder.AddAttribute(seq++, "Units", (IReadOnlyList<PassageSourceUnit>)units);
-            builder.AddAttribute(seq++, "RefTestIdPrefix", "catechism-verse");
-            builder.AddAttribute(seq++, "OnExplore", EventCallback.Factory.Create<PopoverOpening>(ctx, opening => ctx.PushAsync(opening, EdgeKind.CatechismLink)));
+            builder.AddAttribute(seq++, nameof(Components.PassageList.Units), (IReadOnlyList<PassageSourceUnit>)units);
+            builder.AddAttribute(seq++, nameof(Components.PassageList.RefTestIdPrefix), "catechism-verse");
+            builder.AddAttribute(seq++, nameof(Components.PassageList.OnExplore), EventCallback.Factory.Create<PopoverOpening>(ctx, opening => ctx.PushAsync(opening, EdgeKind.CatechismLink)));
             builder.CloseComponent();
         };
         return new PopoverSection("catechism-scriptures", body);
@@ -598,7 +598,7 @@ public sealed class VerseEventMembershipSection : IPopoverSectionProvider
 {
     public bool AppliesTo(IExplorable node) => node.Kind == "Verse";
 
-    public async Task<PopoverSection?> ResolveAsync(IExplorable node, AtlasClient api, IPopoverSectionContext ctx)
+    public async Task<PopoverSection?> ResolveAsync(IExplorable node, Explorable current, AtlasClient api, IPopoverSectionContext ctx)
     {
         if (node is not VerseNode v)
         {
@@ -650,7 +650,7 @@ public sealed class VersePassageMembershipSection : IPopoverSectionProvider
 {
     public bool AppliesTo(IExplorable node) => node.Kind == "Verse";
 
-    public async Task<PopoverSection?> ResolveAsync(IExplorable node, AtlasClient api, IPopoverSectionContext ctx)
+    public async Task<PopoverSection?> ResolveAsync(IExplorable node, Explorable current, AtlasClient api, IPopoverSectionContext ctx)
     {
         if (node is not VerseNode v)
         {
@@ -673,7 +673,7 @@ public sealed class EventProvenanceSection : IPopoverSectionProvider
 {
     public bool AppliesTo(IExplorable node) => node.Kind == "Event";
 
-    public async Task<PopoverSection?> ResolveAsync(IExplorable node, AtlasClient api, IPopoverSectionContext ctx)
+    public async Task<PopoverSection?> ResolveAsync(IExplorable node, Explorable current, AtlasClient api, IPopoverSectionContext ctx)
     {
         if (node is not EventNode ev)
         {
@@ -697,7 +697,7 @@ public sealed class EventDateAndPlacesSection : IPopoverSectionProvider
 {
     public bool AppliesTo(IExplorable node) => node.Kind == "Event";
 
-    public async Task<PopoverSection?> ResolveAsync(IExplorable node, AtlasClient api, IPopoverSectionContext ctx)
+    public async Task<PopoverSection?> ResolveAsync(IExplorable node, Explorable current, AtlasClient api, IPopoverSectionContext ctx)
     {
         if (node is not EventNode ev)
         {
@@ -721,8 +721,8 @@ public sealed class EventDateAndPlacesSection : IPopoverSectionProvider
             if (when is not null)
             {
                 builder.OpenComponent<Components.FrontierMetadataRow>(seq++);
-                builder.AddAttribute(seq++, "TestId", "event-time");
-                builder.AddAttribute(seq++, "ChildContent", (RenderFragment)(valueBuilder =>
+                builder.AddAttribute(seq++, nameof(Components.FrontierMetadataRow.TestId), "event-time");
+                builder.AddAttribute(seq++, nameof(Components.FrontierMetadataRow.ChildContent), (RenderFragment)(valueBuilder =>
                 {
                     var vseq = 0;
                     valueBuilder.OpenElement(vseq++, "button");
@@ -760,15 +760,15 @@ public sealed class EventDateAndPlacesSection : IPopoverSectionProvider
     internal static void RenderArrowNav(RenderTreeBuilder builder, ref int seq, IPopoverSectionContext ctx, NarrativeArrow direction, string eventTestIdPrefix, string roleTestIdPrefix, string idSuffix, NarrativeAdjacentEvent? adjacent, string glyph, bool inline = false, string? inlinePrefixText = null)
     {
         builder.OpenComponent<Components.ArrowNav>(seq++);
-        builder.AddAttribute(seq++, "Direction", direction.Name);
-        builder.AddAttribute(seq++, "EventTestIdPrefix", eventTestIdPrefix);
-        builder.AddAttribute(seq++, "RoleTestIdPrefix", roleTestIdPrefix);
-        builder.AddAttribute(seq++, "IdSuffix", idSuffix);
-        builder.AddAttribute(seq++, "Adjacent", adjacent);
-        builder.AddAttribute(seq++, "Glyph", glyph);
-        builder.AddAttribute(seq++, "Inline", inline);
-        builder.AddAttribute(seq++, "InlinePrefixText", inlinePrefixText);
-        builder.AddAttribute(seq++, "OnExplore", EventCallback.Factory.Create<PopoverOpening>(ctx, opening => ctx.PushAsync(opening, direction.Via)));
+        builder.AddAttribute(seq++, nameof(Components.ArrowNav.Direction), direction.Name);
+        builder.AddAttribute(seq++, nameof(Components.ArrowNav.EventTestIdPrefix), eventTestIdPrefix);
+        builder.AddAttribute(seq++, nameof(Components.ArrowNav.RoleTestIdPrefix), roleTestIdPrefix);
+        builder.AddAttribute(seq++, nameof(Components.ArrowNav.IdSuffix), idSuffix);
+        builder.AddAttribute(seq++, nameof(Components.ArrowNav.Adjacent), adjacent);
+        builder.AddAttribute(seq++, nameof(Components.ArrowNav.Glyph), glyph);
+        builder.AddAttribute(seq++, nameof(Components.ArrowNav.Inline), inline);
+        builder.AddAttribute(seq++, nameof(Components.ArrowNav.InlinePrefixText), inlinePrefixText);
+        builder.AddAttribute(seq++, nameof(Components.ArrowNav.OnExplore), EventCallback.Factory.Create<PopoverOpening>(ctx, opening => ctx.PushAsync(opening, direction.Via)));
         builder.CloseComponent();
     }
 }
@@ -792,7 +792,7 @@ public sealed class EventWitnessesSection : IPopoverSectionProvider
 {
     public bool AppliesTo(IExplorable node) => node.Kind == "Event";
 
-    public async Task<PopoverSection?> ResolveAsync(IExplorable node, AtlasClient api, IPopoverSectionContext ctx)
+    public async Task<PopoverSection?> ResolveAsync(IExplorable node, Explorable current, AtlasClient api, IPopoverSectionContext ctx)
     {
         if (node is not EventNode ev)
         {
@@ -826,10 +826,10 @@ public sealed class EventWitnessesSection : IPopoverSectionProvider
             }
 
             builder.OpenComponent<Components.PassageList>(seq++);
-            builder.AddAttribute(seq++, "Units", (IReadOnlyList<PassageSourceUnit>)units);
-            builder.AddAttribute(seq++, "RefTestIdPrefix", "event-witness");
-            builder.AddAttribute(seq++, "ClampVerses", Components.PassageList.StandardVerseClamp);
-            builder.AddAttribute(seq++, "OnExplore", EventCallback.Factory.Create<PopoverOpening>(ctx, opening => ctx.PushAsync(opening, EdgeKind.AttestedIn)));
+            builder.AddAttribute(seq++, nameof(Components.PassageList.Units), (IReadOnlyList<PassageSourceUnit>)units);
+            builder.AddAttribute(seq++, nameof(Components.PassageList.RefTestIdPrefix), "event-witness");
+            builder.AddAttribute(seq++, nameof(Components.PassageList.ClampVerses), Components.PassageList.StandardVerseClamp);
+            builder.AddAttribute(seq++, nameof(Components.PassageList.OnExplore), EventCallback.Factory.Create<PopoverOpening>(ctx, opening => ctx.PushAsync(opening, EdgeKind.AttestedIn)));
             builder.CloseComponent();
         };
         return new PopoverSection(multi ? "event-witnesses" : "event-witness", body);
@@ -843,7 +843,7 @@ public sealed class EventMentionsSection : IPopoverSectionProvider
 {
     public bool AppliesTo(IExplorable node) => node.Kind == "Event";
 
-    public async Task<PopoverSection?> ResolveAsync(IExplorable node, AtlasClient api, IPopoverSectionContext ctx)
+    public async Task<PopoverSection?> ResolveAsync(IExplorable node, Explorable current, AtlasClient api, IPopoverSectionContext ctx)
     {
         if (node is not EventNode ev)
         {
@@ -871,9 +871,9 @@ public sealed class EventMentionsSection : IPopoverSectionProvider
                 "Sources for these mentions");
 
             builder.OpenComponent<Components.RefsList>(seq++);
-            builder.AddAttribute(seq++, "Refs", (IReadOnlyList<Components.RefsList.RefDescriptor>)refs);
-            builder.AddAttribute(seq++, "TestIdPrefix", "event-mentioned-in");
-            builder.AddAttribute(seq++, "OnExplore", EventCallback.Factory.Create<PopoverOpening>(ctx, opening => ctx.PushAsync(opening, EdgeKind.MentionedIn)));
+            builder.AddAttribute(seq++, nameof(Components.RefsList.Refs), (IReadOnlyList<Components.RefsList.RefDescriptor>)refs);
+            builder.AddAttribute(seq++, nameof(Components.RefsList.TestIdPrefix), "event-mentioned-in");
+            builder.AddAttribute(seq++, nameof(Components.RefsList.OnExplore), EventCallback.Factory.Create<PopoverOpening>(ctx, opening => ctx.PushAsync(opening, EdgeKind.MentionedIn)));
             builder.CloseComponent();
         };
         return new PopoverSection("event-mentions", body);
@@ -884,7 +884,7 @@ public sealed class EventAnaloguesSection : IPopoverSectionProvider
 {
     public bool AppliesTo(IExplorable node) => node.Kind == "Event";
 
-    public async Task<PopoverSection?> ResolveAsync(IExplorable node, AtlasClient api, IPopoverSectionContext ctx)
+    public async Task<PopoverSection?> ResolveAsync(IExplorable node, Explorable current, AtlasClient api, IPopoverSectionContext ctx)
     {
         if (node is not EventNode ev)
         {
@@ -915,9 +915,9 @@ public sealed class EventAnaloguesSection : IPopoverSectionProvider
                 "Sources for these similar accounts");
 
             builder.OpenComponent<Components.RefsList>(seq++);
-            builder.AddAttribute(seq++, "Refs", (IReadOnlyList<Components.RefsList.RefDescriptor>)refs);
-            builder.AddAttribute(seq++, "TestIdPrefix", "event-analogues");
-            builder.AddAttribute(seq++, "OnExplore", EventCallback.Factory.Create<PopoverOpening>(ctx, opening => ctx.PushAsync(opening, EdgeKind.AnalogousTo)));
+            builder.AddAttribute(seq++, nameof(Components.RefsList.Refs), (IReadOnlyList<Components.RefsList.RefDescriptor>)refs);
+            builder.AddAttribute(seq++, nameof(Components.RefsList.TestIdPrefix), "event-analogues");
+            builder.AddAttribute(seq++, nameof(Components.RefsList.OnExplore), EventCallback.Factory.Create<PopoverOpening>(ctx, opening => ctx.PushAsync(opening, EdgeKind.AnalogousTo)));
             builder.CloseComponent();
         };
         return new PopoverSection("event-analogues", body);
@@ -928,7 +928,7 @@ public sealed class VerseParallelsSection : IPopoverSectionProvider
 {
     public bool AppliesTo(IExplorable node) => node.Kind is "Verse" or "Passage";
 
-    public async Task<PopoverSection?> ResolveAsync(IExplorable node, AtlasClient api, IPopoverSectionContext ctx)
+    public async Task<PopoverSection?> ResolveAsync(IExplorable node, Explorable current, AtlasClient api, IPopoverSectionContext ctx)
     {
         IReadOnlyList<VerseEvent> events;
         string ownVref;
@@ -985,10 +985,10 @@ public sealed class VerseParallelsSection : IPopoverSectionProvider
                 builder.CloseElement();
 
                 builder.OpenComponent<Components.PassageList>(seq++);
-                builder.AddAttribute(seq++, "Units", (IReadOnlyList<PassageSourceUnit>)units);
-                builder.AddAttribute(seq++, "RefTestIdPrefix", multiEvent ? $"verse-parallel-{Slugify(label)}" : "verse-parallel");
-                builder.AddAttribute(seq++, "ClampVerses", Components.PassageList.StandardVerseClamp);
-                builder.AddAttribute(seq++, "OnExplore", EventCallback.Factory.Create<PopoverOpening>(ctx, opening => ctx.PushAsync(opening, EdgeKind.Parallel)));
+                builder.AddAttribute(seq++, nameof(Components.PassageList.Units), (IReadOnlyList<PassageSourceUnit>)units);
+                builder.AddAttribute(seq++, nameof(Components.PassageList.RefTestIdPrefix), multiEvent ? $"verse-parallel-{Slugify(label)}" : "verse-parallel");
+                builder.AddAttribute(seq++, nameof(Components.PassageList.ClampVerses), Components.PassageList.StandardVerseClamp);
+                builder.AddAttribute(seq++, nameof(Components.PassageList.OnExplore), EventCallback.Factory.Create<PopoverOpening>(ctx, opening => ctx.PushAsync(opening, EdgeKind.Parallel)));
                 builder.CloseComponent();
             }
         };
@@ -1011,7 +1011,7 @@ public sealed class EventChronologySection : IPopoverSectionProvider
 {
     public bool AppliesTo(IExplorable node) => node.Kind == "Event";
 
-    public async Task<PopoverSection?> ResolveAsync(IExplorable node, AtlasClient api, IPopoverSectionContext ctx)
+    public async Task<PopoverSection?> ResolveAsync(IExplorable node, Explorable current, AtlasClient api, IPopoverSectionContext ctx)
     {
         if (node is not INarrativeAware aware)
         {
@@ -1102,7 +1102,7 @@ public sealed class PolityDeltaEventSection : IPopoverSectionProvider
 {
     public bool AppliesTo(IExplorable node) => node.Kind == "PolityDelta";
 
-    public Task<PopoverSection?> ResolveAsync(IExplorable node, AtlasClient api, IPopoverSectionContext ctx)
+    public Task<PopoverSection?> ResolveAsync(IExplorable node, Explorable current, AtlasClient api, IPopoverSectionContext ctx)
     {
         if (node is not PolityDeltaNode delta || delta.EventText is not { } eventText)
         {
@@ -1124,7 +1124,7 @@ public sealed class PolityDeltaScripturesSection : IPopoverSectionProvider
 {
     public bool AppliesTo(IExplorable node) => node.Kind == "PolityDelta";
 
-    public async Task<PopoverSection?> ResolveAsync(IExplorable node, AtlasClient api, IPopoverSectionContext ctx)
+    public async Task<PopoverSection?> ResolveAsync(IExplorable node, Explorable current, AtlasClient api, IPopoverSectionContext ctx)
     {
         if (node is not PolityDeltaNode delta || delta.Verses.Count == 0)
         {
@@ -1148,9 +1148,9 @@ public sealed class PolityDeltaScripturesSection : IPopoverSectionProvider
 
             var units = new PassageSourceUnit[] { new(verses) };
             builder.OpenComponent<Components.PassageList>(seq++);
-            builder.AddAttribute(seq++, "Units", (IReadOnlyList<PassageSourceUnit>)units);
-            builder.AddAttribute(seq++, "RefTestIdPrefix", "polity-delta-verse");
-            builder.AddAttribute(seq++, "OnExplore", EventCallback.Factory.Create<PopoverOpening>(ctx, opening => ctx.PushAsync(opening, EdgeKind.JustifiedBy)));
+            builder.AddAttribute(seq++, nameof(Components.PassageList.Units), (IReadOnlyList<PassageSourceUnit>)units);
+            builder.AddAttribute(seq++, nameof(Components.PassageList.RefTestIdPrefix), "polity-delta-verse");
+            builder.AddAttribute(seq++, nameof(Components.PassageList.OnExplore), EventCallback.Factory.Create<PopoverOpening>(ctx, opening => ctx.PushAsync(opening, EdgeKind.JustifiedBy)));
             builder.CloseComponent();
         };
         return new PopoverSection("polity-delta-scriptures", body);
@@ -1161,7 +1161,7 @@ public sealed class PolityDeltaGroundingSection : IPopoverSectionProvider
 {
     public bool AppliesTo(IExplorable node) => node.Kind == "PolityDelta";
 
-    public Task<PopoverSection?> ResolveAsync(IExplorable node, AtlasClient api, IPopoverSectionContext ctx)
+    public Task<PopoverSection?> ResolveAsync(IExplorable node, Explorable current, AtlasClient api, IPopoverSectionContext ctx)
     {
         if (node is not PolityDeltaNode delta || delta.RefNote is not { } refNote)
         {
@@ -1185,7 +1185,7 @@ public sealed class VersePersonsSection : IPopoverSectionProvider
 {
     public bool AppliesTo(IExplorable node) => node.Kind is "Verse" or "Passage";
 
-    public async Task<PopoverSection?> ResolveAsync(IExplorable node, AtlasClient api, IPopoverSectionContext ctx)
+    public async Task<PopoverSection?> ResolveAsync(IExplorable node, Explorable current, AtlasClient api, IPopoverSectionContext ctx)
     {
         string wireId;
         switch (node)
@@ -1258,17 +1258,18 @@ public sealed class PersonCardAndMentionsSection : IPopoverSectionProvider
 {
     public bool AppliesTo(IExplorable node) => node.Kind == "Person";
 
-    public async Task<PopoverSection?> ResolveAsync(IExplorable node, AtlasClient api, IPopoverSectionContext ctx)
+    public async Task<PopoverSection?> ResolveAsync(IExplorable node, Explorable current, AtlasClient api, IPopoverSectionContext ctx)
     {
         if (node is not PersonNode person)
         {
             return null;
         }
 
+        var presenting = new PresentationRequest(current, Surface.Popover);
         var cardTask = person.CardAsync(() => ctx.Graph.Card(person.PersonId));
-        var mentionsTask = Paging.Window(ctx.Graph, person.PersonId, EdgeKind.MentionedIn);
+        var mentionsTask = Paging.Window(presenting, EdgeKind.MentionedIn);
         var (card, mentions) = (await cardTask, await mentionsTask);
-        var total = card.EdgeSummary.FirstOrDefault(s => s.Kind == EdgeKind.MentionedIn)?.Count ?? mentions.Shown.Count();
+        var total = presenting.Element.Groups.FirstOrDefault(group => group.Kind == EdgeKind.MentionedIn)?.Count ?? 0;
 
         RenderFragment body = builder =>
         {
@@ -1282,11 +1283,12 @@ public sealed class PersonCardAndMentionsSection : IPopoverSectionProvider
             builder.AddContent(seq++, $"MENTIONED IN SCRIPTURE ({total})");
             builder.CloseElement();
             builder.OpenComponent<Components.PersonMentionsList>(seq++);
-            builder.AddAttribute(seq++, "Provenance", card.Provenance);
-            builder.AddAttribute(seq++, "Mentions", mentions);
-            builder.AddAttribute(seq++, "TotalCount", total);
-            builder.AddAttribute(seq++, "ShowHeading", false);
-            builder.AddAttribute(seq++, "OnExplore", EventCallback.Factory.Create<PopoverOpening>(ctx, opening => ctx.PushAsync(opening, EdgeKind.MentionedIn)));
+            builder.AddAttribute(seq++, nameof(Components.PersonMentionsList.Provenance), card.Provenance);
+            builder.AddAttribute(seq++, nameof(Components.PersonMentionsList.Mentions), mentions);
+            builder.AddAttribute(seq++, nameof(Components.PersonMentionsList.TotalCount), total);
+            builder.AddAttribute(seq++, nameof(Components.PersonMentionsList.ShowHeading), false);
+            builder.AddAttribute(seq++, nameof(Components.PersonMentionsList.OnExplore), EventCallback.Factory.Create<PopoverOpening>(ctx, opening => ctx.PushAsync(opening, EdgeKind.MentionedIn)));
+            builder.AddAttribute(seq++, nameof(Components.PersonMentionsList.OnMoved), EventCallback.Factory.Create(ctx, ctx.RenewAsync));
             builder.CloseComponent();
             builder.CloseElement();
         };
@@ -1298,7 +1300,7 @@ public sealed class CommentaryItemProseSection : IPopoverSectionProvider
 {
     public bool AppliesTo(IExplorable node) => node.Kind == "CommentaryItem";
 
-    public async Task<PopoverSection?> ResolveAsync(IExplorable node, AtlasClient api, IPopoverSectionContext ctx)
+    public async Task<PopoverSection?> ResolveAsync(IExplorable node, Explorable current, AtlasClient api, IPopoverSectionContext ctx)
     {
         if (node is not CommentaryItemNode item)
         {
@@ -1327,7 +1329,7 @@ public sealed class CatechismInConcordSection : IPopoverSectionProvider
 {
     public bool AppliesTo(IExplorable node) => node.Kind == "Catechism";
 
-    public async Task<PopoverSection?> ResolveAsync(IExplorable node, AtlasClient api, IPopoverSectionContext ctx)
+    public async Task<PopoverSection?> ResolveAsync(IExplorable node, Explorable current, AtlasClient api, IPopoverSectionContext ctx)
     {
         if (node is not CatechismNode item)
         {
@@ -1354,8 +1356,8 @@ public sealed class CatechismInConcordSection : IPopoverSectionProvider
             builder.CloseElement();
 
             builder.OpenComponent<Components.ConcordUnitList>(seq++);
-            builder.AddAttribute(seq++, "Items", (IReadOnlyList<NodeRef>)units);
-            builder.AddAttribute(seq++, "OnExplore", EventCallback.Factory.Create<PopoverOpening>(ctx, opening => ctx.PushAsync(opening, EdgeKind.CatechismLink)));
+            builder.AddAttribute(seq++, nameof(Components.ConcordUnitList.Items), (IReadOnlyList<NodeRef>)units);
+            builder.AddAttribute(seq++, nameof(Components.ConcordUnitList.OnExplore), EventCallback.Factory.Create<PopoverOpening>(ctx, opening => ctx.PushAsync(opening, EdgeKind.CatechismLink)));
             builder.CloseComponent();
         };
         return new PopoverSection("catechism-in-concord", body);
@@ -1366,7 +1368,7 @@ public sealed class ConcordSmallCatechismSection : IPopoverSectionProvider
 {
     public bool AppliesTo(IExplorable node) => node.Kind == "ConcordUnit";
 
-    public async Task<PopoverSection?> ResolveAsync(IExplorable node, AtlasClient api, IPopoverSectionContext ctx)
+    public async Task<PopoverSection?> ResolveAsync(IExplorable node, Explorable current, AtlasClient api, IPopoverSectionContext ctx)
     {
         if (node is not ConcordUnitNode unit)
         {
@@ -1394,8 +1396,8 @@ public sealed class ConcordSmallCatechismSection : IPopoverSectionProvider
             builder.CloseElement();
 
             builder.OpenComponent<Components.CatechismList>(seq++);
-            builder.AddAttribute(seq++, "Items", (IReadOnlyList<CatechismRef>)items);
-            builder.AddAttribute(seq++, "OnExplore", EventCallback.Factory.Create<PopoverOpening>(ctx, opening => ctx.PushAsync(opening, EdgeKind.CatechismLink)));
+            builder.AddAttribute(seq++, nameof(Components.CatechismList.Items), (IReadOnlyList<CatechismRef>)items);
+            builder.AddAttribute(seq++, nameof(Components.CatechismList.OnExplore), EventCallback.Factory.Create<PopoverOpening>(ctx, opening => ctx.PushAsync(opening, EdgeKind.CatechismLink)));
             builder.CloseComponent();
         };
         return new PopoverSection("concord-small-catechism", body);
@@ -1409,7 +1411,7 @@ public sealed class ConcordUnitTextSection : IPopoverSectionProvider
 {
     public bool AppliesTo(IExplorable node) => node.Kind == "ConcordUnit";
 
-    public async Task<PopoverSection?> ResolveAsync(IExplorable node, AtlasClient api, IPopoverSectionContext ctx)
+    public async Task<PopoverSection?> ResolveAsync(IExplorable node, Explorable current, AtlasClient api, IPopoverSectionContext ctx)
     {
         if (node is not ConcordUnitNode unit)
         {
@@ -1477,7 +1479,7 @@ public sealed class PersonLifeSection : IPopoverSectionProvider
 {
     public bool AppliesTo(IExplorable node) => node.Kind == "Person";
 
-    public async Task<PopoverSection?> ResolveAsync(IExplorable node, AtlasClient api, IPopoverSectionContext ctx)
+    public async Task<PopoverSection?> ResolveAsync(IExplorable node, Explorable current, AtlasClient api, IPopoverSectionContext ctx)
     {
         if (node is not PersonNode person)
         {
@@ -1537,7 +1539,7 @@ public sealed class PersonEventsSection : IPopoverSectionProvider
 {
     public bool AppliesTo(IExplorable node) => node.Kind == "Person";
 
-    public async Task<PopoverSection?> ResolveAsync(IExplorable node, AtlasClient api, IPopoverSectionContext ctx)
+    public async Task<PopoverSection?> ResolveAsync(IExplorable node, Explorable current, AtlasClient api, IPopoverSectionContext ctx)
     {
         if (node is not PersonNode person)
         {
@@ -1564,7 +1566,7 @@ public sealed class PersonFamilySection : IPopoverSectionProvider
 {
     public bool AppliesTo(IExplorable node) => node.Kind == "Person";
 
-    public async Task<PopoverSection?> ResolveAsync(IExplorable node, AtlasClient api, IPopoverSectionContext ctx)
+    public async Task<PopoverSection?> ResolveAsync(IExplorable node, Explorable current, AtlasClient api, IPopoverSectionContext ctx)
     {
         if (node is not PersonNode person)
         {

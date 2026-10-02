@@ -107,7 +107,7 @@ public sealed class GraphExplorerTests
         var page = await justifier.Entries(EdgeKind.Justifies);
 
         // Assert
-        Assert.Equal(new Page<Entry>([new Entry(new Link(EdgeKind.Justifies, ServedGraph.AtEdge(JustifiedEdge)), new Link(EdgeKind.Justifies, ServedGraph.AtEdge(Justification)))], null), page);
+        Assert.Equal(new Page<Entry>([new Entry(new Link(EdgeKind.Justifies, ServedGraph.AtEdge(JustifiedEdge)), new Link(EdgeKind.Justifies, ServedGraph.AtEdge(Justification)))], null, null), page);
     }
 
     [Fact]
@@ -124,7 +124,7 @@ public sealed class GraphExplorerTests
 
         // Assert
         Assert.Equal(
-            new Page<Entry>([new Entry(new Link(EdgeKind.Attests, ServedGraph.At(ExodusEvent)), new Link(EdgeKind.Attests, ServedGraph.AtEdge(AttestedIn)))], null),
+            new Page<Entry>([new Entry(new Link(EdgeKind.Attests, ServedGraph.At(ExodusEvent)), new Link(EdgeKind.Attests, ServedGraph.AtEdge(AttestedIn)))], null, null),
             page);
     }
 
@@ -141,7 +141,7 @@ public sealed class GraphExplorerTests
         var page = await edge.Entries(EdgeKind.JustifiedBy);
 
         // Assert
-        Assert.Equal(new Page<Entry>([ServedGraph.EntryTo(EdgeKind.JustifiedBy, ServedGraph.At(NodeKind.Source, SourceId, SourceLabel))], null), page);
+        Assert.Equal(new Page<Entry>([ServedGraph.EntryTo(EdgeKind.JustifiedBy, ServedGraph.At(NodeKind.Source, SourceId, SourceLabel))], null, null), page);
     }
 
     [Fact]

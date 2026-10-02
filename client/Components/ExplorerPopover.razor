@@ -351,21 +351,27 @@
         _failedAttempt = null;
         _usingSectionRegistry = false;
 
-        if (_legacy is { } legacy && !await LoadLegacy(legacy, request))
+        if (_legacy is { } legacy && !await LoadLegacy(legacy, exploration.Current, request))
         {
+            return;
+        }
+
+        if (_sections.Any(section => section.Testid == SectionsCouldNotLoad) && Exploration is { Current.Moved: true })
+        {
+            await Renew();
             return;
         }
 
         await SyncNarrativeFocusAsync(request);
     }
 
-    private async Task<bool> LoadLegacy(IExplorable legacy, Request request)
+    private async Task<bool> LoadLegacy(IExplorable legacy, Explorable current, Request request)
     {
         var applicable = PopoverSectionRegistry.Providers.Where(p => p.AppliesTo(legacy)).ToList();
         _usingSectionRegistry = applicable.Count > 0;
 
         return _usingSectionRegistry
-            ? await LoadSections(legacy, applicable, request)
+            ? await LoadSections(legacy, current, applicable, request)
             : (await request.Fetch(() => legacy.ExploreAsync(Atlas), () => legacy.BodyAsync(Atlas))).Match(
                 arrived: loaded =>
                 {
@@ -376,10 +382,10 @@
                 superseded: () => false);
     }
 
-    private async Task<bool> LoadSections(IExplorable legacy, IReadOnlyList<IPopoverSectionProvider> applicable, Request request)
+    private async Task<bool> LoadSections(IExplorable legacy, Explorable current, IReadOnlyList<IPopoverSectionProvider> applicable, Request request)
     {
         var chips = request.Fetch(() => legacy.ExploreAsync(Atlas));
-        var sections = await Task.WhenAll(applicable.Select(provider => request.Fetch(() => provider.ResolveAsync(legacy, Atlas, this))));
+        var sections = await Task.WhenAll(applicable.Select(provider => request.Fetch(() => provider.ResolveAsync(legacy, current, Atlas, this))));
         var chipsOutcome = await chips;
         if (request.Superseded)
         {
@@ -403,8 +409,10 @@
 
     private RenderFragment SomeSectionsCouldNotLoad => __builder =>
     {
-        <CouldNotLoad OnRetry="LoadCurrent" />
+        <CouldNotLoad OnRetry="RetryCurrent" />
     };
+
+    private Task RetryCurrent() => Exploration is { Current.Moved: true } ? Renew() : LoadCurrent();
 
     private bool CouldNotLoadCurrent()
     {
@@ -498,6 +506,8 @@
     public bool XrefEntryPoint => _legacy is VerseNode { XrefEntryPoint: true };
 
     public IExplorableClient Graph => GraphClient;
+
+    Task IPopoverSectionContext.RenewAsync() => Renew();
 
     private async Task NavigateWorld(string query)
     {

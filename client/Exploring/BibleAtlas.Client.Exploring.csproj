@@ -19,6 +19,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="BibleAtlas.Client.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <EmbeddedResource Include="$(ContractVocabulary)" LogicalName="graph-vocabulary.json" />
   </ItemGroup>
 

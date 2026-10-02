@@ -59,12 +59,13 @@ public sealed class Explorable
     {
         if (Groups.All(group => group.Kind != kind))
         {
-            return new Page<Entry>([], null);
+            return new Page<Entry>([], null, null);
         }
 
         var page = await _pages.Read(Root, Id, kind, cursor, limit);
         return new Page<Entry>(
             page.Entries.Select(entry => new Entry(new Link(kind, entry.Neighbour), new Link(kind, new EdgePosition(entry.Edge)))).ToList(),
+            page.Previous,
             page.Next);
     }
 

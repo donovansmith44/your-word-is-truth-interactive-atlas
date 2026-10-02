@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { api } from './lib/api';
+import { popoverSectionsHolding } from './lib/popover';
 
 // D5 (owner, 2026-09-15, verbatim: "when we click on a person's name
 // there's no point to just see every verse that name is mentioned ... i
@@ -44,9 +45,8 @@ test('PERSON-1: a person card reads LIFE (years as explorable positions), EVENTS
   const disclosure = page.getByTestId('person-mentions-disclosure');
   await expect(page.getByTestId('person-mentions-heading')).toHaveText(/^MENTIONED IN SCRIPTURE \(\d+\)$/);
   await expect(disclosure).not.toHaveAttribute('open', '');
-  const sections = page.locator('[data-testid^="popover-section-"]');
-  const ids = await sections.evaluateAll(els => els.map(e => e.getAttribute('data-testid')));
   const order = ['popover-section-person-life', 'popover-section-person-events', 'popover-section-person-family', 'popover-section-person-mentions'];
+  const ids = await popoverSectionsHolding(page, order);
   expect(ids.filter(id => order.includes(id!))).toEqual(order);
 
   // A sibling's name is an explorable person: it pushes Moses's own card.

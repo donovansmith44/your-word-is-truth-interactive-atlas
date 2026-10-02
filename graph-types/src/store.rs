@@ -884,7 +884,7 @@ mod laws {
         assert_eq!(
             (page, summary, rows, first),
             (
-                EdgePage { kind, entries: vec![EdgeEntry { edge, node: jordan, meta: crate::adjacency::EdgeMeta::None }], next: None },
+                EdgePage { kind, entries: vec![EdgeEntry { edge, node: jordan, meta: crate::adjacency::EdgeMeta::None }], previous: None, next: None },
                 [(kind, 1)].into_iter().collect(),
                 vec![(0, "event-witnesses".to_string()), (1, "attestation-corrections".to_string())],
                 Some(0),

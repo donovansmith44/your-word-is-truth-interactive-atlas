@@ -29,7 +29,7 @@ public sealed class GraphExplorableClient : IExplorableClient
             elements.AddRange(page.Elements);
         }
 
-        return new ElementPage(elements: elements, next: null, version: first.Version);
+        return new ElementPage(elements: elements, next: null, previous: null, version: first.Version);
     }
 
     private Task<ElementPage> ElementsAt(string asked, int? cursor) =>

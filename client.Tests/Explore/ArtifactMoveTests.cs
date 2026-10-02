@@ -55,7 +55,7 @@ public sealed class ArtifactMoveTests
 
         // Assert
         Assert.Equal(
-            (new Page<Link>([new Link(EdgeKind.Shows, ServedGraph.At(Eden))], null), RootB),
+            (new Page<Link>([new Link(EdgeKind.Shows, ServedGraph.At(Eden))], null, null), RootB),
             outcome.Match(arrived: walked => (walked.Value, walked.Trail.Current.Root), failed: () => default, superseded: () => default));
     }
 

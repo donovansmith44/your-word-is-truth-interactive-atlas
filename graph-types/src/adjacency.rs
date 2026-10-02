@@ -34,6 +34,7 @@ pub struct EdgeEntry {
 pub struct EdgePage {
     pub kind: EdgeKind,
     pub entries: Vec<EdgeEntry>,
+    pub previous: Option<usize>,
     pub next: Option<usize>,
 }
 
@@ -100,7 +101,9 @@ impl Adjacency {
         let from = self.edges.partition_point(|&ord| (ord as usize) < q.cursor.unwrap_or(0));
         let entries = self.edges[from..].iter().take(q.limit).map(|&ord| self.rows[ord as usize].clone()).collect();
         let next = self.edges.get(from.saturating_add(q.limit)).map(|&ord| ord as usize);
-        EdgePage { kind: q.kind, entries, next }
+        let before = from.saturating_sub(q.limit);
+        let previous = (before > 0 && q.limit > 0).then(|| self.edges[before] as usize);
+        EdgePage { kind: q.kind, entries, previous, next }
     }
 }
 
@@ -146,7 +149,7 @@ impl Adjacent for PositionRef {
     }
 
     fn edges(&self, g: &Graph, q: &EdgeQuery) -> EdgePage {
-        adjacency_at(g, &self.0, q.kind).map_or_else(|| EdgePage { kind: q.kind, entries: Vec::new(), next: None }, |adjacency| adjacency.page(q))
+        adjacency_at(g, &self.0, q.kind).map_or_else(|| EdgePage { kind: q.kind, entries: Vec::new(), previous: None, next: None }, |adjacency| adjacency.page(q))
     }
 }
 

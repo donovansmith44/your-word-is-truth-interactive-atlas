@@ -3,7 +3,7 @@ openapi: 3.1.0
 info:
   title: Bible Atlas API
   description: The Bible Atlas HTTP API, generated from the Rust that serves it. The `x-atlas-relations` extension lists every relation this atlas joins two nodes by, each with the label its forward and its inverse neighbours are asked for and the words each is displayed by, so a consumer builds its own vocabulary from that list rather than writing one out.
-  version: 0.19.1
+  version: 0.20.0
 paths:
   /api/books:
     get:
@@ -186,7 +186,7 @@ paths:
       tags:
       - graph
       summary: Nodes and edges of the graph by id, many in one request, each answered in the order asked.
-      description: '`ids` lists node ids (the form `/api/node/{id}` takes) and edge ids (the id an edge page carries for its edge), separated by commas: `ids=Event:ab_ur,LocatedAt:…`. Each id is answered by its own record, or by `missing` where it reads as an id but names nothing. One id that does not read as a node''s or an edge''s refuses the whole read as `bad_ref`, as does asking for none. At most the server''s largest page of ids is answered at once: `next`, when present, is the `cursor` that reads the ids that follow, and its absence is the last page.'
+      description: '`ids` lists node ids (the form `/api/node/{id}` takes) and edge ids (the id an edge page carries for its edge), separated by commas: `ids=Event:ab_ur,LocatedAt:…`. Each id is answered by its own record, or by `missing` where it reads as an id but names nothing. One id that does not read as a node''s or an edge''s refuses the whole read as `bad_ref`, as does asking for none. At most the server''s largest page of ids is answered at once: `next`, when present, is the `cursor` that reads the ids that follow, and its absence is the last page; `previous`, when present, is the `cursor` of the page before, and its absence is the first page.'
       operationId: elements
       parameters:
       - name: ids
@@ -437,7 +437,7 @@ paths:
       tags:
       - graph
       summary: One page of the neighbours of a node or of an edge, of a single kind, each with the edge that joins them.
-      description: '`{id}` takes the same form `/api/node/{id}` does, or an edge''s id as an edge page carries it. The required `kind` is an edge label such as `cites` or `cited-by`; anything else is `bad_kind`, an unrecognised id is `bad_ref`, and an id naming nothing is `not_found`. `limit` defaults to 20 and is clamped to the server''s largest page; pass the response''s `next` back as `cursor` for the following page, and its absence is the last page. A `limit` or `cursor` that does not read as a whole number is not refused: it leaves its default standing.'
+      description: '`{id}` takes the same form `/api/node/{id}` does, or an edge''s id as an edge page carries it. The required `kind` is an edge label such as `cites` or `cited-by`; anything else is `bad_kind`, an unrecognised id is `bad_ref`, and an id naming nothing is `not_found`. `limit` defaults to 20 and is clamped to the server''s largest page; pass the response''s `next` back as `cursor` for the following page, and its absence is the last page; its `previous` is the `cursor` of the page of the same `limit` before it, and its absence is the first page. A `limit` or `cursor` that does not read as a whole number is not refused: it leaves its default standing.'
       operationId: node_edges
       parameters:
       - name: id
@@ -1413,6 +1413,11 @@ components:
           - integer
           - 'null'
           minimum: 0
+        previous:
+          type:
+          - integer
+          - 'null'
+          minimum: 0
         version:
           type: string
       additionalProperties: false
@@ -1530,6 +1535,11 @@ components:
           items:
             $ref: '#/components/schemas/Element'
         next:
+          type:
+          - integer
+          - 'null'
+          minimum: 0
+        previous:
           type:
           - integer
           - 'null'
