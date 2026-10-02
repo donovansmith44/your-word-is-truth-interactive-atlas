@@ -141,6 +141,23 @@ public sealed class ExplorationTests
     }
 
     [Fact]
+    public void Stepping_onto_an_edge_and_back_out_of_the_end_it_was_entered_from_retraces()
+    {
+        // Arrange
+        var kinds = Enum.GetValues<EdgeKind>();
+
+        // Act
+        var unretraced = kinds
+            .SelectMany(kind => new[] { (kind, FromSubject: true), (kind, FromSubject: false) })
+            .Where(entered => EnteredAndLeftByItsEnd(entered.kind, entered.FromSubject).Breadcrumb.Count != 0)
+            .Select(entered => $"{entered.kind} entered from its {(entered.FromSubject ? "subject" : "object")}")
+            .ToList();
+
+        // Assert
+        Assert.Empty(unretraced);
+    }
+
+    [Fact]
     public void Two_explorations_with_the_same_start_and_steps_are_equal_whatever_lists_hold_them()
     {
         // Arrange
@@ -190,5 +207,21 @@ public sealed class ExplorationTests
 
         // Assert
         Assert.False(equal);
+    }
+
+    private static Exploration EnteredAndLeftByItsEnd(EdgeKind kind, bool fromSubject)
+    {
+        var subject = ServedGraph.Ref(NodeKind.Event, "Event:subject", "Subject");
+        var @object = ServedGraph.Ref(NodeKind.TextUnit, "text-unit:GEN.1.1", "Object");
+        var edgeRef = ServedGraph.EdgeRef(kind, $"{kind}:00aa", kind.ToString());
+        var graph = new ServedGraph()
+            .Serving(ServedGraph.Card(subject.Kind, subject.Id, subject.Label))
+            .Serving(ServedGraph.Card(@object.Kind, @object.Id, @object.Label))
+            .Serving(ServedGraph.EdgeRecordOf(edgeRef, subject, @object));
+        var start = Resolved.Node(graph, fromSubject ? subject : @object);
+        var edge = Resolved.At(graph, ServedGraph.AtEdge(edgeRef));
+        var enteredBy = fromSubject ? kind : kind.Dual();
+        var end = edge.Ends.Single(link => link.Target == start.Identity);
+        return new Exploration(start, [new Step(enteredBy, edge), new Step(end.Kind, Resolved.At(graph, end.Target))]);
     }
 }

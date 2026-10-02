@@ -11,6 +11,6 @@ public enum Surface
 
 public static class HomeSurfaces
 {
-    public static Surface Of(NodeKind kind) =>
+    public static Surface Of(ElementKind kind) =>
         Enum.GetValues<Surface>().SingleOrDefault(surface => surface != Surface.Popover && Presentation.Of(kind, surface) is not null, Surface.Popover);
 }

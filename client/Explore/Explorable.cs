@@ -6,34 +6,56 @@ public sealed class Explorable
 {
     private readonly IExplorableClient _graph;
 
-    internal Explorable(NodeRecord card, IExplorableClient graph)
+    internal Explorable(NodeRecord node, IExplorableClient graph)
+        : this(new NodePosition(new NodeRef(id: node.Id, kind: node.Kind, label: node.Label)), node.Provenance, node.EdgeSummary, [], graph)
     {
-        Card = card;
-        _graph = graph;
-        Groups = card.EdgeSummary.Select(entry => new FrontierGroup(entry.Kind, entry.Count)).ToList();
     }
 
-    public NodeKind Kind => Card.Kind;
+    internal Explorable(EdgeRecord edge, IExplorableClient graph)
+        : this(
+            new EdgePosition(new EdgeRef(id: edge.Id, kind: edge.Kind, label: edge.Label)),
+            edge.Provenance,
+            edge.EdgeSummary,
+            [new Link(edge.Kind.Dual(), edge.Subject), new Link(edge.Kind, edge.Object)],
+            graph)
+    {
+    }
 
-    public string Id => Card.Id;
+    private Explorable(PositionRef identity, string? provenance, IEnumerable<EdgeSummaryEntry> summary, IReadOnlyList<Link> ends, IExplorableClient graph)
+    {
+        Identity = identity;
+        (Kind, Id, Label) = Positions.Of(identity);
+        Provenance = provenance;
+        Groups = summary.Select(entry => new FrontierGroup(entry.Kind, entry.Count)).ToList();
+        Ends = ends;
+        _graph = graph;
+    }
 
-    public string Label => Card.Label;
+    public ElementKind Kind { get; }
 
-    public NodeRef Identity => new(id: Id, kind: Kind, label: Label);
+    public string Id { get; }
+
+    public string Label { get; }
+
+    public PositionRef Identity { get; }
 
     public IReadOnlyList<FrontierGroup> Groups { get; }
 
-    internal NodeRecord Card { get; }
+    public IReadOnlyList<Link> Ends { get; }
 
-    public async Task<Page<Link>> Links(EdgeKind kind, int? cursor = null)
+    internal string? Provenance { get; }
+
+    public async Task<Page<Entry>> Entries(EdgeKind kind, int? cursor = null)
     {
         if (Groups.All(group => group.Kind != kind))
         {
-            return new Page<Link>([], null);
+            return new Page<Entry>([], null);
         }
 
         var page = await _graph.Edges(Id, kind, cursor);
-        return new Page<Link>(page.Entries.Nodes().Select(node => new Link(kind, node)).ToList(), page.Next);
+        return new Page<Entry>(
+            page.Entries.Select(entry => new Entry(new Link(kind, entry.Neighbour), new Link(kind, new EdgePosition(entry.Edge)))).ToList(),
+            page.Next);
     }
 
     public override bool Equals(object? obj) => obj is Explorable other && Kind == other.Kind && Id == other.Id;

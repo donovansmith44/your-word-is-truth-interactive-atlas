@@ -103,9 +103,9 @@
 
     private Exploration? Exploration => (_frozenSnapshot as ExplorationState.Open)?.Exploration;
 
-    private string Title => _legacy?.Title ?? Exploration?.Current.Label ?? Root?.Title ?? Saved?.Nodes[^1].Label ?? "";
+    private string Title => _legacy?.Title ?? Exploration?.Current.Label ?? Root?.Title ?? (Saved is { } saved ? Positions.Of(saved.Trail[^1]).Label : null) ?? "";
 
-    private bool IsText => Exploration?.Current.Kind is NodeKind.TextUnit or NodeKind.Container;
+    private bool IsText => Exploration?.Current.Kind.Match(node: kind => kind is NodeKind.TextUnit or NodeKind.Container, edge: _ => false) == true;
 
     private void SyncSnapshot()
     {
@@ -249,17 +249,17 @@
         var request = _requests.Next();
         if (Saved is { } saved)
         {
-            if (await Arriving(request, request.Fetch(() => Explorer.Resolve(saved.Start), () => Task.WhenAll(saved.Steps.Select(step => Explorer.Follow(step))))) is not ({ } start, { } targets))
+            if (await Arriving(request, request.Fetch(() => Explorer.Resolve(saved.Trail))) is not [var start, ..] trail)
             {
                 return;
             }
 
-            ApplyLocally(new ExplorationIntent.Reseed(new Exploration(start, saved.Steps.Zip(targets, (step, target) => new Step(step.Kind, target)).ToList())));
+            ApplyLocally(new ExplorationIntent.Reseed(new Exploration(start, saved.Steps.Zip(trail.Skip(1), (step, target) => new Step(step.Kind, target)).ToList())));
             await LoadCurrent();
         }
         else if (Root is { } root)
         {
-            if (await Arriving(request, request.Fetch(() => Explorer.Resolve(root.Identity))) is not { } start)
+            if (await Arriving(request, request.Fetch(() => Explorer.Resolve(new NodePosition(root.Identity)))) is not { } start)
             {
                 return;
             }
@@ -431,7 +431,7 @@
 
     public async Task PushAsync(IExplorable node, EdgeKind via)
     {
-        if (await Followed(new Link(via, node.Identity)) is { } target)
+        if (await Followed(new Link(via, new NodePosition(node.Identity))) is { } target)
         {
             _rendered.Remember(target, node);
             await ArriveAt(via, target);
