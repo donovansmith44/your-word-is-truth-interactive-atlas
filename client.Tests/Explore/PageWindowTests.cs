@@ -359,6 +359,26 @@ public sealed class PageWindowTests
     }
 
     [Fact]
+    public async Task The_first_page_asked_with_no_cursor_and_at_the_previous_of_the_second_page_is_one_page_store_entry()
+    {
+        await Task.Run(async () =>
+        {
+            // Arrange
+            var graph = new EdgesGraph(Cardinalities[0]);
+            var element = Resolved.At(graph, Subject);
+            var first = await element.Entries(EdgeKind.MentionedIn, null, Step);
+            var second = await element.Entries(EdgeKind.MentionedIn, first.Next, Step);
+            var asked = graph.Asked;
+
+            // Act
+            var back = await element.Entries(EdgeKind.MentionedIn, second.Previous, Step);
+
+            // Assert
+            Assert.Equal((true, asked, first), (second.Previous is not null, graph.Asked, back));
+        });
+    }
+
+    [Fact]
     public async Task A_whole_walk_holds_the_same_cursors_and_does_the_same_work_each_turn_however_large_the_collection()
     {
         await Task.Run(async () =>

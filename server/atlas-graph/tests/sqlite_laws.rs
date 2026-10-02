@@ -1564,11 +1564,17 @@ fn an_edge_summary_costs_the_same_work_however_many_edges_its_position_holds() {
 }
 
 #[test]
-fn every_page_names_the_page_before_it_and_reading_there_answers_that_page_in_both_stores() {
+fn only_the_first_page_has_no_previous_and_every_other_previous_reads_the_page_before_it_in_both_stores() {
     // Arrange
     use atlas_graph_types::adjacency::{EdgePage, EdgeQuery};
     use atlas_graph_types::id::Position;
     let mut g = specimen_graph();
+    g.contains_bible.push(Contains::<BibleTag> {
+        container: ContainerNodeId::new("passage-of-five"),
+        content: ContainerContent::Loci(LocusSet((1..=5).map(|verse| bl(1, 1, verse)).collect())),
+        provenance: "kjv".into(),
+        justification: Justification::default(),
+    });
     g.build_indexes();
     atlas_graph::event_world::add_justified_by(&mut g);
     let dir = std::env::temp_dir().join(format!("fix3-previous-{}", std::process::id()));
@@ -1587,17 +1593,20 @@ fn every_page_names_the_page_before_it_and_reading_there_answers_that_page_in_bo
     // Act
     let mut offenders = Vec::new();
     let mut walked = 0;
+    let mut three_with_a_partial_final = 0;
     for store in stores {
-        for id in g.nodes.keys() {
-            let at = Position::Node(id.clone());
+        for at in g.positions() {
             for kind in store.edge_summary(&at).into_keys() {
                 for limit in 1..=3 {
                     let pages = walk(store, &at, kind, limit);
                     walked += pages.len();
                     let before: Vec<Option<EdgePage>> = pages.iter().map(|page| page.previous.map(|cursor| store.edges(&at, &EdgeQuery { kind, cursor: Some(cursor), limit }))).collect();
-                    let expected: Vec<Option<EdgePage>> = pages.iter().enumerate().map(|(i, _)| i.checked_sub(1).filter(|&before| before > 0).map(|before| pages[before].clone())).collect();
+                    let expected: Vec<Option<EdgePage>> = std::iter::once(None).chain(pages.iter().take(pages.len() - 1).cloned().map(Some)).collect();
                     if before != expected {
-                        offenders.push(format!("{id:?} {kind:?} limit {limit}"));
+                        offenders.push(format!("{at:?} {kind:?} limit {limit}"));
+                    }
+                    if pages.len() >= 3 && pages[pages.len() - 1].entries.len() < limit {
+                        three_with_a_partial_final += 1;
                     }
                 }
             }
@@ -1605,6 +1614,5 @@ fn every_page_names_the_page_before_it_and_reading_there_answers_that_page_in_bo
     }
 
     // Assert
-    assert!(walked > 100, "the specimen walk must cover many pages, covered {walked}");
-    assert_eq!(offenders, Vec::<String>::new());
+    assert_eq!((walked > 100, three_with_a_partial_final > 0, offenders), (true, true, Vec::<String>::new()));
 }

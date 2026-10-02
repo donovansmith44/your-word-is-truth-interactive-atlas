@@ -765,52 +765,69 @@ async fn node_edges_pagination_pages_are_windows_over_the_total() {
     assert_eq!(paged, *full_entries, "limit=1 pages, concatenated, must equal the single wide page");
 }
 
+async fn walked(app: &axum::Router, at: &dyn Fn(Option<u64>) -> String) -> Vec<serde_json::Value> {
+    let mut pages = vec![get(app, &at(None)).await.1];
+    while let Some(next) = pages[pages.len() - 1]["next"].as_u64() {
+        pages.push(get(app, &at(Some(next))).await.1);
+    }
+    pages
+}
+
+async fn read_at_each_previous(app: &axum::Router, at: &dyn Fn(Option<u64>) -> String, pages: &[serde_json::Value]) -> Vec<Option<serde_json::Value>> {
+    let mut before = Vec::new();
+    for page in pages {
+        before.push(match &page["previous"] {
+            serde_json::Value::Null => None,
+            previous => Some(get(app, &at(Some(previous.as_u64().unwrap()))).await.1),
+        });
+    }
+    before
+}
+
+fn the_pages_before(pages: &[serde_json::Value]) -> Vec<Option<serde_json::Value>> {
+    std::iter::once(None).chain(pages.iter().take(pages.len().saturating_sub(1)).cloned().map(Some)).collect()
+}
+
+fn items_on(page: &serde_json::Value, items: &str) -> usize {
+    page[items].as_array().map_or(0, Vec::len)
+}
+
 #[tokio::test]
-async fn every_neighbour_page_names_the_page_before_it_and_reading_there_answers_that_page() {
+async fn only_the_first_neighbour_page_has_no_previous_and_every_other_previous_reads_the_page_before_it() {
     // Arrange
     let app = artifact_app();
     let at = |cursor: Option<u64>| match cursor {
         Some(c) => format!("/api/node/Person:aaron_1/edges?kind=mentioned-in&limit=20&cursor={c}"),
         None => "/api/node/Person:aaron_1/edges?kind=mentioned-in&limit=20".to_string(),
     };
-    let mut pages = vec![get(&app, &at(None)).await.1];
-    while let Some(next) = pages[pages.len() - 1]["next"].as_u64() {
-        pages.push(get(&app, &at(Some(next))).await.1);
-    }
-
-    let edges = |page: &serde_json::Value| page["entries"].as_array().unwrap().iter().map(|entry| entry["edge"]["id"].to_string()).collect::<Vec<_>>();
+    let pages = walked(&app, &at).await;
 
     // Act
-    let mut before = Vec::new();
-    for page in &pages {
-        before.push(match page["previous"].as_u64() {
-            Some(previous) => Some(edges(&get(&app, &at(Some(previous))).await.1)),
-            None => None,
-        });
-    }
+    let before = read_at_each_previous(&app, &at, &pages).await;
 
     // Assert
-    let expected: Vec<Option<Vec<String>>> = [None, None].into_iter().chain(pages.iter().skip(1).take(pages.len() - 2).map(|page| Some(edges(page)))).collect();
-    assert_eq!((pages.len() > 2, before), (true, expected));
+    let partial_final = items_on(&pages[pages.len() - 1], "entries") < items_on(&pages[0], "entries");
+    assert_eq!((pages.len() >= 3, partial_final, before), (true, true, the_pages_before(&pages)));
 }
 
 #[tokio::test]
-async fn an_element_read_names_the_page_of_ids_before_it() {
+async fn only_the_first_element_page_has_no_previous_and_every_other_previous_reads_the_page_before_it() {
     // Arrange
     let app = compiled_app();
     let ids = vec![A_SAMPLE_VERSE; 2 * LARGEST_PAGE + 1];
     let asked = ids.iter().map(|id| encoded(id)).collect::<Vec<_>>().join(",");
+    let at = |cursor: Option<u64>| match cursor {
+        Some(c) => format!("/api/elements?ids={asked}&cursor={c}"),
+        None => format!("/api/elements?ids={asked}"),
+    };
+    let pages = walked(&app, &at).await;
 
     // Act
-    let (_, first, _) = get(&app, &format!("/api/elements?ids={asked}")).await;
-    let (_, second, _) = get(&app, &format!("/api/elements?ids={asked}&cursor={LARGEST_PAGE}")).await;
-    let (_, third, _) = get(&app, &format!("/api/elements?ids={asked}&cursor={}", 2 * LARGEST_PAGE)).await;
+    let before = read_at_each_previous(&app, &at, &pages).await;
 
     // Assert
-    assert_eq!(
-        [&first, &second, &third].map(|page| page.get("previous").cloned()),
-        [Some(serde_json::Value::Null), Some(serde_json::Value::Null), Some(serde_json::json!(LARGEST_PAGE))]
-    );
+    let partial_final = items_on(&pages[pages.len() - 1], "elements") < items_on(&pages[0], "elements");
+    assert_eq!((pages.len() >= 3, partial_final, before), (true, true, the_pages_before(&pages)));
 }
 
 #[tokio::test]
