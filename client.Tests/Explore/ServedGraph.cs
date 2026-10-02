@@ -6,7 +6,7 @@ namespace BibleAtlas.Client.Tests;
 internal sealed class ServedGraph : IExplorableClient
 {
     public const string Provenance = "kjv";
-    private const string Version = "v";
+    public const string Version = "v";
     public const string EdgeId = "e";
 
     private readonly Dictionary<string, NodeRecord> _cards = [];
@@ -55,7 +55,7 @@ internal sealed class ServedGraph : IExplorableClient
     public Task<ElementPage> Elements(IReadOnlyList<string> ids)
     {
         ElementReads++;
-        return Task.FromResult(new ElementPage(elements: ids.Select(Element).ToList(), next: null, version: _root));
+        return Task.FromResult(new ElementPage(elements: ids.Select(Element).ToList(), next: null, previous: null, version: _root));
     }
 
     public Task<EdgePage> Edges(string positionId, EdgeKind kind, int? cursor = null, int limit = IExplorableClient.DefaultPageSize)
@@ -124,7 +124,7 @@ internal sealed class ServedGraph : IExplorableClient
     public static EdgePage Page(EdgeKind kind, int? next, params (EdgeRef Edge, PositionRef Neighbour)[] entries) =>
         new(
             entries: entries.Select(entry => new EdgeEntry(edge: entry.Edge, loci: null, narrative: null, neighbour: entry.Neighbour, note: null, parentage: null, votes: null)).ToList(),
-            kind: kind, next: next, version: Version);
+            kind: kind, next: next, previous: null, version: Version);
 
     private static List<EdgeSummaryEntry> Summary(IEnumerable<FrontierGroup> groups) =>
         groups.Select(group => new EdgeSummaryEntry(count: group.Count, kind: group.Kind)).ToList();

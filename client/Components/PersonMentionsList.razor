@@ -19,7 +19,7 @@
     }
     else
     {
-        @foreach (var verse in Mentions.Shown.Nodes())
+        @foreach (var verse in Mentions.Shown.Select(entry => entry.Neighbour.Target).Nodes())
         {
             var vref = verse.Label;
             <button type="button" class="popover-event-row popover-event-row-button explorable" data-testid="@($"person-mention-{vref}")"
@@ -31,7 +31,7 @@
 
     @if (_failed)
     {
-        <CouldNotLoad OnRetry="() => Settled(Mentions.Resume())" />
+        <CouldNotLoad OnRetry="Retry" />
     }
     else
     {
@@ -42,18 +42,28 @@
 
 @code {
     [Parameter] public string? Provenance { get; set; }
-    [Parameter, EditorRequired] public PageWindow<EdgeEntry> Mentions { get; set; } = default!;
+    [Parameter, EditorRequired] public PageWindow<Entry> Mentions { get; set; } = default!;
     [Parameter, EditorRequired] public int TotalCount { get; set; }
     [Parameter] public bool ShowHeading { get; set; } = true;
     [Parameter, EditorRequired] public EventCallback<PopoverOpening> OnExplore { get; set; }
+    [Parameter, EditorRequired] public EventCallback OnMoved { get; set; }
 
     private bool _failed;
 
     public void Dispose() => Mentions.Stop();
 
+    private Task Retry() => Mentions.Moved ? OnMoved.InvokeAsync() : Settled(Mentions.Resume());
+
     private async Task Settled(Task<Outcome<Unit>> settling)
     {
         _failed = false;
-        (await settling).Match(arrived: _ => { }, failed: () => _failed = true, superseded: () => { });
+        await (await settling).Match(
+            arrived: _ => Task.CompletedTask,
+            failed: () =>
+            {
+                _failed = true;
+                return Mentions.Moved ? OnMoved.InvokeAsync() : Task.CompletedTask;
+            },
+            superseded: () => Task.CompletedTask);
     }
 }

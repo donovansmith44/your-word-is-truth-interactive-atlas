@@ -154,7 +154,7 @@ public sealed class CrossingTests
         var page = await conquest.Entries(EdgeKind.FollowsIn);
 
         // Assert
-        Assert.Equal((new Page<Entry>([ServedGraph.EntryTo(EdgeKind.FollowsIn, ServedGraph.At(Judges))], null), 2), (page, graph.NeighbourReads));
+        Assert.Equal((new Page<Entry>([ServedGraph.EntryTo(EdgeKind.FollowsIn, ServedGraph.At(Judges))], null, null), 2), (page, graph.NeighbourReads));
     }
 
     private static (ServedGraph Graph, Explorable Conquest) Paged()

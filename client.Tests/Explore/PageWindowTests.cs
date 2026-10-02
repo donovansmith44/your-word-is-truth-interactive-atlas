@@ -314,7 +314,7 @@ public sealed class PageWindowTests
         {
             // Arrange
             var graph = new EdgesGraph(Cardinalities[0]);
-            var window = await Paging.Window(graph, Subject, EdgeKind.MentionedIn);
+            var window = await Paging.Window(new PresentationRequest(Resolved.At(graph, Subject), Surface.Popover), EdgeKind.MentionedIn);
             for (var more = 0; more <= PageWindow.BlocksShown(Step); more++)
             {
                 await window.More();
@@ -327,6 +327,44 @@ public sealed class PageWindowTests
 
             // Assert
             Assert.Equal((asked, Step), (graph.Asked, window.Position(Cardinalities[0]).From - 1));
+        });
+    }
+
+    [Fact]
+    public async Task A_whole_walk_holds_the_same_cursors_and_does_the_same_work_each_turn_however_large_the_collection()
+    {
+        await Task.Run(async () =>
+        {
+            // Arrange
+            var walks = new List<(int MostCursorsHeld, int MostReadsInATurn, long MostAllocatedInATurn)>();
+
+            // Act
+            foreach (var cardinality in Cardinalities)
+            {
+                var reads = 0;
+                Task<Page<int>> Read(int? cursor, int limit)
+                {
+                    reads++;
+                    var from = cursor ?? 0;
+                    var to = Math.Min(from + limit, cardinality);
+                    return Task.FromResult(new Page<int>(Enumerable.Range(from, to - from).ToList(), from > 0 ? Math.Max(0, from - limit) : null, to < cardinality ? to : null));
+                }
+
+                var window = await PageWindow<int>.Opened(Read, Paging.Everything, Step, () => false);
+                var turns = new List<(int CursorsHeld, int Reads, long Allocated)>();
+                foreach (var turn in Enumerable.Repeat<Func<Task<Outcome<Unit>>>>(window.More, cardinality / Step).Concat(Enumerable.Repeat<Func<Task<Outcome<Unit>>>>(window.Fewer, cardinality / Step)))
+                {
+                    var (readBefore, allocatedBefore) = (reads, GC.GetAllocatedBytesForCurrentThread());
+                    await turn();
+                    var allocated = GC.GetAllocatedBytesForCurrentThread() - allocatedBefore;
+                    turns.Add((window.CursorsHeld.Count(), reads - readBefore, allocated));
+                }
+
+                walks.Add((turns.Max(turn => turn.CursorsHeld), turns.Max(turn => turn.Reads), turns.Skip(WarmTurns).Max(turn => turn.Allocated)));
+            }
+
+            // Assert
+            Assert.Single(walks.Distinct());
         });
     }
 
@@ -400,9 +438,11 @@ public sealed class PageWindowTests
     private static List<int> Range(int from, int to) => Enumerable.Range(from, to - from).ToList();
 
     private static Task<PageWindow<int>> Opened(Collection collection, int step) =>
-        PageWindow<int>.Opened(collection.Read, Paging.Everything, step);
+        PageWindow<int>.Opened(collection.Read, Paging.Everything, step, () => false);
 
-    private const string Subject = "Person:abraham";
+    private const int WarmTurns = 4;
+
+    private static readonly PositionRef Subject = ServedGraph.At(NodeKind.Person, "Person:abraham", "Abraham");
 
     private sealed class EdgesGraph(int size) : IExplorableClient
     {
@@ -410,7 +450,10 @@ public sealed class PageWindowTests
 
         public Task<NodeRecord> Card(string id) => throw new NotSupportedException();
 
-        public Task<ElementPage> Elements(IReadOnlyList<string> ids) => throw new NotSupportedException();
+        public Task<ElementPage> Elements(IReadOnlyList<string> ids) =>
+            Task.FromResult(new ElementPage(
+                elements: [new NodeElement(ServedGraph.Card(NodeKind.Person, Positions.Of(Subject).Id, Positions.Of(Subject).Label, new FrontierGroup(EdgeKind.MentionedIn, size)))],
+                next: null, previous: null, version: ServedGraph.Version));
 
         public Task<EdgePage> Edges(string positionId, EdgeKind kind, int? cursor = null, int limit = IExplorableClient.DefaultPageSize)
         {
@@ -418,7 +461,7 @@ public sealed class PageWindowTests
             var from = cursor ?? 0;
             var to = Math.Min(from + limit, size);
             var verses = Enumerable.Range(from, to - from).Select(n => ServedGraph.Ref(NodeKind.TextUnit, $"text-unit:GEN.1.{n}", $"GEN.1.{n}")).ToArray();
-            return Task.FromResult(ServedGraph.Page(kind, to < size ? to : null, verses));
+            return Task.FromResult(ServedGraph.Page(kind, to < size ? to : null, verses) with { Previous = from > 0 ? Math.Max(0, from - limit) : null });
         }
 
         public Task<TextWindow> Reading(string fromRef, int n, WindowDir dir = WindowDir.Onward, Corpus corpus = Corpus.Bible) =>
@@ -438,7 +481,7 @@ public sealed class PageWindowTests
             Asked.Add(cursor);
             var from = cursor ?? 0;
             var to = Math.Min(from + limit, size);
-            var page = new Page<int>(Enumerable.Range(from, to - from).ToList(), to < size ? to : null);
+            var page = new Page<int>(Enumerable.Range(from, to - from).ToList(), from > 0 ? Math.Max(0, from - limit) : null, to < size ? to : null);
             if (!Held || cursor is null)
             {
                 return Task.FromResult(page);

@@ -874,6 +874,7 @@ public sealed class EventMentionsSection : IPopoverSectionProvider
             builder.AddAttribute(seq++, "Refs", (IReadOnlyList<Components.RefsList.RefDescriptor>)refs);
             builder.AddAttribute(seq++, "TestIdPrefix", "event-mentioned-in");
             builder.AddAttribute(seq++, "OnExplore", EventCallback.Factory.Create<PopoverOpening>(ctx, opening => ctx.PushAsync(opening, EdgeKind.MentionedIn)));
+            builder.AddAttribute(seq++, "OnMoved", EventCallback.Factory.Create(ctx, ctx.RenewAsync));
             builder.CloseComponent();
         };
         return new PopoverSection("event-mentions", body);
@@ -1265,10 +1266,11 @@ public sealed class PersonCardAndMentionsSection : IPopoverSectionProvider
             return null;
         }
 
+        var presenting = new PresentationRequest(ctx.Current, Surface.Popover);
         var cardTask = person.CardAsync(() => ctx.Graph.Card(person.PersonId));
-        var mentionsTask = Paging.Window(ctx.Graph, person.PersonId, EdgeKind.MentionedIn);
+        var mentionsTask = Paging.Window(presenting, EdgeKind.MentionedIn);
         var (card, mentions) = (await cardTask, await mentionsTask);
-        var total = card.EdgeSummary.FirstOrDefault(s => s.Kind == EdgeKind.MentionedIn)?.Count ?? mentions.Shown.Count();
+        var total = presenting.Element.Groups.FirstOrDefault(group => group.Kind == EdgeKind.MentionedIn)?.Count ?? 0;
 
         RenderFragment body = builder =>
         {
@@ -1287,6 +1289,7 @@ public sealed class PersonCardAndMentionsSection : IPopoverSectionProvider
             builder.AddAttribute(seq++, "TotalCount", total);
             builder.AddAttribute(seq++, "ShowHeading", false);
             builder.AddAttribute(seq++, "OnExplore", EventCallback.Factory.Create<PopoverOpening>(ctx, opening => ctx.PushAsync(opening, EdgeKind.MentionedIn)));
+            builder.AddAttribute(seq++, "OnMoved", EventCallback.Factory.Create(ctx, ctx.RenewAsync));
             builder.CloseComponent();
             builder.CloseElement();
         };

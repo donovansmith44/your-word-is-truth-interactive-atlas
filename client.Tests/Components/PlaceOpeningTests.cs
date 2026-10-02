@@ -90,6 +90,10 @@ public sealed class PlaceOpeningTests : BunitContext
 
         public IExplorableClient Graph => throw new NotSupportedException();
 
+        public Explorable Current => throw new NotSupportedException();
+
+        public Task RenewAsync() => Task.CompletedTask;
+
         public Task NavigateWorldAsync(string query) => Task.CompletedTask;
     }
 }

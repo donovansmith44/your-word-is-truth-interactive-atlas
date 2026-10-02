@@ -156,7 +156,7 @@ public sealed class ExploreTests
         var outcome = await Explore.Links(EdgeKind.FollowsIn).Run(explorer, from);
 
         // Assert
-        Assert.Equal(new Outcome<(Page<Link>, Exploration)>.Arrived((new Page<Link>([ToGenesis2], null), from)), outcome);
+        Assert.Equal(new Outcome<(Page<Link>, Exploration)>.Arrived((new Page<Link>([ToGenesis2], null, null), from)), outcome);
     }
 
     [Fact]
@@ -171,7 +171,7 @@ public sealed class ExploreTests
         var outcome = await Explore.Links(EdgeKind.FollowsIn, SecondPage).Run(explorer, from);
 
         // Assert
-        Assert.Equal(new Outcome<(Page<Link>, Exploration)>.Arrived((new Page<Link>([ToGenesis3], null), from)), outcome);
+        Assert.Equal(new Outcome<(Page<Link>, Exploration)>.Arrived((new Page<Link>([ToGenesis3], null, null), from)), outcome);
     }
 
     [Fact]

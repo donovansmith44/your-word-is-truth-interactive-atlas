@@ -356,6 +356,12 @@
             return;
         }
 
+        if (_sections.Any(section => section.Testid == SectionsCouldNotLoad) && Exploration is { Current.Moved: true })
+        {
+            await Renew();
+            return;
+        }
+
         await SyncNarrativeFocusAsync(request);
     }
 
@@ -403,8 +409,10 @@
 
     private RenderFragment SomeSectionsCouldNotLoad => __builder =>
     {
-        <CouldNotLoad OnRetry="LoadCurrent" />
+        <CouldNotLoad OnRetry="RetryCurrent" />
     };
+
+    private Task RetryCurrent() => Exploration is { Current.Moved: true } ? Renew() : LoadCurrent();
 
     private bool CouldNotLoadCurrent()
     {
@@ -498,6 +506,10 @@
     public bool XrefEntryPoint => _legacy is VerseNode { XrefEntryPoint: true };
 
     public IExplorableClient Graph => GraphClient;
+
+    Explorable IPopoverSectionContext.Current => Exploration?.Current ?? throw new InvalidOperationException("a section is resolved only for the element an exploration stands on");
+
+    Task IPopoverSectionContext.RenewAsync() => Renew();
 
     private async Task NavigateWorld(string query)
     {

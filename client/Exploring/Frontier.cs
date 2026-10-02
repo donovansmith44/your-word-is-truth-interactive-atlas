@@ -4,9 +4,9 @@ namespace BibleAtlas.Client.Exploring;
 
 public sealed record FrontierGroup(EdgeKind Kind, int Count);
 
-public sealed record Page<T>(IReadOnlyList<T> Items, int? Next)
+public sealed record Page<T>(IReadOnlyList<T> Items, int? Previous, int? Next)
 {
-    public bool Equals(Page<T>? other) => other is not null && Next == other.Next && Items.SequenceEqual(other.Items);
+    public bool Equals(Page<T>? other) => other is not null && Previous == other.Previous && Next == other.Next && Items.SequenceEqual(other.Items);
 
-    public override int GetHashCode() => Items.Aggregate(Next.GetHashCode(), HashCode.Combine);
+    public override int GetHashCode() => Items.Aggregate(HashCode.Combine(Previous, Next), HashCode.Combine);
 }

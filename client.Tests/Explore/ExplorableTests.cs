@@ -77,7 +77,7 @@ public sealed class ExplorableTests
         var page = await genesis1.Entries(EdgeKind.FollowsIn);
 
         // Assert
-        Assert.Equal(new Page<Entry>([ServedGraph.EntryTo(EdgeKind.FollowsIn, ServedGraph.At(Genesis2Ref))], SecondPageCursor), page);
+        Assert.Equal(new Page<Entry>([ServedGraph.EntryTo(EdgeKind.FollowsIn, ServedGraph.At(Genesis2Ref))], null, SecondPageCursor), page);
     }
 
     [Fact]
@@ -93,7 +93,7 @@ public sealed class ExplorableTests
         var page = await genesis1.Entries(EdgeKind.FollowsIn);
 
         // Assert
-        Assert.Equal(new Page<Entry>([ServedGraph.EntryTo(EdgeKind.FollowsIn, ADating), ServedGraph.EntryTo(EdgeKind.FollowsIn, ServedGraph.At(Genesis2Ref))], null), page);
+        Assert.Equal(new Page<Entry>([ServedGraph.EntryTo(EdgeKind.FollowsIn, ADating), ServedGraph.EntryTo(EdgeKind.FollowsIn, ServedGraph.At(Genesis2Ref))], null, null), page);
     }
 
     [Fact]
@@ -106,7 +106,7 @@ public sealed class ExplorableTests
         var page = await genesis1.Entries(EdgeKind.Mentions);
 
         // Assert
-        Assert.Equal(new Page<Entry>([], null), page);
+        Assert.Equal(new Page<Entry>([], null, null), page);
     }
 
     [Fact]
@@ -223,7 +223,7 @@ public sealed class ExplorableTests
         var toGenesis2 = new Link(EdgeKind.FollowsIn, ServedGraph.At(Genesis2Ref));
 
         // Act
-        var (a, b) = (new Page<Link>([toGenesis2], SecondPageCursor), new Page<Link>(new List<Link> { toGenesis2 }, SecondPageCursor));
+        var (a, b) = (new Page<Link>([toGenesis2], null, SecondPageCursor), new Page<Link>(new List<Link> { toGenesis2 }, null, SecondPageCursor));
 
         // Assert
         Assert.Equal((true, true), (a == b, a.GetHashCode() == b.GetHashCode()));
@@ -236,7 +236,7 @@ public sealed class ExplorableTests
         var toGenesis2 = new Link(EdgeKind.FollowsIn, ServedGraph.At(Genesis2Ref));
 
         // Act
-        var (a, b) = (new Page<Link>([toGenesis2], null), new Page<Link>([], null));
+        var (a, b) = (new Page<Link>([toGenesis2], null, null), new Page<Link>([], null, null));
 
         // Assert
         Assert.NotEqual(a, b);

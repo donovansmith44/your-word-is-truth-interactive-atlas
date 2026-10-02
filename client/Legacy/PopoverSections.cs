@@ -21,6 +21,10 @@ public interface IPopoverSectionContext
 
     IExplorableClient Graph { get; }
 
+    Explorable Current { get; }
+
+    Task RenewAsync();
+
     Task NavigateWorldAsync(string query);
 }
 

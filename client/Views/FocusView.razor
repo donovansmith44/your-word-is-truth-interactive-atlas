@@ -55,7 +55,7 @@
         Retire();
         _outcome = null;
         var groups = request.Element.Groups;
-        var outcome = await _series.Next().Fetch(() => Presenter.Present(request), () => Task.WhenAll(groups.Select(group => Paging.Window(request, group))));
+        var outcome = await _series.Next().Fetch(() => Presenter.Present(request), () => Task.WhenAll(groups.Select(group => Paging.Window(request, group.Kind))));
         var presented = outcome.Select(loaded => new Presented(request, loaded.Item1, groups.Zip(loaded.Item2).ToDictionary(pair => pair.First.Kind, pair => pair.Second)));
         _outcome = presented.Match(arrived: _ => presented, failed: () => presented, superseded: () => _outcome);
         await presented.Match(arrived: _ => Task.CompletedTask, failed: () => Renewing(request), superseded: () => Task.CompletedTask);

@@ -18,31 +18,34 @@ public sealed class PageWindow<T>
     private readonly Func<T, bool> _keep;
     private readonly int _step;
     private readonly int _blocksShown;
+    private readonly Func<bool> _moved;
     private readonly CancellationTokenSource _stopped = new();
-    private IReadOnlyList<int?> _earlier = [];
     private IReadOnlyList<Block> _blocks;
+    private int _blocksBefore;
+    private int _entriesBefore;
     private bool _settling;
 
-    private PageWindow(PageRead<T> read, Func<T, bool> keep, int step, Block first)
+    private PageWindow(PageRead<T> read, Func<T, bool> keep, int step, Func<bool> moved, Block first)
     {
-        (_read, _keep, _step, _blocksShown) = (read, keep, step, PageWindow.BlocksShown(step));
+        (_read, _keep, _step, _blocksShown, _moved) = (read, keep, step, PageWindow.BlocksShown(step), moved);
         _blocks = [first];
     }
 
-    public static async Task<PageWindow<T>> Opened(PageRead<T> read, Func<T, bool> keep, int step) =>
-        new(read, keep, step, await Block.At(read, keep, step, null));
+    internal static async Task<PageWindow<T>> Opened(PageRead<T> read, Func<T, bool> keep, int step, Func<bool> moved) =>
+        new(read, keep, step, moved, await Block.At(read, keep, step, null));
 
     public int Wanted { get; private set; } = 1;
 
+    public bool Moved => _moved();
+
     public IEnumerable<T> Shown => _blocks.SelectMany(block => block.Read.Kept);
 
-    public PagePosition Position(int total)
-    {
-        var from = _earlier.Count * _step;
-        return new PagePosition(from + 1, from + _blocks.Sum(block => block.Read.Read), total, Revealed > 1, !_blocks[^1].Read.Ended);
-    }
+    public IEnumerable<int?> CursorsHeld => _blocks.SelectMany(block => new[] { block.Read.Previous, block.Read.Next });
 
-    private int Revealed => _earlier.Count + _blocks.Count;
+    public PagePosition Position(int total) =>
+        new(_entriesBefore + 1, _entriesBefore + _blocks.Sum(block => block.Read.Read), total, Revealed > 1, !_blocks[^1].Read.Ended);
+
+    private int Revealed => _blocksBefore + _blocks.Count;
 
     public Task<Outcome<Unit>> More()
     {
@@ -81,7 +84,7 @@ public sealed class PageWindow<T>
             {
                 Wanted = Revealed;
             }
-            else if (Revealed > Wanted && _earlier is [])
+            else if (Revealed > Wanted && _blocksBefore == 0)
             {
                 _blocks = _blocks.SkipLast(1).ToList();
             }
@@ -96,7 +99,7 @@ public sealed class PageWindow<T>
 
     private async Task<Outcome<Unit>?> Step(Request request, bool onward)
     {
-        var start = onward ? _blocks[^1].Read.Next : _earlier[^1];
+        var start = onward ? _blocks[^1].Read.Next : _blocks[0].Read.Previous;
         var read = await request.Fetch(() => Block.At(_read, _keep, _step, start));
         var wanted = onward ? Revealed < Wanted : Revealed > Wanted;
         return read.Match<Outcome<Unit>?>(
@@ -112,22 +115,22 @@ public sealed class PageWindow<T>
             _blocks = [.. _blocks, block];
             if (_blocks.Count > _blocksShown)
             {
-                _earlier = [.. _earlier, _blocks[0].Start];
+                (_blocksBefore, _entriesBefore) = (_blocksBefore + 1, _entriesBefore + _blocks[0].Read.Read);
                 _blocks = _blocks.Skip(1).ToList();
             }
         }
         else
         {
-            _earlier = _earlier.SkipLast(1).ToList();
+            (_blocksBefore, _entriesBefore) = (_blocksBefore - 1, _entriesBefore - block.Read.Read);
             _blocks = [block, .. _blocks.SkipLast(1)];
         }
 
         return null;
     }
 
-    private sealed record Block(int? Start, Paging<T> Read)
+    private sealed record Block(Paging<T> Read)
     {
         public static async Task<Block> At(PageRead<T> read, Func<T, bool> keep, int step, int? start) =>
-            new(start, await Paging.From(read, start, step, keep));
+            new(await Paging.From(read, start, step, keep));
     }
 }
