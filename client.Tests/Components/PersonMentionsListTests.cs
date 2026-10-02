@@ -11,7 +11,7 @@ public sealed class PersonMentionsListTests : BunitContext
     private const string Mention = "[data-testid^='person-mention-']";
     private const int Mentions = 1_000;
 
-    private static readonly int Step = Affordances.MentionedIn.InitialClamp;
+    private static readonly int Step = Affordances.PageSize;
 
     [Fact]
     public async Task Revealing_mentions_slides_a_bounded_window_and_fewer_slides_it_back()
@@ -19,7 +19,7 @@ public sealed class PersonMentionsListTests : BunitContext
         // Arrange
         var graph = new MentionsGraph();
         var mentions = await Paging.Window(graph, Abraham, EdgeKind.MentionedIn);
-        var view = Render<PersonMentionsList>(p => p.Add(v => v.Mentions, mentions).Add(v => v.OnExplore, _ => { }));
+        var view = Render<PersonMentionsList>(p => p.Add(v => v.Mentions, mentions).Add(v => v.TotalCount, Mentions).Add(v => v.OnExplore, _ => { }));
         var slid = PageWindow.BlocksShown(Step);
         for (var more = 0; more < slid; more++)
         {
@@ -43,7 +43,7 @@ public sealed class PersonMentionsListTests : BunitContext
         // Arrange
         var graph = new MentionsGraph { Failures = 1 };
         var mentions = await Paging.Window(graph, Abraham, EdgeKind.MentionedIn);
-        var view = Render<PersonMentionsList>(p => p.Add(v => v.Mentions, mentions).Add(v => v.OnExplore, _ => { }));
+        var view = Render<PersonMentionsList>(p => p.Add(v => v.Mentions, mentions).Add(v => v.TotalCount, Mentions).Add(v => v.OnExplore, _ => { }));
         await view.Find("[data-testid='person-mentions-more']").ClickAsync(new());
         var failed = view.FindAll("[data-testid='could-not-load-retry']").Count;
 

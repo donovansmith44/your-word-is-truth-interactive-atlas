@@ -132,7 +132,7 @@ public sealed class ArtifactMoveTests
     private static ServedGraph Revealing(PositionRef target)
     {
         var id = Positions.Of(target).Id;
-        var clamp = Affordances.ChildrenShown;
+        var clamp = Affordances.PageSize;
         return new ServedGraph()
             .Serving(ServedGraph.Card(NodeKind.Map, Map.Id, Map.Label, new FrontierGroup(EdgeKind.Shows, Children)))
             .Serving(ServedGraph.EdgeRecordOf(Shows, Map, Eden, new FrontierGroup(EdgeKind.Shows, Children)))

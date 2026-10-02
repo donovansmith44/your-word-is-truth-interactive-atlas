@@ -5,10 +5,11 @@ namespace BibleAtlas.Client.Tests;
 
 public sealed class PageWindowTests
 {
-    private const int Step = 20;
+    private static readonly int Step = Affordances.PageSize;
     private const int Unending = 1_000;
     private const int LongestSequence = 5;
     private const int PastTheEnd = 2;
+    private const int MostRowsShown = 40;
 
     private static readonly int[] Cardinalities = [300, 3_000, 30_000];
 
@@ -41,7 +42,7 @@ public sealed class PageWindowTests
 
             // Assert
             Assert.Equal(
-                (1, WholeValue.Of(Range(0, 3 * Step)), WholeValue.Of(new int?[] { null, Step, 2 * Step })),
+                (1, WholeValue.Of(Range(Step, 3 * Step)), WholeValue.Of(new int?[] { null, Step, 2 * Step })),
                 (inFlight, WholeValue.Of(window.Shown), WholeValue.Of(collection.Asked)));
         });
     }
@@ -189,7 +190,7 @@ public sealed class PageWindowTests
             }
 
             // Assert
-            Assert.Equal((WholeValue.Of(Range(0, size)), size / Step, true), (WholeValue.Of(window.Shown), window.Wanted, window.AtEnd));
+            Assert.Equal((WholeValue.Of(Range(0, size)), size / Step, false), (WholeValue.Of(window.Shown), window.Wanted, window.Position(size).More));
         });
     }
 
@@ -240,9 +241,104 @@ public sealed class PageWindowTests
             }
 
             // Assert
-            Assert.All(resident, read => Assert.InRange(read.MostShown, 1, Math.Max(read.Step, PageWindow.ShownEntries)));
+            Assert.All(resident, read => Assert.InRange(read.MostShown, 1, MostRowsShown));
             Assert.All(resident.GroupBy(read => read.Step), byStep => Assert.Single(byStep.Select(read => (read.MostShown, read.Read)).Distinct()));
         });
+    }
+
+    [Fact]
+    public async Task Every_position_of_a_long_reveal_shows_a_bounded_window_states_its_rows_and_offers_only_the_ways_that_lead_somewhere()
+    {
+        await Task.Run(async () =>
+        {
+            // Arrange
+            var turns = Cardinalities[0] / Step + PastTheEnd;
+
+            // Act
+            var offenders = new List<string>();
+            foreach (var cardinality in Cardinalities)
+            {
+                var window = await Opened(new Collection(cardinality), Step);
+                var positions = new List<string?> { Misplaced(window, cardinality) };
+                for (var more = 0; more < turns; more++)
+                {
+                    await window.More();
+                    positions.Add(Misplaced(window, cardinality));
+                }
+
+                for (var less = 0; less < turns; less++)
+                {
+                    await window.Fewer();
+                    positions.Add(Misplaced(window, cardinality));
+                }
+
+                offenders.AddRange(positions.OfType<string>().Select(offence => $"{cardinality}: {offence}"));
+            }
+
+            // Assert
+            Assert.Empty(offenders);
+        });
+    }
+
+    [Fact]
+    public async Task Less_retraces_every_step_more_took()
+    {
+        await Task.Run(async () =>
+        {
+            // Arrange
+            var window = await Opened(new Collection(Cardinalities[0]), Step);
+            var onward = new List<(string Shown, PagePosition Position)> { Seen(window) };
+            for (var more = 1; more < LongestSequence; more++)
+            {
+                await window.More();
+                onward.Add(Seen(window));
+            }
+
+            // Act
+            var back = new List<(string Shown, PagePosition Position)> { Seen(window) };
+            for (var less = 1; less < LongestSequence; less++)
+            {
+                await window.Fewer();
+                back.Add(Seen(window));
+            }
+
+            // Assert
+            Assert.Equal(Enumerable.Reverse(onward), back);
+        });
+    }
+
+    [Fact]
+    public async Task Less_after_more_reads_back_from_the_page_store_without_asking_again()
+    {
+        await Task.Run(async () =>
+        {
+            // Arrange
+            var graph = new EdgesGraph(Cardinalities[0]);
+            var window = await Paging.Window(graph, Subject, EdgeKind.MentionedIn);
+            for (var more = 0; more <= PageWindow.BlocksShown(Step); more++)
+            {
+                await window.More();
+            }
+
+            var asked = graph.Asked;
+
+            // Act
+            await window.Fewer();
+
+            // Assert
+            Assert.Equal((asked, Step), (graph.Asked, window.Position(Cardinalities[0]).From - 1));
+        });
+    }
+
+    private static (string Shown, PagePosition Position) Seen(PageWindow<int> window) =>
+        (WholeValue.Of(window.Shown), window.Position(Cardinalities[0]));
+
+    private static string? Misplaced(PageWindow<int> window, int cardinality)
+    {
+        var shown = window.Shown.ToList();
+        var position = window.Position(cardinality);
+        var stated = new PagePosition(shown[0] + 1, shown[^1] + 1, cardinality, window.Wanted > 1, shown[^1] + 1 < cardinality);
+        return shown.Count <= MostRowsShown && position == stated ? null : $"showed {Describe(shown)} as {position}";
     }
 
     private static async Task<string?> Offence(IReadOnlyList<Op> sequence)
@@ -305,6 +401,29 @@ public sealed class PageWindowTests
 
     private static Task<PageWindow<int>> Opened(Collection collection, int step) =>
         PageWindow<int>.Opened(collection.Read, Paging.Everything, step);
+
+    private const string Subject = "Person:abraham";
+
+    private sealed class EdgesGraph(int size) : IExplorableClient
+    {
+        public int Asked { get; private set; }
+
+        public Task<NodeRecord> Card(string id) => throw new NotSupportedException();
+
+        public Task<ElementPage> Elements(IReadOnlyList<string> ids) => throw new NotSupportedException();
+
+        public Task<EdgePage> Edges(string positionId, EdgeKind kind, int? cursor = null, int limit = IExplorableClient.DefaultPageSize)
+        {
+            Asked++;
+            var from = cursor ?? 0;
+            var to = Math.Min(from + limit, size);
+            var verses = Enumerable.Range(from, to - from).Select(n => ServedGraph.Ref(NodeKind.TextUnit, $"text-unit:GEN.1.{n}", $"GEN.1.{n}")).ToArray();
+            return Task.FromResult(ServedGraph.Page(kind, to < size ? to : null, verses));
+        }
+
+        public Task<TextWindow> Reading(string fromRef, int n, WindowDir dir = WindowDir.Onward, Corpus corpus = Corpus.Bible) =>
+            throw new NotSupportedException();
+    }
 
     private sealed class Collection(int size)
     {

@@ -4,6 +4,8 @@ import { api } from './lib/api';
 import { neighbourNode, type NodeRef } from './lib/edges';
 import { loadToc } from './lib/canon';
 
+const MENTIONS_PAGE = 20;
+
 // Batch P (the extensibility proof, batch-p-brief.md): "the verse popover
 // gains a PERSONS section (mentioned persons, conditional presence) and the
 // person node popover (card + mentions frontier with honest clamps) --
@@ -170,7 +172,7 @@ test.describe('Batch P: PERSONS section + the person popover', () => {
     // second UI-derived guess.
     const card = await api.node(wireId);
     const mentionedInCount = (card.edge_summary as { kind: string; count: number }[]).find(s => s.kind === 'mentioned-in')?.count ?? 0;
-    const firstPage = await api.nodeEdges(wireId, 'mentioned-in', { limit: 12 });
+    const firstPage = await api.nodeEdges(wireId, 'mentioned-in', { limit: MENTIONS_PAGE });
     expect(firstPage.entries.length).toBeGreaterThan(0);
     const firstVref = neighbourNode(firstPage.entries[0]).label;
 
@@ -201,14 +203,14 @@ test.describe('Batch P: PERSONS section + the person popover', () => {
     await expect(page.getByTestId('popover-title')).toHaveText(firstVref);
   });
 
-  test('PERSONS-2: the mentioned-in frontier is honestly clamped, and Reveal fetches a genuine second page', async ({ page }) => {
+  test('PERSONS-2: the mentioned-in frontier pages 20 at a time: More shows the next page, Less goes back', async ({ page }) => {
     const toc = await loadToc();
-    const busy = await findPersonWithManyMentions(toc, 12);
-    test.skip(!busy, 'no sampled person exceeded the initial 12-entry clamp');
+    const busy = await findPersonWithManyMentions(toc, MENTIONS_PAGE);
+    test.skip(!busy, 'no sampled person exceeded one 20-entry page');
     if (!busy) return;
     const wireId = `Person:${busy.id}`; // findPersonWithManyMentions' own raw id -- see PERSONS-1's own wireId comment above.
 
-    const firstPage = await api.nodeEdges(wireId, 'mentioned-in', { limit: 12 });
+    const firstPage = await api.nodeEdges(wireId, 'mentioned-in', { limit: MENTIONS_PAGE });
     expect(firstPage.next).not.toBeNull();
 
     // O4: reach the person's own popover via the SAME in-text mention link
@@ -235,15 +237,19 @@ test.describe('Batch P: PERSONS section + the person popover', () => {
     // (auto-retrying) is what the ExplorerPopover's own async render
     // lifecycle actually requires here, not a plain snapshot.
     const personMentionRows = page.locator('[data-testid^="person-mention-"]');
-    await expect(personMentionRows).toHaveCount(12);
-    const rowsBefore = 12;
+    await expect(personMentionRows).toHaveCount(MENTIONS_PAGE);
+    await expect(page.getByTestId('person-mentions-position')).toHaveText(`1–${MENTIONS_PAGE} of ${busy.total}`);
+    await expect(page.getByTestId('person-mentions-less')).toHaveCount(0);
     const reveal = page.getByTestId('person-mentions-more');
-    await expect(reveal).toBeVisible();
+    await expect(reveal).toHaveText('More');
 
     await reveal.click();
-    await expect
-      .poll(async () => page.locator('[data-testid^="person-mention-"]').count(), { message: 'Reveal must fetch and append a genuine second page' })
-      .toBeGreaterThan(rowsBefore);
+    await expect(personMentionRows).toHaveCount(Math.min(2 * MENTIONS_PAGE, busy.total));
+    await expect(page.getByTestId('person-mentions-position')).toHaveText(`1–${Math.min(2 * MENTIONS_PAGE, busy.total)} of ${busy.total}`);
+
+    await page.getByTestId('person-mentions-less').click();
+    await expect(personMentionRows).toHaveCount(MENTIONS_PAGE);
+    await expect(page.getByTestId('person-mentions-less')).toHaveCount(0);
   });
 
   test('PERSONS-3: a person’s mentioned-in frontier is canon-ordered on the wire (server-only, no browser needed)', async ({}) => {

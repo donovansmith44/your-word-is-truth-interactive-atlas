@@ -10,9 +10,10 @@ public sealed class FocusViewTests : BunitContext
 {
     private const string Genesis2Id = "Container:bible-chapter-GEN-2";
     private const string Genesis2Label = "Genesis 2";
-    private const int CitesServed = 5;
-    private const int CitesFirstPage = 3;
-    private const int CitesSecondPageCursor = 3;
+    private const int CitesBeyondOnePage = 5;
+    private static readonly int CitesFirstPage = Affordances.PageSize;
+    private static readonly int CitesServed = CitesFirstPage + CitesBeyondOnePage;
+    private static readonly int CitesSecondPageCursor = CitesFirstPage;
     private const int SecondOfTwo = 1;
 
     private static readonly NodeRef Genesis = ServedGraph.Ref(NodeKind.Container, "Container:bible-book-GEN", "Genesis");
@@ -56,22 +57,24 @@ public sealed class FocusViewTests : BunitContext
         </div>
         """;
 
-    private static readonly string CitesClampedToThree = $$"""
+    private static readonly string CitesFirstPageShown = $$"""
         <div class="popover-section" data-testid="popover-section-cites">
-            <p class="catechism-section-heading" data-testid="popover-section-cites-heading">Cites (5)</p>
+            <p class="catechism-section-heading" data-testid="popover-section-cites-heading">Cites ({{CitesServed}})</p>
             {{Cited(Citations[..CitesFirstPage])}}
             <div class="popover-reveal-controls">
-                <button type="button" class="popover-reveal-link explorable-quiet" data-testid="popover-section-cites-more" aria-label="Show 2 more entries" title="Show 2 more entries">more (2)</button>
+                <span class="popover-page-position" data-testid="popover-section-cites-position">1–{{CitesFirstPage}} of {{CitesServed}}</span>
+                <button type="button" class="popover-reveal-link explorable-quiet" data-testid="popover-section-cites-more">More</button>
             </div>
         </div>
         """;
 
     private static readonly string CitesRevealedWhole = $$"""
         <div class="popover-section" data-testid="popover-section-cites">
-            <p class="catechism-section-heading" data-testid="popover-section-cites-heading">Cites (5)</p>
+            <p class="catechism-section-heading" data-testid="popover-section-cites-heading">Cites ({{CitesServed}})</p>
             {{Cited(Citations)}}
             <div class="popover-reveal-controls">
-                <button type="button" class="popover-reveal-link explorable-quiet" data-testid="popover-section-cites-collapse" aria-label="Show fewer entries" title="Show fewer entries">less</button>
+                <span class="popover-page-position" data-testid="popover-section-cites-position">1–{{CitesServed}} of {{CitesServed}}</span>
+                <button type="button" class="popover-reveal-link explorable-quiet" data-testid="popover-section-cites-collapse">Less</button>
             </div>
         </div>
         """;
@@ -169,7 +172,7 @@ public sealed class FocusViewTests : BunitContext
         var view = Render<FocusView>(p => p.Add(v => v.Node, genesis2).Add(v => v.Surface, Surface.Popover));
 
         // Assert
-        view.MarkupMatches(Genesis2Card + CitesClampedToThree);
+        view.MarkupMatches(Genesis2Card + CitesFirstPageShown);
     }
 
     [Fact]
@@ -238,8 +241,8 @@ public sealed class FocusViewTests : BunitContext
             WholeValue.Of(new[]
             {
                 (EdgeKind.MemberOf, Genesis), (EdgeKind.PrecedesIn, Genesis1), (EdgeKind.FollowsIn, Genesis3), (EdgeKind.Contains, Verse1), (EdgeKind.Contains, Verse2),
-                (EdgeKind.Mentions, Adam), (EdgeKind.Mentions, Eden), (EdgeKind.Cites, Citations[0]), (EdgeKind.Cites, Citations[1]), (EdgeKind.Cites, Citations[2]),
-            }.Select(entry => new Link(entry.Item1, ServedGraph.AtEdge(ServedGraph.EdgeTo(entry.Item1, ServedGraph.At(entry.Item2)))))),
+                (EdgeKind.Mentions, Adam), (EdgeKind.Mentions, Eden),
+            }.Concat(Citations[..CitesFirstPage].Select(citation => (EdgeKind.Cites, citation))).Select(entry => new Link(entry.Item1, ServedGraph.AtEdge(ServedGraph.EdgeTo(entry.Item1, ServedGraph.At(entry.Item2)))))),
             WholeValue.Of(followed));
     }
 
@@ -462,7 +465,7 @@ public sealed class FocusViewTests : BunitContext
         await view.Find("[data-testid='could-not-load-retry']").ClickAsync(new());
 
         // Assert
-        view.MarkupMatches(Genesis2Card + CitesClampedToThree);
+        view.MarkupMatches(Genesis2Card + CitesFirstPageShown);
     }
 
     [Fact]
@@ -549,7 +552,7 @@ public sealed class FocusViewTests : BunitContext
         var view = Render<FocusView>(p => p.Add(v => v.Node, node).Add(v => v.Surface, Surface.World));
 
         // Assert
-        Assert.Equal((1, Affordances.ChildrenShown, 0), (graph.Asked(EdgeKind.Shows), graph.Read(EdgeKind.Shows), view.FindAll(".focus-child").Count));
+        Assert.Equal((1, Affordances.PageSize, 0), (graph.Asked(EdgeKind.Shows), graph.Read(EdgeKind.Shows), view.FindAll(".focus-child").Count));
     }
 
     [Fact]
@@ -580,7 +583,7 @@ public sealed class FocusViewTests : BunitContext
         await view.Find("[data-testid='popover-children-contains-more']").ClickAsync(new());
 
         // Assert
-        Assert.Equal((2, 2 * Affordances.ChildrenShown, 2 * Affordances.ChildrenShown), (graph.Asked(EdgeKind.Contains), graph.Read(EdgeKind.Contains), view.FindAll(".focus-child").Count));
+        Assert.Equal((2, 2 * Affordances.PageSize, 2 * Affordances.PageSize), (graph.Asked(EdgeKind.Contains), graph.Read(EdgeKind.Contains), view.FindAll(".focus-child").Count));
     }
 
     [Fact]
@@ -611,29 +614,114 @@ public sealed class FocusViewTests : BunitContext
     }
 
     [Fact]
-    public async Task A_long_reveal_renders_the_same_bounded_window_however_large_the_collection()
+    public async Task Every_list_affordance_shows_a_bounded_window_at_every_position_of_a_long_reveal_and_back()
     {
         // Arrange
         var cardinalities = new[] { 300, 3_000, 30_000 };
 
         // Act
-        var rendered = new List<int>();
+        var mostShown = new List<(int Cardinality, EdgeKind Kind, int Rows)>();
         foreach (var cardinality in cardinalities)
         {
-            var graph = new MultitudeGraph([EdgeKind.Contains], cardinality);
+            var graph = new MultitudeGraph(Listed, cardinality);
             var node = await new GraphExplorer(graph).BeginAt(ServedGraph.At(Genesis2Ref));
             var view = Render<FocusView>(p => p.Add(v => v.Node, node).Add(v => v.Surface, Surface.Popover));
-            for (var more = 0; more < LongReveal && view.FindAll("[data-testid='popover-children-contains-more']") is [var offered]; more++)
+            foreach (var kind in Listed)
             {
-                await offered.ClickAsync(new());
-            }
+                var rows = new List<int> { Rows(view, kind) };
+                foreach (var turn in new[] { "more", "collapse" })
+                {
+                    for (var step = 0; step < LongReveal && view.FindAll($"[data-testid='{Handle(kind)}-{turn}']") is [var offered]; step++)
+                    {
+                        await offered.ClickAsync(new());
+                        rows.Add(Rows(view, kind));
+                    }
+                }
 
-            rendered.Add(view.FindAll(".focus-child").Count);
+                mostShown.Add((cardinality, kind, rows.Max()));
+            }
         }
 
         // Assert
-        Assert.Equal(cardinalities.Select(_ => PageWindow.ShownEntries), rendered);
+        Assert.Equal(
+            cardinalities.SelectMany(cardinality => Listed.Select(kind => (cardinality, kind, MostRowsShown))),
+            mostShown);
     }
+
+    [Fact]
+    public async Task The_controls_state_the_rows_shown_and_offer_only_the_ways_that_lead_somewhere()
+    {
+        // Arrange
+        var graph = new MultitudeGraph([EdgeKind.Contains], Cardinality);
+        var node = await new GraphExplorer(graph).BeginAt(ServedGraph.At(Genesis2Ref));
+        var view = Render<FocusView>(p => p.Add(v => v.Node, node).Add(v => v.Surface, Surface.Popover));
+        var section = Handle(EdgeKind.Contains);
+        var opened = Controls(view, section);
+
+        // Act
+        while (view.FindAll($"[data-testid='{section}-more']") is [var more])
+        {
+            await more.ClickAsync(new());
+        }
+
+        var atTheEnd = Controls(view, section);
+        while (view.FindAll($"[data-testid='{section}-collapse']") is [var less])
+        {
+            await less.ClickAsync(new());
+        }
+
+        // Assert
+        Assert.Equal(
+            [
+                ($"1–{Affordances.PageSize} of {Cardinality}", false, true),
+                ($"{Cardinality - MostRowsShown + 1}–{Cardinality} of {Cardinality}", true, false),
+                ($"1–{Affordances.PageSize} of {Cardinality}", false, true),
+            ],
+            new[] { opened, atTheEnd, Controls(view, section) });
+    }
+
+    [Fact]
+    public async Task Less_after_more_reads_back_from_the_page_store_without_asking_again()
+    {
+        // Arrange
+        var graph = new MultitudeGraph([EdgeKind.Contains]);
+        var node = await new GraphExplorer(graph).BeginAt(ServedGraph.At(Genesis2Ref));
+        var view = Render<FocusView>(p => p.Add(v => v.Node, node).Add(v => v.Surface, Surface.Popover));
+        for (var more = 0; more < PageWindow.BlocksShown(Affordances.PageSize) + 1; more++)
+        {
+            await view.Find("[data-testid='popover-children-contains-more']").ClickAsync(new());
+        }
+
+        var asked = graph.Asked(EdgeKind.Contains);
+
+        // Act
+        for (var less = 0; less < PageWindow.BlocksShown(Affordances.PageSize) + 1; less++)
+        {
+            await view.Find("[data-testid='popover-children-contains-collapse']").ClickAsync(new());
+        }
+
+        // Assert
+        Assert.Equal(
+            (asked, WholeValue.Of(Enumerable.Range(0, Affordances.PageSize).Select(n => $"popover-child-contains-Person:{n}"))),
+            (graph.Asked(EdgeKind.Contains), WholeValue.Of(view.FindAll(".focus-child").Select(child => child.GetAttribute("data-testid")))));
+    }
+
+    private const int Cardinality = 300;
+
+    private const int MostRowsShown = 40;
+
+    private static readonly EdgeKind[] Listed = [EdgeKind.Contains, EdgeKind.Cites, EdgeKind.MentionedIn];
+
+    private static string Handle(EdgeKind kind) =>
+        Affordances.Of(kind) is Affordance.InlineChildren ? $"popover-children-{kind.WireName()}" : $"popover-section-{kind.WireName()}";
+
+    private static int Rows(IRenderedComponent<FocusView> view, EdgeKind kind) =>
+        view.FindAll($"[data-testid^='popover-entry-edge-{kind.WireName()}-{ServedGraph.EdgeId}:']").Count;
+
+    private static (string Position, bool Less, bool More) Controls(IRenderedComponent<FocusView> view, string section) =>
+        (view.Find($"[data-testid='{section}-position']").TextContent,
+            view.FindAll($"[data-testid='{section}-collapse']").Count == 1,
+            view.FindAll($"[data-testid='{section}-more']").Count == 1);
 
     [Fact]
     public async Task Fewer_after_a_long_reveal_slides_the_window_back_over_what_it_let_go()
@@ -642,7 +730,7 @@ public sealed class FocusViewTests : BunitContext
         var graph = new MultitudeGraph([EdgeKind.Contains]);
         var node = await new GraphExplorer(graph).BeginAt(ServedGraph.At(Genesis2Ref));
         var view = Render<FocusView>(p => p.Add(v => v.Node, node).Add(v => v.Surface, Surface.Popover));
-        for (var more = 0; more < PageWindow.BlocksShown(Affordances.ChildrenShown); more++)
+        for (var more = 0; more < PageWindow.BlocksShown(Affordances.PageSize); more++)
         {
             await view.Find("[data-testid='popover-children-contains-more']").ClickAsync(new());
         }

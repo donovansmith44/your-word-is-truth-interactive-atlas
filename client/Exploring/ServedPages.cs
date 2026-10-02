@@ -7,7 +7,7 @@ public sealed class ServedPages
     public const int Resident = 32;
 
     private readonly IExplorableClient _graph;
-    private readonly LruCache<(string Root, string Id, EdgeKind Kind, int? Cursor, int Limit), AsyncMemo<EdgePage>> _pages = new(Resident);
+    private readonly PageStore<(string Root, string Id, EdgeKind Kind, int? Cursor, int Limit), EdgePage> _pages = new(Resident);
 
     internal ServedPages(IExplorableClient graph) => _graph = graph;
 
@@ -15,17 +15,8 @@ public sealed class ServedPages
 
     internal void Saw(string root) => Serving = root;
 
-    internal Task<EdgePage> Read(string root, string id, EdgeKind kind, int? cursor, int limit)
-    {
-        var key = (root, id, kind, cursor, limit);
-        if (!_pages.TryGet(key, out var memo))
-        {
-            memo = new AsyncMemo<EdgePage>();
-            _pages.Put(key, memo);
-        }
-
-        return memo.Get(async () => Served(root, await _graph.Edges(id, kind, cursor, limit)));
-    }
+    internal Task<EdgePage> Read(string root, string id, EdgeKind kind, int? cursor, int limit) =>
+        _pages.Read((root, id, kind, cursor, limit), async () => Served(root, await _graph.Edges(id, kind, cursor, limit)));
 
     private EdgePage Served(string root, EdgePage page)
     {

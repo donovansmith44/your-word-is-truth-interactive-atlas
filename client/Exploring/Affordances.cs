@@ -6,11 +6,11 @@ public abstract record Affordance(int InitialClamp)
 {
     public sealed record Arrows(ArrowDirection Direction) : Affordance(Affordances.ArrowsShown);
 
-    public sealed record InlineChildren() : Affordance(Affordances.ChildrenShown);
+    public sealed record InlineChildren() : Affordance(Affordances.PageSize);
 
     public sealed record UpCrumb() : Affordance(Affordances.CrumbsShown);
 
-    public sealed record SectionList(SectionStyle Style, int InitialClamp, SectionOrder Order) : Affordance(InitialClamp);
+    public sealed record SectionList(SectionStyle Style, SectionOrder Order) : Affordance(Affordances.PageSize);
 }
 
 public enum ArrowDirection
@@ -37,15 +37,11 @@ public static class Affordances
 
     public const int CrumbsShown = 3;
 
-    public const int ChildrenShown = 20;
+    public const int PageSize = 20;
 
-    public static readonly Affordance.SectionList Cites = new(SectionStyle.Quiet, InitialClamp: 3, SectionOrder.VotesRanked);
+    public static readonly Affordance.SectionList Cites = new(SectionStyle.Quiet, SectionOrder.VotesRanked);
 
-    public static readonly Affordance.SectionList Mentions = new(SectionStyle.Standard, InitialClamp: 50, SectionOrder.Canonical);
-
-    public static readonly Affordance.SectionList MentionedIn = new(SectionStyle.Standard, InitialClamp: 12, SectionOrder.Canonical);
-
-    public static readonly Affordance.SectionList DefaultList = new(SectionStyle.Standard, InitialClamp: 20, SectionOrder.Canonical);
+    public static readonly Affordance.SectionList DefaultList = new(SectionStyle.Standard, SectionOrder.Canonical);
 
     public static Affordance Of(EdgeKind kind) => kind switch
     {
@@ -54,9 +50,9 @@ public static class Affordances
         EdgeKind.Contains or EdgeKind.Shows => new Affordance.InlineChildren(),
         EdgeKind.MemberOf or EdgeKind.ShownOn => new Affordance.UpCrumb(),
         EdgeKind.Cites => Cites,
-        EdgeKind.Mentions => Mentions,
-        EdgeKind.MentionedIn => MentionedIn,
-        EdgeKind.AttestedIn
+        EdgeKind.Mentions
+            or EdgeKind.MentionedIn
+            or EdgeKind.AttestedIn
             or EdgeKind.Attests
             or EdgeKind.DatedBy
             or EdgeKind.Dates

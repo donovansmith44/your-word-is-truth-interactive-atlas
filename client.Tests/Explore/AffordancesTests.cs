@@ -5,10 +5,9 @@ namespace BibleAtlas.Client.Tests;
 
 public sealed class AffordancesTests
 {
-    private const int CitesShownBeforeReveal = 3;
-    private const int MentionsShownBeforeReveal = 50;
-    private const int MentionedInShownBeforeReveal = 12;
-    private const int ListedLinksShownBeforeReveal = 20;
+    private const int ListPage = 20;
+    private const int ArrowsShown = 1;
+    private const int CrumbsShown = 3;
 
     private static readonly IReadOnlyDictionary<EdgeKind, Affordance> NamedRows = new Dictionary<EdgeKind, Affordance>
     {
@@ -18,13 +17,23 @@ public sealed class AffordancesTests
         [EdgeKind.Shows] = new Affordance.InlineChildren(),
         [EdgeKind.MemberOf] = new Affordance.UpCrumb(),
         [EdgeKind.ShownOn] = new Affordance.UpCrumb(),
-        [EdgeKind.Cites] = new Affordance.SectionList(SectionStyle.Quiet, CitesShownBeforeReveal, SectionOrder.VotesRanked),
-        [EdgeKind.Mentions] = new Affordance.SectionList(SectionStyle.Standard, MentionsShownBeforeReveal, SectionOrder.Canonical),
-        [EdgeKind.MentionedIn] = new Affordance.SectionList(SectionStyle.Standard, MentionedInShownBeforeReveal, SectionOrder.Canonical),
-        [EdgeKind.CommentedOnBy] = new Affordance.SectionList(SectionStyle.Standard, ListedLinksShownBeforeReveal, SectionOrder.Canonical),
+        [EdgeKind.Cites] = new Affordance.SectionList(SectionStyle.Quiet, SectionOrder.VotesRanked),
     };
 
-    private static readonly Affordance EveryOtherRow = new Affordance.SectionList(SectionStyle.Standard, ListedLinksShownBeforeReveal, SectionOrder.Canonical);
+    private static readonly Affordance EveryOtherRow = new Affordance.SectionList(SectionStyle.Standard, SectionOrder.Canonical);
+
+    [Fact]
+    public void Every_list_shows_one_page_of_twenty_and_arrows_and_crumbs_keep_their_own_counts()
+    {
+        // Arrange
+        var kinds = Enum.GetValues<EdgeKind>();
+        // Act
+        var shown = kinds.ToDictionary(k => k, k => Affordances.Of(k).InitialClamp);
+        // Assert
+        Assert.Equal(
+            kinds.ToDictionary(k => k, k => Affordances.Of(k) is Affordance.Arrows ? ArrowsShown : Affordances.Of(k) is Affordance.UpCrumb ? CrumbsShown : ListPage),
+            shown);
+    }
 
     [Fact]
     public void Affordances_are_total_over_every_generated_edge_kind()
@@ -67,8 +76,8 @@ public sealed class AffordancesTests
         var expected = new Dictionary<EdgeKind, Affordance.SectionList>
         {
             [EdgeKind.Cites] = Affordances.Cites,
-            [EdgeKind.Mentions] = Affordances.Mentions,
-            [EdgeKind.MentionedIn] = Affordances.MentionedIn,
+            [EdgeKind.Mentions] = Affordances.DefaultList,
+            [EdgeKind.MentionedIn] = Affordances.DefaultList,
         };
         // Act
         var served = expected.Keys.ToDictionary(k => k, Affordances.Of);

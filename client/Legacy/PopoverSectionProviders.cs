@@ -270,6 +270,8 @@ internal static class FrontierProvenance
 
 public sealed class CrossRefsSection : IPopoverSectionProvider
 {
+    private const int XrefsShown = 3;
+
     public bool AppliesTo(IExplorable node) => node.Kind is "Verse" or "Passage";
 
     public async Task<PopoverSection?> ResolveAsync(IExplorable node, AtlasClient api, IPopoverSectionContext ctx)
@@ -304,8 +306,8 @@ public sealed class CrossRefsSection : IPopoverSectionProvider
         // more"); targets beyond that keep their full identity and are resolved lazily via
         // ResolveUnits on first reveal, never narrowed to a single-verse preview.
         var spans = xrefs.Select(x => (Xref: x, Span: CanonRef.TargetSpan(x.Target))).ToList();
-        var eagerSpans = spans.Take(Affordances.Cites.InitialClamp).ToList();
-        var lazySpans = spans.Skip(Affordances.Cites.InitialClamp).ToList();
+        var eagerSpans = spans.Take(XrefsShown).ToList();
+        var lazySpans = spans.Skip(XrefsShown).ToList();
         var units = await ResolveUnits(api, eagerSpans);
         var registry = await FrontierProvenance.Registry(api);
 
@@ -322,7 +324,7 @@ public sealed class CrossRefsSection : IPopoverSectionProvider
             builder.AddAttribute(seq++, "TrueTotal", xrefs.Count);
             builder.AddAttribute(seq++, "ResolveRemainingAsync", (Func<Task<IReadOnlyList<PassageSourceUnit>>>)(async () => await ResolveUnits(api, lazySpans)));
             builder.AddAttribute(seq++, "RefTestIdPrefix", "xref-item");
-            builder.AddAttribute(seq++, "Cap", ctx.XrefEntryPoint ? Affordances.Cites.InitialClamp : (ctx.OtherContextSectionCount > 0 ? 2 : Affordances.Cites.InitialClamp));
+            builder.AddAttribute(seq++, "Cap", ctx.XrefEntryPoint ? XrefsShown : (ctx.OtherContextSectionCount > 0 ? 2 : XrefsShown));
             builder.AddAttribute(seq++, "MoreTestId", "xrefs-more");
             builder.AddAttribute(seq++, "CollapseTestId", "xrefs-collapse");
             builder.AddAttribute(seq++, "RevealNoun", "cross-references");
