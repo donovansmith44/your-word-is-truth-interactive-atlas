@@ -11,7 +11,7 @@ public sealed class GraphExplorableClient : IExplorableClient
     public Task<NodeCard> Card(string id) =>
         _http.GetRequired<NodeCard>($"api/node/{Uri.EscapeDataString(id)}");
 
-    public Task<EdgePage> Edges(string id, EdgeKind kind, int? cursor = null, int limit = 20) =>
+    public Task<EdgePage> Edges(string id, EdgeKind kind, int? cursor = null, int limit = IExplorableClient.DefaultPageSize) =>
         _http.GetRequired<EdgePage>(
             $"api/node/{Uri.EscapeDataString(id)}/edges?kind={Uri.EscapeDataString(kind.WireName())}&limit={limit}"
             + (cursor is int c ? $"&cursor={c}" : ""));

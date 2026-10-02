@@ -21,15 +21,15 @@ public sealed class PassageNode : IExplorable
 
     public string Text => _text;
 
-    public Task<IReadOnlyList<Exploration>> ExploreAsync(AtlasClient api)
+    public Task<IReadOnlyList<Chip>> ExploreAsync(AtlasClient api)
     {
         var (book, chapter, verse) = CanonRef.ParseVerse(CanonRef.FirstVerseOf(_sref));
-        IReadOnlyList<Exploration> list = new[]
+        IReadOnlyList<Chip> list = new[]
         {
-            new Exploration("Read in context", "popover-chip-context",
-                new ExplorationTarget.NavigateReader(book, chapter, verse)),
-            new Exploration("About this book", "popover-chip-book",
-                new ExplorationTarget.Push(new AuthorNode(book))),
+            new Chip("Read in context", "popover-chip-context",
+                new ChipTarget.NavigateReader(book, chapter, verse)),
+            new Chip("About this book", "popover-chip-book",
+                new ChipTarget.Push(new AuthorNode(book))),
         };
         return Task.FromResult(list);
     }

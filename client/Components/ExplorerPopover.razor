@@ -151,7 +151,7 @@
         _claim?.Dispose();
     }
 
-    private IReadOnlyList<Exploration> _explorations = Array.Empty<Exploration>();
+    private IReadOnlyList<Chip> _explorations = Array.Empty<Chip>();
     private RenderFragment _body = _ => { };
     private bool _usingSectionRegistry;
     private IReadOnlyList<PopoverSection> _sections = Array.Empty<PopoverSection>();
@@ -295,7 +295,7 @@
     {
         // cleared before the fetches below (not left holding the PREVIOUS node's content): Current.Title already reflects the new node synchronously, so without this clear, Blazor's own render-on-first-await would show the new title beside the wrong node's stale sections for the whole fetch duration (a real live-caught bug, an xref chain showing HAB.1.7's title over JER.52.25's own six-item list).
         _sections = Array.Empty<PopoverSection>();
-        _explorations = Array.Empty<Exploration>();
+        _explorations = Array.Empty<Chip>();
         _body = _ => { };
 
         var applicable = PopoverSectionRegistry.Providers.Where(p => p.AppliesTo(Current)).ToList();
@@ -324,7 +324,7 @@
         }
         catch (Exception)
         {
-            _explorations = Array.Empty<Exploration>();
+            _explorations = Array.Empty<Chip>();
             _sections = Array.Empty<PopoverSection>();
             _usingSectionRegistry = false;
             _body = builder =>
@@ -394,20 +394,20 @@
 
     public Task NavigateWorldAsync(string query) => NavigateWorld(query);
 
-    private async Task Activate(Exploration ex)
+    private async Task Activate(Chip ex)
     {
         switch (ex.Target)
         {
-            case ExplorationTarget.Push push:
+            case ChipTarget.Push push:
                 ApplyLocally(new Visit(push.Next));
                 await LoadCurrent();
                 break;
 
-            case ExplorationTarget.NavigateWorld world:
+            case ChipTarget.NavigateWorld world:
                 await NavigateWorld(world.Query);
                 break;
 
-            case ExplorationTarget.NavigateReader reader:
+            case ChipTarget.NavigateReader reader:
                 await RequestClose();
                 var query = InSplit
                     ? $"?{SplitUrlContract.SplitParam}={ViewNames.World}" +

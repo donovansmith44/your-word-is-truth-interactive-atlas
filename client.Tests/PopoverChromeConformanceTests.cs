@@ -21,7 +21,7 @@ public class PopoverChromeConformanceTests
     private static readonly Regex KindPattern = new(@"public string Kind\s*=>\s*""([^""]+)"";", RegexOptions.Compiled);
 
     private static readonly Regex ChipTestIdArgPattern = new(
-        @"new Exploration\([^,]*,\s*\$?""([^""]*)""",
+        @"new Chip\([^,]*,\s*\$?""([^""]*)""",
         RegexOptions.Compiled);
 
     private static bool IsDeclaredChip(string kind, string chipTestId) =>
@@ -104,13 +104,13 @@ public class PopoverChromeConformanceTests
         const string planted = """
             public string Kind => "Verse";
 
-            public Task<IReadOnlyList<Exploration>> ExploreAsync(AtlasClient api)
+            public Task<IReadOnlyList<Chip>> ExploreAsync(AtlasClient api)
             {
-                IReadOnlyList<Exploration> list = new[]
+                IReadOnlyList<Chip> list = new[]
                 {
-                    new Exploration("About this book", "popover-chip-book", new ExplorationTarget.Push(new AuthorNode(book))),
-                    new Exploration("Read in context", "popover-chip-context", new ExplorationTarget.NavigateReader(book, chapter, verse)),
-                    new Exploration("A planted dead chip", "popover-chip-planted-violation", new ExplorationTarget.NavigateWorld("ref=GEN")),
+                    new Chip("About this book", "popover-chip-book", new ChipTarget.Push(new AuthorNode(book))),
+                    new Chip("Read in context", "popover-chip-context", new ChipTarget.NavigateReader(book, chapter, verse)),
+                    new Chip("A planted dead chip", "popover-chip-planted-violation", new ChipTarget.NavigateWorld("ref=GEN")),
                 };
                 return Task.FromResult(list);
             }
@@ -129,7 +129,7 @@ public class PopoverChromeConformanceTests
     [Fact]
     public void StripLineComments_ADocCommentNamingARealChipTestId_IsNotSelfFlagged()
     {
-        const string commentedOut = "    // history: this used to be `new Exploration(\"x\", \"popover-chip-retired-example\", target)`.";
+        const string commentedOut = "    // history: this used to be `new Chip(\"x\", \"popover-chip-retired-example\", target)`.";
 
         Assert.Matches(ChipTestIdArgPattern, commentedOut);
         Assert.Empty(ChipTestIdsIn(commentedOut));

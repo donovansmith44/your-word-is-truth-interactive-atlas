@@ -19,8 +19,8 @@ public sealed class ConcordUnitNode : IExplorable
 
     public string NodeId => NodeIds.Of(NodeKind.TextUnit, Title);
 
-    public Task<IReadOnlyList<Exploration>> ExploreAsync(AtlasClient api) =>
-        Task.FromResult<IReadOnlyList<Exploration>>(Array.Empty<Exploration>());
+    public Task<IReadOnlyList<Chip>> ExploreAsync(AtlasClient api) =>
+        Task.FromResult<IReadOnlyList<Chip>>(Array.Empty<Chip>());
 
     public Task<string> TextAsync(IExplorableClient graph) =>
         _givenText is { } given

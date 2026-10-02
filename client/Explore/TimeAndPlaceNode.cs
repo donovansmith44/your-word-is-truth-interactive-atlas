@@ -24,12 +24,12 @@ public sealed class TimeAndPlaceNode : IExplorable
     public string Title { get; }
     public string Kind => "TimeAndPlace";
 
-    public Task<IReadOnlyList<Exploration>> ExploreAsync(AtlasClient api)
+    public Task<IReadOnlyList<Chip>> ExploreAsync(AtlasClient api)
     {
-        IReadOnlyList<Exploration> list = new[]
+        IReadOnlyList<Chip> list = new[]
         {
-            new Exploration("Show on /world", "popover-chip-map",
-                new ExplorationTarget.NavigateWorld($"from={_when.From.Value}&to={_when.To.Value}")),
+            new Chip("Show on /world", "popover-chip-map",
+                new ChipTarget.NavigateWorld($"from={_when.From.Value}&to={_when.To.Value}")),
         };
         return Task.FromResult(list);
     }

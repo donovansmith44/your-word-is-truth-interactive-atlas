@@ -33,7 +33,7 @@ public sealed class EventNode : IExplorable, INarrativeAware
 
     public EventKind? CachedKind => _detail.CompletedValueOrDefault?.Kind ?? _knownKind;
 
-    public async Task<IReadOnlyList<Exploration>> ExploreAsync(AtlasClient api)
+    public async Task<IReadOnlyList<Chip>> ExploreAsync(AtlasClient api)
     {
         EventPage detail;
         try
@@ -42,18 +42,18 @@ public sealed class EventNode : IExplorable, INarrativeAware
         }
         catch (Exception)
         {
-            return Array.Empty<Exploration>();
+            return Array.Empty<Chip>();
         }
 
         if (detail.When is not { } when || detail.Places.Count == 0)
         {
-            return Array.Empty<Exploration>();
+            return Array.Empty<Chip>();
         }
 
-        IReadOnlyList<Exploration> list = new[]
+        IReadOnlyList<Chip> list = new[]
         {
-            new Exploration("Show on the map", "popover-chip-map",
-                new ExplorationTarget.NavigateWorld($"from={when.FromYear}&to={when.ToYear}")),
+            new Chip("Show on the map", "popover-chip-map",
+                new ChipTarget.NavigateWorld($"from={when.FromYear}&to={when.ToYear}")),
         };
         return list;
     }

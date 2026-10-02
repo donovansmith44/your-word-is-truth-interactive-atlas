@@ -18,8 +18,8 @@ public sealed class CatechismNode : IExplorable
     public string Title { get; }
     public string Kind => "Catechism";
 
-    public Task<IReadOnlyList<Exploration>> ExploreAsync(AtlasClient api) =>
-        Task.FromResult<IReadOnlyList<Exploration>>(Array.Empty<Exploration>());
+    public Task<IReadOnlyList<Chip>> ExploreAsync(AtlasClient api) =>
+        Task.FromResult<IReadOnlyList<Chip>>(Array.Empty<Chip>());
 
     public Task<RenderFragment> BodyAsync(AtlasClient api)
     {

@@ -27,7 +27,7 @@ public sealed class AuthorNodeTests
 
         // Assert
         Assert.Equal(
-            (new Exploration("Show on /world", "popover-chip-map", new ExplorationTarget.NavigateWorld("from=-445&to=-432")), "/api/node/Container%3Abible-book-NEH"),
+            (new Chip("Show on /world", "popover-chip-map", new ChipTarget.NavigateWorld("from=-445&to=-432")), "/api/node/Container%3Abible-book-NEH"),
             (explorations.Single(), string.Join(" ", atlas.Asked)));
     }
 

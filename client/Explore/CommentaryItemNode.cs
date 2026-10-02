@@ -17,8 +17,8 @@ public sealed class CommentaryItemNode : IExplorable
     public string Title { get; }
     public string Kind => "CommentaryItem";
 
-    public Task<IReadOnlyList<Exploration>> ExploreAsync(AtlasClient api) =>
-        Task.FromResult<IReadOnlyList<Exploration>>(Array.Empty<Exploration>());
+    public Task<IReadOnlyList<Chip>> ExploreAsync(AtlasClient api) =>
+        Task.FromResult<IReadOnlyList<Chip>>(Array.Empty<Chip>());
 
     // Unreachable while CommentaryItemProseSection is registered for Kind == "CommentaryItem";
     // kept only as the interface's required fallback.

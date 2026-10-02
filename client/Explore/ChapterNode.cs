@@ -26,18 +26,18 @@ public sealed class ChapterNode : IExplorable
     public string Title => $"{_book}.{_chapter}";
     public string Kind => "Chapter";
 
-    public Task<IReadOnlyList<Exploration>> ExploreAsync(AtlasClient api)
+    public Task<IReadOnlyList<Chip>> ExploreAsync(AtlasClient api)
     {
         // From Donovan I think that, structurally, part of the problem is that we return a list of explorations, rather than a list of explorables (i.e., everything in the application is technically explorable; some things just might be sinks/sources. for instance Genesis 1 is a temporal source (you cannot go back in time before creation of the world. This seems like it could be a meaningful refactor.)
         // If we're returning explorations, the explorable thing is not actually recursive.
-        IReadOnlyList<Exploration> list = new[]
+        IReadOnlyList<Chip> list = new[]
         {
-            new Exploration("Show on /world", "popover-chip-map",
-                new ExplorationTarget.NavigateWorld($"ref={Uri.EscapeDataString(Title)}")),
-            new Exploration("Read in context", "popover-chip-context",
-                new ExplorationTarget.NavigateReader(_book, _chapter, null)),
-            new Exploration("About this book", "popover-chip-book",
-                new ExplorationTarget.Push(new AuthorNode(_book))),
+            new Chip("Show on /world", "popover-chip-map",
+                new ChipTarget.NavigateWorld($"ref={Uri.EscapeDataString(Title)}")),
+            new Chip("Read in context", "popover-chip-context",
+                new ChipTarget.NavigateReader(_book, _chapter, null)),
+            new Chip("About this book", "popover-chip-book",
+                new ChipTarget.Push(new AuthorNode(_book))),
         };
         return Task.FromResult(list);
     }

@@ -4,9 +4,11 @@ namespace BibleAtlas.Client;
 
 public interface IExplorableClient
 {
+    const int DefaultPageSize = 20;
+
     Task<NodeCard> Card(string id);
 
-    Task<EdgePage> Edges(string id, EdgeKind kind, int? cursor = null, int limit = 20);
+    Task<EdgePage> Edges(string id, EdgeKind kind, int? cursor = null, int limit = DefaultPageSize);
 
     Task<TextWindow> Reading(string fromRef, int n, WindowDir dir = WindowDir.Onward, Corpus corpus = Corpus.Bible);
 }

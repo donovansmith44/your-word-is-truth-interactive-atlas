@@ -8,6 +8,6 @@ public interface IExplorable
     string Kind { get; }
     
     // My main gripe is that this should return a set of explorables ; not a list of explorations... An exploration describes a DAG with >= 2 nodes and a connecting edge; it's actually a doubly linked list with no cycles.
-    Task<IReadOnlyList<Exploration>> ExploreAsync(AtlasClient api);
+    Task<IReadOnlyList<Chip>> ExploreAsync(AtlasClient api);
     Task<RenderFragment> BodyAsync(AtlasClient api);
 }
