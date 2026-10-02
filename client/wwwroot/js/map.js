@@ -143,7 +143,7 @@ export function setScene(id, sceneJson) {
             wireEvents(inst, marker, p.id);
             marker.addTo(inst.map);
             inst.markers.set(p.id, {
-                marker, lat: p.lat, lon: p.lon, trueLat: p.lat, trueLon: p.lon,
+                marker, node: p.node.id, lat: p.lat, lon: p.lon, trueLat: p.lat, trueLon: p.lon,
                 brightness: p.brightness, name: p.name,
                 existenceFrom: p.existence_from ?? null, existenceTo: p.existence_to ?? null,
             });
@@ -181,7 +181,7 @@ export function setScene(id, sceneJson) {
                 wireQuietEvents(inst, marker, p.id);
                 marker.addTo(inst.map);
                 inst.quietMarkers.set(p.id, {
-                    marker, lat: p.lat, lon: p.lon, displayName: p.display_name,
+                    marker, node: p.node.id, lat: p.lat, lon: p.lon, displayName: p.display_name,
                     existenceFrom: p.existence_from ?? null, existenceTo: p.existence_to ?? null,
                 });
                 continue;
@@ -220,7 +220,7 @@ export function setScene(id, sceneJson) {
     }
 
     if (inst.emphasisSite) {
-        applySiteEmphasis(inst, false);
+        applySiteEmphasis(inst);
     }
 }
 
@@ -767,6 +767,9 @@ export function fitScene(id) {
 
     const latlngs = [...inst.markers.values()].map(entry => [entry.lat, entry.lon]);
     inst.map.fitBounds(L.latLngBounds(latlngs), { padding: [48, 48], maxZoom: 8, animate: false });
+    if (inst.emphasisAt) {
+        inst.map.setView(inst.emphasisAt, inst.map.getZoom(), { animate: false });
+    }
 }
 
 // animate: false -- an animated pan updates the map's internal center progressively, so
@@ -792,13 +795,28 @@ export function setEmphasis(id, emphasis) {
     const site = next.site ?? null;
     const siteChanged = site !== inst.emphasisSite;
     inst.emphasisSite = site;
-    applySiteEmphasis(inst, siteChanged);
+    inst.emphasisAt = site === null ? null : [next.lat, next.lon];
+    if (siteChanged && site !== null) {
+        inst.map.setView(inst.emphasisAt, inst.map.getZoom(), { animate: false });
+    }
+    applySiteEmphasis(inst);
     if (inst.polities) {
         inst.polities.setEmphasis(next.polity ?? null);
     }
 }
 
-function applySiteEmphasis(inst, pan) {
+function markerOfNode(inst, node) {
+    for (const entries of [inst.markers, inst.quietMarkers]) {
+        for (const entry of entries.values()) {
+            if (entry.node === node) {
+                return entry;
+            }
+        }
+    }
+    return null;
+}
+
+function applySiteEmphasis(inst) {
     for (const ring of inst.map.getContainer().querySelectorAll('.atlas-emphasis-ring')) {
         ring.remove();
     }
@@ -806,14 +824,11 @@ function applySiteEmphasis(inst, pan) {
         return;
     }
 
-    const entry = inst.markers.get(inst.emphasisSite) || (inst.quietMarkers && inst.quietMarkers.get(inst.emphasisSite));
+    const entry = markerOfNode(inst, inst.emphasisSite);
     if (!entry) {
         return;
     }
 
-    if (pan) {
-        inst.map.setView([entry.lat, entry.lon], inst.map.getZoom(), { animate: false });
-    }
     const el = entry.marker.getElement();
     if (el) {
         const ring = document.createElement('span');
@@ -1639,7 +1654,7 @@ const BorderLayer = L.Layer.extend({
     },
 
     _emphasisedEntries() {
-        const ofPolity = this._entries.filter(entry => entry.id === this._emphasis);
+        const ofPolity = this._entries.filter(entry => entry.node.id === this._emphasis);
         const drawn = ofPolity.filter(entry => this._windowTo === undefined || (entry.from <= this._windowTo && entry.to >= this._windowTo));
         return new Set(drawn.length > 0 ? drawn : ofPolity);
     },

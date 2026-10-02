@@ -90,6 +90,73 @@ public sealed class FocusViewTests : BunitContext
         </div>
         """;
 
+    private const string EdenCard = """
+        <div class="popover-section" data-testid="popover-section-card">
+            <p class="focus-title" data-testid="popover-card-title">Eden</p>
+            <dl class="focus-fields">
+                <div class="focus-field" data-testid="popover-field-Provenance"><dt>Provenance</dt><dd>kjv</dd></div>
+            </dl>
+        </div>
+        """;
+
+    private const string WayToTheMap = """
+        <button type="button" class="popover-head-action" data-testid="popover-chip-map" aria-label="Show on the map" title="Show on the map">&#8982;</button>
+        """;
+
+    [Fact]
+    public void A_node_whose_home_is_the_world_offers_its_host_the_way_to_the_map()
+    {
+        // Arrange
+        var eden = Resolved.Node(Explored(new ServedGraph().Serving(ServedGraph.Card(NodeKind.Place, Eden.Id, Eden.Label))), Eden);
+
+        // Act
+        var view = Render<FocusView>(p => p.Add(v => v.Node, eden).Add(v => v.Surface, Surface.Popover).Add(v => v.OnShowOnWorld, () => { }));
+
+        // Assert
+        view.MarkupMatches(WayToTheMap + EdenCard);
+    }
+
+    [Fact]
+    public void Choosing_the_way_to_the_map_asks_the_host_to_show_the_node_there()
+    {
+        // Arrange
+        var asked = 0;
+        var eden = Resolved.Node(Explored(new ServedGraph().Serving(ServedGraph.Card(NodeKind.Place, Eden.Id, Eden.Label))), Eden);
+        var view = Render<FocusView>(p => p.Add(v => v.Node, eden).Add(v => v.Surface, Surface.Popover).Add(v => v.OnShowOnWorld, () => asked++));
+
+        // Act
+        view.Find("[data-testid='popover-chip-map']").Click();
+
+        // Assert
+        Assert.Equal(1, asked);
+    }
+
+    [Fact]
+    public void A_node_whose_home_is_not_the_world_offers_no_way_to_the_map()
+    {
+        // Arrange
+        var adam = Resolved.Node(Explored(WithAdam(new ServedGraph())), Adam);
+
+        // Act
+        var view = Render<FocusView>(p => p.Add(v => v.Node, adam).Add(v => v.Surface, Surface.Popover).Add(v => v.OnShowOnWorld, () => { }));
+
+        // Assert
+        view.MarkupMatches(AdamCard);
+    }
+
+    [Fact]
+    public void A_host_that_offers_no_way_to_the_map_shows_none()
+    {
+        // Arrange
+        var eden = Resolved.Node(Explored(new ServedGraph().Serving(ServedGraph.Card(NodeKind.Place, Eden.Id, Eden.Label))), Eden);
+
+        // Act
+        var view = Render<FocusView>(p => p.Add(v => v.Node, eden).Add(v => v.Surface, Surface.Popover));
+
+        // Assert
+        view.MarkupMatches(EdenCard);
+    }
+
     [Fact]
     public void A_focus_is_its_card_then_every_frontier_group_offered_by_its_kinds_affordance()
     {

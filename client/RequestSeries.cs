@@ -20,7 +20,7 @@ public readonly record struct Request(CancellationToken Token)
 {
     public bool Superseded => Token.IsCancellationRequested;
 
-    public async Task<T?> Fetch<T>(Func<Task<T>> ask) where T : class
+    public async Task<T?> Fetch<T>(Func<Task<T>> ask) where T : class?
     {
         var answer = await ask();
         return Superseded ? null : answer;

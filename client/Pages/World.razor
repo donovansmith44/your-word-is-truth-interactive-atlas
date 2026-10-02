@@ -1,5 +1,6 @@
 @page "/world"
 @using System.Globalization
+@using BibleAtlas.Client.Contracts
 @using BibleAtlas.Client.State
 @using BibleAtlas.Client.Views
 @implements IAsyncDisposable
@@ -13,6 +14,9 @@
 @inject StateAtom<ViewArrangement> ViewArrangementAtom
 @inject EffectRegistry Effects
 @inject ViewRegistry Registry
+@inject StateAtom<ExplorationState> ExplorationAtom
+@inject OwnershipRegistry Ownership
+@inject IExplorer Explorer
 
 <PageTitle>Bible Explorer &mdash; World</PageTitle>
 
@@ -76,24 +80,10 @@
         <p class="world-empty">No recorded events in this window &mdash; drag the timeline or choose a scripture.</p>
     }
 
-    @{ var hoverPlace = _hoverPlace; }
-    @if (hoverPlace is not null)
-    {
-        <PlaceCard Place="hoverPlace" X="_hoverX" Y="_hoverY"
-                   WindowFrom="@(_scriptureRef is null ? _from : (int?)null)"
-                   WindowTo="@(_scriptureRef is null ? _to : (int?)null)"
-                   OnPointerEnter="CardPointerEnter" OnPointerLeave="CardPointerLeave"
-                   OnOpenPlace="OpenPlaceFromCard" OnExploreNode="OpenExploreNode"
-                   Pinned="@(_pinnedPlaceId is not null)" Narratives="_scene?.Narratives"
-                   OnGoToPlace="GoToAdjacent" OnClosePin="ClosePinnedCard" />
-    }
-
     @{ var chooserPlaces = _chooserPlaces; }
     @if (chooserPlaces is not null)
     {
-        <PlaceChooser Places="chooserPlaces" X="_chooserX" Y="_chooserY"
-                      OnPointerEnter="CardPointerEnter" OnPointerLeave="CardPointerLeave"
-                      OnPick="PickChooserPlace" />
+        <PlaceChooser Places="chooserPlaces" X="_chooserX" Y="_chooserY" OnPick="PickChooserPlace" />
     }
 
     @if (_hoverArrowText is not null)
@@ -107,6 +97,7 @@
     @if (_eras is not null)
     {
         <TimeSlider Eras="_eras" From="_from" To="_to" Window="_timeWindow"
+                    Bounds="Bounds" Band="Band" Crossings="Crossings" OnCross="Cross"
                     Disabled="@(_scriptureRef is not null)" OnWindowChange="HandleWindowChange" OnWindowDrag="HandleWindowDrag" />
     }
 
@@ -136,9 +127,9 @@
 </div>
 </CompositionSplit>
 
-@if (_activeNode is not null)
+@if (_opening is { } opening)
 {
-    <ExplorerPopover @key="_activeNode" Opening="new PopoverOpening.Legacy(_activeNode)" OnClose="ClosePopover"
+    <ExplorerPopover @key="opening" Opening="opening" OnClose="ClosePopover" HostedByWorld="true" ShowBackdrop="false"
                       InSplit="SplitMode" OnNavigateWorldInSplit="ApplyExternalQuery" PaneAnchor="@(SplitMode ? "atlas" : null)" />
 }
 
@@ -221,23 +212,9 @@
 
     private SceneMode? _lastFitMode;
 
-    private ScenePlace? _hoverPlace;
-    private double _hoverX;
-    private double _hoverY;
-    private CancellationTokenSource? _closeCts;
-
-    private List<ScenePlace>? _chooserPlaces;
+    private List<PlaceChooser.Choice>? _chooserPlaces;
     private double _chooserX;
     private double _chooserY;
-
-    private string? _pinnedPlaceId;
-
-    // A marker's mouseout and the card's own pointerenter are two separate,
-    // unordered async events; if the marker's leave resolves after the
-    // card's enter already ran, an unconditional close would race a
-    // pointer that's still legitimately over the card. This flag tracks
-    // physical position instead of event order to close that race.
-    private bool _pointerOverCard;
 
     private string? _hoverArrowText;
     private double _arrowX;
@@ -245,7 +222,13 @@
 
     private string? _isolated;
 
-    private IExplorable? _activeNode;
+    private PopoverOpening? _opening;
+
+    private Frame _frame = new Frame.Current();
+    private Emphasis _emphasis = new Emphasis.None();
+    private readonly RequestSeries _focus = new();
+    private readonly RequestSeries _crossing = new();
+    private EffectClaim? _presentFocusClaim;
 
     private bool _follow =>
         ViewArrangementAtom.Value is { LayoutKind: LayoutKinds.SplitH, Follow: true } a
@@ -291,6 +274,9 @@
 
         _lastKnownFollow = _follow;
         ViewArrangementAtom.Changed += OnViewArrangementChanged;
+
+        AdoptAHandedOverExploration();
+        _presentFocusClaim = Effects.Claim(new DelegateEffect<ExplorationState>(EffectNames.PresentFocus, ExplorationAtom, _ => true, PresentTheFocus));
 
         try
         {
@@ -634,6 +620,8 @@
         await PushPolityRosterIfReady();
 
         await PushPendingCameraIfReady();
+
+        await _mapInterop.Emphasize(_emphasis);
     }
 
     private async Task SyncFromQuery()
@@ -724,16 +712,22 @@
             }
         }
 
+        await MoveWindow(window.From, window.To);
+    }
+
+    private async Task MoveWindow(int from, int to)
+    {
         if (SplitMode)
         {
-            await ApplyExternalQuery($"from={window.From}&to={window.To}");
+            await ApplyExternalQuery($"from={from}&to={to}");
             return;
         }
 
         var uri = Nav.GetUriWithQueryParameters(new Dictionary<string, object?>
         {
-            ["from"] = window.From,
-            ["to"] = window.To,
+            ["from"] = from,
+            ["to"] = to,
+            ["ref"] = null,
         });
         Nav.NavigateTo(uri, replace: true);
     }
@@ -755,22 +749,7 @@
         return Task.CompletedTask;
     }
 
-    private Task ReturnToTime()
-    {
-        if (SplitMode)
-        {
-            return ApplyExternalQuery($"from={_from}&to={_to}");
-        }
-
-        var uri = Nav.GetUriWithQueryParameters(new Dictionary<string, object?>
-        {
-            ["from"] = _from,
-            ["to"] = _to,
-            ["ref"] = null,
-        });
-        Nav.NavigateTo(uri, replace: true);
-        return Task.CompletedTask;
-    }
+    private Task ReturnToTime() => MoveWindow(_from, _to);
 
     private async Task HandleIsolate(string? narrativeId)
     {
@@ -941,38 +920,12 @@
 
     public void OnPlaceHover(string id, double x, double y)
     {
-        if (_pinnedPlaceId is not null)
-        {
-            return;
-        }
-
-        _closeCts?.Cancel();
-        var place = _scene?.Places.FirstOrDefault(p => p.Id == id) ?? QuietAsScenePlace(id);
-        if (place is null)
-        {
-            return;
-        }
-
-        _hoverPlace = place;
-        _hoverX = x;
-        _hoverY = y;
-        _chooserPlaces = null;
-        StateHasChanged();
+        CloseChooser();
     }
 
     public void OnPlaceHoverAmbiguous(string[] ids, double x, double y)
     {
-        if (_pinnedPlaceId is not null)
-        {
-            return;
-        }
-
-        _closeCts?.Cancel();
-        var places = ids
-            .Select(id => _scene?.Places.FirstOrDefault(p => p.Id == id) ?? QuietAsScenePlace(id))
-            .Where(p => p is not null)
-            .Select(p => p!)
-            .ToList();
+        var places = ids.Select(ChoiceOf).OfType<PlaceChooser.Choice>().ToList();
         if (places.Count == 0)
         {
             return;
@@ -981,61 +934,33 @@
         _chooserPlaces = places;
         _chooserX = x;
         _chooserY = y;
-        _hoverPlace = null;
         StateHasChanged();
     }
 
-    // A synthetic ScenePlace for a quiet (unlit) marker: Events is always
-    // empty here, which PlaceCard relies on to render the quiet line
-    // instead of verse content -- a real lit place always has >=1 event.
-    private ScenePlace? QuietAsScenePlace(string id)
-    {
-        var quiet = _scene?.QuietPlaces.FirstOrDefault(p => p.Id == id);
-        return quiet is null ? null : new ScenePlace(brightness: 0, displayName: quiet.DisplayName, events: [], existenceFrom: null, existenceTo: null, id: quiet.Id, lat: quiet.Lat, lon: quiet.Lon, mergedIds: null, name: quiet.DisplayName, node: quiet.Node);
-    }
+    private PlaceChooser.Choice? ChoiceOf(string id) =>
+        _scene?.Places.Where(p => p.Id == id).Select(PlaceChooser.Choice.Of).FirstOrDefault()
+        ?? _scene?.QuietPlaces.Where(p => p.Id == id).Select(PlaceChooser.Choice.Of).FirstOrDefault();
 
     public void OnPlaceLeave()
     {
-        if (_pointerOverCard)
-        {
-            return;
-        }
-
-        ScheduleCardClose();
     }
 
     public void OnPlaceClick(string id, double x, double y)
     {
-        var place = _scene?.Places.FirstOrDefault(p => p.Id == id) ?? QuietAsScenePlace(id);
-        if (place is null)
+        if (ChoiceOf(id) is { } place)
         {
-            return;
+            Open(place.Node);
         }
-
-        _closeCts?.Cancel();
-        _pinnedPlaceId = id;
-        _hoverPlace = place;
-        _hoverX = x;
-        _hoverY = y;
-        _chooserPlaces = null;
-        StateHasChanged();
     }
 
-    private void PickChooserPlace(string id)
-    {
-        _chooserPlaces = null;
-        OnPlaceClick(id, _chooserX, _chooserY);
-    }
+    private void PickChooserPlace(NodeRef place) => Open(place);
 
     public void OnPlaceToggleSelect(string id)
     {
-        var place = _scene?.Places.FirstOrDefault(p => p.Id == id) ?? QuietAsScenePlace(id);
-        if (place is null)
+        if (ChoiceOf(id) is { } place)
         {
-            return;
+            SelectionAtom.Dispatch(new ToggleSelection(place.Node));
         }
-
-        SelectionAtom.Dispatch(new ToggleSelection(new PlaceNode(id, place.DisplayName).Identity));
     }
 
     public void OnArrowHover(string key, double x, double y)
@@ -1073,28 +998,22 @@
     {
     }
 
-    public void OnPolityClick(string polityId) => OnMapClick();
+    public void OnPolityClick(string polityId)
+    {
+        if (_polities?.All.FirstOrDefault(p => p.Id == polityId) is { } polity)
+        {
+            Open(polity.Node);
+        }
+    }
 
     public void OnMapClick()
     {
-        if (_pinnedPlaceId is null)
-        {
-            return;
-        }
-
-        CloseCardNow();
-        StateHasChanged();
+        CloseChooser();
     }
 
     public void OnEscapePressed()
     {
-        if (_activeNode is not null || _pinnedPlaceId is null)
-        {
-            return;
-        }
-
-        CloseCardNow();
-        StateHasChanged();
+        CloseChooser();
     }
 
     public void OnCameraChanged(double lat, double lon, double zoom)
@@ -1104,125 +1023,125 @@
         ViewState.Map.Zoom = zoom;
     }
 
-    public void OnPolityDeltaClick(string polityId, string polityName, string kind, Year titleFrom, Year titleTo, string? eventText, string[] verses, string? refNote)
+    public void OnPolityDeltaClick(string polityId, string polityName, string kind, Year titleFrom, Year titleTo, string? eventText, string[] verses, string? refNote) =>
+        Open(new PopoverOpening.Legacy(new PolityDeltaNode(polityId, polityName, kind, titleFrom, titleTo, eventText, verses, refNote)));
+
+    private void Open(NodeRef node) => Open(new PopoverOpening.Explore(new NodePosition(node)));
+
+    private void Open(PopoverOpening opening)
     {
-        _activeNode = new PolityDeltaNode(polityId, polityName, kind, titleFrom, titleTo, eventText, verses, refNote);
-        CloseCardNow();
+        _chooserPlaces = null;
+        _opening = opening;
         StateHasChanged();
     }
 
-    private Task OpenPlaceFromCard()
+    private void CloseChooser()
     {
-        if (_hoverPlace is { } place)
+        if (_chooserPlaces is null)
         {
-            var windowFrom = _scriptureRef is null ? _from : (int?)null;
-            var windowTo = _scriptureRef is null ? _to : (int?)null;
-            _activeNode = new PlaceNode(place.Id, place.DisplayName, windowFrom, windowTo);
+            return;
         }
 
-        CloseCardNow();
-        return Task.CompletedTask;
-    }
-
-    private Task OpenExploreNode(IExplorable node)
-    {
-        _activeNode = node;
-        CloseCardNow();
-        return Task.CompletedTask;
+        _chooserPlaces = null;
+        StateHasChanged();
     }
 
     private Task ClosePopover()
     {
-        _activeNode = null;
+        _opening = null;
         return Task.CompletedTask;
     }
 
-    private Task ClosePinnedCard()
+    private void AdoptAHandedOverExploration()
     {
-        CloseCardNow();
-        return Task.CompletedTask;
-    }
-
-    private async Task GoToAdjacent(string placeId)
-    {
-        var place = _scene?.Places.FirstOrDefault(p => p.Id == placeId) ?? QuietAsScenePlace(placeId);
-        if (place is null || _mapInterop is null)
+        if (ExplorationAtom.Value is ExplorationState.Open { Exploration.Current: var current }
+            && !Ownership.IsHeld(AtomNames.Exploration)
+            && HomeSurfaces.Of(current.Kind) == Surface.World)
         {
-            return;
+            _opening = new PopoverOpening.Explore(current.Identity);
         }
-
-        var (x, y) = await _mapInterop.PanToPlace(place.Lat, place.Lon);
-        _closeCts?.Cancel();
-        _pinnedPlaceId = placeId;
-        _hoverPlace = place;
-        _hoverX = x;
-        _hoverY = y;
-        _chooserPlaces = null;
     }
 
-    // The one choke point for "the card is fully gone": always clears
-    // _pinnedPlaceId alongside _hoverPlace. Clearing only one would leave
-    // OnPlaceHover's pinned-guard silently ignoring every future hover.
-    private void CloseCardNow()
+    private async Task PresentTheFocus(ExplorationState state)
     {
-        _closeCts?.Cancel();
-        _hoverPlace = null;
-        _chooserPlaces = null;
-        _pointerOverCard = false;
-        _pinnedPlaceId = null;
-    }
-
-    private void ScheduleCardClose()
-    {
-        if (_pinnedPlaceId is not null)
-        {
-            return;
-        }
-
-        _closeCts?.Cancel();
-        var cts = new CancellationTokenSource();
-        _closeCts = cts;
-        _ = CloseCardAfterDelay(cts);
-    }
-
-    private void CardPointerEnter()
-    {
-        _pointerOverCard = true;
-        _closeCts?.Cancel();
-    }
-
-    private void CardPointerLeave()
-    {
-        _pointerOverCard = false;
-        ScheduleCardClose();
-    }
-
-    private async Task CloseCardAfterDelay(CancellationTokenSource cts)
-    {
+        var request = _focus.Next();
         try
         {
-            await Task.Delay(350, cts.Token);
+            if (state is not ExplorationState.Open { Exploration.Current: var current })
+            {
+                await Apply(Unfocused);
+            }
+            else if (await request.Fetch(() => Explorer.Present(current, Surface.World)) is Presentation.Geography geography)
+            {
+                await Apply(geography);
+            }
         }
-        catch (OperationCanceledException)
+        catch (Exception)
         {
-            return;
+        }
+    }
+
+    private static readonly Presentation.Geography Unfocused = new(new Frame.Current(), new Emphasis.None());
+
+    private async Task Apply(Presentation.Geography geography)
+    {
+        _frame = geography.Frame;
+        _emphasis = geography.Emphasis;
+        if (_mapInterop is not null)
+        {
+            await _mapInterop.Emphasize(_emphasis);
         }
 
-        if (cts.IsCancellationRequested)
-        {
-            return;
-        }
-
-        _hoverPlace = null;
-        _chooserPlaces = null;
-        _pointerOverCard = false;
+        await _frame.Match(current: () => Task.CompletedTask, bounded: (window, _, _) => ShowWindow(window));
         StateHasChanged();
+    }
+
+    private Task ShowWindow(TimeRange window) =>
+        _scriptureRef is null && window.From.Value == _from && window.To.Value == _to
+            ? Task.CompletedTask
+            : MoveWindow(window.From.Value, window.To.Value);
+
+    private TimeRange? Bounds => _frame.Match<TimeRange?>(current: () => null, bounded: (window, _, _) => window);
+
+    private TimeRange? Band => _emphasis.Match<TimeRange?>(none: () => null, site: (_, _, _) => null, territory: (_, reign) => reign);
+
+    private IReadOnlyCollection<ArrowDirection> Crossings =>
+        Enum.GetValues<ArrowDirection>().Where(direction => CrossingTo(direction) is not null).ToList();
+
+    private Link? CrossingTo(ArrowDirection direction) =>
+        _frame.Match(current: () => null, bounded: (_, previous, next) => direction switch
+        {
+            ArrowDirection.Previous => previous,
+            ArrowDirection.Next => next,
+        });
+
+    private async Task Cross(ArrowDirection direction)
+    {
+        if (CrossingTo(direction) is not { } link)
+        {
+            return;
+        }
+
+        var request = _crossing.Next();
+        try
+        {
+            if (await request.Fetch(() => Explorer.Follow(link)) is { } target)
+            {
+                ExplorationAtom.Dispatch(new ExplorationIntent.Follow(new Step(link.Kind, target)));
+            }
+        }
+        catch (Exception)
+        {
+            _errorMessage = $"Couldn't reach {Positions.Of(link.Target).Label} -- check your connection and try again.";
+        }
     }
 
     public async ValueTask DisposeAsync()
     {
         _scenes.Stop();
-        _closeCts?.Cancel();
+        _focus.Stop();
+        _crossing.Stop();
+        _presentFocusClaim?.Dispose();
 
         LocusAtom.Changed -= OnLocusChanged;
         _followRunner.Dispose();

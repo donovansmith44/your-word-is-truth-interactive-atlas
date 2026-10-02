@@ -72,11 +72,11 @@
     @if (Bounds is not null)
     {
         <div class="slider-crossings">
-            @if (EffectiveFrom <= Lowest)
+            @if (EffectiveFrom <= Lowest && Crossings.Contains(ArrowDirection.Previous))
             {
                 <button type="button" class="slider-cross" data-testid="world-cross-previous" @onclick="() => Cross(ArrowDirection.Previous)">&#8249;</button>
             }
-            @if (EffectiveTo >= Highest)
+            @if (EffectiveTo >= Highest && Crossings.Contains(ArrowDirection.Next))
             {
                 <button type="button" class="slider-cross" data-testid="world-cross-next" @onclick="() => Cross(ArrowDirection.Next)">&#8250;</button>
             }
@@ -102,6 +102,7 @@
     [Parameter] public TimeRange? Window { get; set; }
     [Parameter] public TimeRange? Bounds { get; set; }
     [Parameter] public TimeRange? Band { get; set; }
+    [Parameter] public IReadOnlyCollection<ArrowDirection> Crossings { get; set; } = [];
     [Parameter] public EventCallback<ArrowDirection> OnCross { get; set; }
     [Parameter] public EventCallback<(int From, int To)> OnWindowChange { get; set; }
 

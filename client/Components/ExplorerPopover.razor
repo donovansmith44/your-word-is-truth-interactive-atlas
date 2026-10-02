@@ -57,7 +57,7 @@
         }
         else if (_legacy is null && Exploration is { } exploration)
         {
-            <FocusView Node="exploration.Current" Surface="Surface.Popover" OnFollow="FollowAsync" />
+            <FocusView Node="exploration.Current" Surface="Surface.Popover" OnFollow="FollowAsync" OnShowOnWorld="WayToTheWorld" />
         }
         else if (_usingSectionRegistry)
         {
@@ -80,6 +80,8 @@
     [Parameter] public EventCallback OnClose { get; set; }
 
     [Parameter] public bool InSplit { get; set; }
+
+    [Parameter] public bool HostedByWorld { get; set; }
     [Parameter] public EventCallback<string> OnNavigateWorldInSplit { get; set; }
 
     [Parameter] public string? PaneAnchor { get; set; }
@@ -489,11 +491,20 @@
         }
         else
         {
-            Nav.NavigateTo($"/world?{query}");
+            Nav.NavigateTo($"{WorldPage}?{query}");
         }
     }
 
     public Task NavigateWorldAsync(string query) => NavigateWorld(query);
+
+    private EventCallback WayToTheWorld => HostedByWorld || InSplit ? default : EventCallback.Factory.Create(this, ShowOnWorld);
+
+    private async Task ShowOnWorld()
+    {
+        _claim?.Dispose();
+        await RequestClose();
+        Nav.NavigateTo(WorldPage);
+    }
 
     private async Task Activate(Chip ex)
     {
@@ -558,6 +569,8 @@
         "popover-chip-context" => "¶",
         _ => "•",
     };
+
+    private const string WorldPage = "/world";
 
     private sealed record VerseAnchorRect(double Left, double Top, double Width, double Height, double ViewportWidth, double ViewportHeight);
 }

@@ -11,6 +11,8 @@ public sealed class OwnershipRegistry
         return new OwnershipClaim(this, name, token);
     }
 
+    public bool IsHeld(string name) => _owners.ContainsKey(name);
+
     internal bool IsCurrent(string name, object token) =>
         _owners.TryGetValue(name, out var owner) && ReferenceEquals(owner, token);
 

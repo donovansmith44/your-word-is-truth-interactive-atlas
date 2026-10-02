@@ -26,6 +26,8 @@ public sealed class TimeSliderTests : BunitContext
     private static TimeRange Range(int from, int to) =>
         new(from: new Year(label: from.ToString(CultureInfo.InvariantCulture), value: from), label: $"{from}..{to}", to: new Year(label: to.ToString(CultureInfo.InvariantCulture), value: to));
 
+    private static readonly ArrowDirection[] BothWays = [ArrowDirection.Previous, ArrowDirection.Next];
+
     private static string Px(double value) => value.ToString(CultureInfo.InvariantCulture);
 
     private IRenderedComponent<TimeSlider> Slider(
@@ -35,9 +37,11 @@ public sealed class TimeSliderTests : BunitContext
         TimeRange? band = null,
         Action<(int From, int To)>? onChange = null,
         Action<(int From, int To)>? onDrag = null,
-        Action<ArrowDirection>? onCross = null) =>
+        Action<ArrowDirection>? onCross = null,
+        IReadOnlyCollection<ArrowDirection>? crossings = null) =>
         Render<TimeSlider>(p =>
         {
+            p.Add(s => s.Crossings, crossings ?? BothWays);
             p.Add(s => s.Eras, Eras);
             p.Add(s => s.From, from);
             p.Add(s => s.To, to);
@@ -109,6 +113,23 @@ public sealed class TimeSliderTests : BunitContext
         Assert.Equal(
             ("", "world-cross-next", "world-cross-previous"),
             (Crossings(inside), Crossings(atEnd), Crossings(atStart)));
+    }
+
+    [Fact]
+    public void A_crossing_is_offered_only_where_a_neighbour_is_served()
+    {
+        // Arrange
+        var bounds = Range(-1876, -1051);
+
+        // Act
+        var lastOfAll = Slider(-1876, -1051, bounds, crossings: [ArrowDirection.Previous]);
+        var firstOfAll = Slider(-1876, -1051, bounds, crossings: [ArrowDirection.Next]);
+        var alone = Slider(-1876, -1051, bounds, crossings: []);
+
+        // Assert
+        Assert.Equal(
+            ("world-cross-previous", "world-cross-next", ""),
+            (Crossings(lastOfAll), Crossings(firstOfAll), Crossings(alone)));
     }
 
     [Fact]
