@@ -55,7 +55,7 @@ serde = { version = "1", features = ["derive"] }
 # DB-2b: the SQLite section writer + SqliteSnapshot (spec §8 row 3: "rusqlite
 # (bundled) in atlas-graph only"). `bundled` compiles the amalgamation via cc
 # — a C compiler on PATH is a build prerequisite (plan: Prerequisite).
-rusqlite = { version = "0.32", features = ["bundled"] }
+rusqlite = { version = "0.32", features = ["bundled", "hooks"] }
 # DB-2b: manifest.toml (spec §2.2) — serde derive on Manifest/ManifestSection.
 toml = "0.8"
 zstd = { version = "0.13", features = ["zstdmt"] }

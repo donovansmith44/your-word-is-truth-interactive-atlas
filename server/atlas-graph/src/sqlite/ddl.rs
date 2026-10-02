@@ -61,6 +61,14 @@ CREATE TABLE edge_index (
   row_id         INTEGER NOT NULL,
   PRIMARY KEY (subject, rel, dir, ord)
 ) WITHOUT ROWID;
+
+CREATE TABLE edge_count (
+  subject TEXT    NOT NULL,
+  rel     INTEGER NOT NULL,
+  dir     INTEGER NOT NULL,
+  count   INTEGER NOT NULL,
+  PRIMARY KEY (subject, rel, dir)
+) WITHOUT ROWID;
 ";
 
 /// `edge_by_id` is deliberately NOT unique: a symmetric entry is stored once under EACH end with

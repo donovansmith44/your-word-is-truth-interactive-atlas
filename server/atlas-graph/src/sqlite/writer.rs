@@ -24,7 +24,7 @@ use super::source::SectionLayout;
 use super::logical::logical_hash;
 use atlas_graph_types::sections::logical_dump_section;
 use super::manifest::{root_of, write_manifest, Manifest, ManifestSection, MANIFEST_SCHEMA};
-use super::partition::{node_kind_ordinal, partition, EdgeEntryOut, SectionPartition};
+use super::partition::{node_kind_ordinal, partition, EdgeCountOut, EdgeEntryOut, SectionPartition};
 use super::rows::insert_row;
 use super::{hash_bytes, SqliteError, HASH_WIDTH, SCHEMA_VERSION};
 use crate::sections::Section;
@@ -109,6 +109,14 @@ fn insert_edges(tx: &Transaction, edges: &[EdgeEntryOut]) -> Result<(), SqliteEr
     Ok(())
 }
 
+fn insert_edge_counts(tx: &Transaction, counts: &[EdgeCountOut]) -> Result<(), SqliteError> {
+    let mut stmt = tx.prepare_cached("INSERT INTO edge_count (subject, rel, dir, count) VALUES (?, ?, ?, ?)")?;
+    for c in counts {
+        stmt.execute(rusqlite::params![position_str(&c.subject), c.rel, c.dir, c.count])?;
+    }
+    Ok(())
+}
+
 fn insert_meta(conn: &Connection, pairs: &[(&str, String)]) -> Result<(), SqliteError> {
     let mut stmt = conn.prepare_cached("INSERT INTO meta (key, value) VALUES (?, ?)")?;
     for (k, v) in pairs {
@@ -165,6 +173,7 @@ fn write_one(
             insert_row(&tx, &mut jw, *ord, row)?;
         }
         insert_edges(&tx, &p.edges)?;
+        insert_edge_counts(&tx, &p.edge_counts)?;
         insert_labels(&tx, &p.labels)?;
         if let Some((_corpus, order)) = p.spine {
             let mut stmt = tx.prepare_cached("INSERT INTO reading_spine (ord, node_id) VALUES (?, ?)")?;
