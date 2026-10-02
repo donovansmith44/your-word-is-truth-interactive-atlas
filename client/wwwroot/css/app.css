@@ -2422,6 +2422,25 @@ input:focus-visible,
     pointer-events: none;
 }
 
+.atlas-border-emphasis {
+    pointer-events: none;
+    stroke: var(--bronze-bright);
+    stroke-width: 3.5;
+    stroke-linejoin: round;
+}
+
+.atlas-emphasis-ring {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 26px;
+    height: 26px;
+    border: 2px solid var(--bronze-bright);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+}
+
 .atlas-border-line[data-age="oldest"] {
     stroke-width: 1.1px;
     stroke-opacity: 0.6;
@@ -4019,6 +4038,44 @@ input:focus-visible,
     cursor: ew-resize;
     box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
     touch-action: none;
+}
+
+.slider-bounds,
+.slider-band {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    pointer-events: none;
+}
+
+.slider-bounds {
+    border-inline: 2px solid var(--bronze-bright);
+    box-shadow: 0 0 0 1px var(--dusk-deep);
+}
+
+.slider-band {
+    background: rgba(201, 164, 92, 0.38);
+}
+
+.slider-crossings {
+    display: flex;
+    justify-content: space-between;
+    align-self: stretch;
+}
+
+.slider-cross {
+    font-family: var(--font-mono);
+    font-size: 0.82rem;
+    color: var(--bronze-bright);
+    background: var(--panel-inset);
+    border: 1px solid var(--bronze);
+    border-radius: 4px;
+    padding: 0 0.6rem;
+    cursor: pointer;
+}
+
+.slider-cross:first-child:last-child {
+    margin-inline-start: auto;
 }
 
 /* WORLD-6/CONTRACT: the slider visually recedes while scripture mode
