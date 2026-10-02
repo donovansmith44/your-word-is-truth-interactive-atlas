@@ -84,7 +84,7 @@ public sealed class ExplorationInterleavingTests
 
         public Task<NodeRecord> Card(string id) => graph.Card(id);
 
-        public async Task<IReadOnlyList<Element>> Elements(IReadOnlyList<string> ids)
+        public async Task<ElementPage> Elements(IReadOnlyList<string> ids)
         {
             await _gate.Task;
             return await graph.Elements(ids);

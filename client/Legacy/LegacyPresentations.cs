@@ -12,7 +12,7 @@ public sealed class LegacyPresentations
 
     private IExplorable? Retain(IReadOnlyList<Explorable> path, IExplorable? arriving)
     {
-        var unchanged = _trail.Zip(path).TakeWhile(pair => pair.First.Entry == pair.Second).Count();
+        var unchanged = _trail.Zip(path).TakeWhile(pair => Explorable.Served.Equals(pair.First.Entry, pair.Second)).Count();
         var kept = Math.Min(unchanged, arriving is null ? path.Count : path.Count - 1);
         _trail = [.. _trail.Take(kept), .. path.Skip(kept).Select((entry, at) => new Retained(entry, (kept + at == path.Count - 1 ? arriving : null) ?? LegacyNodes.For(entry)))];
         return _trail[^1].View;

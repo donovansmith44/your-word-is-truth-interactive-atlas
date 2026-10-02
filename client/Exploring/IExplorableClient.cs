@@ -8,7 +8,7 @@ public interface IExplorableClient
 
     Task<NodeRecord> Card(string id);
 
-    Task<IReadOnlyList<Element>> Elements(IReadOnlyList<string> ids);
+    Task<ElementPage> Elements(IReadOnlyList<string> ids);
 
     Task<EdgePage> Edges(string positionId, EdgeKind kind, int? cursor = null, int limit = DefaultPageSize);
 

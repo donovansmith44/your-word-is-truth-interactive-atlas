@@ -19,7 +19,16 @@
     private PresentationRequest? _request;
     private Outcome<Presented>? _outcome;
 
-    private sealed record Presented(PresentationRequest Request, Presentation? Presentation, Dictionary<EdgeKind, Paging<Entry>> Pages, Dictionary<EdgeKind, int> Shown);
+    private sealed record Presented(PresentationRequest Request, Presentation? Presentation, IReadOnlyDictionary<EdgeKind, PageWindow<Entry>> Windows)
+    {
+        public void Stop()
+        {
+            foreach (var window in Windows.Values)
+            {
+                window.Stop();
+            }
+        }
+    }
 
     protected override async Task OnParametersSetAsync()
     {
@@ -33,29 +42,36 @@
         await Load(request);
     }
 
-    public void Dispose() => _series.Stop();
+    public void Dispose()
+    {
+        _series.Stop();
+        Retire();
+    }
 
     private async Task Load(PresentationRequest request)
     {
+        Retire();
         _outcome = null;
         var groups = request.Element.Groups;
-        var outcome = await _series.Next().Fetch(() => Presenter.Present(request), () => Task.WhenAll(groups.Select(group => Paging.Opened(request, group))));
-        var presented = outcome.Select(loaded => new Presented(
-            request,
-            loaded.Item1,
-            groups.Zip(loaded.Item2).ToDictionary(pair => pair.First.Kind, pair => pair.Second),
-            groups.ToDictionary(group => group.Kind, group => Affordances.Of(group.Kind).InitialClamp)));
+        var outcome = await _series.Next().Fetch(() => Presenter.Present(request), () => Task.WhenAll(groups.Select(group => Paging.Window(request, group))));
+        var presented = outcome.Select(loaded => new Presented(request, loaded.Item1, groups.Zip(loaded.Item2).ToDictionary(pair => pair.First.Kind, pair => pair.Second)));
         _outcome = presented.Match(arrived: _ => presented, failed: () => presented, superseded: () => _outcome);
     }
 
-    private async Task Reveal(Presented presented, EdgeKind kind, int shown)
-    {
-        presented.Shown[kind] = shown;
-        (await _series.Current.Fetch(() => presented.Pages[kind].Revealed(presented.Request, kind, shown))).Match(
-            arrived: paging => presented.Pages[kind] = paging,
-            failed: () => _outcome = new Outcome<Presented>.Failed(),
+    private void Retire() => _outcome?.Match(arrived: presented => presented.Stop(), failed: () => { }, superseded: () => { });
+
+    private async Task Reveal(PageWindow<Entry> window, FrontierGroup group, int shown) =>
+        (await (shown > Shown(window, group) ? window.More() : window.Fewer())).Match(
+            arrived: _ => { },
+            failed: () =>
+            {
+                Retire();
+                _outcome = new Outcome<Presented>.Failed();
+            },
             superseded: () => { });
-    }
+
+    private static int Shown(PageWindow<Entry> window, FrontierGroup group) =>
+        Math.Min(window.Wanted * Affordances.Of(group.Kind).InitialClamp, group.Count);
 
     private RenderFragment Failure(PresentationRequest request) => __builder =>
     {
@@ -146,14 +162,14 @@
         }
     };
 
-    private static IEnumerable<Entry> Shown(Presented presented, FrontierGroup group) =>
-        presented.Pages[group.Kind].Kept.Take(presented.Shown[group.Kind]);
+    private static IEnumerable<Entry> Shown(Presented presented, FrontierGroup group) => presented.Windows[group.Kind].Shown;
 
     private RenderFragment Reveal(Presented presented, FrontierGroup group, string handle) => __builder =>
     {
         var clamp = Affordances.Of(group.Kind).InitialClamp;
-        <RevealControls OffersAll="false" Total="group.Count" Default="clamp" Step="clamp" Shown="presented.Shown[group.Kind]"
-                        ShownChanged="shown => Reveal(presented, group.Kind, shown)"
+        var window = presented.Windows[group.Kind];
+        <RevealControls OffersAll="false" Total="group.Count" Default="clamp" Step="clamp" Shown="Shown(window, group)"
+                        ShownChanged="shown => Reveal(window, group, shown)"
                         MoreTestId="@($"{handle}-more")" CollapseTestId="@($"{handle}-collapse")" />
     };
 

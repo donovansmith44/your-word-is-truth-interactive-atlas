@@ -12,7 +12,7 @@ public sealed class OneDoorLawTests
     private static readonly Regex InteropCallee = new(@"^(_?[Jj][Ss]|_?readerJs|_lazyJs|_js|_?[mM]apInterop|\w+Ref)\.|^Task\.Delay$|^request\.Fetch$", RegexOptions.Compiled);
     private static readonly string[] TheMemoAndTheRequest = ["AsyncMemo.cs", "RequestSeries.cs"];
     private static readonly string[] ExplorablesAndSectionProviders = ["Exploring", "Legacy"];
-    private static readonly string[] ThePagingDoor = ["Paging.cs", "Explorable.cs", "IExplorableClient.cs", "GraphExplorableClient.cs"];
+    private static readonly string[] ThePagingDoor = ["Paging.cs", "Explorable.cs", "ServedPages.cs", "IExplorableClient.cs", "GraphExplorableClient.cs"];
 
     [Fact]
     public void No_explorable_or_section_provider_catches_a_failure_it_could_report()

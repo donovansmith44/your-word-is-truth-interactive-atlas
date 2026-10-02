@@ -12,12 +12,19 @@ internal sealed class ServedGraph : IExplorableClient
     private readonly Dictionary<string, NodeRecord> _cards = [];
     private readonly Dictionary<string, EdgeRecord> _edges = [];
     private readonly Dictionary<(string Id, EdgeKind Kind, int? Cursor), EdgePage> _pages = [];
+    private string _root = Version;
 
     public int? LimitAsked { get; private set; }
 
     public int ElementReads { get; private set; }
 
     public int NeighbourReads { get; private set; }
+
+    public ServedGraph AtRoot(string root)
+    {
+        _root = root;
+        return this;
+    }
 
     public ServedGraph Serving(NodeRecord card)
     {
@@ -45,17 +52,17 @@ internal sealed class ServedGraph : IExplorableClient
 
     public Task<NodeRecord> Card(string id) => Task.FromResult(_cards[id]);
 
-    public Task<IReadOnlyList<Element>> Elements(IReadOnlyList<string> ids)
+    public Task<ElementPage> Elements(IReadOnlyList<string> ids)
     {
         ElementReads++;
-        return Task.FromResult<IReadOnlyList<Element>>(ids.Select(Element).ToList());
+        return Task.FromResult(new ElementPage(elements: ids.Select(Element).ToList(), next: null, version: _root));
     }
 
     public Task<EdgePage> Edges(string positionId, EdgeKind kind, int? cursor = null, int limit = IExplorableClient.DefaultPageSize)
     {
         LimitAsked = limit;
         NeighbourReads++;
-        return Task.FromResult(_pages[(positionId, kind, cursor)]);
+        return Task.FromResult(_pages[(positionId, kind, cursor)] with { Version = _root });
     }
 
     public Task<TextWindow> Reading(string fromRef, int n, WindowDir dir = WindowDir.Onward, Corpus corpus = Corpus.Bible) =>

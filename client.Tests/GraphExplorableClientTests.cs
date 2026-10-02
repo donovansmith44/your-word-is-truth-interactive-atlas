@@ -135,8 +135,8 @@ public class GraphExplorableClientTests
                     @object: new NodePosition(new NodeRef(id: "text-unit:EXO.14.21", kind: NodeKind.TextUnit, label: "Exodus 14:21")), parentage: null, provenance: "kjv",
                     subject: new NodePosition(new NodeRef(id: "Event:red_sea", kind: NodeKind.Event, label: "The Red Sea parted")), votes: null)),
                 new MissingElement("Event:nowhere"),
-            })),
-            (handler.LastRequestUri!.AbsolutePath, Uri.UnescapeDataString(handler.LastRequestUri.Query), WholeValue.Of(elements.ToArray())));
+            }), "abc123"),
+            (handler.LastRequestUri!.AbsolutePath, Uri.UnescapeDataString(handler.LastRequestUri.Query), WholeValue.Of(elements.Elements.ToArray()), elements.Version));
     }
 
     [Fact]
@@ -154,7 +154,27 @@ public class GraphExplorableClientTests
         // Assert
         Assert.Equal(
             WholeValue.Of((new[] { "?ids=a,b,c", "?ids=a,b,c&cursor=2" }, new[] { "a", "b", "c" })),
-            WholeValue.Of((handler.Requests.Select(uri => Uri.UnescapeDataString(uri.Query)).ToArray(), elements.Cast<MissingElement>().Select(missing => missing.Id).ToArray())));
+            WholeValue.Of((handler.Requests.Select(uri => Uri.UnescapeDataString(uri.Query)).ToArray(), elements.Elements.Cast<MissingElement>().Select(missing => missing.Id).ToArray())));
+    }
+
+    [Fact]
+    public async Task Elements_read_across_a_change_of_artifact_are_read_again_whole_from_the_new_one()
+    {
+        // Arrange
+        var (client, handler) = MakeClient();
+        handler.Respond = uri => uri.Query.Contains("cursor=2")
+            ? """{"elements":[{"element":"missing","id":"c"}],"version":"root-b"}"""
+            : handler.Requests.Count == 1
+                ? """{"elements":[{"element":"missing","id":"a"},{"element":"missing","id":"b"}],"next":2,"version":"root-a"}"""
+                : """{"elements":[{"element":"missing","id":"a"},{"element":"missing","id":"b"}],"next":2,"version":"root-b"}""";
+
+        // Act
+        var elements = await client.Elements(["a", "b", "c"]);
+
+        // Assert
+        Assert.Equal(
+            (WholeValue.Of(new[] { "?ids=a,b,c", "?ids=a,b,c&cursor=2", "?ids=a,b,c", "?ids=a,b,c&cursor=2" }), WholeValue.Of(new[] { "a", "b", "c" }), "root-b"),
+            (WholeValue.Of(handler.Requests.Select(uri => Uri.UnescapeDataString(uri.Query))), WholeValue.Of(elements.Elements.Cast<MissingElement>().Select(missing => missing.Id)), elements.Version));
     }
 
     [Fact]
