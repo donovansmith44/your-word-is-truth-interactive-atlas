@@ -8,7 +8,7 @@
 
 **Architecture:** Rule 27 splits the work by who knows the inputs.
 - **The compiler** writes what the data alone decides: Kretzmann's own structure (his books and chapters, each chapter holding its comments in the order he wrote them, each chapter `comments-on` the Bible chapter it explains), every Scripture citation inside his prose (the same scanner that already cites the Book of Concord), the section heading each comment opens, and each comment's label. The catechism's two headings ("What does this mean?", "Where is this written?") move from code into `data/curated/catechism.toml`.
-- **The server** reads. A commentary item's record serves its prose as FOCUS-2's `UnitText` (its compiled citations as anchors), and FOCUS-3's container text page serves a Kretzmann chapter's comments exactly as it serves a Bible chapter's verses. It loses `/api/catechism/item/{id}` and `/api/kretzmann/chapter/{cref}`. No relation is appended; no field exists for a view.
+- **The server** reads. A commentary item's record serves its prose as FOCUS-2's `UnitText` (its compiled citations as anchors), and FOCUS-3's container text page serves a Kretzmann chapter's comments exactly as it serves a Bible chapter's verses. It loses `/api/catechism/item/{id}` and `/api/kretzmann/chapter/{cref}`. One relation is appended, `stated-in` (Amendment A: a Small Catechism paragraph is its item's words, a fact of the text); no field exists for a view.
 - **The client** derives the interaction. A catechism item is FocusView's card (its served words as fields) and frontier (its `catechism-link` group, paged 20). A commentary item is FocusView's `Text`. The Kretzmann page is FOCUS-3's `SequenceView` over the Bible book (R12) with each verse's comments laid under it, read through the one paging door.
 
 **Tech Stack:** Rust (axum, utoipa, `atlas-etl`, `atlas-graph`, `atlas-contract`, `graph-types`); .NET 10 Blazor WebAssembly (`BibleAtlas.Client`, `BibleAtlas.Client.Exploring`); xUnit + bUnit; Playwright; Stryker.NET; cargo-mutants via `scripts/mutants-parallel.sh`.
@@ -26,15 +26,78 @@
 5. **A comment's title (popover title, trail, saved explorations) (Task 3):** name it by what it explains ("Kretzmann on GEN.1.1-2", the verse form following your answer to O-VERSE-LABEL), or keep its section heading ("Commentary" when it has none)? **Recommend: what it explains.**
 6. **Citations in Kretzmann's prose that the shared scanner cannot place (Task 3):** leave them as plain text and list them in the close report, or stop the batch for curation? **Recommend: plain text, listed.**
 
-Defaults this plan builds if unanswered: 1 by reference; 2 drop; 3 none; 4 file them; 5 what it explains; 6 plain text, listed.
+Amendment A (owner ruling F-76, below) adds four:
+
+7. **How the graph says "this paragraph is the item's own words" (Task 1a):** today one relation, `catechism-link`, means both "this verse supports the item" and "this Small Catechism paragraph is the item". (a) Give the second meaning its own relation, `stated-in` / `states`, so `catechism-link` is Scripture only; this appends one relation, which this plan otherwise forbids, and the relation models the text, not a screen. (b) Make the item a container over its paragraphs (the paragraph would then sit in two containers, the article and the item, which breaks the containment forest, or the Small Catechism's own structure would change to hold the items). (c) Retire the item and let its paragraphs be it (the item's words, verse links and saved explorations all move to paragraph ids). **Recommend (a).**
+8. **Back after clicking a Small Catechism paragraph (Task 2a):** the item opens as the start of the trail, so there is no Back to the paragraph (the paragraph is still on the page behind the popover, and the item lists it under "stated in"); or the trail starts at the paragraph, so Back returns to it? **Recommend: the item is the start; no Back.**
+9. **Which batch (Tasks 1a, 2a):** land it in FOCUS-7, where the catechism item first opens on FocusView, so the click is changed once; or pull it into FOCUS-3's Book of Concord rewrite (its Task 7), where the click would open today's older catechism popover until FOCUS-7 replaces it? **Recommend: FOCUS-7.**
+10. **Who the paragraph alignment is credited to (Task 1a):** the hand-checked table pairing each item with its paragraphs (`concord-sc-overlap.toml`) is our own work, published CC0 in LICENSES.md, but its provenance in `sources.toml` names the unlicensed brain-fuel catechism mapping. Credit it to our own curated work (source `our-curated-work`, confidence `Curated`) when its rows move, or leave the credit as it is for O-CATECHISM to settle? **Recommend: credit our own work now.**
+
+Defaults this plan builds if unanswered: 1 by reference; 2 drop; 3 none; 4 file them; 5 what it explains; 6 plain text, listed; 7 (a) `stated-in`; 8 the item is the start; 9 FOCUS-7; 10 credit our own work.
 
 **Rulings applied by analogy, not re-asked:**
-- **FOCUS-2 ruling 3 (one group per edge kind, served order, no client split; FOCUS-4 applied it the same way):** an item's verses and its Small Catechism paragraphs are one `catechism-link` group. The "IN THE BOOK OF CONCORD (n)" list and its client filter by the `"BoC "` id prefix (rule 25) go.
+- **FOCUS-2 ruling 3 (one group per edge kind, served order, no client split; FOCUS-4 applied it the same way):** an item's verses are its `catechism-link` group, and (Amendment A) its Small Catechism paragraphs are its `stated-in` group, because they are a second relation, not a split of one. The "IN THE BOOK OF CONCORD (n)" list and its client filter by the `"BoC "` id prefix (rule 25) go.
 - **FOCUS-2 ruling 4(b) (a "read in context" hatch on FocusView for a verse):** a commentary item gets the same hatch (`popover-chip-context`), opening the Kretzmann page at its chapter.
 - **FOCUS-2 ruling 7 (reach every site of the category in the batch):** citations are compiled for every prose corpus (Concord and Kretzmann) through one scanner; the client scanner dies.
 - **FOCUS-2 ruling 9 (accept the AQC major):** the catechism record's reshape (Task 1) and the commentary locus and heading (Task 4) are AQC majors.
 - **R12/R13 and FOCUS-3 OPEN 6, 11, 12, 13 (as FOCUS-3's owner answers stand at Task 0):** the Kretzmann page scrolls a whole Bible book with chapter heads inline, the next book is an explicit click, a verse range selects its verses, pages are 20 with 40 resident, and scrolling into the next chapter moves the locus. If FOCUS-3's answers differ from its defaults, Task 0 records the difference and Task 6 follows the answer.
 - **Paging rulings:** 20 per page, More appends to a 40 window then slides, Less goes back 20 (`Affordances.PageSize`); the server's page cap is the server's alone; typed `Cursor`, `previous` null only on the first page (F-74).
+
+## Amendment A (owner ruling F-76, 2026-10-02): a Small Catechism paragraph opens its item
+
+**The ruling, verbatim:** "So I like that I can click on the catechetical stuff and get a catechism link, but that is an unnecessary hop. If I click on the first commandment part of the small Catechism, I should just get the catechism link in the focus, like I would if I navigated there from some linked verse in Scripture. No unnecessary hop."
+
+**The data (read 2026-10-02 from the served artifact at `b3d7cfa` and from `data/curated/`, read-only):**
+- The pairs come from `data/curated/concord-sc-overlap.toml`: 33 `[[link]]` rows, one per catechism item, each naming its Small Catechism article and paragraph(s). `concord_adapter::merge_alias` expands them into 37 `CatechismLink` rows with provenance `concord-sc-overlap`. The file says it was checked by hand, word for word, against the parsed bookofconcord.org text. LICENSES.md dedicates it CC0 as our own work, but `sources.toml` credits that provenance to `catechism-mapping`, the unlicensed brain-fuel source (OPEN 10).
+- **One item has one or two paragraphs, and a paragraph has at most one item.** 29 items have one paragraph and 4 have two (`baptism-1` 7.5.1–2, `baptism-2` 7.5.3–4, `baptism-4` 7.5.6–7, `altar-1` 7.7.1–2: the source puts "Where is this written?" in its own paragraph). No paragraph has two items. All 33 items in `catechism.toml` have at least one paragraph.
+- **Paragraphs with no item:** 54 of the Small Catechism's 91. Two are inside a chief part: Confession 7.6.2 and 7.6.3 ("What sins should we confess?", "Which are these?"; the file records that `catechism.toml` never captured them). The other 52 are whole articles out of `catechism.toml`'s scope: the Preface (14), Daily Prayers (4), Table of Duties (13), Christian Questions (21).
+- **The Ten Commandments article (`Container:concord-art-small-catechism-2`, 11 paragraphs) maps one-to-one:** 7.2.1–7.2.10 are `commandment-1`…`commandment-10`, and 7.2.11 is `commandments-close` (it also `cites` one verse). Paragraph 7.2.1 reads "Thou shalt have no other gods. What does this mean? –Answer: We should fear, love, and trust in God above all things." These are the item's `text` and `explanation`, in the same 1921 Bente-Dau translation, taken from a second transcription.
+- **The paragraph is buried on the item's side.** `CatechismItem:commandment-1` serves `catechism-link` ×207: 206 verses from the brain-fuel question mapping, then `text-unit:BoC 7.2.1` at position 207. Under this plan's one-group default, a reader paging 20 at a time meets the item's own words on page 11.
+- **Rows that belong in different sections share one section.** `RowFamily::Catechism` lives in the required `core` section, but 37 of its rows reach into the optional `concord` section.
+
+**What the reader shows today when that paragraph is clicked:**
+- **Trunk `b3d7cfa`:** `Concord.razor` treats a part-7 unit with any edge as clickable (`ConcordToc.IsExplorablePart(7)`). The click opens the legacy `ConcordUnitNode` popover, which shows the paragraph's text (`ConcordUnitTextSection`) and a "THE SMALL CATECHISM (1)" list (`ConcordSmallCatechismSection`, a whole read filtered by `NodeKind.CatechismItem`). Clicking the list opens `CatechismNode`. That is the hop.
+- **`lane/claude/F2` after wave 3 (`01d7bdd`):** `OnExplore(unit)` opens `PopoverOpening.Explore(new NodePosition(unit.Node))`. FocusView shows the paragraph as `Presentation.Text`, with a `member-of` crumb and a one-entry `catechism-link` list. Following that list still opens the legacy `CatechismNode` popover (`LegacyNodes.For`), so the hop is the same.
+- **After FOCUS-3 Task 7 (planned, OPEN 10a there):** `ConcordUnitRow` is clickable when its served frontier has any group besides `member-of`, and the click opens the paragraph. The hop is still the same.
+
+**The category (rule 24), the failed abstraction and the side:**
+- **Category:** one relation carries two meanings, and readers tell them apart by the far end's corpus. `catechism-link` means "this verse supports the item" and also "this paragraph *is* the item". Every reader has to split the two by corpus:
+  - the legacy client filters on the `"BoC "` id prefix (`CatechismInConcordSection`);
+  - it filters by kind (`ConcordSmallCatechismSection`);
+  - this plan's one-group list buries the item's own words after 206 verses;
+  - a click target would have to guess "a `catechism-link` from a Concord paragraph means open the item", which rule 25 forbids.
+- **Failed abstraction:** `CatechismLink { locus: TextLocus, .. }`. Its locus accepts any corpus, so the type system does not see that the two meanings differ.
+- **Side:** the data and the compiler (rules 26, 27). Whether a paragraph is the item's own text is a fact of the text, so it is compiled into the graph once. The client reads an affordance per edge kind (rule 25) and never sees a corpus.
+- **Closure (OPEN 7a, recommended):**
+  - Append one directed relation, `StatedIn => "stated-in" / "states"`, read "the item is stated in this paragraph".
+  - It is backed by a new row family, `CatechismStatedIn { item, unit: ConcordLocus }`, in the `concord` section.
+  - `CatechismLink.locus` narrows to `BibleLocus`. A Concord locus in a `catechism-link` row then fails to compile, which closes the category structurally (24b).
+  - Laws enumerate the rest: every item is stated in at least one paragraph; no paragraph states two items; an item's paragraphs are consecutive; an alignment row that resolves nothing fails the compile instead of being counted and skipped. Today `sc_overlap_unmatched_*` counts and skips such rows, which drops data silently.
+  - On the client, the paragraph's side of the edge, `states`, gets a crumb role `Identity` (`Affordance.UpCrumb(CrumbRole.Identity)`). It is the one place a text row learns to open its far end instead of itself: `UnitOpening.Of`, the only door for every text row's opening, as a source law fences.
+- **Alternatives** (OPEN 7 b, c):
+  - **(b) The item as a container of its paragraphs.** A paragraph would have two containers, which breaks the containment forest that FOCUS-3 restates. Or the Concord's own structure would change around the items, and 54 paragraphs would have none.
+  - **(c) Retire the item into its paragraphs.** This moves the item's words, its 206-odd verse links per item and every saved exploration onto paragraph ids. The two-paragraph items would also need a composite.
+  - Both alternatives are larger, and both change a corpus to serve another corpus's view of it.
+
+**The behaviour:**
+- **Clicking or pressing Enter** on a Small Catechism paragraph that `states` an item opens that item on FocusView: its card (Chief part, Text, the served explanation and where-written headings with their words) and its frontier.
+  - It is exactly what following `catechism-link` to that item from a verse opens: the same `Explorable`, the same presentation.
+  - Under OPEN 8's default, the trail starts at the item.
+  - A paragraph with no `states` edge (Confession 7.6.2 and 7.6.3, every Preface, Daily Prayers, Table of Duties and Christian Questions paragraph) opens as itself, as before.
+  - A citation anchor inside a paragraph (7.2.11's `cites`) still opens its verse. The anchor click is the anchor's, not the row's.
+- **The paragraph keeps its own identity.**
+  - It is still a `TextUnit`. Its id, its reading place (`/concord?ref=`), its row on the page, selection (Ctrl-click, a shift-click range), its citations and the `member-of` crumb do not change.
+  - The item lists it: its `stated-in` group holds its paragraph(s) in reading order, offered before `catechism-link`. Directed kinds come before symmetric ones in the served summary.
+  - Following that entry opens the paragraph as `Presentation.Text`, with the crumb `popover-up-states-…` back to the item. There is no loop: only a reader row opens its far end; FocusView's crumb is an ordinary follow.
+- **Rule 27:**
+  - The server serves the graph: one new relation in `relations!` and its rows, read through the existing generic neighbour read (`/api/node/{id}/edges?kind=states`) and edge summary. There is no new route, field or view.
+  - The client derives the click target from served data alone: the row's served `edge_summary` names `states`, the affordance table maps `states` to `Identity`, and the far end is read through `Paging.FirstLink`.
+  - A click costs at most three bounded reads: the paragraph's element, a one-entry neighbour page, and the item's element (27b, 27c). Nothing is fetched until the click.
+- **Placement (OPEN 9 default):**
+  - Task 1a (compiler, data, wire) rides in wave 1 beside Task 1, sharing its one rebuild and regeneration.
+  - Task 2a (client) lands after Task 2, when the item opens on FocusView, and after FOCUS-3's Task 7, which creates `ConcordUnitRow`.
+  - FOCUS-2 (running) and FOCUS-3 change nothing for this amendment. FOCUS-7 already starts on FOCUS-3's landed head, so `ConcordUnitRow`'s click (F3 T7: `PopoverOpening.Explore(new NodePosition(unit.Node))`) is one expression that Task 2a replaces with `UnitOpening.Of(unit)`.
+  - Under OPEN 9 "FOCUS-3", Task 1a moves into FOCUS-3's Task 3 rebuild and Task 2a into its Task 7. The click then opens the legacy `CatechismNode` popover until this plan's Task 2.
 
 ## Global Constraints
 
@@ -49,7 +112,7 @@ Defaults this plan builds if unanswered: 1 by reference; 2 drop; 3 none; 4 file 
 - Tests: whole-body assertions; one behaviour per test, named as a sentence; `// Arrange` `// Act` `// Assert` only; no magic numbers; newspaper order. Real-data expectations are read from the artifact, never written as literals (F-8). A test name in `server/` or `graph-types/` is an identifier the vocabulary gate reads.
 - **Total matches.** A new closed sum exposes `Match<T>` (C#) or an exhaustive `match` with no wildcard (Rust); `Presentation` is matched by its `Form` enum.
 - **The one walk door / the one paging door.** Every follow goes `OnFollow(Link)` → `ExplorerPopover.FollowAsync` → `Explore.Follow`; no new caller of `IExplorer.Resolve` (internal, R20). Every list opens through `Paging.Window`, every text page through `Paging.Text` [F3]; `RootConsistencyLawTests` stays green.
-- **No relation is appended.** `DECLARED_DIRECTED_RELATIONS` and `DECLARED_SYMMETRIC_RELATIONS` do not change. New row families (Task 3) belong to existing relations (`contains`, `comments-on`, `cites`).
+- **One relation is appended, and only one: `StatedIn` (Amendment A, OPEN 7a, Task 1a).** It models a fact of the text (this paragraph is this item's words), never a view (rule 27). Otherwise `DECLARED_DIRECTED_RELATIONS` and `DECLARED_SYMMETRIC_RELATIONS` do not change. New row families (Task 3) belong to existing relations (`contains`, `comments-on`, `cites`). Under OPEN 7 (b) or (c) nothing is appended and Task 1a is rewritten to that answer before it starts.
 - Build no interaction that works only by hovering.
 - Commit per task on `lane/<agent>/F7-t<n>`; integrate on `lane/<agent>/F7-int`. Landing on `worktree-bible-atlas-m1` is by cherry-pick (squashed per task), under `land`, after the other agent's review (14b + 24a). Never force.
 - Each task: its own worktree (`git -c core.autocrlf=false worktree add -b lane/<agent>/F7-t<n> ~/w/F7-t<n> <base>`), `CARGO_TARGET_DIR=~/mut/<agent>-F7-t<n>`, `nice -n 10 cargo -j 4`, `data/raw` and `data/cache` copied never linked; `. ~/.bible-atlas-env` before any toolchain command.
@@ -58,12 +121,12 @@ Defaults this plan builds if unanswered: 1 by reference; 2 drop; 3 none; 4 file 
 
 | Section | Held by | Why |
 |---|---|---|
-| `contract`: rebuilding `data/compiled` (moves the version root) | Task 1 (catechism headings), then Task 3 (Kretzmann structure and citations) | one artifact |
-| `contract`: `export_contract`, `export_aqc_examples`, AQC/AGC features, `client.ContractGenerator` | Task 1, then Task 4, then Task 8, strictly in that order | one generated document |
+| `contract`: rebuilding `data/compiled` (moves the version root) | Tasks 1 and 1a together (catechism headings, `stated-in`; one rebuild), then Task 3 (Kretzmann structure and citations) | one artifact |
+| `contract`: `export_contract`, `export_aqc_examples`, AQC/AGC features, `client.ContractGenerator` | Tasks 1 and 1a together, then Task 4, then Task 8, strictly in that order | one generated document |
 | `contract`: re-blessing pacts and fixtures, re-pinning `graph-types/tests/canon_vectors.rs` | right after each rebuild or regen above | moves the version root |
 | `heavy`: `cargo test --workspace`, full Playwright | Tasks 1, 3, 4, 8, 9 | memory |
 | `heavy` with "mutation" in the message | Task 9 only, inside the owner's window (`.superpowers/MUTATION-GATE-DEBT.md`) | once per batch (3a) |
-| appending to `relations!` | **nobody** | rule 27 |
+| appending to `relations!` | Task 1a only (`StatedIn`, OPEN 7a), inside its `contract` hold | rule 27: a domain relation, never a view |
 
 ## Re-anchor table: what the two kinds touch at `b3d7cfa`, and where each goes
 
@@ -94,6 +157,11 @@ Defaults this plan builds if unanswered: 1 by reference; 2 drop; 3 none; 4 file 
 | `server/atlas-graph/src/kretzmann_adapter.rs` `normalize` | one `Source`, one `CommentaryItem` per unit, one `CommentsOn` per unit | gains the Kretzmann containers, chapter-level `comments-on`, each unit's place (Task 3) |
 | `server/atlas-graph/src/citations.rs` `cite_scripture` (the Concord's reading spine only) | compiled Scripture citations | every prose corpus: the Concord and Kretzmann (Task 3) |
 | `server/atlas-core/src/data.rs` `default_explanation_heading` (a domain string in code, rule 26) | default heading | moves into `data/curated/catechism.toml` (Task 1) |
+| `graph-types/src/edge.rs` `CatechismLink { locus: TextLocus, .. }` (l.294); `graph.rs:316–320` lowers every row to `catechism-link` | one relation, two meanings (Amendment A) | `locus: BibleLocus`; the Concord meaning moves to `CatechismStatedIn` / `stated-in` (Task 1a) |
+| `server/atlas-graph/src/concord_adapter.rs` `merge_alias` (l.159–188): writes 37 `CatechismLink` rows from `concord-sc-overlap.toml`; counts and skips unmatched items and paragraphs | the item↔paragraph alignment | writes `CatechismStatedIn` rows; an unresolved row fails the compile (Task 1a) |
+| `graph-types/src/sections.rs` `RowFamily::Catechism` in `Section::Core` (required) holding Concord loci | rows reaching an optional section | Bible loci only; `RowFamily::CatechismStatedIn` in `Section::Concord` (Task 1a) |
+| `data/curated/sources.toml` provenance `concord-sc-overlap` → source `catechism-mapping` (unlicensed) | credit | → `our-curated-work`, confidence `Curated` (Task 1a, OPEN 10) |
+| `client/Views/ConcordUnitRow.razor` [F3 T7] click: `PopoverOpening.Explore(new NodePosition(unit.Node))`; `VerseLine` [F3] the same | a text row's opening | `UnitOpening.Of(unit)`, the one door (Task 2a) |
 
 ## File overlap with FOCUS-2, FOCUS-3 and FOCUS-4, and the order per file
 
@@ -114,6 +182,9 @@ FOCUS-7 runs after FOCUS-2 and FOCUS-3 have landed, so on their files it always 
 | `client/Exploring/IExplorableClient.cs`, `client/GraphExplorableClient.cs` | — | `Text` added, `Reading` deleted | removes two `Card` callers | removes the last two `Card` callers; deletes `Card` if FOCUS-4 has landed | F3 → {F4, F7}; the second to land deletes `Card` |
 | `server/atlas-contract/src/wire/graph.rs`, `server/atlas-contract/src/graph.rs` | T1B `UnitText`, `NodeRecord.text`, `unit_text` | T2 `TextPage`, `node_text` | T1B `PersonLife` | T1 `CatechismDetail`; T4 `UnitHeading` sum, commentary in `unit_text` and `node_text` | F2 → F3 → {F4, F7} |
 | `server/atlas-contract/src/wire/locus.rs` (`TextRef`) | — | — | — | T4 `Commentary` variant | F7 only |
+| `graph-types/src/{edge,graph,sections}.rs`, `graph-types/src/canon/rows.rs` (`relations!`, `CatechismLink`, `CatechismStatedIn`) | — | — | T1 person payload | T1a | F4 ↔ F7 (second rebases and re-pins) |
+| `server/atlas-graph/src/concord_adapter.rs` | — | — | — | T1a `merge_alias` | F7 only |
+| `client/Views/ConcordUnitRow.razor`, `client/Components/VerseLine.razor`, `client/Legacy/PopoverOpening.cs`, `client/Components/ExplorerPopover.razor` | T3/T4 (`PopoverOpening`, `ExplorerPopover`) | T6, T7 create/edit the rows | — | T2a: `UnitOpening.Of`, `PopoverOpening.FarEnd` | F2 → F3 → F7 |
 | `server/atlas-contract/src/{catechism,reading}.rs`, `wire/{catechism,reading}.rs` | T6 `verse` | T9 `books`, `chapter`, `xrefs`, `catechism_for_span`, `CatechismRef` | — | T8 `catechism_item`, `kretzmann_chapter` and their wire | F2 → F3 → F7 |
 | `server/atlas-graph/src/{labels,references}.rs` | T1A, T2 (`references.rs` new) | T3 Concord citation label | T2 parentage wording | T3 commentary label; T4 commentary reference arm | F2 → F3 → {F4, F7} |
 | `server/atlas-graph/src/citations.rs` | — | T3 `ConcordCitations`, `cite` | — | T3 `cite_scripture` over every prose corpus | F3 → F7 |
@@ -164,6 +235,92 @@ pub struct CatechismDetail {
 }
 ```
 - `part_title` becomes `part`; the heading travels with its words. AQC **major** (ruling 9 by analogy). `catechism_detail(id, data)` keeps its signature and maps the fields; it reads one indexed lookup (`AtlasData::catechism_item_by_id`, a `HashMap`), so 27b holds.
+
+### A catechism item is stated in its Small Catechism paragraphs (Task 1a; backend: graph types, compiler, data; Amendment A, OPEN 7a, 10)
+
+Graph (`graph-types/src/edge.rs`):
+```rust
+relations! {
+    directed {
+        StatedIn     => "stated-in" / "states"
+    }
+}
+
+pub struct CatechismLink {
+    pub locus: BibleLocus,
+    pub item: CatechismItemId,
+    pub provenance: ProvenanceId,
+    pub justification: Justification,
+}
+
+pub struct CatechismStatedIn {
+    pub item: CatechismItemId,
+    pub unit: ConcordLocus,
+    pub provenance: ProvenanceId,
+    pub justification: Justification,
+}
+```
+- `StatedIn` is appended at the end of the `directed` list, so every existing `RelationId` keeps its ordinal. Forward runs from the item (`stated-in`, its paragraphs) and inverse from the paragraph (`states`, its item). The relation means "these words of the Book of Concord are this item": a fact of the text, not a view (rule 27).
+- `CatechismLink.locus` narrows from `TextLocus` to `BibleLocus`, so `catechism-link` can only join an item to Scripture, and a Concord locus there does not compile (24b). `Canon for CatechismLink` still encodes the locus through `TextLocus::from` (`text.rs:226`), so the canonical bytes and the edge id of every remaining Bible row stay the same. A canon vector pins one existing row's id unchanged. `from_value` refuses a non-Bible `TextLocus` with a `CanonError` naming `locus`.
+- `Graph` gains `pub catechism_stated_in: Vec<CatechismStatedIn>`, lowered in `edges()` beside `catechism` as `EdgeRel::Directed(RelationId::StatedIn)` from `at(&row.item.erase())` to `at(&text_node(&row.unit.clone().into()))`.
+- `RowFamily::CatechismStatedIn` belongs to `Section::Concord`, so the rows sit with the paragraphs they name and the required `core` section no longer reaches into the optional `concord` one. `SECTION_SCHEMA_VERSION` +1 over Task 0's value; Task 3's +1 follows it. `Canon for CatechismStatedIn` takes the keys `item`, `justification`, `provenance` and `unit`. The SQLite side adds `sqlite/rows/` `insert_catechism_stated_in`/`read_catechism_stated_in` and a DDL table, and `grounds_of` [F4] gains an arm that answers its grounds.
+
+Compiler (`server/atlas-graph/src/concord_adapter.rs`):
+```rust
+pub fn merge_alias(ctx: &mut BuildCtx) -> Result<ConcordAdapterStats, ConcordAlignmentError>;
+
+pub enum ConcordAlignmentError {
+    UnknownItem { item: String },
+    UnknownParagraph { item: String, article: u16, paragraph: u16 },
+}
+```
+- Each `concord-sc-overlap.toml` row now writes one `CatechismStatedIn` per paragraph, in the file's paragraph order, with provenance `concord-sc-overlap`. It writes no `CatechismLink`.
+- A row that names no item, or no paragraph, fails the compile and names the row. Today such a row is counted and skipped (`sc_overlap_unmatched_items`, `sc_overlap_unmatched_paragraphs`, both deleted), which drops data silently. A test that runs a Concord bundle over an empty `AtlasData` now passes an empty `sc_overlap` instead. `compile_graph` propagates the error.
+- `ConcordAdapterStats.sc_overlap_links` becomes `stated_in_rows`.
+
+Data (`data/curated/sources.toml`, OPEN 10 default): provenance `concord-sc-overlap` gets `source = "our-curated-work"` and `confidence = "Curated"`, so the credit matches LICENSES.md's CC0 dedication of the table. `concord-sc-overlap.toml` keeps its rows. Its header's sentence "both become their own `CatechismLink` row" becomes "…their own `stated-in` row". This is a data file, so rule 9 does not apply to it, and the sentence would otherwise state something false.
+
+Laws (`server/atlas-graph/src/law_check.rs`, run by the compile, 24b):
+```rust
+pub fn every_catechism_item_is_stated_in_a_concord_paragraph(graph: &Graph) -> Result<(), String>;
+pub fn no_concord_paragraph_states_two_items(graph: &Graph) -> Result<(), String>;
+pub fn an_items_paragraphs_are_consecutive_in_reading_order(graph: &Graph) -> Result<(), String>;
+```
+- The first walks every `CatechismItem` node. The second walks every `CatechismStatedIn` row. The third reads the `concord` reading spine. `catechism-link` cannot name a Concord paragraph, because the type forbids it (no law needed).
+
+Wire: no new type and no new route. `EdgeKind` in the generated contract gains `stated-in` and `states` (the existing `EdgeKind` enum, from `relations!`). A paragraph's `edge_summary` names `states` ×1 instead of `catechism-link` ×1, and an item's names `stated-in` ×n beside `catechism-link`, which now counts only verses. AQC **major** (ruling 9 by analogy), declared in `CHANGELOG.md` under Task 1's same regeneration: "`catechism-link` joins an item to Scripture only; an item's own Small Catechism paragraphs are its `stated-in` group".
+
+### A text row opens what it states (Task 2a; client; Amendment A, OPEN 8)
+
+`client/Exploring/Affordances.cs`:
+```csharp
+public sealed record UpCrumb(CrumbRole Role) : Affordance(Affordances.CrumbsShown);
+
+public enum CrumbRole
+{
+    Holder,
+    Identity,
+}
+```
+- `EdgeKind.MemberOf or EdgeKind.ShownOn => new Affordance.UpCrumb(CrumbRole.Holder)`; `EdgeKind.States => new Affordance.UpCrumb(CrumbRole.Identity)`; `EdgeKind.StatedIn => DefaultList`. The table stays a total `switch` over the generated `EdgeKind`, so the two new kinds fail the build until they are placed. FocusView renders both roles as crumbs, unchanged (`Offered<Affordance.UpCrumb>`).
+
+`client/Reading/UnitOpening.cs` (new):
+```csharp
+public static class UnitOpening
+{
+    public static PopoverOpening Of(TextUnit unit);
+}
+```
+- `Of` returns `new PopoverOpening.FarEnd(new NodePosition(unit.Node), kind)` for the first served `unit.EdgeSummary` entry whose kind's affordance is `UpCrumb { Role: CrumbRole.Identity }`. Otherwise it returns `new PopoverOpening.Explore(new NodePosition(unit.Node))`. It reads only served kinds through the affordance table: no corpus, no id and no node kind (rule 25).
+- It is the only place a text row builds its opening. `ConcordUnitRow` [F3 T7], `VerseLine` [F3] and `KretzmannVerseRow` (Task 6) call it.
+
+`client/Legacy/PopoverOpening.cs`, one case:
+```csharp
+public sealed record FarEnd(PositionRef Start, EdgeKind Kind) : PopoverOpening;
+
+public abstract T Match<T>(Func<PositionRef, T> explore, Func<PositionRef, EdgeKind, T> farEnd, Func<SavedExploration, T> resume, Func<IExplorable, T> legacy);
+```
+- `ExplorerPopover` opens `FarEnd` in one walk: `Explore.Begin(explorer, start)`, then `Paging.FirstLink(current, kind)`, then `Explore.Begin(explorer, link.Target)` (OPEN 8: the trail starts at the far end). Under OPEN 8 "Back to the paragraph" it is `Explore.Resume(explorer, start, [link])`. A served `states` count with no first link is a contract breach (`Outcome.Failed`, the popover's error state), never a silent fall back to the paragraph. Every existing `Match` caller gains the arm, and the compiler lists them.
 
 ### Kretzmann is a work with its own structure (Task 3; backend: compiler, OPEN 4, 5, 6)
 
@@ -267,6 +424,7 @@ public sealed class Commentary
 
 - **Client, files:** `client/Legacy/CatechismNode.cs`, `client/Legacy/CommentaryItemNode.cs`; `client/Components/CatechismList.razor`, `client/Components/ConcordUnitList.razor`; `client/Exploring/KretzmannCitationScan.cs`; `client/wwwroot/js/lazyProse.js`; tests `client.Tests/KretzmannCitationScanTests.cs`.
 - **Client, members:** `CatechismTextSection`, `CatechismExplanationSection`, `CatechismWhereWrittenSection`, `CatechismScripturesSection`, `CatechismInConcordSection`, `CommentaryItemProseSection`, `CatechismSectionRendering`, `CatechismLinks` and their six `PopoverSectionRegistry` rows (`PopoverSections.cs:52–56, 72`); `AtlasClient.CatechismItem`, `AtlasClient.KretzmannChapter` and their `AtlasClientTests` cases (`:230`, `:302`); `LegacyNodes.For`'s `CatechismItem` and `CommentaryItem` arms (→ `null`); `PopoverChromeRegistry["Catechism"]`, `["CommentaryItem"]`; in `Kretzmann.razor`: `CommentaryItemRow`, `MergedVerseRow`, `ShowChapter`'s commentary half, `LoadCommentaryAsync`/`ShowItemText`/`UpdateItemText`/`ProseOf`, `_proseRequested`, `_proseFetchGate`, `_lazyJs`, `_selfRef`, `OnExplore(CommentaryItemRow)`, `OnItemKeyDown`, the `Atlas.KretzmannChapter` and `Atlas.ChapterText` fetches, `EmptyToc`, `Slug` (if its last use goes); the `PopoverSectionRegistryTests` (`:149–154, 174`), `LegacyNodesTests` (`:54, 58, 89–90, 107–108`), `LegacyViews` (`:22–23`), `PushViaConformanceTests` (`:23, 34`) rows; `ExplorerPopoverTests`' three `CommentaryItemNode` fixtures (`:83, 141, 236`) re-expressed on `PolityDeltaNode`, the legacy node MAPS keeps; `IExplorableClient.Card`/`GraphExplorableClient.Card` when FOCUS-4 has landed (its last callers die here and there); CSS `.popover-catechism-*`, `.popover-commentary-text`, `.kretzmann-item-loading`, `.catechism-section-heading` where nothing else uses them; the FOCUS-7 entries of `ReferenceParsingLawTests.RetiredBy` and `WholeReadLawTests.RetiredBy` [F2].
+- **Amendment A (Tasks 1a, 2a):** `ConcordAdapterStats.sc_overlap_unmatched_items`, `.sc_overlap_unmatched_paragraphs` and their skip branches; the `ctx.graph.catechism.is_empty()` assertion (`concord_adapter.rs:417`) and `sc_overlap_expands_to_37_catechism_link_rows_with_zero_unmatched` (replaced); each text row's own `PopoverOpening.Explore(new NodePosition(unit.Node))` (`Concord.razor`/`ConcordUnitRow`, `VerseLine`); the Concord half of every `catechism-link` fixture, pact interaction and AGC example (re-blessed).
 - **Server (Task 8):** `catechism.rs` `catechism_item` and its route (the file, its `routes()` and the `lib.rs` merge once FOCUS-3 T9 has removed `catechism_for_span`), the `"catechism"` tag in `document.rs:30` when no route carries it; `wire/catechism.rs` `CatechismItem`, `CatechismProofVerse` (the file and its `wire/mod.rs` lines once `CatechismRef` is gone [F3]); `reading.rs` `kretzmann_chapter` and its route; `wire/reading.rs` `KretzmannChapter`, `KretzmannChapterVerse`, `KretzmannChapterItem`; `kretzmann_adapter::chapter_commentary`, `ChapterCommentaryRow`, `ordinal_of`; `atlas-core` `AtlasData::catechism_item_by_id` and `GraphService::verse_text_of` if no served reader remains (`cargo build` decides; a tool reader is noted); tests `api.rs` `catechism_span_and_item_endpoints` (its item half), `kretzmann_adapter_real_data.rs` `chapter_commentary_*` (two), `graph_api.rs` `commentary_item_record_carries_its_own_real_kretzmann_prose_via_description` (→ the `text` law); `benches/queries.rs` and `server/BENCHMARKS.md` rows; AGC `graph/detail-routes.feature` lines 24–25 and 31–33 and the `kretzmann-chapter`, `catechism-item` projections; fixtures `contracts/atlas-graph-contract/fixtures/{kretzmann-chapter-gen-1,catechism-item-commandment-1}.json`; pact interactions; `tests/ux/lib/api.ts` `catechismItem`, `kretzmannChapter`.
 - **Under OPEN 4 "keep the read" only:** `/api/kretzmann/chapter/{cref}` stays; Tasks 3, 4 and 6 shrink to the citations and the prose, and `chapter_commentary` stays a FINDING (27b, 26a).
 - **Not deleted** (stated so no one "finishes" it): `LegacySaves`' v1 `"Catechism"`/`"CommentaryItem"` translations (FOCUS-9); `/api/text?ref=` and `AtlasClient.ChapterText` (their FOCUS-5 callers, `MiniReaderExpand` and `VerseTextResolver`, remain; FOCUS-7 removes the Kretzmann and catechism callers); `/api/node/{id}` and `AtlasClient.NodeRecord` (F-34; `AuthorNode`, `EventNode`); `PassageList`, `PassageBlock` (FOCUS-5); `AtlasData.catechism` (the compiler still reads it); the `catechism-link` rows from the brain-fuel question mapping (O-CATECHISM decides them, not this batch).
@@ -279,6 +437,7 @@ public sealed class Commentary
 
 - [ ] **Step 1:** Record the base (the head FOCUS-3 landed at, with FOCUS-2 under it), FOCUS-4's state (landed or not), FOCUS-3's owner answers that Task 6 follows (OPEN 6, 11, 12, 13 there), the OPEN answers here (or "defaults"), and `SECTION_SCHEMA_VERSION` at the base.
 - [ ] **Step 2:** Re-verify at the base and record each result; stop for the controller on any difference:
+  - Amendment A: FOCUS-3 T7's `ConcordUnitRow` and the Reader's `VerseLine` open a unit with `PopoverOpening.Explore(new NodePosition(unit.Node))` and nothing else builds a text row's opening; the paragraph that `concord-sc-overlap.toml` aligns with `commandment-1` still serves `catechism-link` ×1;
   - `grep -rn "CatechismNode\|CommentaryItemNode\|CatechismLinks\|CatechismList\|ConcordUnitList\|KretzmannCitationScan\|KretzmannChapter\|CatechismItem(" client client.Tests --include=*.cs --include=*.razor` prints only this plan's sites (FOCUS-2 and FOCUS-3 have removed `CatechismSeamSection`, `ConcordSmallCatechismSection`, `PassageCatechismSection`);
   - FOCUS-2's `UnitText`, `NodeRecord.text`, `unit_text`, `references.rs`, `UnitTextView`, `Presentation.Text`, the reader hatch, `LegacyNames` and both ratchets exist; FOCUS-3's `node_text`, `TextPage`, `Paging.Text`, `SequenceView`, `ReadingAddress`, `RouteLawTests` and passage containers exist; `catechism_for_span` and `CatechismRef` are gone;
   - `Kretzmann.razor` reads verse rows from `Atlas.ChapterText` and commentary from `Atlas.KretzmannChapter` (FOCUS-3 T6's stated end state);
@@ -300,6 +459,29 @@ public sealed class Commentary
 - [ ] **Step 3: Implement** as in Types.
 - [ ] **Step 4: Rebuild and regenerate (critical section `contract`):** rebuild `data/compiled`; `cargo run -p atlas-contract --bin export_contract`, `--bin export_aqc_examples`, `--check` clean; `CHANGELOG.md` AQC **major**; re-bless pacts; `dotnet run --project client.ContractGenerator`; the one client reader (`CatechismNode`'s legacy sections read `CatechismItem` from the legacy route, untouched) compiles. Release the lock.
 - [ ] **Step 5 (lock `heavy`):** `cargo test --workspace`, `(cd graph-types && cargo test --all-features)`, `bash scripts/contract-gate.sh --base <base>`, `bash scripts/contract-semver-gate.sh` (declared major), `dotnet build client && dotnet test client.Tests && dotnet test client.ContractTests` → green except `GeneratedUsageTests` for `CatechismDetail.Part`, `.Explanation`, `.WhereWritten`, `TitledText` (read in Task 2). **Commit:** `catechism: Luther's headings are data, and an item's record serves each heading with its words (rules 25, 26; AQC major)`.
+
+### Task 1a: A catechism item is stated in its Small Catechism paragraphs; `catechism-link` is Scripture only (backend; Amendment A)
+
+**Backend change: yes (graph types, compiler, data; one relation appended). Why there (rules 24b, 26, 27):** whether a paragraph is an item's own words is a fact of the text, so the compiler writes it once as its own relation. The server serves it through the existing neighbour read and edge summary, with no new route or field. **Owner gate first:** OPEN 7 and 10 (or the defaults). Under OPEN 7 (b) or (c), rewrite this task to that answer before it starts.
+
+**Files:**
+- Modify: `graph-types/src/{edge,graph,sections}.rs`, `graph-types/src/canon/rows.rs` (`StatedIn`, `CatechismLink.locus: BibleLocus`, `CatechismStatedIn`, `RowFamily::CatechismStatedIn` in `Section::Concord`, `SECTION_SCHEMA_VERSION` +1); `server/atlas-graph/src/{concord_adapter,catechism_adapter,law_check,event_world,provenance}.rs` (`catechism_adapter::verse_locus` returns `Option<BibleLocus>`); `server/atlas-graph/src/sqlite/{ddl,partition,writer,snapshot}.rs` and `sqlite/rows/{core,mod}.rs` plus the Concord rows module; `server/atlas-graph/src/bins/compile_graph.rs` (propagates `ConcordAlignmentError`); `data/curated/sources.toml` (OPEN 10); `data/curated/concord-sc-overlap.toml` (the header sentence only); `data/compiled` (rebuilt with Task 1's rebuild); `graph-types/tests/canon_vectors.rs`, `canon_row_vectors.rs` (re-pinned); `contracts/*` regen with Task 1's, `CHANGELOG.md` (the same AQC major); pacts.
+- Test: `server/atlas-graph/src/{concord_adapter,law_check}.rs` unit tests; `server/atlas-graph/tests/concord_sc_overlap_real_data.rs`; `server/atlas-contract/tests/graph_api.rs`; graph-types store laws.
+
+- [ ] **Step 1: Failing tests** (whole values, with real-data expectations read from `concord-sc-overlap.toml` and the artifact, F-8):
+  - `concord_adapter.rs`: `merging_writes_one_stated_in_row_per_aligned_paragraph_in_file_order`; `merging_writes_no_catechism_link_to_a_concord_paragraph`; `an_alignment_row_naming_no_item_fails_the_compile_naming_it`; `an_alignment_row_naming_no_paragraph_fails_the_compile_naming_it`. These replace `sc_overlap`'s count-and-skip tests and the `ctx.graph.catechism.is_empty()` assertion at l.417.
+  - `law_check.rs`: each of the three laws green on a fixture, and red on a fixture with an item stated nowhere, a paragraph stating two items, and an item whose two paragraphs have a third between them.
+  - `concord_sc_overlap_real_data.rs`: `the_curated_alignment_expands_to_one_stated_in_row_per_listed_paragraph` replaces `sc_overlap_expands_to_37_catechism_link_rows_with_zero_unmatched`; the count is the sum of the file's `paragraphs` lengths, never the literal 37. `every_catechism_item_is_stated_in_a_concord_paragraph_in_the_real_graph`.
+  - `graph_api.rs`: `the_first_commandment_is_stated_in_its_small_catechism_paragraph` (the whole `stated-in` page of `CatechismItem:commandment-1`: one entry, the unit the file aligns, with its compiled label); `a_small_catechism_paragraph_states_its_item` (the whole `states` page of that unit); `an_items_catechism_links_reach_scripture_only` (walks every page of `catechism-link` for every item; each far end is a `TextUnit` whose served locus is `corpus: bible`); `an_item_stated_in_two_paragraphs_lists_them_in_reading_order` (the item whose file row lists two paragraphs, chosen by reading the file).
+  - graph-types: `a_catechism_links_canonical_bytes_are_unchanged_by_the_bible_locus` (one pinned row's id at the base equals its id after); `a_catechism_link_with_a_concord_locus_does_not_decode`; store laws: `CatechismStatedIn` round-trips on both backends (`assert_answers_match`).
+  - `event_world.rs` [F4]: the `CatechismStatedIn` arm of `grounds_of` in the `RowFamily::ALL` walk.
+- [ ] **Step 2:** `cargo test -p atlas-graph -p atlas-contract` and `(cd graph-types && cargo test --all-features)` → red; record the reds.
+- [ ] **Step 3: Implement** as in Types. `merge_alias` returns `Result`; the three laws join the compile's law list.
+- [ ] **Step 4 (with Task 1's Step 4, one hold of `contract`):** a single rebuild of `data/compiled` covers both tasks. Re-pin the canon vectors, export, `--check`, record the AQC major for both in one `CHANGELOG.md` entry, re-bless, and run the client generator. Then check:
+  - the generated `EdgeKind` has `StatedIn` and `States`;
+  - `Affordances.Of`'s total switch fails the client build until Task 2a. That is expected, so record it, and Step 4 places `StatedIn` → `DefaultList` and `States` → `UpCrumb()` so the client compiles and renders both. Task 2a adds the crumb's role with its red test first.
+  - The ledger records the `CatechismStatedIn` row count and each item's `catechism-link` count before and after (every item loses exactly its paragraph count). Release the lock.
+- [ ] **Step 5 (lock `heavy`, with Task 1's):** `cargo test --workspace`, graph-types, `bash scripts/contract-gate.sh --base <base>` (the vocabulary gate included), `bash scripts/contract-semver-gate.sh` → green. **Commit:** `catechism: an item is stated in its Small Catechism paragraphs, and catechism-link joins an item to Scripture only (F-76; rule 24b; AQC major)`.
 
 ### Task 2: A catechism item on FocusView; the legacy catechism path is gone (client)
 
@@ -338,13 +520,48 @@ public async Task A_catechism_item_on_the_popover_shows_its_chief_part_its_words
 }
 ```
 Also: `A_commandment_shows_its_text_before_its_explanation` (whole card for a served item with `text`); `An_item_that_says_nowhere_where_it_is_written_shows_no_such_field`.
-`FocusViewTests`: `A_field_keeps_its_served_line_breaks` (whole rendered `dd` markup, no split); `A_catechism_item_offers_its_verses_and_its_concord_paragraphs_as_one_list` (a served item whose `catechism-link` group holds two verses and one Concord paragraph; the ordered `popover-link-catechism-link-{id}` ids in served order, one `popover-section-catechism-link`).
+`FocusViewTests`: `A_field_keeps_its_served_line_breaks` (whole rendered `dd` markup, no split); `A_catechism_item_offers_its_paragraphs_and_its_verses_as_two_served_groups` (Amendment A: a served item whose `stated-in` group holds one Concord paragraph and whose `catechism-link` group holds two verses; the rendered `popover-section-stated-in` then `popover-section-catechism-link`, each with its `popover-link-{kind}-{id}` ids in served order, and no client split).
 `DeletionLawTests`: `MigratedKinds` gains `NodeKind.CatechismItem`; `LegacyNames[CatechismItem] = ["Catechism"]` (the legacy kind string `CatechismNode.Kind` returns, which the kind-name match would miss). Run → red (`CatechismNode`, five `"Catechism"` `AppliesTo` strings).
 `ReferenceParsingLawTests`/`WholeReadLawTests` [F2]: remove the FOCUS-7 catechism entries (`CatechismScripturesSection`'s `CanonRef.ParseVerse`, `CatechismInConcordSection`'s `NodeIds.LocalPart`/`NodeIds.Of`, `ConcordUnitList`'s `NodeIds.LocalPart`, `CatechismLinks`' `Paging.Whole`, `LegacyNodes`' catechism arm); their pair laws fail until the sites are deleted.
 - [ ] **Step 2:** `dotnet test client.Tests --filter "GraphPresenterTests|FocusViewTests|DeletionLawTests|ReferenceParsingLawTests|WholeReadLawTests"` → red.
 - [ ] **Step 3: Implement.** `CatechismOf` as in Types. Delete the files and members in the inventory for catechism; `LegacyNodes.For` answers `null` for `CatechismItem`, so every catechism item, opened or followed, renders on FocusView. Its `catechism-link` list is FocusView's generic `SectionList` (`Affordances.DefaultList` [F4 shape]), paged 20, 40 resident; no client filter, no question headings (OPEN 2), no verse words in the list (OPEN 1). Under OPEN 1 "print the words": `SectionList` gains `Preview { Label, Text }` with `CatechismLink → Text`, and FocusView reads one batched element read per page for entries that are text units (27c), with its own failing test first.
 - [ ] **Step 4:** `dotnet build client && dotnet test client.Tests && dotnet test client.ContractTests` → green (`GeneratedUsageTests` now reads `CatechismDetail.*` and `TitledText`). `npx playwright test tests/ux/popover-sections.spec.ts tests/ux/concord.spec.ts` → record the red set by name (expected: CATECH-1 "verse -> catechism item -> proof verse hop", D3 ×2).
 - [ ] **Step 5: Commit:** `catechism: an item is FocusView's card and frontier; CatechismNode, its five sections, CatechismList and ConcordUnitList are gone (deletion law: CatechismItem; F-63, F-65)`.
+
+### Task 2a: Clicking a Small Catechism paragraph opens its item (client; Amendment A)
+
+**Backend change: no.** Rule 27: which element a click opens is an interaction derivation. The client reads it from the served edge summary and the affordance table, and reads the far end through the paging door.
+
+**Owner gate first:** OPEN 8 (or the default). **Starts after** Tasks 1a and 2 have landed on `lane/<agent>/F7-int` (base: FOCUS-3's head, so `ConcordUnitRow` exists).
+
+**Files:**
+- Create: `client/Reading/UnitOpening.cs`; `client.Tests/Reading/UnitOpeningTests.cs`; `client.Tests/Reading/UnitOpeningLawTests.cs`.
+- Modify: `client/Exploring/Affordances.cs` (`CrumbRole`, the two arms); `client/Legacy/PopoverOpening.cs` (`FarEnd`, `Match`); `client/Components/ExplorerPopover.razor` (opens `FarEnd`); `client/Views/ConcordUnitRow.razor` [F3], `client/Components/VerseLine.razor` [F3] (the click and Enter go through `UnitOpening.Of`); every `PopoverOpening.Match` caller the compiler names; `client.Tests/Explore/ServedGraph.cs` (`UnitOf(id, summary)`); `client.Tests/Explore/{PopoverOpeningTests,AffordancesTests}.cs`, `client.Tests/Components/ExplorerPopoverTests.cs`; `tests/ux/concord.spec.ts` (CAT-TEXT-1..4, below).
+
+- [ ] **Step 1: Failing tests.**
+
+`client.Tests/Reading/UnitOpeningTests.cs`:
+```csharp
+[Fact]
+public void A_unit_that_states_an_item_opens_that_item()
+{
+    // Arrange
+    var unit = ServedGraph.UnitOf(FirstCommandmentParagraph, [new EdgeSummaryEntry(EdgeKind.MemberOf, One), new EdgeSummaryEntry(EdgeKind.States, One)]);
+    // Act
+    var opening = UnitOpening.Of(unit);
+    // Assert
+    Assert.Equal(new PopoverOpening.FarEnd(new NodePosition(unit.Node), EdgeKind.States), opening);
+}
+```
+Also: `A_unit_that_states_nothing_opens_itself` (served `member-of` and `cites` only → `Explore` of the unit, whole); `A_verse_opens_itself` (a Bible unit with `catechism-link` → `Explore`, so `catechism-link` never redirects).
+`AffordancesTests`: `Only_states_opens_its_far_end_in_place_of_a_text_row` (walks `Enum.GetValues<EdgeKind>()`; the set whose affordance is `UpCrumb { Role: Identity }` equals `[EdgeKind.States]`, whole); `Member_of_and_shown_on_are_holders`.
+`UnitOpeningLawTests`: `No_text_row_builds_its_own_opening` (a source law over `client/**/*.razor` and `*.cs`: `PopoverOpening.Explore(` built from a `TextUnit`'s `Node` appears only in `client/Reading/UnitOpening.cs`; the scan follows `RouteLawTests`' pattern [F3]).
+`ExplorerPopoverTests`: `A_far_end_opening_shows_the_item_the_paragraph_states_with_no_way_back_to_the_paragraph` (over `ServedGraph` serving the paragraph, its one-entry `states` page and the item: the rendered `popover-title` is the item's served label, `popover-field-Chief part` is present, there is no `popover-back`, and the `ServedGraph` records two element reads and one neighbour page, in that order); `A_far_end_opening_whose_link_is_missing_shows_the_contract_breach`.
+`PopoverOpeningTests`: `Two_far_end_openings_of_one_unit_and_kind_are_equal`.
+- [ ] **Step 2:** `dotnet test client.Tests --filter "UnitOpening|Affordances|ExplorerPopoverTests|PopoverOpeningTests"` → red.
+- [ ] **Step 3: Implement** as in Types. Replace Task 1a's placeholder arms with the real roles.
+- [ ] **Step 4:** `dotnet build client && dotnet test client.Tests && dotnet test client.ContractTests` → green. `npx playwright test tests/ux/concord.spec.ts tests/ux/popover-sections.spec.ts` → CAT-TEXT-1..4 green; record the rest of the red set by name (CAT-FV-2's old form and D3 are re-expressed in Task 9).
+- [ ] **Step 5: Commit:** `concord: clicking a Small Catechism paragraph opens the catechism item it states, as following catechism-link from a verse does; a text row opens only through UnitOpening (F-76; rule 25)`.
 
 ### Task 3: Kretzmann's structure, citations, headings and labels are compiled (backend)
 
@@ -415,7 +632,7 @@ Also: `A_commandment_shows_its_text_before_its_explanation` (whole card for a se
 **Starts after** FOCUS-3's Task 6 and this batch's Tasks 4 and 5 have landed.
 
 **Files:**
-- Create: `client/Reading/Commentary.cs`; `client/Components/KretzmannVerseRow.razor` (a verse's `VerseLine` and, under it, its comments: a `Section` heading once where served (`kretzmann-section-heading-{node slug}`), then `UnitTextView` [F2] with `Handle="kretzmann-item-{node slug}"`, the row opening `PopoverOpening.Explore(new NodePosition(unit.Node))` on click or Enter).
+- Create: `client/Reading/Commentary.cs`; `client/Components/KretzmannVerseRow.razor` (a verse's `VerseLine` and, under it, its comments: a `Section` heading once where served (`kretzmann-section-heading-{node slug}`), then `UnitTextView` [F2] with `Handle="kretzmann-item-{node slug}"`, the row opening `UnitOpening.Of(unit)` (Task 2a) on click or Enter).
 - Modify: `client/Pages/Kretzmann.razor` (rewritten over `SequenceView Handle="kretzmann"` with `Row` = `KretzmannVerseRow`, `OnChildOpened`/`OnChildClosed` → `Commentary.Open`/`Close`; keeps its split, follow chip, picker and selection wiring as FOCUS-3 left them); `client/Views/SequenceView.razor` [F3] (the two callbacks).
 - Test: `client.Tests/Reading/CommentaryTests.cs`; `client.Tests/Views/SequenceViewTests.cs` [F3]; `tests/ux/kretzmann.spec.ts` (Task 9 re-expresses the rest).
 
@@ -477,7 +694,11 @@ Also: `A_commandment_shows_its_text_before_its_explanation` (whole card for a se
 
   **Acceptance (the batch is not done while any is red):**
   - **CAT-FV-1:** from MAT 28:19's popover, its `catechism-link` entry for `baptism-1` opens the item: `popover-title` is its served label; `popover-field-Chief part`, the served explanation heading's field and the served where-written heading's field show the served words, line breaks kept; no `popover-field-Text` (Baptism serves none); `popover-section-catechism-link` lists `text-unit:MAT.28.19`; following it shows MAT 28:19's `popover-text`, and Back returns to the item.
-  - **CAT-FV-2 (D3):** from `/concord` the Small Catechism's First Commandment paragraph's popover reaches `commandment-1` through `catechism-link`, and the item's list holds that paragraph's served id; from GEN 1:1 a catechism item's list reaches a Concord paragraph.
+  - **CAT-FV-2 (D3, amended by Amendment A):** from `/concord`, clicking the Small Catechism paragraph that the API says `states` `commandment-1` opens `commandment-1` directly (CAT-TEXT-1). The item's `popover-section-stated-in` holds that paragraph's served id. From GEN 1:1, a catechism item's `stated-in` list reaches a Concord paragraph, and its `catechism-link` list holds no Concord paragraph.
+  - **CAT-TEXT-1 (F-76):** on `/concord?ref=` at the Ten Commandments, the paragraph is found by reading `api.nodeEdges(CatechismItem:commandment-1, 'stated-in')` (never a literal ref). Clicking its `concord-unit-*` row, and separately pressing Enter on it, opens the popover with `popover-title` equal to the item's served label and the served card fields. The same element opens when a verse's `catechism-link` entry is followed to `commandment-1`: the verse is the first entry of the item's `catechism-link` page, read from the API. Compare the whole `popover-section-card` reached both ways. There is no `popover-back` and no `popover-text`, and no request reaches `/api/catechism/`.
+  - **CAT-TEXT-2:** the two-paragraph item, read from the API, lists both paragraphs in `popover-section-stated-in` in served order. Following one shows its `popover-text` with the served words, and `popover-up-states-{item id}` returns to the item.
+  - **CAT-TEXT-3:** a Small Catechism paragraph whose served summary lacks `states` (the first such unit of the document's `contains` walk, read from the API) opens as itself (`popover-text`).
+  - **CAT-TEXT-4:** the citation anchor inside the paragraph that states `commandments-close` (read from the API) opens its verse (`popover-text` of that verse), not the item.
   - **CAT-FV-3:** an item whose `catechism-link` group is longer than 20 shows 20, More shows 40, Less returns to 20 (the paging rulings).
   - **KRETZ-1:** `/kretzmann/GEN/1` shows every verse group of GEN 1 (`kretzmann-verse-group-{n}` for every served verse), each comment's served prose inline at first paint, each section heading once, where served.
   - **KRETZ-2:** a citation inside a comment is a link (`…-anchor-cites-…`); clicking it opens that verse on FocusView (`popover-text`).
@@ -505,6 +726,9 @@ Also: `A_commandment_shows_its_text_before_its_explanation` (whole card for a se
 | The client splitting served text or deciding a corpus from an id prefix (`"\n\n"`, `"BoC "`) | served line breaks kept by CSS; one served group | `ReferenceParsingLawTests` (empty for FOCUS-7) |
 | A whole collection read on the client (`CatechismLinks`, F-63) | the generic paged list | `WholeReadLawTests` |
 | A text row the client cannot place (a comment with no locus) | `TextRef.Commentary`, compiled | `exactly_text_units_and_comments_carry_text` |
+| One relation with two meanings, told apart by the far end's corpus (`catechism-link` = proof verse and the item's own paragraph; the `"BoC "` filter, the kind filter, the paragraph 207th in the item's list, the click hop of F-76) | `stated-in` / `states`, compiled; `CatechismLink.locus: BibleLocus` | the type (a Concord locus in `catechism-link` does not compile); the three alignment laws; `an_items_catechism_links_reach_scripture_only` |
+| A curated alignment row that resolves nothing is counted and skipped | `merge_alias` returns `Result`; the compile names the row | `an_alignment_row_naming_no_*_fails_the_compile_naming_it` |
+| A text row deciding its own click target | `UnitOpening.Of` over the affordance table (`CrumbRole.Identity`) | `No_text_row_builds_its_own_opening`; `Only_states_opens_its_far_end_in_place_of_a_text_row` |
 
 ---
 
@@ -515,15 +739,15 @@ Primary is the lane's critical-path work; the companion is unlike work paired be
 | Wave | Primary | Companion | Critical sections | Expected red at wave close (the ledger records names) |
 |---|---|---|---|---|
 | 0 | owner: OPEN 1–6; Task 0 | — | — | — |
-| 1 | Task 1 (Rust/data: headings; rebuild, regen #1) | Task 2's tests written against `ServedGraph` | `contract` rebuild + regen #1, re-bless; `heavy` | `GeneratedUsageTests`: `CatechismDetail.*`, `TitledText` |
+| 1 | Tasks 1 and 1a (Rust/data: headings, `stated-in`; one rebuild, regen #1; `relations!` appended) | Tasks 2 and 2a's tests written against `ServedGraph` | `contract` rebuild + regen #1, re-bless; `heavy` | `GeneratedUsageTests`: `CatechismDetail.*`, `TitledText` |
 | 2 | Task 3 (Rust: Kretzmann compiled; rebuild #2) | Task 2 (C#: catechism on FocusView, deletions) | `contract` rebuild #2, re-pin, re-bless; `heavy` | Playwright: Task 2 Step 4's set |
-| 3 | Task 4 (Rust: commentary on the wire; regen #2) | Task 8's catechism half written, not regenerated | `contract` regen #2, re-bless; `heavy` | + `GeneratedUsageTests`: `TextRef.Commentary`, `UnitHeading.Section` |
+| 3 | Task 4 (Rust: commentary on the wire; regen #2) | Task 2a (C#: a paragraph opens its item); Task 8's catechism half written, not regenerated | `contract` regen #2, re-bless; `heavy` | + `GeneratedUsageTests`: `TextRef.Commentary`, `UnitHeading.Section`; the old CAT-FV-2 form |
 | 4 | Task 5 (C#: comment on FocusView, route) | — | — | as wave 3 |
 | 5 | Task 6 (C#: the Kretzmann page) | Task 8's Kretzmann half written | — | + Task 6 Step 4's set |
 | 6 | Task 7 (C#: legacy commentary gone) | then Task 8 (Rust: route deletions; regen #3) | `contract` regen #3, re-bless; `heavy` | as wave 5 |
 | 7 | Task 9 (re-express, gates, close) | — | `heavy`; mutation in the owner's window; `land` after review | carried reds and named F-55 flakes only |
 
-**Critical path:** OPEN answers → Task 3 → Task 4 → Task 5 → Task 6 → Task 7 → Task 8 → Task 9. Tasks 1 and 2 ride beside it and land before Task 8.
+**Critical path:** OPEN answers → Task 3 → Task 4 → Task 5 → Task 6 → Task 7 → Task 8 → Task 9. Tasks 1, 1a, 2 and 2a ride beside it and land before Task 8; Task 2a lands before Task 6, so `KretzmannVerseRow` is written against `UnitOpening`.
 
 ## FINDINGS this plan expects to raise (for the queue; the owner decides)
 
@@ -536,6 +760,9 @@ Primary is the lane's critical-path work; the companion is unlike work paired be
 - **`AtlasData::catechism_items_for_span` and the verse-to-catechism index** lose their last served reader with FOCUS-3's `/api/catechism/{sref}` and FOCUS-2's `/api/verse`; Task 8 reports what `cargo build` keeps.
 - **The commentary has no token layer**; its citation spans are compiled characters. Closure: words-as-base (deferred by the owner) tokenizes it like the KJV and the Concord.
 - **The Kretzmann column places a comment by comparing served verse numbers** (`Commentary.On`). Rule 25 holds (equality on served integers, as `Crossing`), but a stricter closure is a served `comments-on` anchor per verse row; noted, not proposed.
+- **The catechism's verse links are mostly not Luther's citations** (Amendment A data): `commandment-1` has 206 Scripture links, almost all from the brain-fuel question mapping (provenance `curated-catechism`, whose source is also `catechism-mapping`), while `catechism.toml`'s header says the edition's verse links are only the citations Luther's own text embeds. Same closure as the license FINDING above (O-CATECHISM).
+- **An item's words exist twice** (Amendment A data): `catechism.toml` (Wikisource) and the paragraph it is stated in (bookofconcord.org), in the same 1921 translation, hand-checked to agree. With `stated-in` compiled, the item's card could read its words from its paragraphs, so there would be one copy.
+  - Closure: the words-on-the-node FINDING above, read through `stated-in`. Noted, not proposed here.
 - **F-51's remainder:** if the parser's heading join (`"….: …"`) survives into `Section { title }`, it stays F-51 for the ETL.
 - **Pre-existing comments in touched files** (`CommentaryItemNode.cs`'s unreachable-fallback comment dies with the file; `Kretzmann.razor`'s `@*…*@` blocks die where the rewrite deletes their lines; `kretzmann_adapter.rs` and `catechism.rs` doc comments go with the deleted functions). No other comment is touched (F-12, A-STRIP).
 
@@ -544,7 +771,7 @@ Primary is the lane's critical-path work; the companion is unlike work paired be
 - **Data-only derivations are compiled:** the catechism's headings (data), Kretzmann's books, chapters and order, each chapter's Bible chapter, each comment's place, section openings, labels and citations (Task 3). Nothing in the served path scans text, parses an id or orders by an id.
 - **Per-request derivations are bounded index reads:** the record (one lookup), a comment's `UnitText` (one lookup per unit, anchors batched per window), the container text page (keyset, capped), the neighbour page. `chapter_commentary`'s unbounded walk dies.
 - **Interaction derivations are the client's:** the card's fields, the presentation table rows, the hatch, the Kretzmann page's scope and focus (R12), keeping the comment window in pace with the verse window, and placing a comment under its verse.
-- **The graph models the domain, never a view:** no relation appended; Kretzmann's containers are the work's own structure; a Kretzmann chapter commenting on a Bible chapter is how the work is titled; no field exists for the client (a comment's locus and heading are its own).
+- **The graph models the domain, never a view:** the one appended relation, `stated-in`, says which paragraph is an item's words (Amendment A), and the click that uses it is derived on the client; Kretzmann's containers are the work's own structure; a Kretzmann chapter commenting on a Bible chapter is how the work is titled; no field exists for the client (a comment's locus and heading are its own).
 - **27c/27e:** a chapter arrival on the Kretzmann page is FOCUS-3's reads plus one `commented-on-by` page and one text page per open chapter; no per-item read; resident comments bounded per open chapter (the growth law).
 - **Coverage of §5's FOCUS-7 row:** the four `Catechism*Section`s here (the fifth is FOCUS-2's), `CatechismInConcordSection`, `CommentaryItemProseSection`, `CatechismNode`, `CommentaryItemNode` and `/api/catechism/item/{id}` are deleted; FOCUS-3's hand-offs (the Kretzmann column, its continuous scroll, its `/api/text?ref=` caller) are taken.
 - **Type consistency:** `TitledText`/`CatechismDetail` (Task 1) are what `CatechismOf` (Task 2) reads; `CommentaryPlace` (Task 3) is what `TextRef.Commentary` (Task 4) serves and `ReadingAddress.Kretzmann` (Task 5) and `Commentary.On` (Task 6) read; `UnitHeading.Section` (Task 4) is what `KretzmannVerseRow` (Task 6) renders; `SequenceView`'s callbacks (Task 6) are what `Commentary` subscribes.
@@ -563,7 +790,12 @@ Primary is the lane's critical-path work; the companion is unlike work paired be
 - `HomeSurfaces.Of` is derived from `Presentation.Of` (`Surface.cs:14`), so a Reader row makes the Reader the home surface.
 - Playwright: `kretzmann.spec.ts` (22 tests), `popover-sections.spec.ts` (the item hop at `:986`; the verse-side CATECH-1 tests are FOCUS-2's), `concord.spec.ts` D3 (`:438`, `:469`), `reader.spec.ts` NAV-STUTTER-2 (`:648`), `provenance.spec.ts` PROV-1 (`:262`, the passage path, FOCUS-3's).
 
+**Verified for Amendment A (2026-10-02, served artifact at `b3d7cfa`, `lane/claude/F2` at `01d7bdd`):** the pairing facts in Amendment A; `From<BibleLocus> for TextLocus` (`text.rs:226`); `catechism_adapter::verse_locus` builds only Bible loci; `concord_adapter::merge_alias` is the only writer of a Concord-locus `CatechismLink`; `RowFamily::Catechism` is in `Section::Core`; F2's `Affordances.Of` is a total switch over `EdgeKind`, and FocusView renders crumbs by `Offered<Affordance.UpCrumb>`; F2's `Concord.razor:381` opens `PopoverOpening.Explore(new NodePosition(unit.Node))`; `Paging.FirstLink(Explorable, EdgeKind)` exists.
+
 **To verify at execution (each with its fallback):**
+- **Amendment A: `EdgeSummaryEntry.Kind` is the generated `EdgeKind`** (Task 2a). Fallback: `UnitOpening.Of` maps the served wire name through the generator's `EdgeKind` parser, which is the one existing reader of that name, and never compares strings itself.
+- **Amendment A: a saved exploration whose step is `catechism-link` from a paragraph to an item still resumes** (`Explore.Resume` resolves targets and does not re-read edges). Fallback: `LegacySaves` maps that step's kind to `stated-in`, with a test, and the close report says so.
+- **Amendment A: the served summary lists directed kinds before symmetric ones**, so `stated-in` is offered before `catechism-link`. Fallback: none needed for correctness; the order is noted in the close report.
 - **`ContainerContent<C>` admits a comment** (Task 0). Fallback: a `ContainsCommentary` family with the same laws.
 - **Every Kretzmann unit's first verse is in the KJV** (the parser checks conservation). Fallback: a unit outside it fails the compile naming it, and the owner decides (never a silent drop).
 - **`catechism-link`'s compiled order is the curated order** (item verses, question verses, Concord paragraphs). Fallback: the compiler writes rows in curated order, with a law.
