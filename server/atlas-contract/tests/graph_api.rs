@@ -1832,10 +1832,13 @@ async fn a_concord_paragraph_carries_its_structured_locus_beside_its_ref() {
         window["units"],
         serde_json::json!([{
             "ref": "BoC 7.2.1",
-            "locus": { "corpus": "concord", "part": 7, "article": 2, "paragraph": 1 },
-            "text": "Thou shalt have no other gods. What does this mean? \u{2013}Answer: We should fear, love, and trust in God above all things.",
-            "words_of_christ": [],
-            "anchors": [],
+            "node": { "id": "text-unit:BoC 7.2.1", "kind": atlas_graph_types::id::NodeKind::TextUnit, "label": "BoC 7.2.1" },
+            "body": {
+                "locus": { "corpus": "concord", "part": 7, "article": 2, "paragraph": 1 },
+                "text": "Thou shalt have no other gods. What does this mean? \u{2013}Answer: We should fear, love, and trust in God above all things.",
+                "words_of_christ": [],
+                "anchors": [],
+            },
             "edge_summary": [{ "kind": "member-of", "count": 1 }, { "kind": "catechism-link", "count": 1 }],
         }])
     );
@@ -2207,11 +2210,14 @@ async fn a_verse_that_opens_a_pericope_carries_its_heading_and_the_verse_after_i
             serde_json::json!([
                 {
                     "ref": "GEN.1.1",
-                    "locus": bible_unit("GEN", 1, 1),
-                    "text": "In the beginning God created the heaven and the earth.",
-                    "words_of_christ": [],
+                    "node": { "id": "text-unit:GEN.1.1", "kind": atlas_graph_types::id::NodeKind::TextUnit, "label": "GEN.1.1" },
+                    "body": {
+                        "locus": bible_unit("GEN", 1, 1),
+                        "text": "In the beginning God created the heaven and the earth.",
+                        "words_of_christ": [],
+                        "anchors": [god_named_at(17)],
+                    },
                     "heading": the_creation_heading(),
-                    "anchors": [god_named_at(17)],
                     "edge_summary": [
                         { "kind": "member-of", "count": 1 },
                         { "kind": "attests", "count": 1 },
@@ -2224,10 +2230,13 @@ async fn a_verse_that_opens_a_pericope_carries_its_heading_and_the_verse_after_i
                 },
                 {
                     "ref": "GEN.1.2",
-                    "locus": bible_unit("GEN", 1, 2),
-                    "text": "And the earth was without form and void; and darkness was upon the face of the deep. And the Spirit of God moved upon the face of the waters.",
-                    "words_of_christ": [],
-                    "anchors": [god_named_at(103)],
+                    "node": { "id": "text-unit:GEN.1.2", "kind": atlas_graph_types::id::NodeKind::TextUnit, "label": "GEN.1.2" },
+                    "body": {
+                        "locus": bible_unit("GEN", 1, 2),
+                        "text": "And the earth was without form and void; and darkness was upon the face of the deep. And the Spirit of God moved upon the face of the waters.",
+                        "words_of_christ": [],
+                        "anchors": [god_named_at(103)],
+                    },
                     "edge_summary": [
                         { "kind": "member-of", "count": 1 },
                         { "kind": "attests", "count": 1 },
