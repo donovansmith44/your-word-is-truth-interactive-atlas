@@ -23,7 +23,7 @@ public static class Explore
         Asking((_, trail) => Paging.Links(trail.Current, kind, cursor), (_, trail) => trail);
 
     public static Explore<Explorable> Follow(Link link) =>
-        Asking((explorer, _) => explorer.Follow(link), (target, trail) => trail.Follow(new Step(link.Kind, target)));
+        Asking((explorer, _) => Resolved(explorer, link.Target), (target, trail) => trail.Follow(new Step(link.Kind, target)));
 
     public static Explore<Explorable> Back { get; } = new((_, trail) => Arrived(Retraced(trail)));
 
@@ -36,7 +36,7 @@ public static class Explore
             .Select(_ => new Unit());
 
     public static async Task<Outcome<Exploration>> Begin(IExplorer explorer, PositionRef start) =>
-        (await Unsuperseded.Fetch(() => explorer.Resolve(start))).Select(node => new Exploration(node, []));
+        (await Unsuperseded.Fetch(() => Resolved(explorer, start))).Select(node => new Exploration(node, []));
 
     public static async Task<Outcome<Exploration>> Resume(IExplorer explorer, PositionRef start, IReadOnlyList<Link> trail) =>
         (await Unsuperseded.Fetch(() => explorer.Resolve(trail.Select(link => link.Target).Prepend(start).ToList())))
@@ -49,6 +49,8 @@ public static class Explore
 
     public static Explore<V> SelectMany<T, U, V>(this Explore<T> m, Func<T, Explore<U>> f, Func<T, U, V> project) =>
         m.SelectMany(t => f(t).Select(u => project(t, u)));
+
+    private static async Task<Explorable> Resolved(IExplorer explorer, PositionRef target) => (await explorer.Resolve([target])).Single();
 
     private static Explore<T> Asking<T>(Func<IExplorer, Exploration, Task<T>> ask, Func<T, Exploration, Exploration> record) =>
         new(async (explorer, trail) => (await Unsuperseded.Fetch(() => ask(explorer, trail))).Select(answer => (answer, record(answer, trail))));

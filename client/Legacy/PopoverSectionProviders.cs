@@ -2,8 +2,9 @@ using BibleAtlas.Client.Contract;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.Rendering;
+using BibleAtlas.Client.Exploring;
 
-namespace BibleAtlas.Client.Exploring;
+namespace BibleAtlas.Client.Legacy;
 
 public sealed class ChapterCardSection : IPopoverSectionProvider
 {

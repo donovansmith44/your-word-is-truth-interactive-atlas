@@ -3,7 +3,7 @@ using BibleAtlas.Client.Contract;
 
 namespace BibleAtlas.Client.Exploring;
 
-internal static class CanonRef
+public static class CanonRef
 {
     private static readonly Regex HeadPattern = new(@"^[A-Z0-9]{3}\.\d+\.\d+", RegexOptions.Compiled);
 

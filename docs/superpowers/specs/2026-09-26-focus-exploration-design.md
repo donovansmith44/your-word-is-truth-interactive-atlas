@@ -631,3 +631,34 @@ Nothing open remains; the spec awaits the plans.
     `IReadOnlyList<Step>`, but a `Step` carries a resolved `Explorable`, and
     a save has only links, so resume could not go through it. Built as
     `IReadOnlyList<Link>`, pending the owner's confirmation.
+- **R20 — IExplorer is one read, IPresenter is its own, Exploring is its own
+  project** (owner, 2026-10-01: "Signed off on both").
+  ```csharp
+  public interface IExplorer
+  {
+      Task<IReadOnlyList<Explorable>> Resolve(IReadOnlyList<PositionRef> targets);   // the only capability; internal to the core
+  }
+  public interface IPresenter
+  {
+      Task<Presentation?> Present(PresentationRequest request);
+  }
+  ```
+  - `IExplorer` loses `Resolve(PositionRef)` and `Follow(Link)`. `Explore`'s
+    `Follow`, `Begin`, `Replay` and `Resume` all go through the one batched
+    read; `GraphExplorer` keeps only it and its `Of` mapping.
+  - `Present` and everything it uses (`CardOf`, `GeographyOf`, `Bounded`, the
+    field names) move into `GraphPresenter : IPresenter`, registered in DI;
+    World and FocusView inject `IPresenter`.
+  - `client/Exploring/` is its own project, `BibleAtlas.Client.Exploring`
+    (`client/Exploring/BibleAtlas.Client.Exploring.csproj`), referenced by the
+    client and both test projects. It owns the generated contract
+    (`Wire.g.cs`, `Contract/`), `IExplorableClient` and `RequestSeries`, and
+    references nothing in the app. What only the core may touch is
+    `internal`, so the compiler refuses the offence: `new Explore<T>(…)`,
+    `Explorable`'s constructors, and `IExplorer.Resolve` (declared `internal`
+    and implemented explicitly, so only the monad calls it). The legacy
+    `IExplorable` family, which renders app components, moves up into the
+    app (`client/Legacy/`, `BibleAtlas.Client.Legacy`), and `ExplorationState`
+    into `client/State/`. `ExploringBoundaryLawTests` pins the boundary by
+    reflection; `ExploreDoorLawTests` and the source scan for
+    `new Explorable(` are deleted, the compiler now refusing both.

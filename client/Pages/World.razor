@@ -19,6 +19,7 @@
 @inject StateAtom<ExplorationState> ExplorationAtom
 @inject OwnershipRegistry Ownership
 @inject IExplorer Explorer
+@inject IPresenter Presenter
 
 <PageTitle>Bible Explorer &mdash; World</PageTitle>
 
@@ -1019,7 +1020,7 @@
             }
             else
             {
-                await (await request.Fetch(() => Explorer.Present(new PresentationRequest(current, Surface.World)))).Match(
+                await (await request.Fetch(() => Presenter.Present(new PresentationRequest(current, Surface.World)))).Match(
                     arrived: presentation => presentation is Presentation.Geography geography ? Apply(geography) : Task.CompletedTask,
                     failed: () => { },
                     superseded: () => { });

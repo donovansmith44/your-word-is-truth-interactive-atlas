@@ -1,4 +1,4 @@
-@inject IExplorer Explorer
+@inject IPresenter Presenter
 @implements IDisposable
 
 @if (_request is { } request)
@@ -39,7 +39,7 @@
     {
         _outcome = null;
         var groups = request.Element.Groups;
-        var outcome = await _series.Next().Fetch(() => Explorer.Present(request), () => Task.WhenAll(groups.Select(group => Paging.Opened(request, group))));
+        var outcome = await _series.Next().Fetch(() => Presenter.Present(request), () => Task.WhenAll(groups.Select(group => Paging.Opened(request, group))));
         var presented = outcome.Select(loaded => new Presented(
             request,
             loaded.Item1,

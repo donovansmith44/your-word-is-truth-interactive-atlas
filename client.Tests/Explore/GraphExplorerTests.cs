@@ -1,8 +1,5 @@
-using System.Reflection;
-using System.Text.RegularExpressions;
 using BibleAtlas.Client.Contract;
 using BibleAtlas.Client.Exploring;
-using BibleAtlas.Client.Tests.State;
 
 namespace BibleAtlas.Client.Tests;
 
@@ -12,10 +9,6 @@ public sealed class GraphExplorerTests
     private const string Genesis2Id = "Container:bible-chapter-GEN-2";
     private const string ServedGenesis2Label = "Genesis 2";
     private const string LegacyGenesis2Label = "GEN.2";
-    private const string MosesId = "Person:moses_2108";
-    private const string MosesLabel = "Moses";
-    private const string Genesis1Label = "Genesis 1";
-    private const string TheOneConstructingFile = "Explorer.cs";
     private const string SourceId = "Source:ussher";
     private const string SourceLabel = "Ussher";
     private const string AbsentId = "Event:nowhere";
@@ -26,8 +19,6 @@ public sealed class GraphExplorerTests
     private static readonly EdgeRef JustifiedEdge = ServedGraph.EdgeRef(EdgeKind.DatedBy, "DatedBy:00cc", "The Red Sea parted · Dated by · 1491 BC");
     private static readonly EdgeRef Justification = ServedGraph.EdgeRef(EdgeKind.JustifiedBy, "JustifiedBy:00dd", "The Red Sea parted · Dated by · 1491 BC · Justified by · Ussher");
 
-    private static readonly Regex BuildsAnExplorable = new(@"\bnew Explorable\(|\bExplorable\??\s+\w+\s*=>?\s*new\(", RegexOptions.Compiled);
-
     [Fact]
     public async Task Resolving_a_reference_fetches_its_card_and_yields_the_node_with_its_frontier()
     {
@@ -36,7 +27,7 @@ public sealed class GraphExplorerTests
         var explorer = new GraphExplorer(graph);
 
         // Act
-        var genesis1 = await explorer.Resolve(ServedGraph.At(NodeKind.Container, Genesis1Id, "Genesis 1"));
+        var genesis1 = await explorer.BeginAt(ServedGraph.At(NodeKind.Container, Genesis1Id, "Genesis 1"));
 
         // Assert
         Assert.Equal(
@@ -45,28 +36,28 @@ public sealed class GraphExplorerTests
     }
 
     [Fact]
-    public async Task Following_a_link_resolves_its_target_so_the_node_carries_the_served_label_not_the_links()
+    public async Task Resolving_a_reference_yields_the_node_carrying_the_served_label_not_the_references()
     {
         // Arrange
         var graph = new ServedGraph().Serving(ServedGraph.Card(NodeKind.Container, Genesis2Id, ServedGenesis2Label));
-        var toGenesis2 = new Link(EdgeKind.FollowsIn, ServedGraph.At(NodeKind.Container, Genesis2Id, LegacyGenesis2Label));
+        var genesis2Reference = ServedGraph.At(NodeKind.Container, Genesis2Id, LegacyGenesis2Label);
 
         // Act
-        var genesis2 = await new GraphExplorer(graph).Follow(toGenesis2);
+        var genesis2 = await new GraphExplorer(graph).BeginAt(genesis2Reference);
 
         // Assert
         Assert.Equal((new ElementKind.Node(NodeKind.Container) as ElementKind, Genesis2Id, ServedGenesis2Label), (genesis2.Kind, genesis2.Id, genesis2.Label));
     }
 
     [Fact]
-    public async Task Following_a_link_to_an_edge_resolves_it_with_its_two_ends_and_its_own_neighbour_groups()
+    public async Task Resolving_an_edge_yields_it_with_its_two_ends_and_its_own_neighbour_groups()
     {
         // Arrange
         var graph = new ServedGraph().Serving(ServedGraph.EdgeRecordOf(AttestedIn, ExodusEvent, Exodus14, new FrontierGroup(EdgeKind.JustifiedBy, 1)));
         var explorer = new GraphExplorer(graph);
 
         // Act
-        var edge = await explorer.Follow(new Link(EdgeKind.Attests, ServedGraph.AtEdge(AttestedIn)));
+        var edge = await explorer.BeginAt(ServedGraph.AtEdge(AttestedIn));
 
         // Assert
         Assert.Equal(
@@ -84,7 +75,7 @@ public sealed class GraphExplorerTests
         var explorer = new GraphExplorer(graph);
 
         // Act
-        var edge = await explorer.Resolve(ServedGraph.AtEdge(ServedGraph.EdgeRef(EdgeKind.AttestedIn, AttestedIn.Id, LegacyGenesis2Label)));
+        var edge = await explorer.BeginAt(ServedGraph.AtEdge(ServedGraph.EdgeRef(EdgeKind.AttestedIn, AttestedIn.Id, LegacyGenesis2Label)));
 
         // Assert
         Assert.Equal(ServedGraph.AtEdge(AttestedIn), edge.Identity);
@@ -97,7 +88,7 @@ public sealed class GraphExplorerTests
         var graph = new ServedGraph().Serving(ServedGraph.Card(NodeKind.Event, ExodusEvent.Id, ExodusEvent.Label));
 
         // Act
-        var exodus = await new GraphExplorer(graph).Resolve(ServedGraph.At(ExodusEvent));
+        var exodus = await new GraphExplorer(graph).BeginAt(ServedGraph.At(ExodusEvent));
 
         // Assert
         Assert.Empty(exodus.Ends);
@@ -110,7 +101,7 @@ public sealed class GraphExplorerTests
         var graph = new ServedGraph()
             .Serving(ServedGraph.Card(NodeKind.Source, SourceId, SourceLabel, new FrontierGroup(EdgeKind.Justifies, 1)))
             .Serving(SourceId, EdgeKind.Justifies, null, ServedGraph.Page(EdgeKind.Justifies, null, (Justification, ServedGraph.AtEdge(JustifiedEdge))));
-        var justifier = await new GraphExplorer(graph).Resolve(ServedGraph.At(NodeKind.Source, SourceId, SourceLabel));
+        var justifier = await new GraphExplorer(graph).BeginAt(ServedGraph.At(NodeKind.Source, SourceId, SourceLabel));
 
         // Act
         var page = await justifier.Entries(EdgeKind.Justifies);
@@ -126,7 +117,7 @@ public sealed class GraphExplorerTests
         var graph = new ServedGraph()
             .Serving(ServedGraph.Card(NodeKind.TextUnit, Exodus14.Id, Exodus14.Label, new FrontierGroup(EdgeKind.Attests, 1)))
             .Serving(Exodus14.Id, EdgeKind.Attests, null, ServedGraph.Page(EdgeKind.Attests, null, (AttestedIn, ServedGraph.At(ExodusEvent))));
-        var verse = await new GraphExplorer(graph).Resolve(ServedGraph.At(Exodus14));
+        var verse = await new GraphExplorer(graph).BeginAt(ServedGraph.At(Exodus14));
 
         // Act
         var page = await verse.Entries(EdgeKind.Attests);
@@ -144,7 +135,7 @@ public sealed class GraphExplorerTests
         var graph = new ServedGraph()
             .Serving(ServedGraph.EdgeRecordOf(JustifiedEdge, ExodusEvent, Exodus14, new FrontierGroup(EdgeKind.JustifiedBy, 1)))
             .Serving(JustifiedEdge.Id, EdgeKind.JustifiedBy, null, ServedGraph.Page(EdgeKind.JustifiedBy, null, ServedGraph.Ref(NodeKind.Source, SourceId, SourceLabel)));
-        var edge = await new GraphExplorer(graph).Resolve(ServedGraph.AtEdge(JustifiedEdge));
+        var edge = await new GraphExplorer(graph).BeginAt(ServedGraph.AtEdge(JustifiedEdge));
 
         // Act
         var page = await edge.Entries(EdgeKind.JustifiedBy);
@@ -154,103 +145,15 @@ public sealed class GraphExplorerTests
     }
 
     [Fact]
-    public async Task A_missing_element_is_a_contract_breach()
+    public async Task A_walk_that_begins_at_a_missing_element_fails()
     {
         // Arrange
         var explorer = new GraphExplorer(new ServedGraph());
 
         // Act
-        var breach = await Record.ExceptionAsync(() => explorer.Resolve(ServedGraph.At(NodeKind.Event, AbsentId, AbsentId)));
+        var begun = await Explore.Begin(explorer, ServedGraph.At(NodeKind.Event, AbsentId, AbsentId));
 
         // Assert
-        Assert.Equal((typeof(ContractBreach), true), (breach?.GetType(), breach?.Message.Contains(AbsentId)));
-    }
-
-    [Fact]
-    public async Task Presenting_an_edge_on_the_popover_yields_its_card_and_on_any_other_surface_nothing()
-    {
-        // Arrange
-        var explorer = new GraphExplorer(new ServedGraph().Serving(ServedGraph.EdgeRecordOf(AttestedIn, ExodusEvent, Exodus14)));
-        var edge = await explorer.Resolve(ServedGraph.AtEdge(AttestedIn));
-
-        // Act
-        var presented = await Task.WhenAll(Enum.GetValues<Surface>().Select(surface => explorer.Present(new PresentationRequest(edge, surface))));
-
-        // Assert
-        Assert.Equal(new Presentation?[] { null, null, new Presentation.Card(AttestedIn.Label, [new Presentation.Field("Provenance", ServedGraph.Provenance)]) }, presented);
-    }
-
-    [Fact]
-    public async Task An_edge_derived_from_the_grounds_of_another_is_carded_without_a_provenance()
-    {
-        // Arrange
-        var explorer = new GraphExplorer(new ServedGraph().Serving(ServedGraph.EdgeRecordOf(Justification, ExodusEvent, Exodus14, provenance: null)));
-        var edge = await explorer.Resolve(ServedGraph.AtEdge(Justification));
-
-        // Act
-        var presented = await explorer.Present(new PresentationRequest(edge, Surface.Popover));
-
-        // Assert
-        Assert.Equal(new Presentation.Card(Justification.Label, []), presented);
-    }
-
-    [Fact]
-    public async Task Presenting_a_node_on_the_popover_yields_the_generic_card_until_its_kind_is_migrated()
-    {
-        // Arrange
-        var graph = new ServedGraph().Serving(ServedGraph.Card(NodeKind.Person, MosesId, MosesLabel));
-        var explorer = new GraphExplorer(graph);
-        var moses = await explorer.Resolve(ServedGraph.At(NodeKind.Person, MosesId, MosesLabel));
-
-        // Act
-        var presentation = await explorer.Present(new PresentationRequest(moses, Surface.Popover));
-
-        // Assert
-        Assert.Equal(new Presentation.Card(MosesLabel, [new Presentation.Field("Provenance", ServedGraph.Provenance)]), presentation);
-    }
-
-    [Fact]
-    public async Task Presenting_a_node_on_the_reader_yields_the_generic_card_until_its_form_is_built()
-    {
-        // Arrange
-        var graph = new ServedGraph().Serving(ServedGraph.Card(NodeKind.Container, Genesis1Id, Genesis1Label));
-        var explorer = new GraphExplorer(graph);
-        var genesis1 = await explorer.Resolve(ServedGraph.At(NodeKind.Container, Genesis1Id, Genesis1Label));
-
-        // Act
-        var presentation = await explorer.Present(new PresentationRequest(genesis1, Surface.Reader));
-
-        // Assert
-        Assert.Equal(new Presentation.Card(Genesis1Label, [new Presentation.Field("Provenance", ServedGraph.Provenance)]), presentation);
-    }
-
-    [Fact]
-    public async Task A_node_has_no_presentation_on_a_surface_where_its_kind_has_no_form()
-    {
-        // Arrange
-        var graph = new ServedGraph().Serving(ServedGraph.Card(NodeKind.Person, MosesId, MosesLabel));
-        var explorer = new GraphExplorer(graph);
-        var moses = await explorer.Resolve(ServedGraph.At(NodeKind.Person, MosesId, MosesLabel));
-
-        // Act
-        var presentation = await explorer.Present(new PresentationRequest(moses, Surface.World));
-
-        // Assert
-        Assert.Null(presentation);
-    }
-
-    [Fact]
-    public void The_explorer_is_the_only_site_that_builds_an_explorable()
-    {
-        // Arrange
-        var publicConstructors = typeof(Explorable).GetConstructors(BindingFlags.Public | BindingFlags.Instance);
-
-        // Act
-        var constructingFiles = string.Join(", ", ConformanceTests.ClientSourceFiles()
-            .Where(file => BuildsAnExplorable.IsMatch(File.ReadAllText(file)))
-            .Select(Path.GetFileName));
-
-        // Assert
-        Assert.Equal((0, TheOneConstructingFile), (publicConstructors.Length, constructingFiles));
+        Assert.Equal(new Outcome<Exploration>.Failed(), begun);
     }
 }

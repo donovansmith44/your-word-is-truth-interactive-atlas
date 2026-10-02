@@ -132,8 +132,13 @@ internal static class Resolved
 
     public static Explorable Node(ServedGraph graph, NodeRef target) => At(graph, ServedGraph.At(target));
 
-    public static Explorable At(ServedGraph graph, PositionRef target) =>
-        new GraphExplorer(graph).Resolve(target).GetAwaiter().GetResult();
+    public static Explorable At(IExplorableClient graph, PositionRef target) =>
+        new GraphExplorer(graph).BeginAt(target).GetAwaiter().GetResult();
+
+    public static async Task<Explorable> BeginAt(this IExplorer explorer, PositionRef target) =>
+        await Explore.Begin(explorer, target) is Outcome<Exploration>.Arrived { Value: var begun }
+            ? begun.Current
+            : throw new InvalidOperationException($"beginning at {Positions.Of(target).Label} did not arrive");
 }
 
 internal static class Walked

@@ -1,6 +1,7 @@
 using BibleAtlas.Client.Contract;
 using BibleAtlas.Client.Contracts;
 using BibleAtlas.Client.Exploring;
+using BibleAtlas.Client.Legacy;
 using Microsoft.AspNetCore.Components;
 
 namespace BibleAtlas.Client.Tests;
