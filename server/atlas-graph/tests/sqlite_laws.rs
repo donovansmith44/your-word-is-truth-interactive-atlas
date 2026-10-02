@@ -1562,3 +1562,49 @@ fn an_edge_summary_costs_the_same_work_however_many_edges_its_position_holds() {
         (many.keys().collect::<Vec<_>>(), 10, 10_000, few_steps)
     );
 }
+
+#[test]
+fn every_page_names_the_page_before_it_and_reading_there_answers_that_page_in_both_stores() {
+    // Arrange
+    use atlas_graph_types::adjacency::{EdgePage, EdgeQuery};
+    use atlas_graph_types::id::Position;
+    let mut g = specimen_graph();
+    g.build_indexes();
+    atlas_graph::event_world::add_justified_by(&mut g);
+    let dir = std::env::temp_dir().join(format!("fix3-previous-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&dir);
+    write_sections(&g, &Extras::default(), "test", &layout_under(&dir)).unwrap();
+    let snap = open_written(&dir).unwrap();
+    let stores: [&dyn GraphQuery; 2] = [&g, &snap];
+    let walk = |store: &dyn GraphQuery, at: &Position, kind, limit| {
+        let mut pages: Vec<EdgePage> = vec![store.edges(at, &EdgeQuery { kind, cursor: None, limit })];
+        while let Some(cursor) = pages[pages.len() - 1].next {
+            pages.push(store.edges(at, &EdgeQuery { kind, cursor: Some(cursor), limit }));
+        }
+        pages
+    };
+
+    // Act
+    let mut offenders = Vec::new();
+    let mut walked = 0;
+    for store in stores {
+        for id in g.nodes.keys() {
+            let at = Position::Node(id.clone());
+            for kind in store.edge_summary(&at).into_keys() {
+                for limit in 1..=3 {
+                    let pages = walk(store, &at, kind, limit);
+                    walked += pages.len();
+                    let before: Vec<Option<EdgePage>> = pages.iter().map(|page| page.previous.map(|cursor| store.edges(&at, &EdgeQuery { kind, cursor: Some(cursor), limit }))).collect();
+                    let expected: Vec<Option<EdgePage>> = std::iter::once(None).chain(pages.iter().take(pages.len() - 1).cloned().map(Some)).collect();
+                    if before != expected {
+                        offenders.push(format!("{id:?} {kind:?} limit {limit}"));
+                    }
+                }
+            }
+        }
+    }
+
+    // Assert
+    assert!(walked > 100, "the specimen walk must cover many pages, covered {walked}");
+    assert_eq!(offenders, Vec::<String>::new());
+}

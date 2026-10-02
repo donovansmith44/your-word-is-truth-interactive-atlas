@@ -166,7 +166,7 @@ fn element_wire_id(id: &ElementId) -> String {
     get,
     path = "/api/elements",
     summary = "Nodes and edges of the graph by id, many in one request, each answered in the order asked.",
-    description = "`ids` lists node ids (the form `/api/node/{id}` takes) and edge ids (the id an edge page carries for its edge), separated by commas: `ids=Event:ab_ur,LocatedAt:…`. Each id is answered by its own record, or by `missing` where it reads as an id but names nothing. One id that does not read as a node's or an edge's refuses the whole read as `bad_ref`, as does asking for none. At most the server's largest page of ids is answered at once: `next`, when present, is the `cursor` that reads the ids that follow, and its absence is the last page.",
+    description = "`ids` lists node ids (the form `/api/node/{id}` takes) and edge ids (the id an edge page carries for its edge), separated by commas: `ids=Event:ab_ur,LocatedAt:…`. Each id is answered by its own record, or by `missing` where it reads as an id but names nothing. One id that does not read as a node's or an edge's refuses the whole read as `bad_ref`, as does asking for none. At most the server's largest page of ids is answered at once: `next`, when present, is the `cursor` that reads the ids that follow, and its absence is the last page; `previous`, when present, is the `cursor` of the page before, and its absence is the first page.",
     params(ElementsQuery),
     responses((status = 200, body = wire::ElementPage), ElementRefusals),
     tag = "graph"
@@ -181,7 +181,8 @@ pub async fn elements(
     let to = from.saturating_add(LARGEST_PAGE).min(asked.ids.0.len());
     let elements = read_elements(&data, &graph, &snap, &asked.ids.0[from..to])?;
     let next = (to < asked.ids.0.len()).then_some(to);
-    Ok(Json(wire::ElementPage { elements, next, version: atlas_graph::version_hex(graph.version()) }))
+    let previous = (from > 0).then(|| from.saturating_sub(LARGEST_PAGE));
+    Ok(Json(wire::ElementPage { elements, previous, next, version: atlas_graph::version_hex(graph.version()) }))
 }
 
 #[derive(Debug, Deserialize, IntoParams)]
@@ -286,7 +287,7 @@ fn node_description(id: &AnyNodeId, q: &impl GraphQuery) -> Option<String> {
     get,
     path = "/api/node/{id}/edges",
     summary = "One page of the neighbours of a node or of an edge, of a single kind, each with the edge that joins them.",
-    description = "`{id}` takes the same form `/api/node/{id}` does, or an edge's id as an edge page carries it. The required `kind` is an edge label such as `cites` or `cited-by`; anything else is `bad_kind`, an unrecognised id is `bad_ref`, and an id naming nothing is `not_found`. `limit` defaults to 20 and is clamped to the server's largest page; pass the response's `next` back as `cursor` for the following page, and its absence is the last page. A `limit` or `cursor` that does not read as a whole number is not refused: it leaves its default standing.",
+    description = "`{id}` takes the same form `/api/node/{id}` does, or an edge's id as an edge page carries it. The required `kind` is an edge label such as `cites` or `cited-by`; anything else is `bad_kind`, an unrecognised id is `bad_ref`, and an id naming nothing is `not_found`. `limit` defaults to 20 and is clamped to the server's largest page; pass the response's `next` back as `cursor` for the following page, and its absence is the last page; its `previous` is the `cursor` of the page of the same `limit` before it, and its absence is the first page. A `limit` or `cursor` that does not read as a whole number is not refused: it leaves its default standing.",
     params(("id" = String, Path), EdgePageQuery),
     responses((status = 200, body = wire::EdgePage), NeighbourRefusals),
     tag = "graph"
@@ -331,7 +332,7 @@ pub async fn node_edges(
         entries.push(wire::EdgeEntry { edge: edge_ref(&e.edge, edge_label)?, neighbour, votes, narrative, loci, note, parentage });
     }
 
-    Ok(Json(wire::EdgePage { kind: asked.kind, entries, next: page.next, version: atlas_graph::version_hex(graph.version()) }))
+    Ok(Json(wire::EdgePage { kind: asked.kind, entries, previous: page.previous, next: page.next, version: atlas_graph::version_hex(graph.version()) }))
 }
 
 #[derive(Default)]

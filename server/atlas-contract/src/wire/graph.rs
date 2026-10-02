@@ -150,6 +150,7 @@ pub struct EdgeSummaryEntry {
 pub struct EdgePage {
     pub kind: EdgeKind,
     pub entries: Vec<EdgeEntry>,
+    pub previous: Option<usize>,
     pub next: Option<usize>,
     pub version: String,
 }
@@ -260,6 +261,7 @@ impl ToSchema for Element {
 #[schema(description = "The elements asked for, in the order their ids were given: `elements[i]` answers the i-th id. At most the server's largest page is answered; `next` continues. `version` stamps the data set they were read from.")]
 pub struct ElementPage {
     pub elements: Vec<Element>,
+    pub previous: Option<usize>,
     pub next: Option<usize>,
     pub version: String,
 }
