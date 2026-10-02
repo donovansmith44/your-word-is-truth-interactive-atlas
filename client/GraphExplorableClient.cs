@@ -13,20 +13,27 @@ public sealed class GraphExplorableClient : IExplorableClient
     public Task<NodeRecord> Card(string id) =>
         _http.GetRequired<NodeRecord>($"api/node/{Uri.EscapeDataString(id)}");
 
-    public async Task<IReadOnlyList<Element>> Elements(IReadOnlyList<string> ids)
+    public async Task<ElementPage> Elements(IReadOnlyList<string> ids)
     {
         var asked = string.Join(IdSeparator, ids.Select(Uri.EscapeDataString));
-        var elements = new List<Element>();
-        int? cursor = null;
-        do
+        var first = await ElementsAt(asked, null);
+        var elements = new List<Element>(first.Elements);
+        for (var page = first; page.Next is int cursor;)
         {
-            var page = await _http.GetRequired<ElementPage>($"api/elements?ids={asked}" + (cursor is int c ? $"&cursor={c}" : ""));
+            page = await ElementsAt(asked, cursor);
+            if (page.Version != first.Version)
+            {
+                return await Elements(ids);
+            }
+
             elements.AddRange(page.Elements);
-            cursor = page.Next;
         }
-        while (cursor is not null);
-        return elements;
+
+        return new ElementPage(elements: elements, next: null, version: first.Version);
     }
+
+    private Task<ElementPage> ElementsAt(string asked, int? cursor) =>
+        _http.GetRequired<ElementPage>($"api/elements?ids={asked}" + (cursor is int c ? $"&cursor={c}" : ""));
 
     public Task<EdgePage> Edges(string positionId, EdgeKind kind, int? cursor = null, int limit = IExplorableClient.DefaultPageSize) =>
         _http.GetRequired<EdgePage>(

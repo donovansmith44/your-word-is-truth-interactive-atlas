@@ -277,8 +277,8 @@ public sealed class ExplorerPopoverTests : BunitContext
         public Task<NodeRecord> Card(string id) =>
             _cards++ < failedCards ? Task.FromException<NodeRecord>(new HttpRequestException(Offline)) : served.Card(id);
 
-        public Task<IReadOnlyList<Element>> Elements(IReadOnlyList<string> ids) =>
-            _reads++ < failedReads ? Task.FromException<IReadOnlyList<Element>>(new HttpRequestException(Offline)) : served.Elements(ids);
+        public Task<ElementPage> Elements(IReadOnlyList<string> ids) =>
+            _reads++ < failedReads ? Task.FromException<ElementPage>(new HttpRequestException(Offline)) : served.Elements(ids);
 
         public Task<EdgePage> Edges(string positionId, EdgeKind kind, int? cursor = null, int limit = IExplorableClient.DefaultPageSize) =>
             served.Edges(positionId, kind, cursor, limit);

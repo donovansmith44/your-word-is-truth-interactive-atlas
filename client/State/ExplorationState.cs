@@ -32,7 +32,7 @@ public abstract record ExplorationIntent : IIntent<ExplorationState>
         public override string Name => "exploration-open";
 
         public override ExplorationState Apply(ExplorationState current) =>
-            current is ExplorationState.Open { Exploration.Current: var here } && here == Node
+            current is ExplorationState.Open { Exploration.Current: var here } && Explorable.Served.Equals(here, Node)
                 ? current
                 : new ExplorationState.Open(new Exploration(Node, []));
     }

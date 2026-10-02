@@ -1199,13 +1199,13 @@ public sealed class VersePersonsSection : IPopoverSectionProvider
         }
 
         var mentions = await Paging.First(ctx.Graph, wireId, EdgeKind.Mentions);
-        var persons = mentions.Kept.Nodes().Where(n => n.Kind == NodeKind.Person).ToList();
+        var persons = mentions.Items.Nodes().Where(n => n.Kind == NodeKind.Person).ToList();
         if (persons.Count == 0)
         {
             return null;
         }
 
-        var mayHaveMore = !mentions.Ended;
+        var mayHaveMore = mentions.Next is not null;
         RenderFragment body = builder =>
         {
             var seq = 0;
@@ -1264,9 +1264,9 @@ public sealed class PersonCardAndMentionsSection : IPopoverSectionProvider
         }
 
         var cardTask = person.CardAsync(() => ctx.Graph.Card(person.PersonId));
-        var mentionsTask = Paging.First(ctx.Graph, person.PersonId, EdgeKind.MentionedIn);
+        var mentionsTask = Paging.Window(ctx.Graph, person.PersonId, EdgeKind.MentionedIn);
         var (card, mentions) = (await cardTask, await mentionsTask);
-        var total = card.EdgeSummary.FirstOrDefault(s => s.Kind == EdgeKind.MentionedIn)?.Count ?? mentions.Kept.Count;
+        var total = card.EdgeSummary.FirstOrDefault(s => s.Kind == EdgeKind.MentionedIn)?.Count ?? mentions.Shown.Count();
 
         RenderFragment body = builder =>
         {
@@ -1280,9 +1280,8 @@ public sealed class PersonCardAndMentionsSection : IPopoverSectionProvider
             builder.AddContent(seq++, $"MENTIONED IN SCRIPTURE ({total})");
             builder.CloseElement();
             builder.OpenComponent<Components.PersonMentionsList>(seq++);
-            builder.AddAttribute(seq++, "PersonId", person.PersonId);
             builder.AddAttribute(seq++, "Provenance", card.Provenance);
-            builder.AddAttribute(seq++, "Initial", mentions);
+            builder.AddAttribute(seq++, "Mentions", mentions);
             builder.AddAttribute(seq++, "TotalCount", total);
             builder.AddAttribute(seq++, "ShowHeading", false);
             builder.AddAttribute(seq++, "OnExplore", EventCallback.Factory.Create<PopoverOpening>(ctx, opening => ctx.PushAsync(opening, EdgeKind.MentionedIn)));

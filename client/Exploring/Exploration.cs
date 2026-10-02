@@ -2,7 +2,12 @@ using BibleAtlas.Client.Contract;
 
 namespace BibleAtlas.Client.Exploring;
 
-public sealed record Step(EdgeKind Kind, Explorable Target);
+public sealed record Step(EdgeKind Kind, Explorable Target)
+{
+    public bool Equals(Step? other) => other is not null && Kind == other.Kind && Explorable.Served.Equals(Target, other.Target);
+
+    public override int GetHashCode() => HashCode.Combine(Kind, Explorable.Served.GetHashCode(Target));
+}
 
 public sealed record Exploration(Explorable Start, IReadOnlyList<Step> Steps)
 {
@@ -12,12 +17,19 @@ public sealed record Exploration(Explorable Start, IReadOnlyList<Step> Steps)
 
     public IReadOnlyList<Explorable> Path => [Start, .. Breadcrumb.Select(step => step.Target)];
 
+    public IReadOnlyList<Explorable> Walked => [Start, .. Steps.Select(step => step.Target)];
+
+    public bool OnOneRoot => Walked.All(element => element.Root == Current.Root);
+
     public Exploration Follow(Step step) => this with { Steps = [.. Steps, step] };
 
-    public bool Equals(Exploration? other) =>
-        other is not null && Start == other.Start && Steps.SequenceEqual(other.Steps);
+    public static Exploration Along(IReadOnlyList<Explorable> walked, IEnumerable<EdgeKind> kinds) =>
+        new(walked[0], kinds.Zip(walked.Skip(1), (kind, target) => new Step(kind, target)).ToList());
 
-    public override int GetHashCode() => Steps.Aggregate(Start.GetHashCode(), HashCode.Combine);
+    public bool Equals(Exploration? other) =>
+        other is not null && Explorable.Served.Equals(Start, other.Start) && Steps.SequenceEqual(other.Steps);
+
+    public override int GetHashCode() => Steps.Aggregate(Explorable.Served.GetHashCode(Start), HashCode.Combine);
 
     private List<Step> Collapse(List<Step> crumbs, Step step)
     {

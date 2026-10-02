@@ -76,7 +76,7 @@ fn every_section_schema_creates_in_memory_and_lists_its_tables() {
         create_indexes(&conn, s).unwrap();
         let mut stmt = conn.prepare("SELECT name FROM sqlite_master WHERE type = 'table' ORDER BY name").unwrap();
         let tables: BTreeSet<String> = stmt.query_map([], |r| r.get(0)).unwrap().map(Result::unwrap).collect();
-        for common in ["meta", "node", "justification", "ground", "edge_index"] {
+        for common in ["meta", "node", "justification", "ground", "edge_index", "edge_count"] {
             assert!(tables.contains(common), "{s:?} lacks {common}");
         }
         for f in row_tables_of(s) {
@@ -1514,4 +1514,51 @@ fn every_end_held(mut g: atlas_graph_types::graph::Graph) -> atlas_graph_types::
     g.build_indexes();
     atlas_graph::event_world::add_justified_by(&mut g);
     g
+}
+
+fn edge_summary_with_its_vm_steps(snap: &SqliteSnapshot, at: &atlas_graph_types::id::Position) -> (atlas_graph_types::adjacency::EdgeSummary, u64) {
+    use std::sync::atomic::{AtomicU64, Ordering};
+    let steps = std::sync::Arc::new(AtomicU64::new(0));
+    let counter = std::sync::Arc::clone(&steps);
+    snap.with_conn(|conn| {
+        conn.progress_handler(1, Some(move || {
+            counter.fetch_add(1, Ordering::Relaxed);
+            false
+        }));
+        Ok(())
+    })
+    .unwrap();
+    let summary = snap.edge_summary(at);
+    (summary, steps.load(Ordering::Relaxed))
+}
+
+#[test]
+fn an_edge_summary_costs_the_same_work_however_many_edges_its_position_holds() {
+    // Arrange
+    use atlas_graph_types::edge::{at, Direction, EdgeKind, RelationId};
+    let hot = PlaceId::new("crowded-place");
+    let summarised_at_degree = |degree: usize| {
+        let mut g = specimen_graph();
+        for i in 0..degree {
+            g.located_at.push(LocatedAt { event: EventId::new(format!("crowd-{i}")), place: hot.clone(), provenance: "p".into(), justification: Justification::default() });
+        }
+        g.build_indexes();
+        atlas_graph::event_world::add_justified_by(&mut g);
+        let dir = std::env::temp_dir().join(format!("fix2s-growth-{degree}-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        write_sections(&g, &Extras::default(), "test", &layout_under(&dir)).unwrap();
+        let snap = open_written(&dir).unwrap();
+        edge_summary_with_its_vm_steps(&snap, &at(&hot.erase()))
+    };
+
+    // Act
+    let (few, few_steps) = summarised_at_degree(10);
+    let (many, many_steps) = summarised_at_degree(10_000);
+
+    // Assert
+    let located_here = EdgeKind::Directed(RelationId::LocatedAt, Direction::Inverse);
+    assert_eq!(
+        (few.keys().collect::<Vec<_>>(), few[&located_here], many[&located_here], many_steps),
+        (many.keys().collect::<Vec<_>>(), 10, 10_000, few_steps)
+    );
 }

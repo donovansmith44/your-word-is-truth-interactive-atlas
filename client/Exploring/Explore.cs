@@ -20,10 +20,16 @@ public static class Explore
     public static Explore<Explorable> Here { get; } = new((_, trail) => Arrived(trail));
 
     public static Explore<Page<Link>> Links(EdgeKind kind, int? cursor = null) =>
-        Asking((_, trail) => Paging.Links(trail.Current, kind, cursor), (_, trail) => trail);
+        RenewingWhenMoved(Asking((_, trail) => Paging.Links(trail.Current, kind, cursor), (_, trail) => trail));
 
     public static Explore<Explorable> Follow(Link link) =>
-        Asking((explorer, _) => Resolved(explorer, link.Target), (target, trail) => trail.Follow(new Step(link.Kind, target)));
+        Asking((explorer, _) => Resolved(explorer, link.Target), (target, trail) => trail.Follow(new Step(link.Kind, target))).SelectMany(_ => OnOneRoot);
+
+    public static Explore<Explorable> Renewed { get; } =
+        Asking(
+            (explorer, trail) => explorer.Resolve(trail.Walked.Select(element => element.Identity).ToList()),
+            (walked, trail) => Exploration.Along(walked, trail.Steps.Select(step => step.Kind)))
+        .SelectMany(_ => Here);
 
     public static Explore<Explorable> Back { get; } = new((_, trail) => Arrived(Retraced(trail)));
 
@@ -33,6 +39,7 @@ public static class Explore
             : Asking(
                 (explorer, _) => explorer.Resolve(links.Select(link => link.Target).ToList()),
                 (targets, trail) => links.Zip(targets, (link, target) => new Step(link.Kind, target)).Aggregate(trail, (walked, step) => walked.Follow(step)))
+            .SelectMany(_ => OnOneRoot)
             .Select(_ => new Unit());
 
     public static async Task<Outcome<Exploration>> Begin(IExplorer explorer, PositionRef start) =>
@@ -40,7 +47,7 @@ public static class Explore
 
     public static async Task<Outcome<Exploration>> Resume(IExplorer explorer, PositionRef start, IReadOnlyList<Link> trail) =>
         (await Unsuperseded.Fetch(() => explorer.Resolve(trail.Select(link => link.Target).Prepend(start).ToList())))
-        .Select(nodes => trail.Zip(nodes.Skip(1), (link, target) => new Step(link.Kind, target)).Aggregate(new Exploration(nodes[0], []), (walked, step) => walked.Follow(step)));
+        .Select(nodes => Exploration.Along(nodes, trail.Select(link => link.Kind)));
 
     public static Explore<U> Select<T, U>(this Explore<T> m, Func<T, U> f) => m.SelectMany(value => Return(f(value)));
 
@@ -49,6 +56,15 @@ public static class Explore
 
     public static Explore<V> SelectMany<T, U, V>(this Explore<T> m, Func<T, Explore<U>> f, Func<T, U, V> project) =>
         m.SelectMany(t => f(t).Select(u => project(t, u)));
+
+    private static Explore<Explorable> OnOneRoot { get; } = new((explorer, trail) => trail.OnOneRoot ? Arrived(trail) : Renewed.Run(explorer, trail));
+
+    private static Explore<T> RenewingWhenMoved<T>(Explore<T> walk) =>
+        new(async (explorer, trail) =>
+        {
+            var walked = await walk.Run(explorer, trail);
+            return walked is Outcome<(T Value, Exploration Trail)>.Failed && trail.Current.Moved ? await Renewed.SelectMany(_ => walk).Run(explorer, trail) : walked;
+        });
 
     private static async Task<Explorable> Resolved(IExplorer explorer, PositionRef target) => (await explorer.Resolve([target])).Single();
 

@@ -2,7 +2,7 @@
 //! Nothing here defaults: an index entry whose edge id names no row is an error, never a silent
 //! Core.
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashSet};
 
 use atlas_graph_types::canon::ids::{any_node_id_str, position_str};
 use atlas_graph_types::canon::RowFamily;
@@ -89,6 +89,14 @@ pub struct EdgeEntryOut {
     pub row_id: i64,
 }
 
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct EdgeCountOut {
+    pub subject: Position,
+    pub rel: i64,
+    pub dir: i64,
+    pub count: i64,
+}
+
 /// Everything one section file holds, borrowed from the Graph.
 pub struct SectionPartition<'a> {
     pub section: Section,
@@ -102,6 +110,7 @@ pub struct SectionPartition<'a> {
     /// `("bible", …)` for Kjv, `("concord", …)` for Concord.
     pub spine: Option<(&'static str, &'a [AnyNodeId])>,
     pub labels: Vec<(Position, &'a str)>,
+    pub edge_counts: Vec<EdgeCountOut>,
 }
 
 /// The global ord is the row's index in its family Vec -- the same number for both halves of a
@@ -247,6 +256,7 @@ pub fn partition(g: &Graph) -> Result<Vec<SectionPartition<'_>>, SqliteError> {
     }
 
     let mut labels = labels_of_sections(g, &sections, &edges);
+    let mut edge_counts = edge_counts_of_sections(&edges);
 
     let mut out = Vec::with_capacity(sections.len());
     for (i, s) in sections.iter().enumerate() {
@@ -267,9 +277,29 @@ pub fn partition(g: &Graph) -> Result<Vec<SectionPartition<'_>>, SqliteError> {
             edges: std::mem::take(&mut edges[i]),
             spine,
             labels: std::mem::take(&mut labels[i]),
+            edge_counts: std::mem::take(&mut edge_counts[i]),
         });
     }
     Ok(out)
+}
+
+pub fn edge_counts_of_sections(edges: &[Vec<EdgeEntryOut>]) -> Vec<Vec<EdgeCountOut>> {
+    let mut counted: HashSet<(&Position, i64, i64, &EdgeId)> = HashSet::new();
+    let mut out = Vec::with_capacity(edges.len());
+    for entries in edges {
+        let mut counts: Vec<EdgeCountOut> = Vec::new();
+        for e in entries {
+            if !counted.insert((&e.subject, e.rel, e.dir, &e.edge_id)) {
+                continue;
+            }
+            match counts.last_mut() {
+                Some(c) if c.subject == e.subject && c.rel == e.rel && c.dir == e.dir => c.count += 1,
+                _ => counts.push(EdgeCountOut { subject: e.subject.clone(), rel: e.rel, dir: e.dir, count: 1 }),
+            }
+        }
+        out.push(counts);
+    }
+    out
 }
 
 fn labels_of_sections<'a>(g: &'a Graph, sections: &[Section], edges: &[Vec<EdgeEntryOut>]) -> Vec<Vec<(Position, &'a str)>> {
@@ -307,5 +337,31 @@ mod tests {
         // Assert
         assert_eq!(back, every_kind.map(Some).to_vec());
         assert_eq!(node_kind_of_ordinal(every_kind.len() as i64), None);
+    }
+
+    #[test]
+    fn a_distinct_edge_counts_once_at_its_position_however_many_rows_or_sections_hold_it() {
+        // Arrange
+        let place = Position::Node(AnyNodeId { kind: NodeKind::Place, raw: "p".into() });
+        let entry = |dir: i64, ord: i64, edge: &str| EdgeEntryOut {
+            subject: place.clone(),
+            rel: 0,
+            dir,
+            ord,
+            object: Position::Node(AnyNodeId { kind: NodeKind::Event, raw: edge.into() }),
+            edge_id: EdgeId(format!("LocatedAt:{edge}").into()),
+            meta: EdgeMeta::None,
+            row_family: RowFamily::LocatedAt,
+            row_id: ord,
+        };
+        let core = vec![entry(DIR_FORWARD, 0, "a"), entry(DIR_INVERSE, 0, "a"), entry(DIR_INVERSE, 1, "a"), entry(DIR_INVERSE, 2, "b")];
+        let kjv = vec![entry(DIR_INVERSE, 3, "a"), entry(DIR_INVERSE, 4, "c")];
+
+        // Act
+        let counts = edge_counts_of_sections(&[core, kjv]);
+
+        // Assert
+        let count = |dir: i64, count: i64| EdgeCountOut { subject: place.clone(), rel: 0, dir, count };
+        assert_eq!(counts, vec![vec![count(DIR_FORWARD, 1), count(DIR_INVERSE, 2)], vec![count(DIR_INVERSE, 1)]]);
     }
 }

@@ -427,6 +427,12 @@ public sealed class FocusViewTests : BunitContext
         """;
 
     private const int Multitude = 10_000;
+    private const int Revealed = 3;
+    private const int LongReveal = 100;
+    private const string RootA = "root-a";
+    private const string RootB = "root-b";
+    private const string OldLabel = "Old title";
+    private const string NewLabel = "New title";
 
     [Fact]
     public async Task A_frontier_that_fails_to_arrive_is_a_failure_the_view_offers_to_try_again()
@@ -578,6 +584,102 @@ public sealed class FocusViewTests : BunitContext
     }
 
     [Fact]
+    public async Task Every_affordance_asked_for_more_while_more_is_arriving_reads_one_page_at_a_time_and_shows_both()
+    {
+        // Arrange
+        var graph = new MultitudeGraph(Enum.GetValues<EdgeKind>(), held: true);
+        var explorer = new GraphExplorer(graph);
+        var node = await explorer.BeginAt(ServedGraph.At(Genesis2Ref));
+        var view = Render<FocusView>(p => p.Add(v => v.Node, node).Add(v => v.Surface, Surface.Popover));
+        var mores = view.FindAll("[data-testid$='-more']").Select(more => more.GetAttribute("data-testid")).ToList();
+
+        // Act
+        foreach (var more in mores)
+        {
+            _ = view.Find($"[data-testid='{more}']").ClickAsync(new());
+            _ = view.Find($"[data-testid='{more}']").ClickAsync(new());
+        }
+
+        while (await view.InvokeAsync(graph.Answer))
+        {
+        }
+
+        // Assert
+        Assert.Equal(
+            Enum.GetValues<EdgeKind>().Select(kind => (kind, InFlight: 1, Shown: Math.Min(Revealed, PageWindow.BlocksShown(Affordances.Of(kind).InitialClamp)) * Affordances.Of(kind).InitialClamp)),
+            Enum.GetValues<EdgeKind>().Select(kind => (kind, InFlight: graph.MostInFlight(kind), Shown: view.FindAll($"[data-testid^='popover-entry-edge-{kind.WireName()}-{ServedGraph.EdgeId}:']").Count)));
+    }
+
+    [Fact]
+    public async Task A_long_reveal_renders_the_same_bounded_window_however_large_the_collection()
+    {
+        // Arrange
+        var cardinalities = new[] { 300, 3_000, 30_000 };
+
+        // Act
+        var rendered = new List<int>();
+        foreach (var cardinality in cardinalities)
+        {
+            var graph = new MultitudeGraph([EdgeKind.Contains], cardinality);
+            var node = await new GraphExplorer(graph).BeginAt(ServedGraph.At(Genesis2Ref));
+            var view = Render<FocusView>(p => p.Add(v => v.Node, node).Add(v => v.Surface, Surface.Popover));
+            for (var more = 0; more < LongReveal && view.FindAll("[data-testid='popover-children-contains-more']") is [var offered]; more++)
+            {
+                await offered.ClickAsync(new());
+            }
+
+            rendered.Add(view.FindAll(".focus-child").Count);
+        }
+
+        // Assert
+        Assert.Equal(cardinalities.Select(_ => PageWindow.ShownEntries), rendered);
+    }
+
+    [Fact]
+    public async Task Fewer_after_a_long_reveal_slides_the_window_back_over_what_it_let_go()
+    {
+        // Arrange
+        var graph = new MultitudeGraph([EdgeKind.Contains]);
+        var node = await new GraphExplorer(graph).BeginAt(ServedGraph.At(Genesis2Ref));
+        var view = Render<FocusView>(p => p.Add(v => v.Node, node).Add(v => v.Surface, Surface.Popover));
+        for (var more = 0; more < PageWindow.BlocksShown(Affordances.ChildrenShown); more++)
+        {
+            await view.Find("[data-testid='popover-children-contains-more']").ClickAsync(new());
+        }
+
+        // Act
+        await view.Find("[data-testid='popover-children-contains-collapse']").ClickAsync(new());
+
+        // Assert
+        Assert.Equal(
+            Enumerable.Range(0, PageWindow.ShownEntries).Select(n => $"popover-child-contains-Person:{n}"),
+            view.FindAll(".focus-child").Select(child => child.GetAttribute("data-testid")));
+    }
+
+    [Fact]
+    public void Every_element_served_again_from_a_new_artifact_is_presented_afresh()
+    {
+        // Arrange
+        var mention = ServedGraph.EdgeRef(EdgeKind.Mentions, "Mentions:00ee", "Old mention");
+        var elements = new (PositionRef Target, Func<string, ServedGraph> Served)[]
+        {
+            (ServedGraph.At(EdenMap), label => new ServedGraph().Serving(ServedGraph.Card(NodeKind.Map, EdenMap.Id, label) with { Map = ServedGraph.MapWindow(EdenWindow) })),
+            (ServedGraph.AtEdge(mention), label => new ServedGraph().Serving(ServedGraph.EdgeRecordOf(ServedGraph.EdgeRef(EdgeKind.Mentions, mention.Id, label), Verse1, Eden))),
+        };
+
+        // Act
+        var titles = elements.Select(element =>
+        {
+            var view = Render<FocusView>(p => p.Add(v => v.Node, Resolved.At(element.Served(OldLabel).AtRoot(RootA), element.Target)).Add(v => v.Surface, Surface.Popover));
+            view.Render(p => p.Add(v => v.Node, Resolved.At(element.Served(NewLabel).AtRoot(RootB), element.Target)));
+            return view.Find(".focus-title").TextContent;
+        }).ToList();
+
+        // Assert
+        Assert.Equal([NewLabel, NewLabel], titles);
+    }
+
+    [Fact]
     public async Task Changing_the_surface_recomputes_the_links_offered()
     {
         // Arrange
@@ -635,7 +737,7 @@ public sealed class FocusViewTests : BunitContext
 
         public Task<NodeRecord> Card(string id) => served.Card(id);
 
-        public Task<IReadOnlyList<Element>> Elements(IReadOnlyList<string> ids) => served.Elements(ids);
+        public Task<ElementPage> Elements(IReadOnlyList<string> ids) => served.Elements(ids);
 
         public Task<EdgePage> Edges(string positionId, EdgeKind kind, int? cursor = null, int limit = IExplorableClient.DefaultPageSize) =>
             _failed++ < failures ? Task.FromException<EdgePage>(new HttpRequestException(Offline)) : served.Edges(positionId, kind, cursor, limit);
@@ -644,27 +746,52 @@ public sealed class FocusViewTests : BunitContext
             served.Reading(fromRef, n, dir, corpus);
     }
 
-    private sealed class MultitudeGraph(IReadOnlyList<EdgeKind> kinds) : IExplorableClient
+    private sealed class MultitudeGraph(IReadOnlyList<EdgeKind> kinds, int size = Multitude, bool held = false) : IExplorableClient
     {
-        private readonly ServedGraph _cards = new ServedGraph().Serving(ServedGraph.Card(NodeKind.Container, Genesis2Id, Genesis2Label, kinds.Select(kind => new FrontierGroup(kind, Multitude)).ToArray()));
+        private readonly ServedGraph _cards = new ServedGraph().Serving(ServedGraph.Card(NodeKind.Container, Genesis2Id, Genesis2Label, kinds.Select(kind => new FrontierGroup(kind, size)).ToArray()));
         private readonly Dictionary<EdgeKind, (int Asked, int Read)> _reads = [];
+        private readonly List<(EdgeKind Kind, EdgePage Page, TaskCompletionSource<EdgePage> Answer)> _pending = [];
+        private readonly Dictionary<EdgeKind, int> _mostInFlight = [];
 
         public int Asked(EdgeKind kind) => _reads.GetValueOrDefault(kind).Asked;
 
         public int Read(EdgeKind kind) => _reads.GetValueOrDefault(kind).Read;
 
+        public int MostInFlight(EdgeKind kind) => _mostInFlight.GetValueOrDefault(kind);
+
+        public bool Answer()
+        {
+            if (_pending is not [var pending, ..])
+            {
+                return false;
+            }
+
+            _pending.RemoveAt(0);
+            pending.Answer.SetResult(pending.Page);
+            return true;
+        }
+
         public Task<NodeRecord> Card(string id) => _cards.Card(id);
 
-        public Task<IReadOnlyList<Element>> Elements(IReadOnlyList<string> ids) => _cards.Elements(ids);
+        public Task<ElementPage> Elements(IReadOnlyList<string> ids) => _cards.Elements(ids);
 
         public Task<EdgePage> Edges(string positionId, EdgeKind kind, int? cursor = null, int limit = IExplorableClient.DefaultPageSize)
         {
             var from = cursor ?? 0;
-            var to = Math.Min(from + limit, Multitude);
+            var to = Math.Min(from + limit, size);
             var (asked, read) = _reads.GetValueOrDefault(kind);
             _reads[kind] = (asked + 1, read + to - from);
             var people = Enumerable.Range(from, to - from).Select(n => ServedGraph.Ref(NodeKind.Person, $"Person:{n}", $"Person {n}")).ToArray();
-            return Task.FromResult(ServedGraph.Page(kind, to < Multitude ? to : null, people));
+            var page = ServedGraph.Page(kind, to < size ? to : null, people);
+            if (!held || cursor is null)
+            {
+                return Task.FromResult(page);
+            }
+
+            var answer = new TaskCompletionSource<EdgePage>();
+            _pending.Add((kind, page, answer));
+            _mostInFlight[kind] = Math.Max(MostInFlight(kind), _pending.Count(pending => pending.Kind == kind));
+            return answer.Task;
         }
 
         public Task<TextWindow> Reading(string fromRef, int n, WindowDir dir = WindowDir.Onward, Corpus corpus = Corpus.Bible) =>
@@ -683,7 +810,7 @@ public sealed class FocusViewTests : BunitContext
 
         public Task<NodeRecord> Card(string id) => served.Card(id);
 
-        public Task<IReadOnlyList<Element>> Elements(IReadOnlyList<string> ids) => served.Elements(ids);
+        public Task<ElementPage> Elements(IReadOnlyList<string> ids) => served.Elements(ids);
 
         public async Task<EdgePage> Edges(string positionId, EdgeKind kind, int? cursor = null, int limit = IExplorableClient.DefaultPageSize)
         {

@@ -241,3 +241,43 @@ pub fn rust_sources_under(dirs: &[&str]) -> Vec<PathBuf> {
 pub fn read(path: &Path) -> String {
     fs::read_to_string(path).expect("readable source")
 }
+
+pub fn string_literals_of(source: &str) -> Vec<String> {
+    let chars: Vec<char> = source.chars().collect();
+    let mut literals = Vec::new();
+    let mut i = 0;
+    while i < chars.len() {
+        let c = chars[i];
+        let next = chars.get(i + 1).copied();
+        if c == '/' && next == Some('/') {
+            while i < chars.len() && chars[i] != '\n' {
+                i += 1;
+            }
+        } else if c == '"' || (c == 'r' && raw_string_hashes(&chars, i).is_some()) {
+            let hashes = if c == '"' { 0 } else { raw_string_hashes(&chars, i).unwrap_or(0) };
+            let raw = c != '"';
+            i = if raw { i + 2 + hashes } else { i + 1 };
+            let mut literal = String::new();
+            while i < chars.len() {
+                if !raw && chars[i] == '\\' {
+                    i += 2;
+                    continue;
+                }
+                if chars[i] == '"' && (0..hashes).all(|k| chars.get(i + 1 + k) == Some(&'#')) {
+                    i += 1 + hashes;
+                    break;
+                }
+                literal.push(chars[i]);
+                i += 1;
+            }
+            literals.push(literal);
+        } else if is_ident_char(c) {
+            while i < chars.len() && is_ident_char(chars[i]) {
+                i += 1;
+            }
+        } else {
+            i += 1;
+        }
+    }
+    literals
+}
