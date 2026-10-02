@@ -29,7 +29,6 @@ public sealed class PushViaConformanceTests
                 "EventAnaloguesSection: EdgeKind.AnalogousTo",
                 "VerseParallelsSection: EdgeKind.Parallel",
                 "PolityDeltaScripturesSection: EdgeKind.JustifiedBy",
-                "VersePersonsSection: EdgeKind.Mentions",
                 "PersonCardAndMentionsSection: EdgeKind.MentionedIn",
                 "CatechismInConcordSection: EdgeKind.CatechismLink",
                 "ConcordSmallCatechismSection: EdgeKind.CatechismLink",
