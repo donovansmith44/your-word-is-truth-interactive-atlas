@@ -1560,6 +1560,7 @@ async fn an_anchor_justifies_the_dating_it_grounds_and_that_neighbour_is_the_edg
         serde_json::json!({
             "kind": "justifies",
             "entries": [{ "edge": page["entries"][0]["edge"], "neighbour": { "position": "edge", "edge": dates["entries"][0]["edge"] } }],
+            "previous": null,
             "next": null,
             "version": dates["version"],
         })
@@ -1684,6 +1685,7 @@ async fn genesis_is_a_member_of_the_bible_root() {
         serde_json::json!({
             "kind": "member-of",
             "entries": [ { "edge": page["entries"][0]["edge"].clone(), "neighbour": { "position": "node", "node": { "id": BIBLE_ROOT, "kind": "Container", "label": "The Holy Bible" } } } ],
+            "previous": null,
             "next": null,
             "version": version,
         })
@@ -1712,6 +1714,7 @@ async fn the_small_catechism_is_followed_by_the_large_and_the_commandments_by_th
         serde_json::json!({
             "kind": "follows-in",
             "entries": [ { "edge": documents["entries"][0]["edge"].clone(), "neighbour": { "position": "node", "node": { "id": LARGE_CATECHISM, "kind": "Container", "label": "The Large Catechism" } } } ],
+            "previous": null,
             "next": null,
             "version": documents["version"].clone(),
         })
@@ -1721,6 +1724,7 @@ async fn the_small_catechism_is_followed_by_the_large_and_the_commandments_by_th
         serde_json::json!({
             "kind": "follows-in",
             "entries": [ { "edge": articles["entries"][0]["edge"].clone(), "neighbour": { "position": "node", "node": { "id": THE_CREED, "kind": "Container", "label": "II. The Creed" } } } ],
+            "previous": null,
             "next": null,
             "version": articles["version"].clone(),
         })
@@ -2467,6 +2471,7 @@ async fn the_element_read_answers_each_id_in_order_with_its_node_its_edge_or_its
                 },
                 { "element": "missing", "id": AN_UNKNOWN_PERSON },
             ],
+            "previous": null,
             "next": null,
             "version": verse["version"],
         })
