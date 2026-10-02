@@ -10,10 +10,9 @@ pub fn next_year(y: Year) -> Year {
     }
 }
 
-/// A span of years on this atlas's scale: negative for BC, positive for AD, with
-/// no year zero. A single year is a span whose ends are equal.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, utoipa::ToSchema)]
 #[schema(as = YearSpan)]
+#[schema(description = "A span of years on this atlas's scale: negative for BC, positive for AD, with no year zero. A single year is a span whose ends are equal.")]
 pub struct TimeRange {
     #[schema(value_type = i32)]
     pub from_year: Year,
@@ -38,9 +37,6 @@ impl TimeRange {
         self.from_year <= y && y <= self.to_year
     }
 
-    /// The span for a record that is structurally required to carry one but makes no
-    /// chronological claim: the atlas's whole curated span, so it always passes the
-    /// `-4004..=100` bound check and can never be read as a specific year.
     pub const fn undated() -> Self {
         TimeRange { from_year: -4004, to_year: 100 }
     }

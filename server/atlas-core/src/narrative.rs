@@ -2,31 +2,25 @@ use crate::data::AtlasData;
 use crate::scene_source::SceneSource;
 use crate::wire::VerseGroup;
 
-/// An event next to the one asked about: enough to show it, and the id to travel
-/// to it with.
 #[derive(Debug, Clone, PartialEq, serde::Serialize, utoipa::ToSchema)]
 #[serde(deny_unknown_fields)]
+#[schema(description = "An event next to the one asked about: enough to show it, and the id to travel to it with.")]
 pub struct NarrativeAdjacentEvent {
     pub id: String,
     pub label: String,
-    /// The ids of the places it touches.
     pub places: Vec<String>,
-    /// The passages it is narrated in, grouped by book and chapter.
     pub verse_groups: Vec<VerseGroup>,
 }
 
-/// `None` only when `event_id` names no event at all, which validated data never does;
-/// handled here rather than assumed.
 pub fn adjacent_event(src: &dyn SceneSource, event_id: &str) -> Option<NarrativeAdjacentEvent> {
     let e = src.event_by_id(event_id)?;
     let se = crate::scene::to_scene_event(e);
     Some(NarrativeAdjacentEvent { id: se.id, label: se.label, places: e.places.clone(), verse_groups: se.verse_groups })
 }
 
-/// Where an event sits in the atlas's whole chronology, whatever narratives it
-/// belongs to.
 #[derive(Debug, Clone, PartialEq, serde::Serialize, utoipa::ToSchema)]
 #[serde(deny_unknown_fields)]
+#[schema(description = "Where an event sits in the atlas's whole chronology, whatever narratives it belongs to.")]
 pub struct TimelinePosition {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub prior: Option<NarrativeAdjacentEvent>,
@@ -34,9 +28,6 @@ pub struct TimelinePosition {
     pub following: Option<NarrativeAdjacentEvent>,
 }
 
-/// `None` for an unknown event and for a real but undated one, by simple absence from the
-/// timeline index rather than a branch here -- fabricating a date is forbidden.
-/// `prior`/`following` are `None` only at the true ends of the whole dated timeline.
 pub fn global_timeline_position(d: &AtlasData, event_id: &str) -> Option<TimelinePosition> {
     let idx = d.timeline_position(event_id)?;
     let prior = idx.checked_sub(1).and_then(|i| d.timeline_event_at(i)).and_then(|e| adjacent_event(d as &dyn SceneSource, &e.id));

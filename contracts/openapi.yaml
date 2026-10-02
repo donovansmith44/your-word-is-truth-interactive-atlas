@@ -3,7 +3,7 @@ openapi: 3.1.0
 info:
   title: Bible Atlas API
   description: The Bible Atlas HTTP API, generated from the Rust that serves it. The `x-atlas-relations` extension lists every relation this atlas joins two nodes by, each with the label its forward and its inverse neighbours are asked for and the words each is displayed by, so a consumer builds its own vocabulary from that list rather than writing one out.
-  version: 0.19.0
+  version: 0.19.1
 paths:
   /api/books:
     get:
@@ -959,30 +959,24 @@ components:
       properties:
         author:
           type: string
-          description: The book's author, as this atlas records him.
         write_from:
           type:
           - integer
           - 'null'
           format: int32
-          description: The earliest year it is dated to, negative for BC; absent when undated.
         write_place:
           type:
           - string
           - 'null'
-          description: Where it was written, absent when that is not recorded.
         write_to:
           type:
           - integer
           - 'null'
           format: int32
-          description: The latest year it is dated to; absent when undated.
       additionalProperties: false
     CanonBook:
       type: object
-      description: |-
-        One book of the canon: its code, its name, and how many verses each of its
-        chapters holds.
+      description: 'One book of the canon: its code, its name, and how many verses each of its chapters holds.'
       required:
       - code
       - name
@@ -994,13 +988,10 @@ components:
             type: integer
             format: int32
             minimum: 0
-          description: The verse count of each chapter, in order.
         code:
           type: string
-          description: The three-letter code, such as `GEN`.
         name:
           type: string
-          description: The book's full name.
       additionalProperties: false
     CatechismDetail:
       type: object
@@ -1027,9 +1018,7 @@ components:
       additionalProperties: false
     CatechismItem:
       type: object
-      description: |-
-        One catechism item in full, with the chief part of the catechism it sits
-        under.
+      description: One catechism item in full, with the chief part of the catechism it sits under.
       required:
       - id
       - name
@@ -1042,21 +1031,16 @@ components:
           type: string
         explanation_heading:
           type: string
-          description: The question the explanation answers, such as "What does this mean?".
         id:
           type: string
         name:
           type: string
         part_title:
           type: string
-          description: The chief part this item belongs to, such as Baptism.
         text:
           type:
           - string
           - 'null'
-          description: |-
-            The item's own words -- a commandment, a petition, an article -- absent for
-            an item that has none.
         verses:
           type: array
           items:
@@ -1065,15 +1049,10 @@ components:
           type:
           - string
           - 'null'
-          description: |-
-            Where in Scripture the item's own words are written, absent when it quotes
-            none.
       additionalProperties: false
     CatechismProofVerse:
       type: object
-      description: |-
-        One proof verse of a catechism item, carrying the verse in full rather than
-        a preview.
+      description: One proof verse of a catechism item, carrying the verse in full rather than a preview.
       required:
       - vref
       - text
@@ -1082,9 +1061,6 @@ components:
           type:
           - string
           - 'null'
-          description: |-
-            The question this verse was cited under, absent when the item cites it
-            directly.
         text:
           type: string
         vref:
@@ -1092,9 +1068,7 @@ components:
       additionalProperties: false
     CatechismRef:
       type: object
-      description: |-
-        One catechism item citing a verse or a span: enough to name it and to fetch
-        it in full.
+      description: 'One catechism item citing a verse or a span: enough to name it and to fetch it in full.'
       required:
       - id
       - name
@@ -1108,16 +1082,10 @@ components:
           type: array
           items:
             type: string
-          description: |-
-            The sources behind this response's catechism citations. Every element of one
-            response carries the same set; `/api/sources` names each id.
         question:
           type:
           - string
           - 'null'
-          description: |-
-            The question the verse was cited under, absent when the item cites it
-            directly.
       additionalProperties: false
     Chapter:
       type: object
@@ -1130,7 +1098,6 @@ components:
       properties:
         book:
           type: string
-          description: The book's full name.
         chapter:
           type: integer
           format: int32
@@ -1189,7 +1156,6 @@ components:
             $ref: '#/components/schemas/ContentsRoot'
         version:
           type: string
-          description: A stamp identifying the data set this tree was read from.
       additionalProperties: false
     ContentsChild:
       type: object
@@ -1204,7 +1170,6 @@ components:
       properties:
         count:
           type: integer
-          description: 'How many members it holds: verses of a chapter, paragraphs of an article.'
           minimum: 0
         id:
           type: string
@@ -1214,25 +1179,18 @@ components:
           $ref: '#/components/schemas/TextRef'
         ref:
           type: string
-          description: |-
-            The reference to open for this entry: `GEN.1` for a chapter, or an
-            article's first paragraph, such as `BoC 7.2.1`.
         title:
           type: string
       additionalProperties: false
     ContentsChildKind:
       type: string
-      description: |-
-        Whether a second-level entry of a corpus's contents is a chapter of a book
-        or an article of a document. The contents tree goes no deeper than this.
+      description: ''
       enum:
       - chapter
       - article
     ContentsRoot:
       type: object
-      description: |-
-        A top-level entry: a book of the Bible, or a document of the Book of
-        Concord.
+      description: 'A top-level entry: a book of the Bible, or a document of the Book of Concord.'
       required:
       - id
       - title
@@ -1245,13 +1203,9 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ContentsChild'
-          description: The entry's chapters, or its articles.
         group:
           oneOf:
           - $ref: '#/components/schemas/Testament'
-            description: |-
-              Which half of the canon the book belongs to; absent for a Concord document,
-              which belongs to neither.
           - type: 'null'
         id:
           type: string
@@ -1261,15 +1215,12 @@ components:
           $ref: '#/components/schemas/TextRef'
         ref:
           type: string
-          description: 'The reference to open when this entry is chosen: its first child''s.'
         title:
           type: string
       additionalProperties: false
     ContentsRootKind:
       type: string
-      description: |-
-        Whether a top-level entry of a corpus's contents is a book of the Bible
-        or a document of the Book of Concord.
+      description: ''
       enum:
       - book
       - document
@@ -1283,27 +1234,21 @@ components:
         manifest_schema:
           type: integer
           format: int32
-          description: The schema version of the compiled data set the responses are read from.
           minimum: 1
         section_schema_version:
           type: integer
           format: int32
-          description: The schema version of the individual sections that data set is made of.
           minimum: 1
       additionalProperties: false
     Corpus:
       type: string
-      description: |-
-        A body of text this API serves a reading spine for: Scripture, or the
-        Book of Concord.
+      description: ''
       enum:
       - bible
       - concord
     CrossRef:
       type: object
-      description: |-
-        One cross reference: where it points, how strongly it is attested, and a
-        look at the text there.
+      description: 'One cross reference: where it points, how strongly it is attested, and a look at the text there.'
       required:
       - target
       - votes
@@ -1312,21 +1257,15 @@ components:
       properties:
         preview:
           type: string
-          description: The text of the target's first verse.
         provenance:
           type: array
           items:
             type: string
-          description: |-
-            The sources behind this response's cross references. Every element of one
-            response carries the same set; `/api/sources` names each id.
         target:
           type: string
-          description: 'The reference pointed at: one verse, or a span.'
         votes:
           type: integer
           format: int32
-          description: How many readers voted for this reference. Higher sorts first.
       additionalProperties: false
     DateClaim:
       type: object
@@ -1473,11 +1412,9 @@ components:
           type:
           - integer
           - 'null'
-          description: Pass this back as `cursor` for the following page; absent on the last page.
           minimum: 0
         version:
           type: string
-          description: A stamp identifying the data set this page was read from.
       additionalProperties: false
     EdgePosition:
       allOf:
@@ -1596,7 +1533,6 @@ components:
           type:
           - integer
           - 'null'
-          description: Pass this back as `cursor`, with the same ids, for the elements that follow; absent on the last page.
           minimum: 0
         version:
           type: string
@@ -1649,9 +1585,7 @@ components:
       additionalProperties: false
     ErrorCode:
       type: string
-      description: |-
-        Why this API refused a request: the one word a consumer branches on, beside
-        which the message is prose for a reader.
+      description: ''
       enum:
       - bad_ref
       - bad_kind
@@ -1674,9 +1608,7 @@ components:
       additionalProperties: false
     EventAnalogue:
       type: object
-      description: |-
-        One event whose account resembles another's -- similar in form or in content,
-        never a second account of the same happening.
+      description: One event whose account resembles another's -- similar in form or in content, never a second account of the same happening.
       required:
       - id
       - title
@@ -1686,9 +1618,6 @@ components:
           type: string
         provenance:
           type: string
-          description: |-
-            The id of the source that asserts the resemblance. A resemblance is a claim
-            of its own, so this is neither event's own source.
         title:
           type: string
       additionalProperties: false
@@ -1727,9 +1656,7 @@ components:
       additionalProperties: false
     EventKind:
       type: string
-      description: |-
-        Which kind of container this is: an `event`, something that happened at a
-        date, or a `general` titled passage, which has none.
+      description: ''
       enum:
       - event
       - general
@@ -1748,23 +1675,14 @@ components:
           type:
           - string
           - 'null'
-          description: |-
-            The section of the outline of Acts this event falls in, absent when it has
-            none.
         analogues:
           type: array
           items:
             $ref: '#/components/schemas/EventAnalogue'
-          description: |-
-            Events whose accounts resemble this one without being accounts of it.
-            Omitted when there are none.
         atlas_section:
           type:
           - string
           - 'null'
-          description: |-
-            The titled section of this atlas's own outline of Scripture, absent when it
-            has none.
         id:
           type: string
         kind:
@@ -1773,102 +1691,68 @@ components:
           type:
           - string
           - 'null'
-          description: |-
-            The superscription the King James Version prints over this passage, absent
-            when it prints none.
         mentioned_in:
           type: array
           items:
             type: string
-          description: |-
-            The verses that mention this event without narrating it, in canonical order.
-            Omitted when there are none.
         mentions_provenance:
           type: array
           items:
             type: string
-          description: |-
-            The sources behind the verses that mention this event. Omitted when there are
-            none.
         places:
           type: array
           items:
             $ref: '#/components/schemas/PlaceRef'
         provenance:
           type: string
-          description: The id of the source that asserts this event; `/api/sources` names it.
         ref_note:
           type:
           - string
           - 'null'
-          description: |-
-            A note on how this event's date and grouping were arrived at, absent when
-            none was needed.
         robertson_section:
           type:
           - string
           - 'null'
-          description: |-
-            The section of Robertson's Harmony of the Gospels this event falls in, absent
-            when it has none.
         title:
           type: string
         when:
           oneOf:
           - $ref: '#/components/schemas/YearSpan'
-            description: The years the event spans; absent for a titled passage that has no date.
           - type: 'null'
         witnesses:
           type: array
           items:
             $ref: '#/components/schemas/EventWitness'
-          description: The passages that narrate this event, one per book. Always at least one.
         witnesses_provenance:
           type: array
           items:
             type: string
-          description: |-
-            The sources behind the passages that narrate this event, for this event
-            rather than for the corpus. Omitted when there are none.
       additionalProperties: false
     EventWitness:
       type: object
-      description: |-
-        One book's account of an event: the passage it narrates the event in, and any
-        note on the citation.
+      description: 'One book''s account of an event: the passage it narrates the event in, and any note on the citation.'
       required:
       - book
       - verse_groups
       properties:
         book:
           type: string
-          description: The book's three-letter code, such as `MAT`.
         ref_note:
           type:
           - string
           - 'null'
-          description: |-
-            A note on how THIS account is cited -- not the event's own note about how its
-            date and grouping were arrived at. Absent when the account needed none.
         robertson_section:
           type:
           - string
           - 'null'
-          description: |-
-            The section of Robertson's Harmony of the Gospels this account falls in, sent
-            only where it differs from the event's own. Absent otherwise.
         verse_groups:
           type: array
           items:
             $ref: '#/components/schemas/VerseGroup'
-          description: The verses of this account, grouped by chapter.
       additionalProperties: false
     Heading:
       type: object
-      description: |-
-        The pericope heading that belongs above one verse: the container it names,
-        its title, that container's kind, and whether this verse merely continues
-        coverage that began in an earlier chapter rather than opening it.
+      description: 'The pericope heading that belongs above one verse: the container it names, its title, that container''s kind, and whether this verse merely continues coverage that began in an earlier chapter rather than opening it.'
       required:
       - event_id
       - title
@@ -1877,19 +1761,12 @@ components:
       properties:
         event_id:
           type: string
-          description: |-
-            The id of the event or titled passage that covers this verse and gives the
-            heading its words; `/api/event/{id}` fetches it.
         is_continuation:
           type: boolean
-          description: |-
-            True when this verse carries on coverage that began in an earlier chapter
-            rather than opening it, so a reader can render it as a continued heading.
         kind:
           $ref: '#/components/schemas/EventKind'
         title:
           type: string
-          description: The heading as a reader sees it.
       additionalProperties: false
     KretzmannChapter:
       type: object
@@ -1904,7 +1781,6 @@ components:
             $ref: '#/components/schemas/KretzmannChapterVerse'
         version:
           type: string
-          description: A stamp identifying the data set this commentary was read from.
       additionalProperties: false
     KretzmannChapterItem:
       type: object
@@ -1916,15 +1792,12 @@ components:
           type:
           - string
           - 'null'
-          description: Absent for an item with no heading of its own.
         id:
           type: string
       additionalProperties: false
     KretzmannChapterVerse:
       type: object
-      description: |-
-        One verse's commentary items, in document order. Only verses with at least
-        one item appear at all.
+      description: One verse's commentary items, in document order. Only verses with at least one item appear at all.
       required:
       - verse
       - items
@@ -1940,9 +1813,7 @@ components:
       additionalProperties: false
     LandMask:
       type: object
-      description: |-
-        The coastline geometry border washes are clipped against, so no polity's
-        colour spills into open sea.
+      description: The coastline geometry border washes are clipped against, so no polity's colour spills into open sea.
       required:
       - rings
       properties:
@@ -1952,13 +1823,10 @@ components:
             type: array
             items:
               $ref: '#/components/schemas/Point'
-          description: Closed rings of [latitude, longitude] points, in degrees.
       additionalProperties: false
     Landmark:
       type: object
-      description: |-
-        An always-on map label: a water, a mountain or a region, drawn at one point
-        and never interactive.
+      description: 'An always-on map label: a water, a mountain or a region, drawn at one point and never interactive.'
       required:
       - name
       - kind
@@ -1970,31 +1838,26 @@ components:
         lat:
           type: number
           format: double
-          description: Latitude in degrees, north positive.
         lon:
           type: number
           format: double
-          description: Longitude in degrees, east positive.
         name:
           type: string
         size:
           oneOf:
           - $ref: '#/components/schemas/LandmarkSize'
-            description: |-
-              A size hint for a label meant to stay readable when zoomed out; absent for
-              most landmarks.
           - type: 'null'
       additionalProperties: false
     LandmarkKind:
       type: string
-      description: Which sort of always-on map label this is.
+      description: ''
       enum:
       - water
       - mountain
       - region
     LandmarkSize:
       type: string
-      description: How large a landmark's label is drawn, smallest first.
+      description: ''
       enum:
       - sm
       - md
@@ -2021,9 +1884,7 @@ components:
       unevaluatedProperties: false
     Narrative:
       type: object
-      description: |-
-        A journey or storyline through the atlas: an ordered chain of events the map
-        draws as a run of arrows.
+      description: 'A journey or storyline through the atlas: an ordered chain of events the map draws as a run of arrows.'
       required:
       - id
       - name
@@ -2032,22 +1893,18 @@ components:
       properties:
         color:
           type: string
-          description: The colour its arrows are drawn in.
         id:
           type: string
         legs:
           type: array
           items:
             type: string
-          description: The ids of its events, in order, never running backwards in time.
         name:
           type: string
       additionalProperties: false
     NarrativeAdjacentEvent:
       type: object
-      description: |-
-        An event next to the one asked about: enough to show it, and the id to travel
-        to it with.
+      description: 'An event next to the one asked about: enough to show it, and the id to travel to it with.'
       required:
       - id
       - label
@@ -2062,18 +1919,14 @@ components:
           type: array
           items:
             type: string
-          description: The ids of the places it touches.
         verse_groups:
           type: array
           items:
             $ref: '#/components/schemas/VerseGroup'
-          description: The passages it is narrated in, grouped by book and chapter.
       additionalProperties: false
     NarrativeEventPositions:
       type: object
-      description: |-
-        Where one event sits in time: in each narrative it belongs to, and in the
-        atlas's whole chronology.
+      description: 'Where one event sits in time: in each narrative it belongs to, and in the atlas''s whole chronology.'
       required:
       - narrative
       properties:
@@ -2084,7 +1937,6 @@ components:
         timeline:
           oneOf:
           - $ref: '#/components/schemas/TimelinePosition'
-            description: The event's place in the whole chronology; absent for an event with no date.
           - type: 'null'
       additionalProperties: false
     NarrativeId:
@@ -2106,7 +1958,6 @@ components:
         following:
           oneOf:
           - $ref: '#/components/schemas/NarrativeAdjacentEvent'
-            description: The leg after this one; absent at the narrative's last leg.
           - type: 'null'
         narrative_id:
           type: string
@@ -2115,7 +1966,6 @@ components:
         prior:
           oneOf:
           - $ref: '#/components/schemas/NarrativeAdjacentEvent'
-            description: The leg before this one; absent at the narrative's first leg.
           - type: 'null'
       additionalProperties: false
     NodeElement:
@@ -2162,9 +2012,7 @@ components:
       unevaluatedProperties: false
     NodeRecord:
       type: object
-      description: |-
-        One node of the graph at a glance: what it is, what to call it, where it
-        came from, and what it connects to.
+      description: 'One node of the graph at a glance: what it is, what to call it, where it came from, and what it connects to. `version` stamps the data set it was read from.'
       required:
       - id
       - kind
@@ -2185,16 +2033,10 @@ components:
           type:
           - string
           - 'null'
-          description: |-
-            Public-domain dictionary or commentary prose about this node, absent when
-            none is recorded. Never invented.
         edge_summary:
           type: array
           items:
             $ref: '#/components/schemas/EdgeSummaryEntry'
-          description: |-
-            How many neighbours this node has of each kind, listing only the kinds it
-            has any of.
         era:
           oneOf:
           - $ref: '#/components/schemas/EraDetail'
@@ -2216,7 +2058,6 @@ components:
         person:
           oneOf:
           - $ref: '#/components/schemas/PersonLife'
-            description: Life facts, present only for a person.
           - type: 'null'
         place:
           oneOf:
@@ -2228,10 +2069,8 @@ components:
           - type: 'null'
         provenance:
           type: string
-          description: The id of the source that asserts this node; `/api/sources` names it.
         version:
           type: string
-          description: A stamp identifying the data set this record was read from.
       additionalProperties: false
     NodeRef:
       type: object
@@ -2269,7 +2108,6 @@ components:
           type: array
           items:
             type: string
-          description: Other names this person is known by.
         birth:
           oneOf:
           - $ref: '#/components/schemas/Year'
@@ -2277,34 +2115,24 @@ components:
         death:
           oneOf:
           - $ref: '#/components/schemas/Year'
-            description: The year of death where one is recorded.
           - type: 'null'
         eternal:
           type: boolean
-          description: |-
-            True for a person Scripture presents as eternal, who therefore carries no
-            years at all.
         eternal_grounds:
           type: array
           items:
             type: string
-          description: The verses on which that is claimed.
         first:
           oneOf:
           - $ref: '#/components/schemas/Year'
-            description: |-
-              The earliest year at which this person is mentioned -- the span of mentions,
-              never a lifespan.
           - type: 'null'
         gender:
           type:
           - string
           - 'null'
-          description: Absent when the source records none.
         last:
           oneOf:
           - $ref: '#/components/schemas/Year'
-            description: The latest year at which this person is mentioned.
           - type: 'null'
       additionalProperties: false
     PersonRef:
@@ -2387,10 +2215,7 @@ components:
       additionalProperties: false
     Polity:
       type: object
-      description: |-
-        One era of one polity's border. The `id` and `color_key` are the polity's
-        and hold across every era row it contributes; the name, the years and the
-        rings belong to this era alone.
+      description: One era of one polity's border. The `id` and `color_key` are the polity's and hold across every era row it contributes; the name, the years and the rings belong to this era alone.
       required:
       - id
       - node
@@ -2404,22 +2229,18 @@ components:
         color_key:
           type: integer
           format: int32
-          description: A number fixed per polity, so its eras can be coloured consistently.
           minimum: 0
         fall:
           oneOf:
           - $ref: '#/components/schemas/PolityDelta'
-            description: The event that ended this polity for good, absent when none is recorded.
           - type: 'null'
         from:
           type: integer
           format: int32
-          description: The first year of this era, negative for BC.
         id:
           $ref: '#/components/schemas/PolityId'
         name:
           type: string
-          description: The polity's name during this era.
         node:
           $ref: '#/components/schemas/NodeRef'
         reign:
@@ -2430,24 +2251,17 @@ components:
             type: array
             items:
               $ref: '#/components/schemas/Point'
-          description: |-
-            This era's border, as closed rings of [latitude, longitude] points, in
-            degrees.
         to:
           type: integer
           format: int32
-          description: The last year of this era.
         transition:
           oneOf:
           - $ref: '#/components/schemas/PolityDelta'
-            description: The event that opened this era, absent when none is recorded.
           - type: 'null'
       additionalProperties: false
     PolityDelta:
       type: object
-      description: |-
-        The event at one boundary of a polity's era: its rise, a change of its
-        borders, or its fall.
+      description: 'The event at one boundary of a polity''s era: its rise, a change of its borders, or its fall.'
       required:
       - event
       - verses
@@ -2455,17 +2269,12 @@ components:
       properties:
         event:
           type: string
-          description: A short description of what happened.
         ref_note:
           type: string
-          description: The sources actually consulted for this event.
         verses:
           type: array
           items:
             type: string
-          description: |-
-            The verses grounding it. May be empty for an event history records but no
-            single verse pinpoints; never a fabricated reference.
       additionalProperties: false
     PolityDetail:
       type: object
@@ -2498,9 +2307,7 @@ components:
         propertyName: position
     ProvenanceEntry:
       type: object
-      description: |-
-        The join between a provenance id as records carry it and the source that
-        names, describes and licenses it.
+      description: The join between a provenance id as records carry it and the source that names, describes and licenses it.
       required:
       - id
       - source
@@ -2510,23 +2317,16 @@ components:
           $ref: '#/components/schemas/Confidence'
         id:
           type: string
-          description: The provenance id exactly as a record carries it.
         locator:
           type:
           - string
           - 'null'
-          description: |-
-            What inside the named source this id draws on, absent when the source's own
-            description already says.
         source:
           type: string
-          description: The id of the source this is a claim by.
       additionalProperties: false
     QuietPlace:
       type: object
-      description: |-
-        A place this atlas knows an event at, drawn on the map but not lit for the
-        span asked about.
+      description: A place this atlas knows an event at, drawn on the map but not lit for the span asked about.
       required:
       - id
       - node
@@ -2537,49 +2337,36 @@ components:
       properties:
         display_name:
           type: string
-          description: The name to show, resolved for the same span the lit places use.
         existence_from:
           oneOf:
           - $ref: '#/components/schemas/Year'
-            description: The year this place was founded, where that is recorded; absent otherwise.
           - type: 'null'
         existence_to:
           oneOf:
           - $ref: '#/components/schemas/Year'
-            description: The year it ceased to exist, where that is recorded; absent otherwise.
           - type: 'null'
         id:
           type: string
         lat:
           type: number
           format: double
-          description: Latitude in degrees, north positive.
         lon:
           type: number
           format: double
-          description: Longitude in degrees, east positive.
         merged_ids:
           type: array
           items:
             type: string
-          description: |-
-            The ids of other records for this same place, folded into this one. Omitted
-            when there are none.
         node:
           $ref: '#/components/schemas/NodeRef'
         total_events:
           type: integer
           format: int32
-          description: |-
-            How many events touch this place in any year. A count for the span asked
-            about would always be zero, which is what makes the place quiet.
           minimum: 0
       additionalProperties: false
     Scene:
       type: object
-      description: |-
-        The map at one moment of enquiry: which places are lit, which are only
-        present, and which arrows run between them.
+      description: 'The map at one moment of enquiry: which places are lit, which are only present, and which arrows run between them.'
       required:
       - mode
       - places
@@ -2591,42 +2378,32 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/SceneArrow'
-          description: The movements narratives draw between the places in view.
         mode:
           $ref: '#/components/schemas/SceneMode'
         narratives:
           type: array
           items:
             $ref: '#/components/schemas/SceneNarrative'
-          description: The narratives with at least one leg in view.
         places:
           type: array
           items:
             $ref: '#/components/schemas/ScenePlace'
-          description: The places something in view happens at.
         quiet_places:
           type: array
           items:
             $ref: '#/components/schemas/QuietPlace'
-          description: |-
-            Every other place this atlas knows an event at: present on the map but not
-            lit. Always sent, and always empty for a passage.
         ref:
           type:
           - string
           - 'null'
-          description: The passage asked about; absent when a span of years was asked about instead.
         window:
           oneOf:
           - $ref: '#/components/schemas/TimeRange'
-            description: The span of years asked about; absent when a passage was asked about instead.
           - type: 'null'
       additionalProperties: false
     SceneArrow:
       type: object
-      description: |-
-        One leg of a narrative drawn on the map: a movement from one place to the
-        next.
+      description: 'One leg of a narrative drawn on the map: a movement from one place to the next.'
       required:
       - narrative
       - color
@@ -2638,27 +2415,20 @@ components:
       properties:
         color:
           type: string
-          description: The colour that narrative is drawn in.
         from_event:
           type: string
-          description: The id of the event at the starting place.
         from_place:
           type: string
-          description: The id of the place the movement starts from.
         narrative:
           type: string
-          description: The id of the narrative this leg belongs to.
         order:
           type: integer
           format: int32
-          description: This leg's position along the narrative, counting from its first.
           minimum: 0
         to_event:
           type: string
-          description: The id of the event at the arriving place.
         to_place:
           type: string
-          description: The id of the place it arrives at.
       additionalProperties: false
     SceneEvent:
       type: object
@@ -2677,16 +2447,12 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/VerseGroup'
-          description: The passages narrating it, grouped by book and chapter.
         when:
           $ref: '#/components/schemas/TimeRange'
-          description: The years the event spans.
       additionalProperties: false
     SceneMode:
       type: string
-      description: |-
-        Which question a scene answers: what was happening in a span of years,
-        or where a passage happens.
+      description: ''
       enum:
       - time
       - scripture
@@ -2701,13 +2467,11 @@ components:
       properties:
         color:
           type: string
-          description: The colour its arrows are drawn in.
         id:
           type: string
         legs_in_scene:
           type: integer
           format: int32
-          description: How many of its legs are in view.
           minimum: 0
         name:
           type: string
@@ -2728,16 +2492,10 @@ components:
         brightness:
           type: integer
           format: int32
-          description: |-
-            How brightly to draw this place, from how much of what is in view happens
-            here.
           maximum: 255
           minimum: 0
         display_name:
           type: string
-          description: |-
-            The name to show: the one this place bore in the span asked about, or its
-            default name when no period name applies.
         events:
           type: array
           items:
@@ -2745,33 +2503,25 @@ components:
         existence_from:
           oneOf:
           - $ref: '#/components/schemas/Year'
-            description: The year this place was founded, where that is recorded; absent otherwise.
           - type: 'null'
         existence_to:
           oneOf:
           - $ref: '#/components/schemas/Year'
-            description: The year it ceased to exist, where that is recorded; absent otherwise.
           - type: 'null'
         id:
           type: string
         lat:
           type: number
           format: double
-          description: Latitude in degrees, north positive.
         lon:
           type: number
           format: double
-          description: Longitude in degrees, east positive.
         merged_ids:
           type: array
           items:
             type: string
-          description: |-
-            The ids of other records for this same place, folded into this one. Omitted
-            when there are none.
         name:
           type: string
-          description: The place's default name.
         node:
           $ref: '#/components/schemas/NodeRef'
       additionalProperties: false
@@ -2784,15 +2534,12 @@ components:
       properties:
         id:
           type: string
-          description: The key a source's `category` points at.
         label:
           type: string
       additionalProperties: false
     SourceEntry:
       type: object
-      description: |-
-        One source this atlas is built from: what it is, what was built from it, and
-        how it is licensed.
+      description: 'One source this atlas is built from: what it is, what was built from it, and how it is licensed.'
       required:
       - id
       - category
@@ -2804,37 +2551,26 @@ components:
       properties:
         category:
           type: string
-          description: The id of the heading this source is grouped under.
         id:
           type: string
         license:
           type: string
-          description: The licence it is used under, quoted rather than paraphrased.
         licenses_row_key:
           type: string
-          description: |-
-            A key that ties this entry to its row in the project's licence file, so the
-            two cannot drift apart. Not meant to be displayed.
         link:
           type:
           - string
           - 'null'
-          description: Where to find the source, absent when it has no public home.
         title:
           type: string
-          description: The source's own name.
         what_it_is:
           type: string
-          description: What the source is, in a sentence or two.
         what_we_built:
           type: string
-          description: What this atlas built from it.
       additionalProperties: false
     SourcesDocument:
       type: object
-      description: |-
-        Everything this atlas is built from: the sources, the headings they are
-        grouped under, and the ids that tie individual records back to a source.
+      description: 'Everything this atlas is built from: the sources, the headings they are grouped under, and the ids that tie individual records back to a source.'
       required:
       - categories
       - sources
@@ -2847,9 +2583,6 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ProvenanceEntry'
-          description: |-
-            The join from the provenance id a record carries to the source that asserts
-            it.
         sources:
           type: array
           items:
@@ -2895,9 +2628,7 @@ components:
         propertyName: corpus
     TextScope:
       type: string
-      description: |-
-        How much text one window of `/api/text` covers: the units around the
-        reference asked for, or the whole chapter that reference names.
+      description: ''
       enum:
       - verse
       - chapter
@@ -2915,9 +2646,7 @@ components:
       additionalProperties: false
     TextUnit:
       type: object
-      description: |-
-        One unit of a reading spine: a verse of Scripture, or a paragraph of the
-        Book of Concord.
+      description: 'One unit of a reading spine: a verse of Scripture, or a paragraph of the Book of Concord.'
       required:
       - ref
       - locus
@@ -2934,9 +2663,6 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/EdgeSummaryEntry'
-          description: |-
-            How many neighbours this unit has of each kind, so a page can tell which
-            units lead somewhere without asking after each one.
         heading:
           oneOf:
           - $ref: '#/components/schemas/UnitHeading'
@@ -2951,9 +2677,6 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/WordsOfChristSpan'
-          description: |-
-            The spans of `text` that are the words of Christ, in order. Always empty
-            outside Scripture.
       additionalProperties: false
     TextWindow:
       type: object
@@ -2966,16 +2689,12 @@ components:
           type:
           - string
           - 'null'
-          description: |-
-            The reference one step further on in the direction travelled; absent at the
-            end of the corpus.
         units:
           type: array
           items:
             $ref: '#/components/schemas/TextUnit'
         version:
           type: string
-          description: A stamp identifying the data set this window was read from.
       additionalProperties: false
     TimeRange:
       type: object
@@ -2994,9 +2713,7 @@ components:
       additionalProperties: false
     TimelinePosition:
       type: object
-      description: |-
-        Where an event sits in the atlas's whole chronology, whatever narratives it
-        belongs to.
+      description: Where an event sits in the atlas's whole chronology, whatever narratives it belongs to.
       properties:
         following:
           oneOf:
@@ -3036,20 +2753,15 @@ components:
         heading:
           oneOf:
           - $ref: '#/components/schemas/Heading'
-            description: |-
-              The heading that belongs above this verse, present only where the verse opens
-              one.
           - type: 'null'
         persons:
           type: array
           items:
             $ref: '#/components/schemas/PersonRef'
-          description: The people this verse names. Empty for most verses.
         places:
           type: array
           items:
             $ref: '#/components/schemas/PlaceRef'
-          description: The places this verse names, in a stable order. Empty for most verses.
         text:
           type: string
         verse:
@@ -3060,12 +2772,8 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/WordsOfChristSpan'
-          description: |-
-            The spans of `text` that are the words of Christ, in order. Empty for most
-            verses.
         xref_count:
           type: integer
-          description: How many cross references start at this verse; 0 for most of them.
           minimum: 0
       additionalProperties: false
     VerseDetail:
@@ -3085,37 +2793,28 @@ components:
       properties:
         book_meta:
           $ref: '#/components/schemas/BookMeta'
-          description: Who wrote this verse's book, where and when.
         catechism:
           type: array
           items:
             $ref: '#/components/schemas/CatechismRef'
-          description: The catechism items citing this verse. Empty for most verses.
         catechism_provenance:
           type: array
           items:
             type: string
-          description: The sources behind the catechism citations above.
         cross_refs:
           type: array
           items:
             $ref: '#/components/schemas/CrossRef'
-          description: This verse's cross references, most strongly attested first.
         cross_refs_provenance:
           type: array
           items:
             type: string
-          description: |-
-            The sources behind the cross references above. Always present, and empty when
-            there are none.
         events:
           type: array
           items:
             $ref: '#/components/schemas/VerseEvent'
-          description: The events and titled passages this verse belongs to, oldest first.
         provenance:
           type: string
-          description: The id of the source this verse's text comes from; `/api/sources` names it.
         ref:
           type: string
         text:
@@ -3124,9 +2823,6 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/WordsOfChristSpan'
-          description: |-
-            The spans of `text` that are the words of Christ, in order. Empty for most
-            verses.
       additionalProperties: false
     VerseEvent:
       type: object
@@ -3149,21 +2845,15 @@ components:
           type: array
           items:
             type: string
-          description: The ids of the places it touches.
         provenance:
           type: string
-          description: |-
-            The id of the source that asserts the event this verse belongs to;
-            `/api/sources` names it.
         verse_groups:
           type: array
           items:
             $ref: '#/components/schemas/VerseGroup'
-          description: The passages it is narrated in, grouped by book and chapter.
         when:
           oneOf:
           - $ref: '#/components/schemas/YearSpan'
-            description: The years the event spans; absent for a titled passage that has no date.
           - type: 'null'
       additionalProperties: false
     VerseGroup:
@@ -3177,7 +2867,6 @@ components:
       properties:
         book:
           type: string
-          description: The book's three-letter code, such as `GEN`.
         chapter:
           type: integer
           format: int32
@@ -3185,13 +2874,11 @@ components:
         count:
           type: integer
           format: int32
-          description: How many verses the group covers in all.
           minimum: 0
         verses:
           type: array
           items:
             type: string
-          description: The verse numbers and ranges covered, such as `3` or `3-5`.
       additionalProperties: false
     WindowDir:
       type: string
@@ -3203,10 +2890,7 @@ components:
       - backward
     WordsOfChristSpan:
       type: object
-      description: |-
-        One span of the words of Christ within a verse's text: character offsets into
-        it, half-open, so the span is the text from `start` up to but not including
-        `end`.
+      description: 'One span of the words of Christ within a verse''s text: character offsets into it, half-open, so the span is the text from `start` up to but not including `end`.'
       required:
       - start
       - end
@@ -3233,9 +2917,7 @@ components:
       additionalProperties: false
     YearSpan:
       type: object
-      description: |-
-        A span of years on this atlas's scale: negative for BC, positive for AD, with
-        no year zero. A single year is a span whose ends are equal.
+      description: 'A span of years on this atlas''s scale: negative for BC, positive for AD, with no year zero. A single year is a span whose ends are equal.'
       required:
       - from_year
       - to_year

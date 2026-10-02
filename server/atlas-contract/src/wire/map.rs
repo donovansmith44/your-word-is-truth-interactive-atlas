@@ -11,9 +11,6 @@ pub struct Point(pub f64, pub f64);
 const POINT: &str = "One point of a border: latitude then longitude, in degrees.";
 const POINT_COORDINATES: usize = 2;
 
-/// Written out rather than derived: a Rust pair publishes as a fixed-length tuple,
-/// which OpenAPI spells with a per-position schema list that a generated client
-/// refuses to read, while what this actually is -- two numbers -- is an array.
 impl PartialSchema for Point {
     fn schema() -> RefOr<Schema> {
         ArrayBuilder::new()
@@ -27,17 +24,14 @@ impl PartialSchema for Point {
 
 impl ToSchema for Point {}
 
-/// Closed rings of points, in the form the served structs carry them.
 pub fn rings(curated: &[Vec<(f64, f64)>]) -> Vec<Vec<Point>> {
     curated.iter().map(|ring| ring.iter().map(|&(lat, lon)| Point(lat, lon)).collect()).collect()
 }
 
-/// The coastline geometry border washes are clipped against, so no polity's
-/// colour spills into open sea.
 #[derive(Debug, Serialize, utoipa::ToSchema)]
 #[serde(deny_unknown_fields)]
+#[schema(description = "The coastline geometry border washes are clipped against, so no polity's colour spills into open sea.")]
 pub struct LandMask {
-    /// Closed rings of [latitude, longitude] points, in degrees.
     pub rings: Vec<Vec<Point>>,
 }
 
@@ -53,37 +47,27 @@ pub struct Era {
     pub window: super::TimeRange,
 }
 
-/// The polity borders in view for the span of years asked about.
 #[derive(Debug, Serialize, utoipa::ToSchema)]
 #[serde(deny_unknown_fields)]
+#[schema(description = "The polity borders in view for the span of years asked about.")]
 pub struct Polities {
     pub polities: Vec<Polity>,
 }
 
-/// One era of one polity's border. The `id` and `color_key` are the polity's
-/// and hold across every era row it contributes; the name, the years and the
-/// rings belong to this era alone.
 #[derive(Debug, Serialize, utoipa::ToSchema)]
 #[serde(deny_unknown_fields)]
+#[schema(description = "One era of one polity's border. The `id` and `color_key` are the polity's and hold across every era row it contributes; the name, the years and the rings belong to this era alone.")]
 pub struct Polity {
     pub id: PolityId,
     pub node: super::NodeRef,
-    /// The polity's name during this era.
     pub name: String,
-    /// The first year of this era, negative for BC.
     pub from: i32,
-    /// The last year of this era.
     pub to: i32,
     pub reign: super::TimeRange,
-    /// This era's border, as closed rings of [latitude, longitude] points, in
-    /// degrees.
     pub rings: Vec<Vec<Point>>,
-    /// A number fixed per polity, so its eras can be coloured consistently.
     pub color_key: u8,
-    /// The event that opened this era, absent when none is recorded.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub transition: Option<PolityDelta>,
-    /// The event that ended this polity for good, absent when none is recorded.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub fall: Option<PolityDelta>,
 }

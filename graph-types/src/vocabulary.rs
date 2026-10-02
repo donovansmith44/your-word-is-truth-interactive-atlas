@@ -1,10 +1,4 @@
-//! One mechanism for every closed vocabulary this workspace declares.
 
-/// The schema every closed string vocabulary this workspace publishes is written
-/// as: a FLAT string enum, never a `oneOf`, so a generated client turns the
-/// component into one enum of its own. The description is assembled by the caller
-/// because a hand-written schema gets none of a derive's own reading of the doc
-/// comment.
 #[cfg(feature = "openapi")]
 pub fn string_enum<V: IntoIterator<Item = &'static str>>(values: V, description: String) -> ::utoipa::openapi::RefOr<::utoipa::openapi::Schema> {
     ::utoipa::openapi::schema::ObjectBuilder::new()
@@ -14,20 +8,6 @@ pub fn string_enum<V: IntoIterator<Item = &'static str>>(values: V, description:
         .into()
 }
 
-/// Declares a closed vocabulary: its members, the one string each is written as,
-/// and the wire form and schema that publish both.
-///
-/// `$wire` is an expression rather than a literal, so a vocabulary whose strings
-/// already exist as constants names those constants instead of re-typing their
-/// values; a member list written without `=>` is spelled by its own member names.
-/// `Deserialize` is generated for every vocabulary and not only for those a
-/// caller reads back: a set that can be written and never read is half a type,
-/// and one uniform expansion leaves no flag to set the wrong way.
-///
-/// The wire and schema halves expand into the INVOKING crate, so a crate that
-/// declares a vocabulary must itself depend on `serde` while this crate's `serde`
-/// feature is on, and on `utoipa` while its `openapi` feature is on. Both features
-/// are on for every consumer in this workspace.
 #[macro_export]
 macro_rules! vocabulary {
     (
@@ -67,9 +47,6 @@ macro_rules! vocabulary {
     };
 }
 
-/// The wire half of [`vocabulary!`]. Its feature is read where it is declared
-/// rather than at the invocation, so a crate that owns a vocabulary needs no
-/// feature of its own to publish one.
 #[cfg(feature = "serde")]
 #[doc(hidden)]
 #[macro_export]
@@ -112,8 +89,6 @@ macro_rules! vocabulary_wire_form {
     ($($unused:tt)*) => {};
 }
 
-/// The schema half of [`vocabulary!`], feature-read where it is declared for the
-/// same reason as [`vocabulary_wire_form!`].
 #[cfg(feature = "openapi")]
 #[doc(hidden)]
 #[macro_export]

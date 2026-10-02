@@ -11,26 +11,18 @@ pub use atlas_core::wire::NodeRef;
 use super::union::{case_of, tagged_by, Case};
 use super::TextSpan;
 
-/// One node of the graph at a glance: what it is, what to call it, where it
-/// came from, and what it connects to.
 #[derive(Debug, Serialize, utoipa::ToSchema)]
 #[serde(deny_unknown_fields)]
+#[schema(description = "One node of the graph at a glance: what it is, what to call it, where it came from, and what it connects to. `version` stamps the data set it was read from.")]
 pub struct NodeRecord {
     pub id: String,
     pub kind: NodeKind,
     pub label: String,
-    /// The id of the source that asserts this node; `/api/sources` names it.
     pub provenance: String,
-    /// How many neighbours this node has of each kind, listing only the kinds it
-    /// has any of.
     pub edge_summary: Vec<EdgeSummaryEntry>,
-    /// A stamp identifying the data set this record was read from.
     pub version: String,
-    /// Life facts, present only for a person.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub person: Option<PersonLife>,
-    /// Public-domain dictionary or commentary prose about this node, absent when
-    /// none is recorded. Never invented.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -70,26 +62,17 @@ pub struct PolityDetail {
     pub reign: super::TimeRange,
 }
 
-/// What is recorded about one person's life.
 #[derive(Debug, Serialize, utoipa::ToSchema)]
 #[serde(deny_unknown_fields)]
+#[schema(description = "What is recorded about one person's life.")]
 pub struct PersonLife {
-    /// Absent when the source records none.
     pub gender: Option<String>,
     pub birth: Option<super::Year>,
-    /// The year of death where one is recorded.
     pub death: Option<super::Year>,
-    /// The earliest year at which this person is mentioned -- the span of mentions,
-    /// never a lifespan.
     pub first: Option<super::Year>,
-    /// The latest year at which this person is mentioned.
     pub last: Option<super::Year>,
-    /// True for a person Scripture presents as eternal, who therefore carries no
-    /// years at all.
     pub eternal: bool,
-    /// The verses on which that is claimed.
     pub eternal_grounds: Vec<String>,
-    /// Other names this person is known by.
     pub also_called: Vec<String>,
 }
 
@@ -153,23 +136,21 @@ pub struct BookDetail {
     pub written: Option<super::TimeRange>,
 }
 
-/// How many neighbours of one kind something has.
 #[derive(Debug, Serialize, utoipa::ToSchema)]
 #[serde(deny_unknown_fields)]
+#[schema(description = "How many neighbours of one kind something has.")]
 pub struct EdgeSummaryEntry {
     pub kind: EdgeKind,
     pub count: usize,
 }
 
-/// One page of a node's neighbours of a single kind.
 #[derive(Debug, Serialize, utoipa::ToSchema)]
 #[serde(deny_unknown_fields)]
+#[schema(description = "One page of a node's neighbours of a single kind.")]
 pub struct EdgePage {
     pub kind: EdgeKind,
     pub entries: Vec<EdgeEntry>,
-    /// Pass this back as `cursor` for the following page; absent on the last page.
     pub next: Option<usize>,
-    /// A stamp identifying the data set this page was read from.
     pub version: String,
 }
 
@@ -279,7 +260,6 @@ impl ToSchema for Element {
 #[schema(description = "The elements asked for, in the order their ids were given: `elements[i]` answers the i-th id. At most the server's largest page is answered; `next` continues. `version` stamps the data set they were read from.")]
 pub struct ElementPage {
     pub elements: Vec<Element>,
-    /// Pass this back as `cursor`, with the same ids, for the elements that follow; absent on the last page.
     pub next: Option<usize>,
     pub version: String,
 }
@@ -330,42 +310,32 @@ impl ToSchema for PositionRef {
 }
 
 atlas_graph_types::vocabulary! {
-    /// How much text one window of `/api/text` covers: the units around the
-    /// reference asked for, or the whole chapter that reference names.
     TextScope {
         Verse => "verse",
         Chapter => "chapter",
     }
 }
 
-/// A window of one corpus's reading spine.
 #[derive(Debug, Serialize, utoipa::ToSchema)]
 #[serde(deny_unknown_fields)]
+#[schema(description = "A window of one corpus's reading spine.")]
 pub struct TextWindow {
     pub units: Vec<TextUnit>,
-    /// The reference one step further on in the direction travelled; absent at the
-    /// end of the corpus.
     pub next: Option<String>,
-    /// A stamp identifying the data set this window was read from.
     pub version: String,
 }
 
-/// One unit of a reading spine: a verse of Scripture, or a paragraph of the
-/// Book of Concord.
 #[derive(Debug, Serialize, utoipa::ToSchema)]
 #[serde(deny_unknown_fields)]
+#[schema(description = "One unit of a reading spine: a verse of Scripture, or a paragraph of the Book of Concord.")]
 pub struct TextUnit {
     pub r#ref: String,
     pub locus: super::TextRef,
     pub text: String,
-    /// The spans of `text` that are the words of Christ, in order. Always empty
-    /// outside Scripture.
     pub words_of_christ: Vec<super::reading::WordsOfChristSpan>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub heading: Option<UnitHeading>,
     pub anchors: Vec<super::Anchor>,
-    /// How many neighbours this unit has of each kind, so a page can tell which
-    /// units lead somewhere without asking after each one.
     pub edge_summary: Vec<EdgeSummaryEntry>,
 }
 
