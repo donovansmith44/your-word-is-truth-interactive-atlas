@@ -23,7 +23,10 @@ public sealed class GraphPresenter : IPresenter
 
     private static async Task<Presentation> PresentAs(Explorable element, Presentation.Form form) => form switch
     {
-        Presentation.Form.Card or Presentation.Form.Sequence or Presentation.Form.Text => CardOf(element),
+        Presentation.Form.Card or Presentation.Form.Sequence => CardOf(element),
+        Presentation.Form.Text => element.Kind.Match<Presentation>(
+            node: _ => TextOf(element, element.Record ?? throw new UnreachableException($"{element.Id} resolved as a node without its record")),
+            edge: kind => throw new UnreachableException($"{kind} is an edge kind, and no edge has a text")),
         Presentation.Form.Geography => await element.Kind.Match(
             node: kind => GeographyOf(element, kind, element.Record ?? throw new UnreachableException($"{element.Id} resolved as a node without its record")),
             edge: kind => throw new UnreachableException($"{kind} is an edge kind, and no edge has a geography")),
@@ -43,6 +46,9 @@ public sealed class GraphPresenter : IPresenter
                 Field(ReignField, element.Record?.Polity?.Reign.Label),
                 Field(ProvenanceField, element.Provenance),
             }.OfType<Presentation.Field>().ToList());
+
+    private static Presentation.Text TextOf(Explorable element, NodeRecord record) =>
+        new(Served(record.Text, record), new[] { Field(ProvenanceField, element.Provenance) }.OfType<Presentation.Field>().ToList());
 
     private static Presentation.Field? Field(string name, string? value) => value is null ? null : new Presentation.Field(name, value);
 

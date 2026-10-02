@@ -1,0 +1,42 @@
+@using BibleAtlas.Client.Exploring
+
+<p class="focus-text" data-testid="@($"{Handle}-text")">
+    @foreach (var run in AnchoredText.Runs(Unit.Text, Unit.WordsOfChrist, Unit.Anchors))
+    {
+        @if (run[0].IsWordsOfChrist)
+        {
+            <span class="words-of-christ">@Pieces(run)</span>
+        }
+        else
+        {
+            @Pieces(run)
+        }
+    }
+</p>
+
+@code {
+    [Parameter, EditorRequired] public UnitText Unit { get; set; } = default!;
+
+    [Parameter, EditorRequired] public string Handle { get; set; } = default!;
+
+    [Parameter, EditorRequired] public EventCallback<Link> OnFollow { get; set; }
+
+    private RenderFragment Pieces(IReadOnlyList<TextPiece> pieces) => __builder =>
+    {
+        @foreach (var piece in pieces)
+        {
+            @if (piece.Anchor is { } anchor)
+            {
+                <button type="button" class="focus-anchor explorable" data-testid="@AnchorHandle(anchor)"
+                        @onclick="() => OnFollow.InvokeAsync(new Link(anchor.Kind, new NodePosition(anchor.Node)))">@piece.Text</button>
+            }
+            else
+            {
+                @piece.Text
+            }
+        }
+    };
+
+    private string AnchorHandle(Anchor anchor) =>
+        $"{Handle}-anchor-{anchor.Kind.WireName()}-{anchor.Node.Id}-{Unit.Anchors.Select((served, n) => (served, n)).First(pair => pair.served == anchor).n}";
+}

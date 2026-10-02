@@ -32,7 +32,8 @@ public abstract record Presentation
         },
         Surface.Popover => kind switch
         {
-            NodeKind.TextUnit or NodeKind.Container or NodeKind.Event or NodeKind.Narrative or NodeKind.Place
+            NodeKind.TextUnit => Form.Text,
+            NodeKind.Container or NodeKind.Event or NodeKind.Narrative or NodeKind.Place
                 or NodeKind.Person or NodeKind.Anchor or NodeKind.Era or NodeKind.Polity or NodeKind.CatechismItem
                 or NodeKind.Source or NodeKind.Translation or NodeKind.PeopleGroup or NodeKind.CommentaryItem
                 or NodeKind.LexiconEntry or NodeKind.Map => Form.Card,
@@ -58,6 +59,13 @@ public abstract record Presentation
         public bool Equals(Card? other) => other is not null && Title == other.Title && Fields.SequenceEqual(other.Fields);
 
         public override int GetHashCode() => Fields.Aggregate(Title.GetHashCode(), HashCode.Combine);
+    }
+
+    public sealed record Text(UnitText Unit, IReadOnlyList<Field> Fields) : Presentation
+    {
+        public bool Equals(Text? other) => other is not null && Unit == other.Unit && Fields.SequenceEqual(other.Fields);
+
+        public override int GetHashCode() => Fields.Aggregate(Unit.GetHashCode(), HashCode.Combine);
     }
 
     public sealed record Field(string Name, string Value);

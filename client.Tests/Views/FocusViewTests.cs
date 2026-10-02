@@ -29,6 +29,29 @@ public sealed class FocusViewTests : BunitContext
         .Select(n => ServedGraph.Ref(NodeKind.TextUnit, $"text-unit:JHN.1.{n}", $"JHN.1.{n}"))
         .ToArray();
 
+    private const string John316Words = "For God so loved the world, that he gave his only begotten Son";
+    private const int WorldStart = 21;
+    private const int WorldEnd = 26;
+    private const int RedLetterStart = 28;
+    private const string ConfessionWords = "Our churches teach that God so loved the world.";
+    private const int CitationStart = 24;
+    private const int CitationEnd = 47;
+    private const int FirstAnchor = 0;
+
+    private static readonly NodeRef John316 = ServedGraph.Ref(NodeKind.TextUnit, "text-unit:JHN.3.16", "JHN.3.16");
+    private static readonly NodeRef John315 = ServedGraph.Ref(NodeKind.TextUnit, "text-unit:JHN.3.15", "JHN.3.15");
+    private static readonly NodeRef John317 = ServedGraph.Ref(NodeKind.TextUnit, "text-unit:JHN.3.17", "JHN.3.17");
+    private static readonly NodeRef John3 = ServedGraph.Ref(NodeKind.Container, "Container:bible-chapter-JHN-3", "John 3");
+    private static readonly NodeRef Nicodemus = ServedGraph.Ref(NodeKind.Event, "Event:nicodemus", "Jesus teaches Nicodemus");
+    private static readonly NodeRef Romans58 = ServedGraph.Ref(NodeKind.TextUnit, "text-unit:ROM.5.8", "ROM.5.8");
+    private static readonly NodeRef SecondArticle = ServedGraph.Ref(NodeKind.CatechismItem, "CatechismItem:creed-2", "The Second Article");
+    private static readonly NodeRef World = ServedGraph.Ref(NodeKind.Place, "Place:world", "The world");
+    private static readonly NodeRef AugsburgIv = ServedGraph.Ref(NodeKind.TextUnit, "text-unit:BoC 7.4.1", "BoC 7.4.1");
+    private static readonly UnitText John316Text = ServedGraph.UnitTextOf(
+        new BibleRef(book: BookId.JHN, chapter: 3, verse: 16), John316Words, [ServedGraph.AnchorOf(EdgeKind.Mentions, World, WorldStart, WorldEnd)], [new WordsOfChristSpan(end: John316Words.Length, start: RedLetterStart)]);
+    private static readonly UnitText AugsburgIvText = ServedGraph.UnitTextOf(
+        new ConcordRef(article: 4, paragraph: 1, part: 7), ConfessionWords, [ServedGraph.AnchorOf(EdgeKind.Cites, John316, CitationStart, CitationEnd)], []);
+
     private static readonly string Genesis2Card = $$"""
         <button type="button" class="focus-up explorable" data-testid="popover-up-member-of-Container:bible-book-GEN">Genesis</button>
         {{EdgeStep(EdgeKind.MemberOf, Genesis)}}
@@ -802,6 +825,104 @@ public sealed class FocusViewTests : BunitContext
 
         // Assert
         Assert.Empty(differing);
+    }
+
+    [Fact]
+    public void A_text_shows_its_served_words_with_each_anchor_as_a_link_of_its_served_kind()
+    {
+        // Arrange
+        var verse = Resolved.Node(new ServedGraph().Serving(ServedGraph.TextCard(John316, John316Text)), John316);
+
+        // Act
+        var view = Render<FocusView>(p => p.Add(v => v.Node, verse).Add(v => v.Surface, Surface.Popover));
+
+        // Assert
+        view.Find("[data-testid='popover-text']").MarkupMatches("""
+            <p class="focus-text" data-testid="popover-text">For God so loved the <button type="button" class="focus-anchor explorable" data-testid="popover-anchor-mentions-Place:world-0">world</button>, <span class="words-of-christ">that he gave his only begotten Son</span></p>
+            """);
+    }
+
+    [Fact]
+    public void Following_an_anchor_follows_a_link_of_the_anchors_kind_to_its_node()
+    {
+        // Arrange
+        var followed = new List<Link>();
+        var paragraph = Resolved.Node(new ServedGraph().Serving(ServedGraph.TextCard(AugsburgIv, AugsburgIvText)), AugsburgIv);
+        var view = Render<FocusView>(p => p.Add(v => v.Node, paragraph).Add(v => v.Surface, Surface.Popover).Add(v => v.OnFollow, link => followed.Add(link)));
+
+        // Act
+        view.Find($"[data-testid='popover-anchor-cites-{John316.Id}-{FirstAnchor}']").Click();
+
+        // Assert
+        Assert.Equal([new Link(EdgeKind.Cites, ServedGraph.At(John316))], followed);
+    }
+
+    [Fact]
+    public void The_words_of_Christ_are_marked_as_served()
+    {
+        // Arrange
+        var verse = Resolved.Node(new ServedGraph().Serving(ServedGraph.TextCard(John316, John316Text)), John316);
+
+        // Act
+        var view = Render<FocusView>(p => p.Add(v => v.Node, verse).Add(v => v.Surface, Surface.Popover));
+
+        // Assert
+        Assert.Equal([John316Words[RedLetterStart..]], view.FindAll("[data-testid='popover-text'] .words-of-christ").Select(red => red.TextContent).ToList());
+    }
+
+    [Fact]
+    public void A_verse_offers_its_neighbouring_verses_as_arrows_its_chapter_as_a_crumb_and_its_other_neighbours_as_sections()
+    {
+        // Arrange
+        var graph = new ServedGraph()
+            .Serving(ServedGraph.TextCard(
+                John316,
+                John316Text,
+                new FrontierGroup(EdgeKind.FollowsIn, 1),
+                new FrontierGroup(EdgeKind.PrecedesIn, 1),
+                new FrontierGroup(EdgeKind.MemberOf, 1),
+                new FrontierGroup(EdgeKind.Cites, 1),
+                new FrontierGroup(EdgeKind.Attests, 1),
+                new FrontierGroup(EdgeKind.CatechismLink, 1)))
+            .Serving(John316.Id, EdgeKind.FollowsIn, null, ServedGraph.Page(EdgeKind.FollowsIn, null, John317))
+            .Serving(John316.Id, EdgeKind.PrecedesIn, null, ServedGraph.Page(EdgeKind.PrecedesIn, null, John315))
+            .Serving(John316.Id, EdgeKind.MemberOf, null, ServedGraph.Page(EdgeKind.MemberOf, null, John3))
+            .Serving(John316.Id, EdgeKind.Cites, null, ServedGraph.Page(EdgeKind.Cites, null, Romans58))
+            .Serving(John316.Id, EdgeKind.Attests, null, ServedGraph.Page(EdgeKind.Attests, null, Nicodemus))
+            .Serving(John316.Id, EdgeKind.CatechismLink, null, ServedGraph.Page(EdgeKind.CatechismLink, null, SecondArticle));
+
+        // Act
+        var view = Render<FocusView>(p => p.Add(v => v.Node, Resolved.Node(graph, John316)).Add(v => v.Surface, Surface.Popover));
+
+        // Assert
+        Assert.Equal(
+            [
+                $"popover-up-member-of-{John3.Id}", EdgeStepHandle(EdgeKind.MemberOf, John3),
+                "popover-section-text", "popover-text", $"popover-anchor-mentions-{World.Id}-{FirstAnchor}", "popover-field-Provenance",
+                "popover-next", EdgeStepHandle(EdgeKind.FollowsIn, John317),
+                "popover-prev", EdgeStepHandle(EdgeKind.PrecedesIn, John315),
+                "popover-section-cites", "popover-section-cites-heading", $"popover-link-cites-{Romans58.Id}", EdgeStepHandle(EdgeKind.Cites, Romans58),
+                "popover-section-attests", "popover-section-attests-heading", $"popover-link-attests-{Nicodemus.Id}", EdgeStepHandle(EdgeKind.Attests, Nicodemus),
+                "popover-section-catechism-link", "popover-section-catechism-link-heading", $"popover-link-catechism-link-{SecondArticle.Id}", EdgeStepHandle(EdgeKind.CatechismLink, SecondArticle),
+            ],
+            view.FindAll("[data-testid]").Select(element => element.GetAttribute("data-testid")).ToList());
+    }
+
+    [Fact]
+    public void A_text_shows_its_fields_as_a_card_does()
+    {
+        // Arrange
+        var verse = Resolved.Node(new ServedGraph().Serving(ServedGraph.TextCard(John316, John316Text)), John316);
+
+        // Act
+        var view = Render<FocusView>(p => p.Add(v => v.Node, verse).Add(v => v.Surface, Surface.Popover));
+
+        // Assert
+        view.Find(".focus-fields").MarkupMatches("""
+            <dl class="focus-fields">
+                <div class="focus-field" data-testid="popover-field-Provenance"><dt>Provenance</dt><dd>kjv</dd></div>
+            </dl>
+            """);
     }
 
     private static readonly NodeRef Genesis2Ref = ServedGraph.Ref(NodeKind.Container, Genesis2Id, Genesis2Label);
