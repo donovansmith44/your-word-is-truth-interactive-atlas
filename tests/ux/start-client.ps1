@@ -1,6 +1,8 @@
 $env:Path = "$env:Path;$env:LOCALAPPDATA\Microsoft\dotnet"
 $env:DOTNET_ROOT = "$env:LOCALAPPDATA\Microsoft\dotnet"
 Set-Location "$PSScriptRoot\..\.."
+"{ \"ApiBase\": \"http://localhost:$env:ATLAS_API_PORT\" }" | Set-Content client/wwwroot/appsettings.Ux.json
+$clientArgs = @('run', '--project', 'client', '--no-launch-profile', '-p:WasmApplicationEnvironmentName=Ux', '--urls', "http://localhost:$env:ATLAS_CLIENT_PORT")
 # Batch CHRON-1: appending to $env:Path (above) does not change resolution
 # ORDER -- a machine-wide "C:\Program Files\dotnet\dotnet.exe" (SDK-less,
 # --list-sdks returns empty) sits earlier in the inherited system PATH and
@@ -17,7 +19,7 @@ Set-Location "$PSScriptRoot\..\.."
 # machine is known to require.
 $dotnetExe = "$env:LOCALAPPDATA\Microsoft\dotnet\dotnet.exe"
 if (Test-Path $dotnetExe) {
-    & $dotnetExe run --project client --launch-profile http
+    & $dotnetExe @clientArgs
 } else {
-    dotnet run --project client --launch-profile http
+    dotnet @clientArgs
 }

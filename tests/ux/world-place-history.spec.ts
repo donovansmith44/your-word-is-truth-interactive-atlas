@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { api } from './lib/api';
 import { zoomInOnMarker } from './lib/zoom';
+import { expectPopoverChips } from './lib/popover';
 
 // Batch E (batch-e-brief.md, "time-accurate places"): NAME-1 (period-true
 // display names swap at their curated boundary, visible on the map/card),
@@ -140,9 +141,7 @@ test('DATE-1: the established date affordance opens a popover that lists curated
   await expect(page.getByTestId('popover-title')).toHaveText(`Established ${establishedOn}`);
 
   // Supporting verses lead, in curated order, all BEFORE the map chip.
-  const chipTestIds = await popover.locator('.popover-head-actions [data-testid]').evaluateAll(
-    els => els.map(el => el.getAttribute('data-testid')));
-  expect(chipTestIds).toEqual([
+  await expectPopoverChips(page, [
     'popover-chip-verse-2SA.5.6',
     'popover-chip-verse-2SA.5.7',
     'popover-chip-verse-2SA.5.9',
@@ -175,9 +174,7 @@ test('DATE-1: the established date affordance opens a popover that lists curated
   // (no "c." -- no note curated for this claim).
   await destroyed.click();
   await expect(page.getByTestId('popover-title')).toHaveText(`Destroyed ${destroyedOn}`);
-  const destroyedChips = await page.getByTestId('popover').locator('.popover-head-actions [data-testid]').evaluateAll(
-    els => els.map(el => el.getAttribute('data-testid')));
-  expect(destroyedChips).toEqual(['popover-chip-verse-2KI.25.9', 'popover-chip-verse-2KI.25.10', 'popover-chip-map']);
+  await expectPopoverChips(page, ['popover-chip-verse-2KI.25.9', 'popover-chip-verse-2KI.25.10', 'popover-chip-map']);
 });
 
 test('DATE-1: "Show this time on the map" navigates /world to the claim\'s own window', async ({ page }) => {

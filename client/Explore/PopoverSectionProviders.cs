@@ -1705,7 +1705,7 @@ public sealed class CommentaryItemProseSection : IPopoverSectionProvider
         NodeCard card;
         try
         {
-            card = await ctx.Graph.Card(item.Id);
+            card = await ctx.Graph.Card(item.Identity.Id);
         }
         catch (Exception)
         {

@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { openVerse } from './lib/verse';
 import { api } from './lib/api';
+import { neighbourNode, type NodeRef } from './lib/edges';
 import { loadToc } from './lib/canon';
 
 // Batch P (the extensibility proof, batch-p-brief.md): "the verse popover
@@ -37,8 +38,6 @@ import { loadToc } from './lib/canon';
 // (lib/api.ts, added M-D2 for exactly this "CONTRACT-lockstep assertions
 // against the generic wire" purpose).
 
-type NodeRef = { id: string; kind: string; label: string };
-type EdgePage = { kind: string; entries: { edge: string; node: NodeRef }[]; next: number | null; version: string };
 
 async function personsNamedIn(cref: string): Promise<{ verse: number; persons: { id: string; name: string }[] }[]> {
   const window = await api.chapterText(cref);
@@ -171,9 +170,9 @@ test.describe('Batch P: PERSONS section + the person popover', () => {
     // second UI-derived guess.
     const card = await api.node(wireId);
     const mentionedInCount = (card.edge_summary as { kind: string; count: number }[]).find(s => s.kind === 'mentioned-in')?.count ?? 0;
-    const firstPage: EdgePage = await api.nodeEdges(wireId, 'mentioned-in', { limit: 12 });
+    const firstPage = await api.nodeEdges(wireId, 'mentioned-in', { limit: 12 });
     expect(firstPage.entries.length).toBeGreaterThan(0);
-    const firstVref = firstPage.entries[0].node.label;
+    const firstVref = neighbourNode(firstPage.entries[0]).label;
 
     // O4: enters via the SAME in-text mention link (M-D3/U5,
     // `verse-mention-person-{verse}-{id}`, Reader.razor's own primary verse
@@ -209,7 +208,7 @@ test.describe('Batch P: PERSONS section + the person popover', () => {
     if (!busy) return;
     const wireId = `Person:${busy.id}`; // findPersonWithManyMentions' own raw id -- see PERSONS-1's own wireId comment above.
 
-    const firstPage: EdgePage = await api.nodeEdges(wireId, 'mentioned-in', { limit: 12 });
+    const firstPage = await api.nodeEdges(wireId, 'mentioned-in', { limit: 12 });
     expect(firstPage.next).not.toBeNull();
 
     // O4: reach the person's own popover via the SAME in-text mention link
@@ -253,8 +252,8 @@ test.describe('Batch P: PERSONS section + the person popover', () => {
     test.skip(!found, 'no sampled verse carried a literally-text-mentioned Person');
     if (!found) return;
 
-    const page: EdgePage = await api.nodeEdges(`Person:${found.persons[0].id}`, 'mentioned-in', { limit: 200 });
-    const keys = page.entries.map(e => canonKey(toc, e.node.label));
+    const page = await api.nodeEdges(`Person:${found.persons[0].id}`, 'mentioned-in', { limit: 200 });
+    const keys = page.entries.map(e => canonKey(toc, neighbourNode(e).label));
     const sorted = [...keys].sort(cmpCanon);
     expect(keys, `${found.persons[0].name}'s own mentioned-in page must already arrive in canon order -- no client re-sort exists anywhere on this path`).toEqual(sorted);
   });

@@ -47,3 +47,5 @@ publish-apphome/
 mutants.out/
 mutants.out.old/
 mutants.out-merged/
+
+client/wwwroot/appsettings.Ux.json

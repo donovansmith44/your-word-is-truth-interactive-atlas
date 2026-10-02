@@ -427,7 +427,7 @@ test('ACCT-RUNS-1: the temple-dedication popover lists one entry per account the
   const detail = await api.event('1ki_temple_dedication');
   const frontier = await api.nodeEdges('Event:1ki_temple_dedication', 'attested-in', { limit: 200 });
   expect(frontier.next ?? null).toBeNull();
-  const accounts = [...new Map(frontier.entries.map((e: any) => [JSON.stringify(e.loci), e.loci])).values()] as any[];
+  const accounts = [...new Map(frontier.entries.map((e) => [JSON.stringify(e.loci), e.loci])).values()] as any[];
   const firstUnitOf = (book: string) => accounts.find((loci) => loci[0].from.unit.book === book)[0].from.unit;
   const kings = firstUnitOf('1KI');
   const chronicles = firstUnitOf('2CH');

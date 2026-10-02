@@ -64,6 +64,23 @@ public sealed class ExplorerPopoverTests : BunitContext
             (afterFollow, atom.Value)));
     }
 
+    [Fact]
+    public void A_commentary_item_is_presented_as_the_prose_its_served_card_carries()
+    {
+        // Arrange
+        const string prose = "In the beginning, cp. John 1, 1, that is, when time first began.";
+        Hosting(new ServedGraph().Serving(new NodeCard(
+            book: null, catechism: null, description: prose, edgeSummary: [], @event: null,
+            id: "CommentaryItem:kretzmann/0.1.0", kind: NodeKind.CommentaryItem, label: "The Creation of Chaos and Light",
+            person: null, place: null, provenance: ServedGraph.Provenance, version: "v")));
+
+        // Act
+        var popover = Render<ExplorerPopover>(p => p.Add(v => v.Root, new CommentaryItemNode("kretzmann/0.1.0", "The Creation of Chaos and Light")));
+
+        // Assert
+        popover.WaitForAssertion(() => Assert.Equal(prose, popover.Find(".popover-commentary-text").TextContent));
+    }
+
     private static ServedGraph Narratives() =>
         new ServedGraph()
             .Serving(ServedGraph.Card(NodeKind.Narrative, Exodus.Id, Exodus.Label, new FrontierGroup(EdgeKind.FollowsIn, 1)))

@@ -13,8 +13,6 @@ public sealed class CommentaryItemNode : IExplorable
         Title = string.IsNullOrWhiteSpace(heading) ? "Commentary" : heading;
     }
 
-    public string Id => _id;
-
     public string Title { get; }
     public string Kind => "CommentaryItem";
     public NodeRef Identity => new(id: NodeIds.Of(NodeKind.CommentaryItem, _id), kind: NodeKind.CommentaryItem, label: Title);

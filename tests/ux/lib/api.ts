@@ -1,4 +1,6 @@
-export const API = 'http://localhost:8000';
+import { API } from './ports';
+import type { EdgePage } from './edges';
+
 async function getJson(path: string): Promise<any> {
   const r = await fetch(`${API}${path}`);
   if (!r.ok) { const body = await r.json().catch(() => ({})); return { __status: r.status, ...body }; }
@@ -47,7 +49,7 @@ export const api = {
   // assertions that need to compare the generic contract's own wire shape
   // against the bespoke endpoints' own (e.g. votes-ranked order).
   node: (id: string) => getJson(`/api/node/${encodeURIComponent(id)}`),
-  nodeEdges: (id: string, kind: string, opts: { cursor?: number; limit?: number } = {}) => {
+  nodeEdges: (id: string, kind: string, opts: { cursor?: number; limit?: number } = {}): Promise<EdgePage> => {
     const params = new URLSearchParams({ kind, ...(opts.limit != null ? { limit: String(opts.limit) } : {}), ...(opts.cursor != null ? { cursor: String(opts.cursor) } : {}) });
     return getJson(`/api/node/${encodeURIComponent(id)}/edges?${params}`);
   },
