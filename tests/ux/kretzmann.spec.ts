@@ -247,7 +247,7 @@ test('KRETZMANN-9b (THE FOLLOW-RELEASE LAW): released, Kretzmann\'s OWN picker b
 // explorables" -- ground truth quoted verbatim from batch-corp1-report.md
 // §CORP-1b: GEN.1.1's own real prose reads "In the beginning, cp. John 1,
 // 1, that is, ...", a genuine in-prose citation.
-test('KRETZMANN-10 (explorable-reference law): a scripture reference inside commentary prose opens the SAME VerseNode popover', async ({ page }) => {
+test('KRETZMANN-10 (explorable-reference law): a scripture reference inside commentary prose opens the SAME verse popover', async ({ page }) => {
   await page.goto('/kretzmann');
   const firstItem = page.locator('.kretzmann-item').first();
   await expect(firstItem).toContainText('John 1, 1');
@@ -262,6 +262,7 @@ test('KRETZMANN-10 (explorable-reference law): a scripture reference inside comm
   // book-name lookup against the ACTUAL fetched TOC, never a hardcoded
   // guess.
   await expect(page.getByTestId('popover-title')).toContainText('JHN.1.1');
+  await expect(page.getByTestId('popover-text')).toBeVisible();
 });
 
 test('KRETZMANN-11 (ticket K, "chapter-to-chapter continuation ... reads like the Bible reader\'s own flow"): prev/next navigate chapters', async ({ page }) => {
@@ -277,13 +278,7 @@ test('KRETZMANN-11 (ticket K, "chapter-to-chapter continuation ... reads like th
   await expect(page.getByTestId('kretzmann-chapter-head')).toContainText('1');
 });
 
-// Batch CORPREAD-2 (K2): the bespoke "kretzmann-verse-anchor-{n}" quiet
-// marginal-mark button (KRETZMANN-12's own former target) is RETIRED --
-// strictly redundant with the real verse row VerseLine.razor now renders.
-// This test is REPURPOSED to prove the stronger, real replacement: the
-// verse LINE itself (the SAME VerseLine component /read renders) opens the
-// SAME VerseNode popover a plain row click on /read would.
-test('KRETZMANN-12 (ticket K2, "verses ... still clickable, same exploration results per node"): clicking the verse LINE opens the SAME VerseNode popover the reader\'s own verse-line click would', async ({ page }) => {
+test('KRETZMANN-12 (ticket K2, "verses ... still clickable, same exploration results per node"): clicking the verse LINE opens the SAME verse popover the reader\'s own verse-line click would', async ({ page }) => {
   await page.goto('/kretzmann');
   await expect(page.getByTestId('verse-line-1')).toBeVisible();
 
@@ -291,6 +286,7 @@ test('KRETZMANN-12 (ticket K2, "verses ... still clickable, same exploration res
 
   await expect(page.getByTestId('popover-title')).toBeVisible();
   await expect(page.getByTestId('popover-title')).toContainText('GEN.1.1');
+  await expect(page.getByTestId('popover-text')).toBeVisible();
 });
 
 // Batch CORPREAD-2 (K2, deliverable 0a, THE SHARED-CONTAINER LAW, owner
@@ -325,12 +321,7 @@ test('KRETZMANN-2S (deliverable 0a, THE SHARED-CONTAINER LAW): the same verse-li
 
   await readerLine.click();
   await expect(page.getByTestId('popover-title')).toBeVisible();
-  // popover-body's own VerseDetail fetch resolves asynchronously, same as
-  // every other popover in this app -- wait for REAL content (auto-
-  // retrying), not a bare textContent() snapshot that can race an
-  // in-flight fetch under a loaded full-suite run (this exact race is what
-  // a bare snapshot caught here: empty string, not a real mismatch).
-  await expect(page.getByTestId('popover-body')).not.toHaveText('');
+  await expect(page.getByTestId('popover-text')).toBeVisible();
   const readerTitle = await page.getByTestId('popover-title').textContent();
   const readerBody = await page.getByTestId('popover-body').textContent();
   expect(readerTitle).toContain('GEN.1.1');
@@ -348,7 +339,7 @@ test('KRETZMANN-2S (deliverable 0a, THE SHARED-CONTAINER LAW): the same verse-li
 
   await kretzmannLine.click();
   await expect(page.getByTestId('popover-title')).toBeVisible();
-  await expect(page.getByTestId('popover-body')).not.toHaveText('');
+  await expect(page.getByTestId('popover-text')).toBeVisible();
   const kretzmannTitle = await page.getByTestId('popover-title').textContent();
   const kretzmannBody = await page.getByTestId('popover-body').textContent();
 

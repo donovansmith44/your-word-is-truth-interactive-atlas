@@ -176,7 +176,6 @@ test('hover place card: clicking a mentioned-in verse in the place popover opens
   // Arrange
   const record = await api.node('Place:rameses');
   const verse = neighbourNode((await api.nodeEdges(record.id, 'mentioned-in', { limit: 1 })).entries[0]);
-  const vref = verse.id.replace(/^text-unit:/, '');
   await openPlace(page, EXODUS, 'rameses');
   await expect(page.getByTestId('popover-title')).toHaveText(record.label);
 
@@ -185,7 +184,7 @@ test('hover place card: clicking a mentioned-in verse in the place popover opens
 
   // Assert
   await expect(page.getByTestId('popover-title')).toHaveText(verse.label);
-  await expect(page.getByTestId('popover')).toContainText((await api.verse(vref)).text);
+  await expect(page.getByTestId('popover-text')).toHaveText((await api.node(verse.id)).text.text);
   await page.getByTestId('popover-breadcrumb-back').click();
   await expect(page.getByTestId('popover-title')).toHaveText(record.label);
 });

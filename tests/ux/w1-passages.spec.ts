@@ -28,7 +28,7 @@ test('req-1b NAMED CASE: Exodus 20 / Deuteronomy 5 (the Commandments) render as 
   const [book, chapter, verse] = exoWitness.verse_groups[0].verses[0].split('.');
   await page.goto(`/read/${book}/${chapter}`);
   await openVerse(page, verse);
-  await page.getByTestId('verse-event-theo-127').click();
+  await page.getByTestId('popover-link-attests-Event:theo-127').click();
   await expect(page.getByTestId('popover-title')).toHaveText('Ten Commandments Given');
 
   const witnessesSection = page.getByTestId('popover-section-event-witnesses');
