@@ -210,7 +210,7 @@ Protocol: `AGENTS.md`. Plan: `docs/superpowers/plans/2026-09-30-v1-roadmap.md`.
 - **Status:** planned — `docs/superpowers/plans/2026-10-02-focus2-textunit.md` on `lane/claude/F2-plan` (3f73383 + answers). Owner answered OPEN 1–9 on 2026-10-02 (recorded in the plan). Starts when A-F1/A-F6 land (base: the landed stack).
 
 ### A-F3, A-F9: FOCUS-3, FOCUS-9
-- **FOCUS-3 / FOCUS-4 plans (2026-10-02):** being written on `lane/claude/F3-plan` and `lane/claude/F4-plan` against eea9023 (owner: "write plans for the next two things we can do in parallel"). Pairing: FOCUS-2 (Codex) beside FOCUS-3 (Claude), FOCUS-4 (Codex) next.
+- **FOCUS-3 / FOCUS-4 plans (2026-10-02): written.** FOCUS-3 `lane/claude/F3-plan` 64eebcf (13 OPEN, sent to the owner); FOCUS-4 `lane/claude/F4-plan` da92793 (7 OPEN, sent to the owner). FOCUS-3 shares most client files with FOCUS-2: FOCUS-2 goes first per file (table in the plan). Were: being written on `lane/claude/F3-plan` and `lane/claude/F4-plan` against eea9023 (owner: "write plans for the next two things we can do in parallel"). Pairing: FOCUS-2 (Codex) beside FOCUS-3 (Claude), FOCUS-4 (Codex) next.
 - **Status:** blocked:A-FPLANS
 
 ### A-REVIEW: review every Codex item in `review`
