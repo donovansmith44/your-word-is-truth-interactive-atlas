@@ -35,7 +35,7 @@ public sealed class GraphExplorableClient : IExplorableClient
     private Task<ElementPage> ElementsAt(string asked, int? cursor) =>
         _http.GetRequired<ElementPage>($"api/elements?ids={asked}" + (cursor is int c ? $"&cursor={c}" : ""));
 
-    public Task<EdgePage> Edges(string positionId, EdgeKind kind, int? cursor = null, int limit = IExplorableClient.DefaultPageSize) =>
+    public Task<EdgePage> Edges(string positionId, EdgeKind kind, int? cursor = null, int limit = Exploring.Affordances.PageSize) =>
         _http.GetRequired<EdgePage>(
             $"api/node/{Uri.EscapeDataString(positionId)}/edges?kind={Uri.EscapeDataString(kind.WireName())}&limit={limit}"
             + (cursor is int c ? $"&cursor={c}" : ""));

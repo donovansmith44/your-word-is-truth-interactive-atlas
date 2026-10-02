@@ -280,7 +280,7 @@ public sealed class ExplorerPopoverTests : BunitContext
         public Task<ElementPage> Elements(IReadOnlyList<string> ids) =>
             _reads++ < failedReads ? Task.FromException<ElementPage>(new HttpRequestException(Offline)) : served.Elements(ids);
 
-        public Task<EdgePage> Edges(string positionId, EdgeKind kind, int? cursor = null, int limit = IExplorableClient.DefaultPageSize) =>
+        public Task<EdgePage> Edges(string positionId, EdgeKind kind, int? cursor = null, int limit = BibleAtlas.Client.Exploring.Affordances.PageSize) =>
             served.Edges(positionId, kind, cursor, limit);
 
         public Task<TextWindow> Reading(string fromRef, int n, WindowDir dir = WindowDir.Onward, Corpus corpus = Corpus.Bible) =>

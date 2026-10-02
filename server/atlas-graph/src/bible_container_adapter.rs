@@ -181,7 +181,7 @@ mod tests {
     use super::*;
     use atlas_core::data::{Canon, CanonBook};
     use atlas_graph_types::edge::{Direction, EdgeKind, RelationId};
-    use atlas_graph_types::adjacency::{EdgeQuery, Adjacent, PositionRef};
+    use atlas_graph_types::adjacency::{Cursor, EdgeQuery, Adjacent, PositionRef};
     use atlas_graph_types::id::{PersonId, Position};
     use std::collections::HashMap;
 
@@ -265,7 +265,7 @@ mod tests {
         let graph = built_ctx_graph();
         let forward = EdgeKind::Directed(RelationId::Contains, Direction::Forward);
         let page = PositionRef(Position::Node(chapter_container_id("GEN", 2).erase()))
-            .edges(&graph, &EdgeQuery { kind: forward, cursor: None, limit: 10 });
+            .edges(&graph, &EdgeQuery { kind: forward, cursor: Cursor::FIRST, limit: 10 });
         assert_eq!(page.entries.len(), 3, "GEN 2's own frontier lists its three verses");
         assert_eq!(
             page.entries[0].node,
@@ -275,7 +275,7 @@ mod tests {
 
         let inverse = EdgeKind::Directed(RelationId::Contains, Direction::Inverse);
         let back = PositionRef(Position::Node(crate::kjv_adapter::verse_node_id(0, 2, 1)))
-            .edges(&graph, &EdgeQuery { kind: inverse, cursor: None, limit: 10 });
+            .edges(&graph, &EdgeQuery { kind: inverse, cursor: Cursor::FIRST, limit: 10 });
         assert_eq!(back.entries.len(), 1);
         assert_eq!(back.entries[0].node, Position::Node(chapter_container_id("GEN", 2).erase()));
     }
@@ -285,14 +285,14 @@ mod tests {
         let graph = built_ctx_graph();
         let forward = EdgeKind::Directed(RelationId::Contains, Direction::Forward);
         let page = PositionRef(Position::Node(book_container_id("GEN").erase()))
-            .edges(&graph, &EdgeQuery { kind: forward, cursor: None, limit: 10 });
+            .edges(&graph, &EdgeQuery { kind: forward, cursor: Cursor::FIRST, limit: 10 });
         assert_eq!(page.entries.len(), 2, "Genesis' own Members frontier lists its two chapters");
         assert_eq!(page.entries[0].node, Position::Node(chapter_container_id("GEN", 1).erase()));
         assert_eq!(page.entries[1].node, Position::Node(chapter_container_id("GEN", 2).erase()));
 
         let inverse = EdgeKind::Directed(RelationId::Contains, Direction::Inverse);
         let back = PositionRef(Position::Node(chapter_container_id("GEN", 1).erase()))
-            .edges(&graph, &EdgeQuery { kind: inverse, cursor: None, limit: 10 });
+            .edges(&graph, &EdgeQuery { kind: inverse, cursor: Cursor::FIRST, limit: 10 });
         assert_eq!(back.entries.len(), 1, "a chapter is a member of exactly its book");
         assert_eq!(back.entries[0].node, Position::Node(book_container_id("GEN").erase()));
     }
@@ -303,23 +303,23 @@ mod tests {
         let follows = EdgeKind::Directed(RelationId::Succession, Direction::Forward);
 
         let p1 = PositionRef(Position::Node(chapter_container_id("GEN", 1).erase()))
-            .edges(&graph, &EdgeQuery { kind: follows, cursor: None, limit: 10 });
+            .edges(&graph, &EdgeQuery { kind: follows, cursor: Cursor::FIRST, limit: 10 });
         assert_eq!(p1.entries.len(), 1);
         assert_eq!(p1.entries[0].node, Position::Node(chapter_container_id("GEN", 2).erase()));
 
         let p2 = PositionRef(Position::Node(chapter_container_id("GEN", 2).erase()))
-            .edges(&graph, &EdgeQuery { kind: follows, cursor: None, limit: 10 });
+            .edges(&graph, &EdgeQuery { kind: follows, cursor: Cursor::FIRST, limit: 10 });
         assert_eq!(p2.entries.len(), 1);
         assert_eq!(p2.entries[0].node, Position::Node(chapter_container_id("EXO", 1).erase()));
 
         let precedes = EdgeKind::Directed(RelationId::Succession, Direction::Inverse);
         let back = PositionRef(Position::Node(chapter_container_id("EXO", 1).erase()))
-            .edges(&graph, &EdgeQuery { kind: precedes, cursor: None, limit: 10 });
+            .edges(&graph, &EdgeQuery { kind: precedes, cursor: Cursor::FIRST, limit: 10 });
         assert_eq!(back.entries.len(), 1);
         assert_eq!(back.entries[0].node, Position::Node(chapter_container_id("GEN", 2).erase()));
 
         let last = PositionRef(Position::Node(chapter_container_id("EXO", 1).erase()))
-            .edges(&graph, &EdgeQuery { kind: follows, cursor: None, limit: 10 });
+            .edges(&graph, &EdgeQuery { kind: follows, cursor: Cursor::FIRST, limit: 10 });
         assert_eq!(last.entries.len(), 0);
     }
 
@@ -328,7 +328,7 @@ mod tests {
         let graph = built_ctx_graph();
         let follows = EdgeKind::Directed(RelationId::Succession, Direction::Forward);
         let p = PositionRef(Position::Node(book_container_id("GEN").erase()))
-            .edges(&graph, &EdgeQuery { kind: follows, cursor: None, limit: 10 });
+            .edges(&graph, &EdgeQuery { kind: follows, cursor: Cursor::FIRST, limit: 10 });
         assert_eq!(p.entries.len(), 1);
         assert_eq!(p.entries[0].node, Position::Node(book_container_id("EXO").erase()));
     }

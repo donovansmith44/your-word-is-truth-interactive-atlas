@@ -55,7 +55,7 @@ public sealed class Explorable
 
     internal NodeRecord? Record { get; }
 
-    public async Task<Page<Entry>> Entries(EdgeKind kind, int? cursor = null, int limit = IExplorableClient.DefaultPageSize)
+    public async Task<Page<Entry>> Entries(EdgeKind kind, int? cursor = null, int limit = Exploring.Affordances.PageSize)
     {
         if (Groups.All(group => group.Kind != kind))
         {

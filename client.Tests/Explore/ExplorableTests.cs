@@ -122,7 +122,7 @@ public sealed class ExplorableTests
         await genesis1.Entries(EdgeKind.FollowsIn);
 
         // Assert
-        Assert.Equal(IExplorableClient.DefaultPageSize, graph.LimitAsked);
+        Assert.Equal(BibleAtlas.Client.Exploring.Affordances.PageSize, graph.LimitAsked);
     }
 
     [Fact]

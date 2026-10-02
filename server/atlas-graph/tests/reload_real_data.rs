@@ -29,19 +29,19 @@ fn every_row_familys_adjacency_is_read_by_the_edge_with_its_rows_behind_it() {
     // Arrange
     use atlas_graph_types::canon::RowFamily;
     use atlas_graph_types::edge::{Direction, EdgeKind};
-    use atlas_graph_types::adjacency::{EdgeQuery, Adjacency};
+    use atlas_graph_types::adjacency::{Cursor, EdgeQuery, Adjacency};
     use atlas_graph_types::graph::EdgeRel;
     use atlas_graph_types::id::Position;
     use atlas_graph_types::store::GraphQuery;
     let (g, snap) = committed_graph(&common::compiled_dir()).unwrap();
     let drain = |q: &dyn GraphQuery, p: &Position, kind: EdgeKind, limit: usize| {
-        let mut cursor = None;
+        let mut cursor = Cursor::FIRST;
         let mut edges = Vec::new();
         loop {
             let page = q.edges(p, &EdgeQuery { kind, cursor, limit });
             edges.extend(page.entries.into_iter().map(|e| e.edge));
             match page.next {
-                Some(next) => cursor = Some(next),
+                Some(next) => cursor = next,
                 None => return edges,
             }
         }

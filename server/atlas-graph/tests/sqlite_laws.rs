@@ -821,11 +821,11 @@ fn the_sqlite_snapshot_answers_every_port_question_exactly_as_the_specimen_graph
     assert_answers_match(&snap, &g);
     {
         use atlas_graph_types::edge::{at, Direction, EdgeKind, RelationId};
-        use atlas_graph_types::adjacency::EdgeQuery;
+        use atlas_graph_types::adjacency::{Cursor, EdgeQuery};
         use atlas_graph_types::id::{AnyNodeId, NodeKind};
         let entry = at(&AnyNodeId { kind: NodeKind::LexiconEntry, raw: "G3056".into() });
         let verse = at(&AnyNodeId { kind: NodeKind::TextUnit, raw: "bible/1.1.1".into() });
-        let page = snap.edges_with_nodes(&entry, &EdgeQuery { kind: EdgeKind::Directed(RelationId::Occurs, Direction::Forward), cursor: None, limit: 10 });
+        let page = snap.edges_with_nodes(&entry, &EdgeQuery { kind: EdgeKind::Directed(RelationId::Occurs, Direction::Forward), cursor: Cursor::FIRST, limit: 10 });
         assert_eq!(page.entries.len(), 1, "two tokens of one entry in one verse: ONE edge (the leper lesson)...");
         assert_eq!(page.entries[0].entry.node, verse);
         let rows = snap.rows_behind(&page.entries[0].entry.edge);
@@ -834,7 +834,7 @@ fn the_sqlite_snapshot_answers_every_port_question_exactly_as_the_specimen_graph
         assert!(rows.iter().all(|r| r.provenance == "stepbible-tagnt"));
         let summary = snap.edge_summary(&verse);
         assert_eq!(summary.get(&EdgeKind::Directed(RelationId::Occurs, Direction::Inverse)).copied(), Some(1), "`words` at the verse: the one entry its two tagged tokens belong to");
-        let back = snap.edges_with_nodes(&verse, &EdgeQuery { kind: EdgeKind::Directed(RelationId::Occurs, Direction::Inverse), cursor: None, limit: 10 });
+        let back = snap.edges_with_nodes(&verse, &EdgeQuery { kind: EdgeKind::Directed(RelationId::Occurs, Direction::Inverse), cursor: Cursor::FIRST, limit: 10 });
         assert_eq!(back.entries[0].entry.node, entry);
         assert_eq!(snap.nodes_of_kind(NodeKind::LexiconEntry, None, 5).ids.len(), 2);
     }
@@ -914,7 +914,7 @@ fn an_absent_optional_section_is_recorded_and_its_kinds_are_simply_uninhabited()
 fn a_verse_naming_one_entity_twice_is_one_mention_edge_on_both_arms_with_two_rows_behind_it() {
     // Arrange
     use atlas_graph_types::edge::{at, Direction, EdgeKind, RelationId};
-    use atlas_graph_types::adjacency::EdgeQuery;
+    use atlas_graph_types::adjacency::{Cursor, EdgeQuery};
     use atlas_graph_types::store::GraphQuery;
     let mut g = specimen_graph();
     g.mentions.push(Mentions {
@@ -933,7 +933,7 @@ fn a_verse_naming_one_entity_twice_is_one_mention_edge_on_both_arms_with_two_row
     let mentions = EdgeKind::Directed(RelationId::Mentions, Direction::Forward);
     let mentioned_in = EdgeKind::Directed(RelationId::Mentions, Direction::Inverse);
     let walk = |q: &dyn GraphQuery, p: &atlas_graph_types::id::Position, kind: EdgeKind| {
-        let page = q.edges(p, &EdgeQuery { kind, cursor: None, limit: 10 });
+        let page = q.edges(p, &EdgeQuery { kind, cursor: Cursor::FIRST, limit: 10 });
         (q.edge_summary(p)[&kind], page.entries.len(), page.next, q.rows_behind(&page.entries[0].edge).len())
     };
 
@@ -966,7 +966,7 @@ fn paging_semantics_match_adjacency_rs_at_every_cursor_and_limit() {
         atlas_graph_types::edge::Direction::Forward,
     );
     assert_eq!(g.edge_summary(&container)[&kind], 2);
-    for cursor in [None, Some(0), Some(1), Some(2), Some(3)] {
+    for cursor in [0, 1, 2, 3].map(atlas_graph_types::adjacency::Cursor) {
         for limit in 0..=3 {
             let q = atlas_graph_types::adjacency::EdgeQuery { kind, cursor, limit };
             assert_eq!(snap.edges(&container, &q), g.edges(&container, &q), "cursor {cursor:?} limit {limit}");
@@ -977,7 +977,7 @@ fn paging_semantics_match_adjacency_rs_at_every_cursor_and_limit() {
 #[test]
 fn the_sqlite_overrides_answer_the_widened_port_exactly_as_the_specimen_graph() {
     use atlas_graph_types::edge::{at, Direction, EdgeId, EdgeKind, RelationId, SymRelationId};
-    use atlas_graph_types::adjacency::EdgeQuery;
+    use atlas_graph_types::adjacency::{Cursor, EdgeQuery};
     use atlas_graph_types::id::{NodeKind, Position};
     let mut g = specimen_graph();
     g.build_indexes();
@@ -1003,7 +1003,7 @@ fn the_sqlite_overrides_answer_the_widened_port_exactly_as_the_specimen_graph() 
     let located = g
         .edges(
             &at(&g.located_at[0].event.erase()),
-            &EdgeQuery { kind: EdgeKind::Directed(RelationId::LocatedAt, Direction::Forward), cursor: None, limit: 1 },
+            &EdgeQuery { kind: EdgeKind::Directed(RelationId::LocatedAt, Direction::Forward), cursor: Cursor::FIRST, limit: 1 },
         )
         .entries[0]
         .edge
@@ -1013,7 +1013,7 @@ fn the_sqlite_overrides_answer_the_widened_port_exactly_as_the_specimen_graph() 
     let analogue = g
         .edges(
             &at(&g.analogue[0].a.erase()),
-            &EdgeQuery { kind: EdgeKind::Symmetric(SymRelationId::Analogue), cursor: None, limit: 1 },
+            &EdgeQuery { kind: EdgeKind::Symmetric(SymRelationId::Analogue), cursor: Cursor::FIRST, limit: 1 },
         )
         .entries[0]
         .edge
@@ -1025,7 +1025,7 @@ fn the_sqlite_overrides_answer_the_widened_port_exactly_as_the_specimen_graph() 
     let dated = g
         .edges(
             &at(&g.dated_by[1].event.erase()),
-            &EdgeQuery { kind: EdgeKind::Directed(RelationId::DatedBy, Direction::Forward), cursor: None, limit: 1 },
+            &EdgeQuery { kind: EdgeKind::Directed(RelationId::DatedBy, Direction::Forward), cursor: Cursor::FIRST, limit: 1 },
         )
         .entries[0]
         .edge
@@ -1033,7 +1033,7 @@ fn the_sqlite_overrides_answer_the_widened_port_exactly_as_the_specimen_graph() 
     let justified = g
         .edges(
             &Position::Edge(dated.clone()),
-            &EdgeQuery { kind: EdgeKind::Directed(RelationId::JustifiedBy, Direction::Forward), cursor: None, limit: 1 },
+            &EdgeQuery { kind: EdgeKind::Directed(RelationId::JustifiedBy, Direction::Forward), cursor: Cursor::FIRST, limit: 1 },
         )
         .entries[0]
         .edge
@@ -1564,11 +1564,17 @@ fn an_edge_summary_costs_the_same_work_however_many_edges_its_position_holds() {
 }
 
 #[test]
-fn every_page_names_the_page_before_it_and_reading_there_answers_that_page_in_both_stores() {
+fn only_the_first_page_has_no_previous_and_every_other_previous_reads_the_page_before_it_in_both_stores() {
     // Arrange
-    use atlas_graph_types::adjacency::{EdgePage, EdgeQuery};
+    use atlas_graph_types::adjacency::{Cursor, EdgePage, EdgeQuery};
     use atlas_graph_types::id::Position;
     let mut g = specimen_graph();
+    g.contains_bible.push(Contains::<BibleTag> {
+        container: ContainerNodeId::new("passage-of-five"),
+        content: ContainerContent::Loci(LocusSet((1..=5).map(|verse| bl(1, 1, verse)).collect())),
+        provenance: "kjv".into(),
+        justification: Justification::default(),
+    });
     g.build_indexes();
     atlas_graph::event_world::add_justified_by(&mut g);
     let dir = std::env::temp_dir().join(format!("fix3-previous-{}", std::process::id()));
@@ -1577,9 +1583,9 @@ fn every_page_names_the_page_before_it_and_reading_there_answers_that_page_in_bo
     let snap = open_written(&dir).unwrap();
     let stores: [&dyn GraphQuery; 2] = [&g, &snap];
     let walk = |store: &dyn GraphQuery, at: &Position, kind, limit| {
-        let mut pages: Vec<EdgePage> = vec![store.edges(at, &EdgeQuery { kind, cursor: None, limit })];
+        let mut pages: Vec<EdgePage> = vec![store.edges(at, &EdgeQuery { kind, cursor: Cursor::FIRST, limit })];
         while let Some(cursor) = pages[pages.len() - 1].next {
-            pages.push(store.edges(at, &EdgeQuery { kind, cursor: Some(cursor), limit }));
+            pages.push(store.edges(at, &EdgeQuery { kind, cursor, limit }));
         }
         pages
     };
@@ -1587,17 +1593,20 @@ fn every_page_names_the_page_before_it_and_reading_there_answers_that_page_in_bo
     // Act
     let mut offenders = Vec::new();
     let mut walked = 0;
+    let mut three_with_a_partial_final = 0;
     for store in stores {
-        for id in g.nodes.keys() {
-            let at = Position::Node(id.clone());
+        for at in g.positions() {
             for kind in store.edge_summary(&at).into_keys() {
                 for limit in 1..=3 {
                     let pages = walk(store, &at, kind, limit);
                     walked += pages.len();
-                    let before: Vec<Option<EdgePage>> = pages.iter().map(|page| page.previous.map(|cursor| store.edges(&at, &EdgeQuery { kind, cursor: Some(cursor), limit }))).collect();
-                    let expected: Vec<Option<EdgePage>> = pages.iter().enumerate().map(|(i, _)| i.checked_sub(1).filter(|&before| before > 0).map(|before| pages[before].clone())).collect();
+                    let before: Vec<Option<EdgePage>> = pages.iter().map(|page| page.previous.map(|cursor| store.edges(&at, &EdgeQuery { kind, cursor, limit }))).collect();
+                    let expected: Vec<Option<EdgePage>> = std::iter::once(None).chain(pages.iter().take(pages.len() - 1).cloned().map(Some)).collect();
                     if before != expected {
-                        offenders.push(format!("{id:?} {kind:?} limit {limit}"));
+                        offenders.push(format!("{at:?} {kind:?} limit {limit}"));
+                    }
+                    if pages.len() >= 3 && pages[pages.len() - 1].entries.len() < limit {
+                        three_with_a_partial_final += 1;
                     }
                 }
             }
@@ -1605,6 +1614,5 @@ fn every_page_names_the_page_before_it_and_reading_there_answers_that_page_in_bo
     }
 
     // Assert
-    assert!(walked > 100, "the specimen walk must cover many pages, covered {walked}");
-    assert_eq!(offenders, Vec::<String>::new());
+    assert_eq!((walked > 100, three_with_a_partial_final > 0, offenders), (true, true, Vec::<String>::new()));
 }

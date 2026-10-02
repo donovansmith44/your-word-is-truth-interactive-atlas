@@ -90,7 +90,7 @@ public sealed class ExplorationInterleavingTests
             return await graph.Elements(ids);
         }
 
-        public Task<EdgePage> Edges(string positionId, EdgeKind kind, int? cursor = null, int limit = IExplorableClient.DefaultPageSize) =>
+        public Task<EdgePage> Edges(string positionId, EdgeKind kind, int? cursor = null, int limit = BibleAtlas.Client.Exploring.Affordances.PageSize) =>
             graph.Edges(positionId, kind, cursor, limit);
 
         public Task<TextWindow> Reading(string fromRef, int n, WindowDir dir = WindowDir.Onward, Corpus corpus = Corpus.Bible) =>

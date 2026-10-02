@@ -56,13 +56,13 @@ fn occurs_rows_are_in_reading_order_and_carry_one_token_spans_with_the_right_pro
 #[test]
 fn john_3_16_has_words_in_token_order_and_logos_has_a_canonical_concordance() {
     use atlas_graph_types::edge::at;
-    use atlas_graph_types::adjacency::EdgeQuery;
+    use atlas_graph_types::adjacency::{Cursor, EdgeQuery};
     use atlas_graph_types::id::AnyNodeId;
     use atlas_graph_types::store::GraphQuery;
     let (g, _) = built();
     let jhn = atlas_core::canon::resolve_alias("John").unwrap().0;
     let verse = at(&atlas_graph::kjv_adapter::verse_node_id(jhn, 3, 16));
-    let words = g.edges_with_nodes(&verse, &EdgeQuery { kind: EdgeKind::Directed(RelationId::Occurs, Direction::Inverse), cursor: None, limit: 100 });
+    let words = g.edges_with_nodes(&verse, &EdgeQuery { kind: EdgeKind::Directed(RelationId::Occurs, Direction::Inverse), cursor: Cursor::FIRST, limit: 100 });
     let distinct: std::collections::BTreeSet<_> = words.entries.iter().map(|e| e.entry.edge.clone()).collect();
     assert_eq!((words.entries.len(), distinct.len()), (21, 21), "26 tagged tokens of 21 entries: one edge per entry");
     let raw_of = |p: &atlas_graph_types::id::Position| match p {
@@ -74,10 +74,10 @@ fn john_3_16_has_words_in_token_order_and_logos_has_a_canonical_concordance() {
     let article = words.entries.iter().find(|e| raw_of(&e.entry.node).raw == "G3588").unwrap();
     assert_eq!(g.rows_behind(&article.entry.edge).len(), 5, "five rows behind the article's one edge");
     let entry = |s: &str| at(&AnyNodeId { kind: NodeKind::LexiconEntry, raw: s.into() });
-    let logos = g.edges_with_nodes(&entry("G3056"), &EdgeQuery { kind: EdgeKind::Directed(RelationId::Occurs, Direction::Forward), cursor: None, limit: 5 });
+    let logos = g.edges_with_nodes(&entry("G3056"), &EdgeQuery { kind: EdgeKind::Directed(RelationId::Occurs, Direction::Forward), cursor: Cursor::FIRST, limit: 5 });
     let first = raw_of(&logos.entries[0].entry.node);
     assert_eq!(atlas_graph::kjv_adapter::decode_text_unit(&first), Some((jhn - 3, 5, 32)), "λόγος first occurs at MAT 5:32");
-    assert_eq!(logos.next, Some(5));
+    assert_eq!(logos.next, Some(Cursor(5)));
     let all = g.edge_summary(&entry("G3056"));
     let n = all.get(&EdgeKind::Directed(RelationId::Occurs, Direction::Forward)).copied().unwrap_or(0);
     assert!(n > 250 && n <= 319, "319 tokens over at most that many verses: {n}");

@@ -58,7 +58,7 @@ internal sealed class ServedGraph : IExplorableClient
         return Task.FromResult(new ElementPage(elements: ids.Select(Element).ToList(), next: null, previous: null, version: _root));
     }
 
-    public Task<EdgePage> Edges(string positionId, EdgeKind kind, int? cursor = null, int limit = IExplorableClient.DefaultPageSize)
+    public Task<EdgePage> Edges(string positionId, EdgeKind kind, int? cursor = null, int limit = BibleAtlas.Client.Exploring.Affordances.PageSize)
     {
         LimitAsked = limit;
         NeighbourReads++;
@@ -99,7 +99,7 @@ internal sealed class ServedGraph : IExplorableClient
 
     public static TimeRange Range(Year from, Year to, string label) => new(from: from, label: label, to: to);
 
-    public static int? PageBefore(int from, int limit) => from - limit > 0 ? from - limit : null;
+    public static int? PageBefore(int from, int limit) => from > 0 ? Math.Max(0, from - limit) : null;
 
     public static NodeRef Ref(NodeKind kind, string id, string label) => new(id: id, kind: kind, label: label);
 

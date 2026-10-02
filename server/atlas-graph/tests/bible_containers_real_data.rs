@@ -1,7 +1,7 @@
 mod common;
 
 use atlas_graph_types::edge::{Direction, EdgeKind, RelationId};
-use atlas_graph_types::adjacency::{EdgeQuery, Adjacent, PositionRef};
+use atlas_graph_types::adjacency::{Cursor, EdgeQuery, Adjacent, PositionRef};
 use atlas_graph_types::id::Position;
 use atlas_graph_types::store::GraphQuery;
 
@@ -19,7 +19,7 @@ fn book(code: &str) -> Position {
 }
 
 fn edges(g: &atlas_graph_types::graph::Graph, p: &Position, kind: EdgeKind, limit: usize) -> Vec<Position> {
-    PositionRef(p.clone()).edges(g, &EdgeQuery { kind, cursor: None, limit }).entries.into_iter().map(|e| e.node).collect()
+    PositionRef(p.clone()).edges(g, &EdgeQuery { kind, cursor: Cursor::FIRST, limit }).entries.into_iter().map(|e| e.node).collect()
 }
 
 const CONTAINS: EdgeKind = EdgeKind::Directed(RelationId::Contains, Direction::Forward);

@@ -5,7 +5,7 @@
 use atlas_core::data::{Event, EventKind, EventWitness, Narrative, Place};
 use atlas_core::time::TimeRange;
 use atlas_graph_types::edge::{Direction, EdgeKind, RelationId};
-use atlas_graph_types::adjacency::{EdgeEntry, EdgeQuery};
+use atlas_graph_types::adjacency::{Cursor, EdgeEntry, EdgeQuery};
 use atlas_graph_types::id::{AnyNodeId, Position};
 use atlas_graph_types::node::NodePayload;
 use atlas_graph_types::store::GraphQuery;
@@ -14,13 +14,13 @@ use atlas_graph_types::text::{TextLocus, TextRef};
 /// Drains every page of one edge kind at one position. Duplicated from atlas-server rather than
 /// shared: that copy is private there, and this crate must not depend on atlas-server.
 fn drain(q: &impl GraphQuery, p: &Position, kind: EdgeKind) -> Vec<EdgeEntry> {
-    let mut cursor = None;
+    let mut cursor = Cursor::FIRST;
     let mut out = Vec::new();
     loop {
         let page = q.edges(p, &EdgeQuery { kind, cursor, limit: 500 });
         out.extend(page.entries);
         match page.next {
-            Some(c) => cursor = Some(c),
+            Some(c) => cursor = c,
             None => break,
         }
     }

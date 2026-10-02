@@ -84,7 +84,7 @@ public sealed class PageWindow<T>
             {
                 Wanted = Revealed;
             }
-            else if (Revealed > Wanted && _blocksBefore == 0)
+            else if (Revealed > Wanted && _blocks[0].Read.Previous is null)
             {
                 _blocks = _blocks.SkipLast(1).ToList();
             }

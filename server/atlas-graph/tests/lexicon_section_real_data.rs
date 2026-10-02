@@ -6,7 +6,7 @@ use atlas_graph::sqlite::manifest::read_manifest;
 use atlas_graph::sqlite::source::SectionLayout;
 use atlas_graph::sqlite::SCHEMA_VERSION;
 use atlas_graph_types::edge::{at, Direction, EdgeKind, RelationId};
-use atlas_graph_types::adjacency::EdgeQuery;
+use atlas_graph_types::adjacency::{Cursor, EdgeQuery};
 use atlas_graph_types::id::{AnyNodeId, NodeKind, Position};
 use atlas_graph_types::sections::Section;
 use atlas_graph_types::store::GraphQuery;
@@ -62,7 +62,7 @@ fn the_served_sections_carry_every_entry_and_a_verses_words_in_token_order() {
     let verse = at(&atlas_graph::kjv_adapter::verse_node_id(jhn, 3, 16));
     let summary = snap.edge_summary(&verse);
     assert_eq!(summary.get(&EdgeKind::Directed(RelationId::Occurs, Direction::Inverse)).copied(), Some(21), "26 tagged tokens of 21 entries: one edge per entry, in ord (spec 7.3)");
-    let words = snap.edges_with_nodes(&verse, &EdgeQuery { kind: EdgeKind::Directed(RelationId::Occurs, Direction::Inverse), cursor: None, limit: 100 });
+    let words = snap.edges_with_nodes(&verse, &EdgeQuery { kind: EdgeKind::Directed(RelationId::Occurs, Direction::Inverse), cursor: Cursor::FIRST, limit: 100 });
     let ids: Vec<String> = words.entries.iter().map(|e| node_of(&e.entry.node).raw).collect();
     assert_eq!(&ids[..5], &["G3779", "G1063", "G0025", "G3588", "G2316"], "token order, not id order");
     let article = words.entries.iter().find(|e| node_of(&e.entry.node).raw == "G3588").unwrap();
@@ -76,7 +76,7 @@ fn the_served_sections_carry_every_entry_and_a_verses_words_in_token_order() {
 fn an_entrys_concordance_is_in_canonical_order_and_the_payload_is_as_published() {
     let snap = committed_sections();
     let logos = at(&AnyNodeId { kind: NodeKind::LexiconEntry, raw: "G3056".into() });
-    let first = snap.edges_with_nodes(&logos, &EdgeQuery { kind: EdgeKind::Directed(RelationId::Occurs, Direction::Forward), cursor: None, limit: 3 });
+    let first = snap.edges_with_nodes(&logos, &EdgeQuery { kind: EdgeKind::Directed(RelationId::Occurs, Direction::Forward), cursor: Cursor::FIRST, limit: 3 });
     let mat = atlas_core::canon::resolve_alias("Matthew").unwrap().0;
     let verses: Vec<(u8, u16, u16)> = first.entries.iter().map(|e| atlas_graph::kjv_adapter::decode_text_unit(&node_of(&e.entry.node)).unwrap()).collect();
     assert_eq!(verses[0], (mat, 5, 32), "λόγος first occurs at Matthew 5:32");
@@ -96,7 +96,7 @@ fn an_entrys_concordance_is_in_canonical_order_and_the_payload_is_as_published()
     assert_eq!(node.provenance, "stepbible-tbesg");
     let elohim = snap.node(&AnyNodeId { kind: NodeKind::LexiconEntry, raw: "H0430".into() }).unwrap();
     let gen = atlas_core::canon::resolve_alias("Genesis").unwrap().0;
-    let first_h = snap.edges_with_nodes(&at(&elohim.id), &EdgeQuery { kind: EdgeKind::Directed(RelationId::Occurs, Direction::Forward), cursor: None, limit: 1 });
+    let first_h = snap.edges_with_nodes(&at(&elohim.id), &EdgeQuery { kind: EdgeKind::Directed(RelationId::Occurs, Direction::Forward), cursor: Cursor::FIRST, limit: 1 });
     assert_eq!(atlas_graph::kjv_adapter::decode_text_unit(&node_of(&first_h.entries[0].entry.node)), Some((gen, 1, 1)));
     assert!(snap.rows_behind(&first_h.entries[0].entry.edge).iter().all(|r| r.provenance == "stepbible-tahot"));
 }

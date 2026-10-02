@@ -10,7 +10,7 @@ use std::sync::Mutex;
 use atlas_graph_types::canon::ids::{any_node_id_str, parse_any_node_id, position_str};
 use atlas_graph_types::canon::Canon;
 use atlas_graph_types::edge::{Direction, EdgeId, EdgeKind, EdgeRecord, Parentage};
-use atlas_graph_types::adjacency::{EdgeEntry, EdgeMeta, EdgePage, EdgeQuery, EdgeSummary, NodePage};
+use atlas_graph_types::adjacency::{Cursor, EdgeEntry, EdgeMeta, EdgePage, EdgeQuery, EdgeSummary, NodePage};
 use atlas_graph_types::graph::EdgeRel;
 use atlas_graph_types::id::{AnyNodeId, ContentAddressed, ContentHash, NarrativeId, NodeKind, Pid, Position};
 use atlas_graph_types::node::Node;
@@ -215,7 +215,7 @@ impl SqliteSnapshot {
     fn edges_inner(&self, p: &Position, q: &EdgeQuery) -> Result<EdgePage, SqliteError> {
         let (rel, dir, rel_name) = Self::code_of(q.kind);
         let subject = position_str(p);
-        let start = q.cursor.unwrap_or(0);
+        let start = q.cursor.0;
         self.with_conn(|conn| {
             let mut stmt = conn.prepare_cached(
                 "SELECT ord, object, edge_id, meta_kind, meta_narrative, meta_votes, meta_parentage FROM all_edge_index AS first \
@@ -229,7 +229,7 @@ impl SqliteSnapshot {
             while let Some(row) = rows.next()? {
                 let ord: i64 = row.get(0)?;
                 if entries.len() == q.limit {
-                    next = Some(ord as usize);
+                    next = Some(Cursor(ord as usize));
                     break;
                 }
                 let object: String = row.get(1)?;
@@ -250,7 +250,7 @@ impl SqliteSnapshot {
             let earlier = before
                 .query_map(rusqlite::params![subject, rel, dir, start as i64, i64::try_from(q.limit).unwrap_or(i64::MAX).saturating_add(1)], |row| row.get::<_, i64>(0))?
                 .collect::<Result<Vec<_>, _>>()?;
-            let previous = (q.limit > 0).then(|| earlier.get(q.limit.saturating_sub(1)).filter(|_| earlier.len() > q.limit).map(|&ord| ord as usize)).flatten();
+            let previous = q.cursor.previous(earlier.len(), q.limit, |back| Cursor(earlier[back.get() - 1] as usize));
             Ok(EdgePage { kind: q.kind, entries, previous, next })
         })
     }
