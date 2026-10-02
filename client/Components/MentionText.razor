@@ -26,7 +26,7 @@
 
     [Parameter] public string TestIdSuffix { get; set; } = "";
 
-    [Parameter, EditorRequired] public EventCallback<IExplorable> OnExplore { get; set; }
+    [Parameter, EditorRequired] public EventCallback<PopoverOpening> OnExplore { get; set; }
 
-    [Parameter] public EventCallback<IExplorable> OnToggleSelect { get; set; }
+    [Parameter] public EventCallback<NodeRef> OnToggleSelect { get; set; }
 }

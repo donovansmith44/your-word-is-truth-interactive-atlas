@@ -21,8 +21,6 @@ public sealed class PushViaConformanceTests
                 "CrossRefsSection: EdgeKind.Cites",
                 "CatechismSeamSection: EdgeKind.CatechismLink",
                 "CatechismScripturesSection: EdgeKind.CatechismLink",
-                "PlaceDatesSection: EdgeKind.MentionedIn",
-                "PlaceEventsSection: EdgeKind.SiteOf",
                 "VerseEventMembershipSection: EdgeKind.Attests",
                 "EventDateAndPlacesSection: EdgeKind.DatedBy",
                 "EventDateAndPlacesSection: direction.Via",

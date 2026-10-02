@@ -140,14 +140,6 @@ public sealed class MapInterop : IAsyncDisposable
         await module.InvokeVoidAsync("setNarrativeFocus", activeNarrativeIds, currentEventIds);
     }
 
-    // Deliberately deferred until both chapter-text and history fetches settle -- measuring
-    // earlier would size against not-yet-loaded content and produce a wrong flip/clamp decision.
-    public static async Task<CardMeasurement> MeasureCardPlacement(IJSRuntime js, ElementReference cardEl)
-    {
-        var module = await js.InvokeAsync<IJSObjectReference>("import", "./js/map.js");
-        return await module.InvokeAsync<CardMeasurement>("measureCardPlacement", cardEl);
-    }
-
     public async ValueTask DisposeAsync()
     {
         try
@@ -192,5 +184,3 @@ public sealed class MapEventsSink
 // These JS-interop return shapes deserialize via Blazor's default (camelCase) JSON options: they
 // never cross the HTTP API, so they have no contract counterpart.
 public sealed record ContainerPoint(double X, double Y);
-
-public sealed record CardMeasurement(double Width, double Height, double ContainerWidth, double ContainerHeight);

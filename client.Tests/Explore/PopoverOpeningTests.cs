@@ -49,4 +49,18 @@ public sealed class PopoverOpeningTests
         // Assert
         Assert.Equal("legacy GEN.1.1", described);
     }
+
+    [Fact]
+    public void Only_an_opening_on_a_legacy_node_answers_for_that_node()
+    {
+        // Arrange
+        var verse = new VerseNode("GEN.1.1");
+        var openings = new PopoverOpening[] { new PopoverOpening.Explore(Exodus), new PopoverOpening.Resume(Saved), new PopoverOpening.Legacy(verse) };
+
+        // Act
+        var answers = openings.Select(opening => opening.OpensLegacy(node => node == verse)).ToList();
+
+        // Assert
+        Assert.Equal([false, false, true], answers);
+    }
 }

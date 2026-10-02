@@ -35,7 +35,7 @@ else
                            TextClass="popover-reader-verse-text" MentionClass="popover-reader-mention"
                            XrefMarkerTestIdPrefix="popover-reader-xref-marker"
                            XrefMarkerGlyph="@xrefLetters.GetValueOrDefault(v.Number, "")"
-                           OnXrefClick="@(vn => OnExplore.InvokeAsync(new VerseNode($"{Book}.{Chapter}.{vn}", xrefEntryPoint: true)))" />
+                           OnXrefClick="@(vn => OnExplore.InvokeAsync(new PopoverOpening.Legacy(new VerseNode($"{Book}.{Chapter}.{vn}", xrefEntryPoint: true))))" />
             }
         }
     </div>
@@ -58,7 +58,7 @@ else
     [Parameter, EditorRequired] public RenderFragment CompactContent { get; set; } = default!;
     [Parameter] public string TestIdSuffix { get; set; } = "";
 
-    [Parameter, EditorRequired] public EventCallback<IExplorable> OnExplore { get; set; }
+    [Parameter, EditorRequired] public EventCallback<PopoverOpening> OnExplore { get; set; }
 
     private bool AlreadyInCurrentReaderChapter => ViewState.IsReaderChapterMounted(Book, Chapter);
 

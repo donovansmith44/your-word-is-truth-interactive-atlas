@@ -4,7 +4,7 @@ namespace BibleAtlas.Client.Tests.Contract;
 
 public sealed class NeighboursTests
 {
-    private static readonly NodeRef Hazor = new(id: "Place:hazor-1", kind: NodeKind.Place, label: "Hazor 1");
+    private static readonly NodeRef Hazor = new(id: "Place:hazor-1", kind: NodeKind.Place, label: "Hazor");
     private static readonly NodeRef Jabin = new(id: "Person:jabin_1", kind: NodeKind.Person, label: "Jabin");
     private static readonly EdgeRef ADating = new(id: "DatedBy:00ff", kind: EdgeKind.DatedBy, label: "A dating");
 

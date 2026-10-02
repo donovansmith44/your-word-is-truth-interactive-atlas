@@ -211,8 +211,8 @@ public class AqcSteps
             "/api/scene/scripture?ref=JHN.3.16" => SceneScriptureFixture("JHN.3.16"),
             "/api/text?ref=JHN.3.16&n=1" => TextWindowFixture("JHN.3.16", 1),
             "/api/text?ref=BoC%207.2.1&corpus=concord&scope=chapter" => "text-window-concord-chapter-bad-scope",
-            "/api/place/hazor-1?from=notayear" => "place-period-bad-window",
             "/api/elements?ids=text-unit:JHN.3.16,Person:nonexistent-xyz" => "element-read",
+            "/api/event/ab_ur" => "event-page-ab-ur",
             _ => throw new NotSupportedException($"AqcSteps: no fixture mapped for path '{path}'."),
         };
         Answer(Query.ByPath, name);

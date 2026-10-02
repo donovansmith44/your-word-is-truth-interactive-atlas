@@ -5,7 +5,7 @@
         @foreach (var entry in Visible)
         {
             <button type="button" class="popover-catechism-item explorable" data-testid="@entry.TestId"
-                    @onclick="() => OnExplore.InvokeAsync(new CatechismNode(entry.Item.Id, entry.Item.Name))">
+                    @onclick="() => OnExplore.InvokeAsync(new PopoverOpening.Legacy(new CatechismNode(entry.Item.Id, entry.Item.Name)))">
                 @entry.Label
             </button>
         }
@@ -22,7 +22,7 @@
     [Parameter] public int? Cap { get; set; }
     [Parameter] public string MoreTestId { get; set; } = "catechism-more";
     [Parameter] public string CollapseTestId { get; set; } = "catechism-collapse";
-    [Parameter, EditorRequired] public EventCallback<IExplorable> OnExplore { get; set; }
+    [Parameter, EditorRequired] public EventCallback<PopoverOpening> OnExplore { get; set; }
 
     private int? _shown;
     private int ShownCount(int cap) => _shown ??= cap;

@@ -15,7 +15,6 @@
       "**/Explore/AnchoredText.cs",
       "**/Explore/ChapterText.cs",
       "**/Explore/EventAccounts.cs",
-      "**/Explore/PlaceDates.cs",
       "**/Explore/Chip.cs",
       "**/Explore/Explorable.cs",
       "**/Explore/Exploration.cs",

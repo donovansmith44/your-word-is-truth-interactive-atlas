@@ -12,7 +12,6 @@ pub mod graph_wire;
 pub mod load;
 pub mod map;
 pub mod meta;
-pub mod places;
 pub mod query;
 pub mod reading;
 pub mod reference;
@@ -33,7 +32,6 @@ pub fn openapi_router() -> utoipa_axum::router::OpenApiRouter<app::AppState> {
         .merge(map::routes())
         .merge(reading::routes())
         .merge(catechism::routes())
-        .merge(places::routes())
         .merge(events::routes())
         .merge(graph::routes())
         .merge(contents::routes())

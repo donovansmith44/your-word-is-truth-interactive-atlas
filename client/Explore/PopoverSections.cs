@@ -6,9 +6,9 @@ namespace BibleAtlas.Client.Explore;
 
 public interface IPopoverSectionContext
 {
-    Task PushAsync(IExplorable node, EdgeKind via);
+    Task PushAsync(PopoverOpening opening, EdgeKind via);
 
-    Task ToggleSelectAsync(IExplorable node);
+    Task ToggleSelectAsync(NodeRef node);
 
     // Must be read from a RenderFragment at render time, never captured into a local during
     // ResolveAsync: providers resolve concurrently, so no provider can know its siblings'
@@ -46,10 +46,6 @@ public static class PopoverSectionRegistry
         (new VerseParallelsSection(), 40),
         (new CrossRefsSection(), 50),
 
-        (new PlaceDescriptionSection(), 60),
-        (new PlaceDatesSection(), 70),
-        (new PlaceBlurbSection(), 80),
-        (new PlaceEventsSection(), 90),
         (new CatechismTextSection(), 100),
         (new CatechismExplanationSection(), 110),
         (new CatechismWhereWrittenSection(), 120),

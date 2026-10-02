@@ -3,7 +3,7 @@ openapi: 3.1.0
 info:
   title: Bible Atlas API
   description: The Bible Atlas HTTP API, generated from the Rust that serves it. The `x-atlas-relations` extension lists every relation this atlas joins two nodes by, each with the label its forward and its inverse neighbours are asked for and the words each is displayed by, so a consumer builds its own vocabulary from that list rather than writing one out.
-  version: 0.16.0
+  version: 0.17.0
 paths:
   /api/books:
     get:
@@ -496,60 +496,6 @@ paths:
             application/yaml:
               schema:
                 type: string
-  /api/place/{id}:
-    get:
-      tags:
-      - places
-      summary: 'One place: where it is, the events that happened there oldest first, and its curated history where it has one.'
-      description: |-
-        `{id}` is a place id handed back by another response; an id naming no place
-        is `not_found`. The optional `from` and `to` years choose the period whose
-        name and description the history reports -- give both or neither, and giving
-        neither simply leaves the place's default name in place. One year alone, a year
-        that is not a year, and a span that ends before it starts are each `bad_window`.
-      operationId: place
-      parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: string
-      - name: from
-        in: query
-        required: false
-        schema:
-          type: integer
-          format: int32
-      - name: to
-        in: query
-        required: false
-        schema:
-          type: integer
-          format: int32
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PlacePage'
-        '400':
-          description: The reference, window or query could not be read; the body's `code` is `bad_window`.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorBody'
-        '404':
-          description: Nothing in this atlas answers to that reference.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorBody'
-        '500':
-          description: The request was well formed but this atlas's own data for it is incomplete.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorBody'
   /api/polities:
     get:
       tags:
@@ -1769,9 +1715,6 @@ components:
           - $ref: '#/components/schemas/TimeRange'
           - type: 'null'
       additionalProperties: false
-    EventId:
-      type: string
-      description: The id of one Event node.
     EventKind:
       type: string
       description: |-
@@ -1937,35 +1880,6 @@ components:
         title:
           type: string
           description: The heading as a reader sees it.
-      additionalProperties: false
-    History:
-      type: object
-      description: |-
-        What is known about a place's name and existence over time, resolved for the
-        years asked about.
-      required:
-      - display_name
-      properties:
-        blurb:
-          type:
-          - string
-          - 'null'
-          description: A short description of the place in those years, absent when none applies.
-        destroyed:
-          oneOf:
-          - $ref: '#/components/schemas/PlaceDateClaim'
-            description: When the place was destroyed, absent when that is not recorded.
-          - type: 'null'
-        display_name:
-          type: string
-          description: |-
-            The name this place bore in the years asked about, falling back to its
-            default name when no period name applies.
-        established:
-          oneOf:
-          - $ref: '#/components/schemas/PlaceDateClaim'
-            description: When the place was founded, absent when that is not recorded.
-          - type: 'null'
       additionalProperties: false
     KretzmannChapter:
       type: object
@@ -2395,36 +2309,6 @@ components:
         name:
           type: string
       additionalProperties: false
-    PlaceDateClaim:
-      type: object
-      description: A date this atlas claims for a place, with the verses it rests on.
-      required:
-      - when
-      - verses
-      properties:
-        event:
-          oneOf:
-          - $ref: '#/components/schemas/EventId'
-            description: |-
-              The event this founding or fall is, when the verses attest one; absent for a
-              claim inferred from later references rather than narrated.
-          - type: 'null'
-        note:
-          type:
-          - string
-          - 'null'
-          description: |-
-            A qualifier such as `traditional`, shown as a leading "c." on the date;
-            absent when the date needs none.
-        verses:
-          type: array
-          items:
-            type: string
-          description: The verses supporting the claim.
-        when:
-          $ref: '#/components/schemas/YearSpan'
-          description: The year claimed, or the range; a single year is a span whose ends are equal.
-      additionalProperties: false
     PlaceDetail:
       type: object
       description: Where one place is (latitude north positive, longitude east positive), the name a reader of the King James Version knows it by, its plain canonical name only where that differs, a sentence on its history across every period recorded for it, and when it was founded and fell, each only where recorded.
@@ -2458,65 +2342,20 @@ components:
           type: number
           format: double
       additionalProperties: false
-    PlacePage:
-      type: object
-      description: |-
-        One place: where it is, the events that happened there, and what is known
-        about its name and its history.
-      required:
-      - id
-      - name
-      - lat
-      - lon
-      - events
-      properties:
-        canonical_name:
-          type:
-          - string
-          - 'null'
-          description: |-
-            The place's plain canonical name, present only when the name being shown is
-            a period name or a translation's own wording and so differs from it.
-        description:
-          type:
-          - string
-          - 'null'
-          description: |-
-            Public-domain dictionary prose about the place, absent when none is
-            recorded. Never invented.
-        events:
-          type: array
-          items:
-            $ref: '#/components/schemas/SceneEvent'
-        history:
-          oneOf:
-          - $ref: '#/components/schemas/History'
-            description: Absent for a place with no curated history.
-          - type: 'null'
-        id:
-          type: string
-        lat:
-          type: number
-          format: double
-          description: Latitude in degrees, north positive.
-        lon:
-          type: number
-          format: double
-          description: Longitude in degrees, east positive.
-        name:
-          type: string
-      additionalProperties: false
     PlaceRef:
       type: object
-      description: 'A place named by something else on this response: its id, to read or to target on the map, and the name to show for it.'
+      description: 'A place named by something else on this response: its id, to target on the map, the name to show for it, and its node in the graph.'
       required:
       - id
       - name
+      - node
       properties:
         id:
           type: string
         name:
           type: string
+        node:
+          $ref: '#/components/schemas/NodeRef'
       additionalProperties: false
     Point:
       type: array
@@ -3407,8 +3246,6 @@ tags:
   description: 'Scripture as it is read: a chapter verse by verse, one verse in full, and the cross references a verse carries.'
 - name: catechism
   description: 'The catechism: one item in full, and the items that cite a passage.'
-- name: places
-  description: 'One place: where it is, what happened there, and the name and history it bore in the period asked about.'
 - name: events
   description: 'What happened: one event in full, every narrative this atlas tells, and the narrative legs an event belongs to.'
 - name: graph

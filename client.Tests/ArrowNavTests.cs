@@ -19,7 +19,7 @@ public class ArrowNavTests
         };
 
         // Act
-        var refs = ArrowNav.SelectRefs(accounts).Select(r => (r.Ref, ((VerseNode)r.Target).Title)).ToList();
+        var refs = ArrowNav.SelectRefs(accounts).Select(r => (r.Ref, ((VerseNode)((PopoverOpening.Legacy)r.Target).Node).Title)).ToList();
 
         // Assert
         Assert.Equal([("LUK.6.12-16", "LUK.6.12"), ("MRK.14.54, 66-72", "MRK.14.54"), ("MAT.5.1-7.29", "MAT.5.1")], refs);

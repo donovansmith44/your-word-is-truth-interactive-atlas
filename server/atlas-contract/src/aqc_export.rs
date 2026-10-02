@@ -30,7 +30,6 @@ pub const FIXTURES: &[(&str, &str)] = &[
     ("text-window-bad-corpus", "/api/text?ref=JHN.3.16&n=1&corpus=not-a-real-corpus"),
     ("text-window-bad-scope", "/api/text?ref=JHN.3.16&n=1&scope=not-a-real-scope"),
     ("text-window-concord-chapter-bad-scope", "/api/text?ref=BoC%207.2.1&corpus=concord&scope=chapter"),
-    ("place-period-bad-window", "/api/place/hazor-1?from=notayear"),
     ("scene-time", "/api/scene?from=-2100&to=-2000"),
     ("scene-scripture", "/api/scene/scripture?ref=JHN.3.16"),
     ("scene-bad-window", "/api/scene?from=100&to=-100"),
@@ -40,6 +39,7 @@ pub const FIXTURES: &[(&str, &str)] = &[
     ("contents-bad-corpus", "/api/contents/nope"),
     ("contract", "/api/contract"),
     ("element-read", "/api/elements?ids=text-unit:JHN.3.16,Person:nonexistent-xyz"),
+    ("event-page-ab-ur", "/api/event/ab_ur"),
 ];
 
 /// Percent-encodes the one wire-id character that collides with axum's own

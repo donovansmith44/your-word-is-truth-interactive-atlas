@@ -22,45 +22,6 @@ public class YearNodeEventTimeTests
         Assert.Equal([("AD 31", "Year"), ("1000 – 960 BC", "Year")], titles);
     }
 
-    [Fact]
-    public void A_place_date_is_titled_with_what_it_dates_and_the_served_label_of_its_claim()
-    {
-        // Arrange
-        var established = new Year(label: "1003 BC", value: -1003);
-        var claim = new DateClaim(@event: DavidTakesZion, label: "c. 1003 BC", note: "traditional", verses: [], when: new TimeRange(from: established, label: "1003 BC", to: established));
-        var node = YearNode.Of("jerusalem", new PlaceDate("Established", claim))!;
-
-        // Act
-        var title = (node.Title, node.Kind, node.PlaceId, node.Label);
-
-        // Assert
-        Assert.Equal(("Established c. 1003 BC", "Year", "jerusalem", "Established"), title);
-    }
-
-    [Fact]
-    public async Task A_place_dates_chips_are_the_verses_its_claim_rests_on_then_the_map()
-    {
-        // Arrange
-        var established = new Year(label: "1003 BC", value: -1003);
-        var zion = new TextSpan(from: new TextPoint(unit: new BibleRef(BookId._2SA, 5, 7), word: null), to: new TextPoint(unit: new BibleRef(BookId._2SA, 5, 7), word: null));
-        var claim = new DateClaim(@event: DavidTakesZion, label: "c. 1003 BC", note: "traditional", verses: [zion], when: new TimeRange(from: established, label: "1003 BC", to: established));
-        var node = YearNode.Of("jerusalem", new PlaceDate("Established", claim))!;
-
-        // Act
-        var chips = (await node.ExploreAsync(new StubbedAtlas("").Client())).Select(chip => (chip.Label, chip.ChipTestId, TargetOf(chip.Target))).ToList();
-
-        // Assert
-        Assert.Equal([("2SA.5.7", "popover-chip-verse-2SA.5.7", "Verse 2SA.5.7 via AttestedIn"), ("Show this time on the map", "popover-chip-map", "World from=-1003&to=-1003")], chips);
-    }
-
-    private static string TargetOf(ChipTarget target) => target switch
-    {
-        ChipTarget.Push { Next: VerseNode verse } push => $"Verse {verse.Title} via {push.Via}",
-        ChipTarget.NavigateWorld world => $"World {world.Query}",
-        _ => target.ToString(),
-    };
-
-    private static readonly NodeRef DavidTakesZion = new(id: "Event:sam2_jerusalem_captured", kind: NodeKind.Event, label: "David takes Zion");
     private static readonly NodeRef TheEvent = new(id: "Event:ab_ur", kind: NodeKind.Event, label: "Terah's family leaves Ur");
     private static readonly Year Ad30 = new(label: "AD 30", value: 30);
     private static readonly Year Ad31 = new(label: "AD 31", value: 31);

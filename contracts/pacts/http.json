@@ -3460,7 +3460,12 @@
         "places": [
           {
             "id": "haran",
-            "name": "Haran"
+            "name": "Haran",
+            "node": {
+              "id": "Place:haran",
+              "kind": "Place",
+              "label": "Haran"
+            }
           }
         ],
         "provenance": "curated",
@@ -5120,71 +5125,6 @@
         "kind": "site-of",
         "next": null,
         "version": "fa3efe2128354f3b2a34f64dee35fbf0"
-      },
-      "status": 200
-    },
-    "GET /api/place/hazor-1": {
-      "body": {
-        "description": "A stronghold of the Canaanites in the mountains north of Lake Merom ([Josh. 11:1-5](/josh#Josh.11.1)). Jabin the king with his allied tribes here encountered Joshua in a great battle. Joshua gained a signal victory, which virtually completed his conquest of Canaan (11:10-13). This city was, however, afterwards rebuilt by the Canaanites, and was ruled by a king with the same hereditary name of Jabin. His army, under a noted leader of the name of Sisera, swept down upon the south, aiming at the complete subjugation of the country. This powerful army was met by the Israelites under Barak, who went forth by the advice of the prophetess Deborah. The result was one of the most remarkable victories for Israel recorded in the Old Testament ([Josh. 19:36](/josh#Josh.19.36); [Judg. 4:2](/judg#Judg.4.2); [1 Sam. 12:9](/1sam#1Sam.12.9)). The city of Hazor was taken and occupied by the Israelites. It was fortified by Solomon to defend the entrance into the kingdom from Syria and Assyria. When Tiglath-pileser, the Assyrian king, invaded the land, this was one of the first cities he captured, carrying its inhabitants captive into Assyria ([2 Kings 15:29](/2kgs#2Kgs.15.29)). It has been identified with Khurbet Harrah, 2 1/2 miles south-east of Kedesh.",
-        "events": [
-          {
-            "id": "cq_hazor",
-            "label": "Hazor is defeated and burned",
-            "verse_groups": [
-              {
-                "book": "JOS",
-                "chapter": 11,
-                "count": 2,
-                "verses": [
-                  "JOS.11.10",
-                  "JOS.11.11"
-                ]
-              }
-            ],
-            "when": {
-              "from": {
-                "label": "1400 BC",
-                "value": -1400
-              },
-              "label": "1400 BC",
-              "to": {
-                "label": "1400 BC",
-                "value": -1400
-              }
-            }
-          },
-          {
-            "id": "theo-138",
-            "label": "Subjugation by Jabin",
-            "verse_groups": [
-              {
-                "book": "JDG",
-                "chapter": 4,
-                "count": 3,
-                "verses": [
-                  "JDG.4.1",
-                  "JDG.4.2",
-                  "JDG.4.3"
-                ]
-              }
-            ],
-            "when": {
-              "from": {
-                "label": "1298 BC",
-                "value": -1298
-              },
-              "label": "1298 BC",
-              "to": {
-                "label": "1298 BC",
-                "value": -1298
-              }
-            }
-          }
-        ],
-        "id": "hazor-1",
-        "lat": 33.018333,
-        "lon": 35.569167,
-        "name": "Hazor 1"
       },
       "status": 200
     },

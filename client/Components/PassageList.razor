@@ -65,7 +65,7 @@
     [Parameter] public string MoreTestId { get; set; } = "passage-list-more";
     [Parameter] public string CollapseTestId { get; set; } = "passage-list-collapse";
     [Parameter] public string RevealNoun { get; set; } = "entries";
-    [Parameter, EditorRequired] public EventCallback<IExplorable> OnExplore { get; set; }
+    [Parameter, EditorRequired] public EventCallback<PopoverOpening> OnExplore { get; set; }
 
     [Parameter] public int? TrueTotal { get; set; }
     [Parameter] public Func<Task<IReadOnlyList<PassageSourceUnit>>>? ResolveRemainingAsync { get; set; }
@@ -73,7 +73,7 @@
     private IReadOnlyList<PassageSourceUnit>? _resolvedRemainder;
     private bool _resolvingRemainder;
 
-    [Parameter] public EventCallback<IExplorable> OnToggleSelect { get; set; }
+    [Parameter] public EventCallback<NodeRef> OnToggleSelect { get; set; }
 
     [Parameter] public int? ClampVerses { get; set; }
 
@@ -159,12 +159,12 @@
             : new VerseNode(block.FirstVref);
     }
 
-    private Task Explore(PassageBlockData block) => OnExplore.InvokeAsync(ExploreNodeOf(block));
+    private Task Explore(PassageBlockData block) => OnExplore.InvokeAsync(new PopoverOpening.Legacy(ExploreNodeOf(block)));
 
     private Task OnEntryClick(MouseEventArgs e, PassageBlockData block)
     {
         var node = ExploreNodeOf(block);
-        return e.CtrlKey || e.MetaKey ? OnToggleSelect.InvokeAsync(node) : OnExplore.InvokeAsync(node);
+        return e.CtrlKey || e.MetaKey ? OnToggleSelect.InvokeAsync(node.Identity) : OnExplore.InvokeAsync(new PopoverOpening.Legacy(node));
     }
 
     private Task OnKeyDown(KeyboardEventArgs e, PassageBlockData block) => e.Key == "Enter" ? Explore(block) : Task.CompletedTask;

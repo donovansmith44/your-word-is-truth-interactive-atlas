@@ -15,7 +15,7 @@
     }
     <span class="@TextClass">
         <MentionText Text="@Unit.Text" Anchors="@Unit.Anchors" WordsOfChrist="@Unit.WordsOfChrist" Verse="@Verse.Number"
-                     ClassPrefix="@MentionClass" TestIdSuffix="@TestIdSuffix" OnExplore="OnExplore" OnToggleSelect="OnMentionToggleSelect" />
+                     ClassPrefix="@MentionClass" TestIdSuffix="@TestIdSuffix" OnExplore="OnExplore" OnToggleSelect="OnToggleSelect" />
         @if (ShowXrefMarker)
         {
             <sup class="verse-xref-marker" data-testid="@XrefMarkerTestId"
@@ -34,16 +34,14 @@
     [Parameter, EditorRequired] public string Book { get; set; } = default!;
     [Parameter, EditorRequired] public int Chapter { get; set; }
 
-    [Parameter, EditorRequired] public EventCallback<IExplorable> OnExplore { get; set; }
+    [Parameter, EditorRequired] public EventCallback<PopoverOpening> OnExplore { get; set; }
 
-    [Parameter] public EventCallback<VerseNode> OnToggleSelect { get; set; }
-
-    [Parameter] public EventCallback<IExplorable> OnMentionToggleSelect { get; set; }
+    [Parameter] public EventCallback<NodeRef> OnToggleSelect { get; set; }
 
     // Ctrl/Cmd-click toggles selection instead of opening a popover; shift's range-extend
     // meaning lives on verse-num (OnVerseNumClick), not here.
     private Task OnRowClick(MouseEventArgs e) =>
-        e.CtrlKey || e.MetaKey ? OnToggleSelect.InvokeAsync(new VerseNode(Vref)) : OnExplore.InvokeAsync(new VerseNode(Vref));
+        e.CtrlKey || e.MetaKey ? OnToggleSelect.InvokeAsync(new VerseNode(Vref).Identity) : OnExplore.InvokeAsync(new PopoverOpening.Legacy(new VerseNode(Vref)));
 
     [Parameter] public bool Focal { get; set; }
 
@@ -113,6 +111,6 @@
     private string XrefMarkerAriaLabel => $"Cross-references for verse {Verse.Number}";
     private string XrefMarkerTestId => $"{XrefMarkerTestIdPrefix}-{Verse.Number}{TestIdSuffix}";
 
-    private Task OnLineKeyDown(KeyboardEventArgs e) => e.Key == "Enter" ? OnExplore.InvokeAsync(new VerseNode(Vref)) : Task.CompletedTask;
+    private Task OnLineKeyDown(KeyboardEventArgs e) => e.Key == "Enter" ? OnExplore.InvokeAsync(new PopoverOpening.Legacy(new VerseNode(Vref))) : Task.CompletedTask;
     private Task OnXrefKeyDown(KeyboardEventArgs e) => e.Key == "Enter" ? OnXrefClick.InvokeAsync(Verse.Number) : Task.CompletedTask;
 }

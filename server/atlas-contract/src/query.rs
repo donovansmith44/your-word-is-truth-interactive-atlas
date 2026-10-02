@@ -125,7 +125,6 @@ mod tests {
     use crate::error::ErrorCode;
     use crate::graph::{EdgePageQuery, TextWindowQuery};
     use crate::map::{SceneWindow, ScripturePassage};
-    use crate::places::PlacePeriod;
 
     #[test]
     fn a_parameter_given_twice_reads_as_the_last_of_the_two() {
@@ -206,7 +205,6 @@ mod tests {
             refusal::<TextWindowQuery>("ref=JHN.3.16&scope=paragraph").await,
             refusal::<TextWindowQuery>("ref=JHN.3.16&dir=sideways").await,
             refusal::<TextWindowQuery>("ref=JHN.3.16&corpus=vulgate").await,
-            refusal::<PlacePeriod>("from=notayear&to=100").await,
         ];
         // Assert
         assert_eq!(
@@ -222,7 +220,6 @@ mod tests {
                 Some((400, ErrorCode::BadScope, UNREADABLE_SCOPE.to_string())),
                 Some((400, ErrorCode::BadDir, UNREADABLE_DIR.to_string())),
                 Some((400, ErrorCode::BadCorpus, UNREADABLE_CORPUS.to_string())),
-                Some((400, ErrorCode::BadWindow, UNREADABLE_WINDOW.to_string())),
             ]
         );
     }
@@ -243,10 +240,9 @@ mod tests {
             refusal::<ScripturePassage>("ref=JHN.3.16").await,
             refusal::<EdgePageQuery>("kind=cites&cursor=notanumber&limit=notanumber").await,
             refusal::<TextWindowQuery>("ref=JHN.3.16&n=notanumber&dir=backward&scope=verse&corpus=concord").await,
-            refusal::<PlacePeriod>("").await,
         ];
         // Assert
-        assert_eq!(read, vec![NOTHING_REFUSED; 5]);
+        assert_eq!(read, vec![NOTHING_REFUSED; 4]);
     }
 
     const NOTHING_REFUSED: Option<(u16, ErrorCode, String)> = None;
