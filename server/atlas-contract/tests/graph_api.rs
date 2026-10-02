@@ -616,15 +616,15 @@ async fn node_record_omits_description_for_a_kind_that_never_carries_one() {
 }
 
 #[tokio::test]
-async fn verse_endpoint_serves_the_real_words_of_christ_span_for_mat_4_19() {
+async fn a_verses_record_serves_the_real_words_of_christ_span_for_mat_4_19() {
     let app = compiled_app();
-    let (st, body, _) = get(&app, "/api/verse/MAT.4.19").await;
+    let (st, body, _) = get(&app, "/api/node/text-unit:MAT.4.19").await;
     assert_eq!(st, 200, "{body}");
 
-    let text = body["text"].as_str().unwrap();
+    let text = body["text"]["text"].as_str().unwrap();
     assert_eq!(text, "And he saith unto them, Follow me, and I will make you fishers of men.");
 
-    let spans = body["words_of_christ"].as_array().expect("words_of_christ must always be present, even at 0, never an omitted key");
+    let spans = body["text"]["words_of_christ"].as_array().expect("words_of_christ must always be present, even at 0, never an omitted key");
     assert_eq!(spans.len(), 1, "MAT.4.19 must carry exactly one real red-letter span over the compiled data: {spans:?}");
     assert_eq!(spans[0]["start"], 24, "{spans:?}");
     assert_eq!(spans[0]["end"], 70, "{spans:?}");
@@ -938,12 +938,12 @@ async fn chapter_verse_xref_count_is_zero_not_omitted_for_a_real_verse_with_no_c
 }
 
 #[tokio::test]
-async fn generic_cites_edges_are_already_votes_descending_matching_the_bespoke_verse_endpoint() {
+async fn generic_cites_edges_are_already_votes_descending_matching_the_bespoke_xrefs_endpoint() {
     let app = compiled_app();
 
-    let (st, verse, _) = get(&app, "/api/verse/JHN.3.16").await;
+    let (st, xrefs, _) = get(&app, "/api/xrefs/JHN.3.16").await;
     assert_eq!(st, 200);
-    let bespoke: Vec<String> = verse["cross_refs"].as_array().unwrap().iter().map(|cr| first_verse_of(cr["target"].as_str().unwrap())).collect();
+    let bespoke: Vec<String> = xrefs.as_array().unwrap().iter().map(|cr| first_verse_of(cr["target"].as_str().unwrap())).collect();
     assert!(bespoke.len() > 1, "need >1 real cross-references to prove an ORDER, not just a singleton");
 
     let (st2, edges, _) = get(&app, &format!("/api/node/text-unit:JHN.3.16/edges?kind=cites&limit={LARGEST_PAGE}")).await;
@@ -951,8 +951,8 @@ async fn generic_cites_edges_are_already_votes_descending_matching_the_bespoke_v
     let generic: Vec<String> = edges["entries"].as_array().unwrap().iter().map(|e| e["neighbour"]["node"]["id"].as_str().unwrap().trim_start_matches("text-unit:").to_string()).collect();
 
     assert_eq!(
-        generic, bespoke,
-        "the generic `cites` edge page must already be votes-descending, position for position matching the bespoke, provably-votes-sorted /api/verse endpoint -- no client-side re-sort should ever be needed"
+        generic[..bespoke.len()], bespoke,
+        "the generic `cites` edge page must already be votes-descending, position for position matching the bespoke, provably-votes-sorted /api/xrefs endpoint -- no client-side re-sort should ever be needed"
     );
 }
 
@@ -1081,29 +1081,12 @@ async fn book_container_record_is_served_and_a_verse_reaches_its_chapter_back() 
 }
 
 #[tokio::test]
-async fn verse_detail_carries_its_own_text_provenance_and_its_sections_sources() {
+async fn a_verses_record_carries_its_texts_provenance() {
     let app = compiled_app();
-    let (st, body, _h) = get(&app, "/api/verse/GEN.1.1").await;
+    let (st, body, _h) = get(&app, "/api/node/text-unit:GEN.1.1").await;
     assert_eq!(st, StatusCode::OK);
 
     assert_eq!(body["provenance"], "kjv", "a verse's text is the King James Version's, and must say so");
-
-    assert_eq!(
-        body["cross_refs_provenance"].as_array().expect("cross_refs_provenance must be an array"),
-        &vec![serde_json::json!("openbible.info-cross-references")],
-        "'sourced from openbible.com' -- the owner's own example, at the section he named it about"
-    );
-
-    let events = body["events"].as_array().expect("events array");
-    assert!(!events.is_empty(), "GEN.1.1 must belong to at least one event for this assertion to mean anything");
-    for e in events {
-        let p = e["provenance"].as_str().unwrap_or("");
-        assert!(
-            p == "theographic" || p == "curated",
-            "every event-membership row must name its event's own source ('theographic' | 'curated'), got '{p}' for {}",
-            e["id"]
-        );
-    }
 }
 
 #[tokio::test]
@@ -1158,20 +1141,9 @@ async fn no_provenance_field_the_wire_serves_is_ever_blank() {
     };
     let has_rows = |v: &serde_json::Value| v.as_array().is_some_and(|a| !a.is_empty());
 
-    let (st, verse, _h) = get(&app, "/api/verse/GEN.1.1").await;
+    let (st, verse, _h) = get(&app, "/api/node/text-unit:GEN.1.1").await;
     assert_eq!(st, StatusCode::OK);
     check("verse.provenance", &verse["provenance"], false);
-    check("verse.cross_refs_provenance", &verse["cross_refs_provenance"], has_rows(&verse["cross_refs"]));
-    check("verse.catechism_provenance", &verse["catechism_provenance"], has_rows(&verse["catechism"]));
-    for e in verse["events"].as_array().into_iter().flatten() {
-        check("verse.events[].provenance", &e["provenance"], false);
-    }
-    for c in verse["cross_refs"].as_array().into_iter().flatten() {
-        check("verse.cross_refs[].provenance", &c["provenance"], true);
-    }
-    for c in verse["catechism"].as_array().into_iter().flatten() {
-        check("verse.catechism[].provenance", &c["provenance"], true);
-    }
 
     let (st, event, _h) = get(&app, "/api/event/mat_leper_healed").await;
     assert_eq!(st, StatusCode::OK);
@@ -1231,7 +1203,7 @@ async fn every_provenance_id_the_wire_serves_resolves_to_a_registry_source() {
     };
 
     let app = compiled_app();
-    let (_st, verse, _h) = get(&app, "/api/verse/GEN.1.1").await;
+    let (_st, verse, _h) = get(&app, "/api/node/text-unit:GEN.1.1").await;
     let (_st, event, _h) = get(&app, "/api/event/mat_leper_healed").await;
     let (_st, xrefs, _h) = get(&app, "/api/xrefs/EXO.20.3-4").await;
     let (_st, catechism, _h) = get(&app, "/api/catechism/MAT.28.19-20").await;
@@ -1246,11 +1218,6 @@ async fn every_provenance_id_the_wire_serves_resolves_to_a_registry_source() {
         }
     };
     push(&verse["provenance"]);
-    push(&verse["cross_refs_provenance"]);
-    push(&verse["catechism_provenance"]);
-    for e in verse["events"].as_array().into_iter().flatten() {
-        push(&e["provenance"]);
-    }
     push(&event["provenance"]);
     push(&event["witnesses_provenance"]);
     push(&event["mentions_provenance"]);
@@ -2179,7 +2146,8 @@ async fn a_catechism_item_that_quotes_scripture_says_where_it_is_written() {
 async fn a_book_record_carries_its_authorship_and_its_writing() {
     // Arrange
     let app = compiled_app();
-    let (_, legacy, _) = get(&app, "/api/verse/NEH.1.1").await;
+    let (data, _) = real_atlas();
+    let author = data.books_meta.iter().find(|meta| meta.book == "NEH").map(|meta| meta.author.clone()).expect("the compiled atlas records Nehemiah");
     // Act
     let (status, record, _) = get(&app, "/api/node/Container:bible-book-NEH").await;
     // Assert
@@ -2188,7 +2156,7 @@ async fn a_book_record_carries_its_authorship_and_its_writing() {
         (
             StatusCode::OK,
             serde_json::json!({
-                "author": legacy["book_meta"]["author"],
+                "author": author,
                 "write_place": { "id": "Place:jerusalem", "kind": "Place", "label": "Jerusalem" },
                 "written": { "from": { "value": -430, "label": "430 BC" }, "to": { "value": -400, "label": "400 BC" }, "label": "430 – 400 BC" },
             })

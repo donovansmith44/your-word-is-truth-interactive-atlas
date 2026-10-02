@@ -184,63 +184,6 @@ async fn verse_chapter_event_and_404() {
     let (st, _body) = call(&app, "/api/chapter/JOS.1?translation=kjv").await;
     assert_eq!(st, 200);
 
-    let (st, body) = call(&app, "/api/verse/JOS.6.20").await;
-    assert_eq!(st, 200);
-    assert_eq!(body["ref"], "JOS.6.20");
-    assert!(body["text"].as_str().unwrap().contains("wall fell down flat"));
-    assert_eq!(body["book_meta"]["author"], "Joshua");
-    assert_eq!(body["book_meta"]["write_place"], "gilgal");
-    assert_eq!(body["book_meta"]["write_from"], -1400);
-    assert_eq!(body["book_meta"]["write_to"], -1370);
-
-    let events = body["events"].as_array().unwrap();
-    assert_eq!(events.len(), 1);
-    assert_eq!(events[0]["id"], "e3");
-    assert_eq!(events[0]["label"], "Jericho falls");
-    assert_eq!(events[0]["when"]["from_year"], -1405);
-    assert_eq!(events[0]["places"], serde_json::json!(["jericho"]));
-    assert!(events[0]["verse_groups"].as_array().unwrap().iter().any(|g| g["book"] == "JOS" && g["chapter"] == 6));
-
-    let cross_refs = body["cross_refs"].as_array().unwrap();
-    assert_eq!(cross_refs.len(), 3);
-    assert_eq!(cross_refs[0]["target"], "JOS.6.20-21");
-    assert_eq!(cross_refs[0]["votes"], 9);
-    assert!(cross_refs[0]["preview"].as_str().unwrap().contains("wall fell down flat"));
-    assert_eq!(cross_refs[1]["target"], "JOS.1.3");
-    assert_eq!(cross_refs[1]["votes"], 5);
-    assert!(cross_refs[1]["preview"].as_str().unwrap().contains("sole of your foot"));
-    assert_eq!(cross_refs[2]["target"], "GEN.13.18");
-    assert!(cross_refs[2]["preview"].as_str().unwrap().contains("Hebron"));
-
-    let catechism = body["catechism"].as_array().unwrap();
-    assert_eq!(catechism.len(), 1, "{body}");
-    assert_eq!(catechism[0]["id"], "demo-item-1");
-    assert_eq!(catechism[0]["name"], "Demo Catechism Item");
-    assert!(catechism[0].get("question").is_none(), "{body}");
-
-    let (st, body) = call(&app, "/api/verse/JOS.6.21").await;
-    assert_eq!(st, 200);
-    let catechism = body["catechism"].as_array().unwrap();
-    assert_eq!(catechism.len(), 1, "{body}");
-    assert_eq!(catechism[0]["id"], "demo-item-1");
-    assert_eq!(catechism[0]["question"], "Demo Question");
-
-    let (st, body) = call(&app, "/api/verse/JOS.6.24").await;
-    assert_eq!(st, 200);
-    assert_eq!(body["catechism"], serde_json::json!([]));
-
-    let (st, body) = call(&app, "/api/verse/NOPE.1.1").await;
-    assert_eq!(st, 400);
-    assert_eq!(body["error"]["code"], "bad_ref");
-
-    let (st, body) = call(&app, "/api/verse/JOS.6").await;
-    assert_eq!(st, 400);
-    assert_eq!(body["error"]["code"], "bad_ref");
-
-    let (st, body) = call(&app, "/api/verse/GEN.1.1").await;
-    assert_eq!(st, 404);
-    assert_eq!(body["error"]["code"], "not_found");
-
     let (st, body) = call(&app, "/api/event/e3").await;
     assert_eq!(st, 200);
     assert_eq!(body["id"], "e3");
