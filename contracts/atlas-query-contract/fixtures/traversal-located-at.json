@@ -3,10 +3,13 @@
     "entries": [
       {
         "edge": "LocatedAt:dafbb7c28eb80653a693de9906dc0669",
-        "node": {
-          "id": "Place:ur-1",
-          "kind": "Place",
-          "label": "Ur 1"
+        "neighbour": {
+          "node": {
+            "id": "Place:ur-1",
+            "kind": "Place",
+            "label": "Ur 1"
+          },
+          "position": "node"
         }
       }
     ],

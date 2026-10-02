@@ -48,12 +48,12 @@ public sealed class WireFixtureTests
         return root.TryGetProperty("body", out var body) ? body.GetRawText() : text;
     }
 
-    private static string Canonical(JsonElement element) => SameNumberWhetherWrittenAs35Or35Point0(element)?.ToJsonString() ?? "null";
+    private static string Canonical(JsonElement element) => SameValueWhateverTheKeyOrderOrNumberSpelling(element)?.ToJsonString() ?? "null";
 
-    private static JsonNode? SameNumberWhetherWrittenAs35Or35Point0(JsonElement element) => element.ValueKind switch
+    private static JsonNode? SameValueWhateverTheKeyOrderOrNumberSpelling(JsonElement element) => element.ValueKind switch
     {
-        JsonValueKind.Object => new JsonObject(element.EnumerateObject().Select(p => KeyValuePair.Create(p.Name, SameNumberWhetherWrittenAs35Or35Point0(p.Value)))),
-        JsonValueKind.Array => new JsonArray(element.EnumerateArray().Select(SameNumberWhetherWrittenAs35Or35Point0).ToArray()),
+        JsonValueKind.Object => new JsonObject(element.EnumerateObject().OrderBy(p => p.Name, StringComparer.Ordinal).Select(p => KeyValuePair.Create(p.Name, SameValueWhateverTheKeyOrderOrNumberSpelling(p.Value)))),
+        JsonValueKind.Array => new JsonArray(element.EnumerateArray().Select(SameValueWhateverTheKeyOrderOrNumberSpelling).ToArray()),
         JsonValueKind.Number => JsonValue.Create(element.GetDouble()),
         _ => JsonNode.Parse(element.GetRawText()),
     };

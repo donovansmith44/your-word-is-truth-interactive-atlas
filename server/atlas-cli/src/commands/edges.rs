@@ -23,9 +23,17 @@ pub struct EdgesArgs<'a> {
 
 struct ResolvedEntry {
     edge: String,
-    id: String,
-    kind: String,
-    label: String,
+    neighbour: PositionRef,
+}
+
+impl ResolvedEntry {
+    fn line(&self) -> String {
+        let (id, kind, label) = match &self.neighbour {
+            PositionRef::Node { node } => (node.id.as_str(), node.kind.name(), node.label.as_str()),
+            PositionRef::Edge { edge } => (edge.id.as_str(), AN_EDGE, edge.id.as_str()),
+        };
+        format!("{:<24} {:<12} {:<28} {}\n", self.edge, kind, id, label)
+    }
 }
 
 struct ResolvedPage {
@@ -78,13 +86,7 @@ fn resolve(graph: &GraphService, args: &EdgesArgs) -> Result<ResolvedPage, CliEr
         .entries
         .iter()
         .filter(|e| !matches!(&e.node, Position::Node(id) if id.kind == NodeKind::PeopleGroup))
-        .map(|e| {
-            let (id, kind, label) = match describe_position(&e.node, &snap) {
-                PositionRef::Node { node } => (node.id, node.kind.name().to_string(), node.label),
-                PositionRef::Edge { edge } => (edge.id.clone(), AN_EDGE.to_string(), edge.id),
-            };
-            ResolvedEntry { edge: e.edge.0.clone(), id, kind, label }
-        })
+        .map(|e| ResolvedEntry { edge: e.edge.0.clone(), neighbour: describe_position(&e.node, &snap) })
         .collect();
 
     if entries.is_empty() {
@@ -103,7 +105,7 @@ pub fn run(graph: &GraphService, args: EdgesArgs) -> Result<String, CliError> {
 
     let mut out = String::new();
     for entry in &page.entries {
-        out.push_str(&format!("{:<24} {:<12} {:<28} {}\n", entry.edge, entry.kind, entry.id, entry.label));
+        out.push_str(&entry.line());
     }
     match page.next {
         Some(n) => out.push_str(&format!("more: continue with --cursor {n}\n")),
@@ -114,6 +116,6 @@ pub fn run(graph: &GraphService, args: EdgesArgs) -> Result<String, CliError> {
 
 pub fn run_json(graph: &GraphService, args: EdgesArgs) -> Result<serde_json::Value, CliError> {
     let page = resolve(graph, &args)?;
-    let entries: Vec<_> = page.entries.iter().map(|e| serde_json::json!({"edge": e.edge, "node": {"id": e.id, "kind": e.kind, "label": e.label}})).collect();
+    let entries: Vec<_> = page.entries.iter().map(|e| serde_json::json!({"edge": e.edge, "neighbour": e.neighbour})).collect();
     Ok(serde_json::json!({"kind": page.kind_label, "entries": entries, "next": page.next}))
 }

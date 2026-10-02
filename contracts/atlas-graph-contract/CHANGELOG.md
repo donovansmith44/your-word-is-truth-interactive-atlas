@@ -34,6 +34,17 @@ hatch — and adding one to a previously-green scenario is classified
 
 ---
 
+- **0.16.0** (Batch FOCUS-1) — **MINOR under the 0.x policy (MAJOR class: a blessed fixture moved; a projection re-scoped).**
+  An edge entry's far end is served as a `neighbour` — `{ position: "node", node: NodeRef }`
+  or `{ position: "edge", edge: EdgeRef }` — in place of `node: NodeRef` whose `kind` could
+  name `Edge` (FOCUS-1 F1-2: `NodeRef.kind` is `NodeKind`, so a reference to a node can never
+  be an edge). The `edge-page` projection reads `neighbour` (its `position`, a node's
+  `id`/`kind`/`label`, an edge's `id`); `edges.feature`'s preamble says so. Re-blessed:
+  `edges-hazor-1-site-of`. bibex's `--json edges` serves the same `neighbour` (the
+  transport-agreement law in `transport/cli.feature` demands one value through one
+  projection), so the CLI pact moved with the HTTP pact. No scenario added, removed or
+  reworded; no other fixture moved.
+
 - **0.15.0** (Batch CONTRACT-2) — **MINOR under the 0.x policy (MAJOR class: blessed fixtures moved; a projection re-scoped; a relation renamed).**
   The `contract` projection pins `manifest_schema` and `section_schema_version`
   (18) in place of the retired AQC range, so its fixture re-blesses on every

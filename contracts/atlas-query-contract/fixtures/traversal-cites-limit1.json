@@ -3,10 +3,13 @@
     "entries": [
       {
         "edge": "Cites:fa43f1d5a42a2c7dacd443a1a0e105d0",
-        "node": {
-          "id": "text-unit:ROM.5.8",
-          "kind": "TextUnit",
-          "label": "ROM.5.8"
+        "neighbour": {
+          "node": {
+            "id": "text-unit:ROM.5.8",
+            "kind": "TextUnit",
+            "label": "ROM.5.8"
+          },
+          "position": "node"
         },
         "votes": 981
       }

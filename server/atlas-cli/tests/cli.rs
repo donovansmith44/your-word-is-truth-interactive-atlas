@@ -341,7 +341,8 @@ fn edges_json_happy_path_carries_real_fields() {
     assert_eq!(v["kind"], "located-at");
     let entries = v["entries"].as_array().expect("entries must be an array");
     assert!(!entries.is_empty());
-    assert!(entries[0]["node"]["id"].as_str().unwrap().starts_with("Place:"), "entries: {entries:?}");
+    assert_eq!(entries[0]["neighbour"]["position"], "node", "entries: {entries:?}");
+    assert!(entries[0]["neighbour"]["node"]["id"].as_str().unwrap().starts_with("Place:"), "entries: {entries:?}");
     assert!(entries[0]["edge"].is_string());
 }
 
@@ -587,7 +588,9 @@ fn edges_lists_an_edge_neighbour_under_its_own_kind_known_by_its_id() {
     let (_, dates) = run_json(&["edges", "Anchor:solomon-crowned", "--kind", "dates"]);
     let dating = dates.unwrap()["entries"][0]["edge"].as_str().unwrap().to_string();
     let (_, justifies) = run_json(&["edges", "Anchor:solomon-crowned", "--kind", "justifies"]);
-    let justification = justifies.unwrap()["entries"][0]["edge"].as_str().unwrap().to_string();
+    let justifies = justifies.unwrap();
+    let justification = justifies["entries"][0]["edge"].as_str().unwrap().to_string();
+    assert_eq!(justifies["entries"][0]["neighbour"], serde_json::json!({"position": "edge", "edge": {"id": dating}}));
     let o = run_with_data_dir(&["edges", "Anchor:solomon-crowned", "--kind", "justifies"]);
     assert!(o.status.success(), "stderr: {}", stderr(&o));
     assert_eq!(stdout(&o), format!("{justification:<24} Edge         {dating:<28} {dating}\n(end of list)\n"));
