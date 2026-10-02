@@ -1,4 +1,5 @@
 @using BibleAtlas.Client.Contract
+@using BibleAtlas.Client.Views
 @using BibleAtlas.Client.Exploring
 @implements IDisposable
 
@@ -19,13 +20,20 @@
     }
     else
     {
-        @foreach (var verse in Mentions.Shown.Select(entry => entry.Neighbour.Target).Nodes())
+        @foreach (var entry in Mentions.Shown)
         {
-            var vref = verse.Label;
-            <button type="button" class="popover-event-row popover-event-row-button explorable" data-testid="@($"person-mention-{vref}")"
-                    @onclick="() => OnExplore.InvokeAsync(new PopoverOpening.Explore(new NodePosition(verse)))">
-                @vref
-            </button>
+            @if (entry.Neighbour.Target is NodePosition { Node: var verse })
+            {
+                var vref = verse.Label;
+                <button type="button" class="popover-event-row popover-event-row-button explorable" data-testid="@($"person-mention-{vref}")"
+                        @onclick="() => OnExplore.InvokeAsync(new PopoverOpening.Explore(new NodePosition(verse)))">
+                    @vref
+                </button>
+                @if (entry.Words is { } words)
+                {
+                    <UnitTextView Unit="words" Handle="@($"person-words-{vref}")" OnFollow="link => OnExplore.InvokeAsync(new PopoverOpening.Explore(link.Target))" />
+                }
+            }
         }
     }
 

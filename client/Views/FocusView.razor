@@ -157,6 +157,7 @@
                     <button type="button" class="focus-child explorable" data-testid="@($"{handle}-child-{group.Kind.WireName()}-{Id(entry.Neighbour)}")"
                             @onclick="() => OnFollow.InvokeAsync(entry.Neighbour)">@Label(entry.Neighbour)</button>
                     @EdgeStep(request, entry)
+                    @Words($"{handle}-words-{group.Kind.WireName()}-{Id(entry.Neighbour)}", entry)
                 }
                 @Reveal(presented, group, section)
             </div>
@@ -172,6 +173,7 @@
                     <button type="button" class="focus-link @Register(list.Style)" data-testid="@($"{handle}-link-{group.Kind.WireName()}-{Id(entry.Neighbour)}")"
                             @onclick="() => OnFollow.InvokeAsync(entry.Neighbour)">@Label(entry.Neighbour)</button>
                     @EdgeStep(request, entry)
+                    @Words($"{handle}-words-{group.Kind.WireName()}-{Id(entry.Neighbour)}", entry)
                 }
                 @Reveal(presented, group, section)
             </div>
@@ -186,6 +188,14 @@
                 <div class="focus-field" data-testid="@($"{handle}-field-{field.Name}")"><dt>@field.Name</dt><dd>@field.Value</dd></div>
             }
         </dl>
+    };
+
+    private RenderFragment Words(string handle, Entry entry) => __builder =>
+    {
+        @if (entry.Words is { } words)
+        {
+            <UnitTextView Unit="words" Handle="@handle" OnFollow="OnFollow" />
+        }
     };
 
     private static IEnumerable<Entry> Shown(Presented presented, FrontierGroup group) => presented.Windows[group.Kind].Shown;
