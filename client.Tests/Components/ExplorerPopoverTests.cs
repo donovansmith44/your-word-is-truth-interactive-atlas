@@ -34,7 +34,7 @@ public sealed class ExplorerPopoverTests : BunitContext
         Hosting(Narratives());
 
         // Act
-        var popover = Render<ExplorerPopover>(p => p.Add(v => v.Saved, AtExodus));
+        var popover = Render<ExplorerPopover>(p => p.Add(v => v.Opening, new PopoverOpening.Resume(AtExodus)));
 
         // Assert
         popover.WaitForAssertion(() => popover.Find("[data-testid='popover-body']").MarkupMatches(ExodusPresented));
@@ -48,7 +48,7 @@ public sealed class ExplorerPopoverTests : BunitContext
         var atom = Hosting(graph);
         var exodus = Resolved.Node(graph, Exodus);
         var wilderness = Resolved.Node(graph, Wilderness);
-        var popover = Render<ExplorerPopover>(p => p.Add(v => v.Saved, AtExodus));
+        var popover = Render<ExplorerPopover>(p => p.Add(v => v.Opening, new PopoverOpening.Resume(AtExodus)));
 
         // Act
         popover.WaitForElement("[data-testid='popover-next']").Click();
@@ -76,10 +76,56 @@ public sealed class ExplorerPopoverTests : BunitContext
             person: null, place: null, era: null, map: null, polity: null, provenance: ServedGraph.Provenance, version: "v")));
 
         // Act
-        var popover = Render<ExplorerPopover>(p => p.Add(v => v.Root, new CommentaryItemNode("kretzmann/0.1.0", "The Creation of Chaos and Light")));
+        var popover = Render<ExplorerPopover>(p => p.Add(v => v.Opening, new PopoverOpening.Legacy(new CommentaryItemNode("kretzmann/0.1.0", "The Creation of Chaos and Light"))));
 
         // Assert
         popover.WaitForAssertion(() => Assert.Equal(prose, popover.Find(".popover-commentary-text").TextContent));
+    }
+
+    [Fact]
+    public void Opening_on_a_position_resolves_it_and_opens_there()
+    {
+        // Arrange
+        var graph = Narratives();
+        var atom = Hosting(graph);
+
+        // Act
+        var popover = Render<ExplorerPopover>(p => p.Add(v => v.Opening, new PopoverOpening.Explore(ServedGraph.At(Exodus))));
+
+        // Assert
+        popover.WaitForAssertion(() => Assert.Equal(new ExplorationState.Open(new Exploration(Resolved.Node(graph, Exodus), [])), atom.Value));
+    }
+
+    [Fact]
+    public void Opening_on_a_save_reseeds_its_whole_trail_in_one_element_read()
+    {
+        // Arrange
+        var graph = Narratives();
+        Hosting(graph);
+        var saved = AtExodus with { Steps = [new Link(EdgeKind.FollowsIn, ServedGraph.At(Wilderness))] };
+
+        // Act
+        var popover = Render<ExplorerPopover>(p => p.Add(v => v.Opening, new PopoverOpening.Resume(saved)));
+
+        // Assert
+        popover.WaitForAssertion(() => Assert.Equal(1, graph.ElementReads));
+    }
+
+    [Fact]
+    public void Opening_on_a_legacy_node_resolves_its_identity_and_remembers_its_rendering()
+    {
+        // Arrange
+        var graph = Narratives();
+        var atom = Hosting(graph);
+        var legacy = new CommentaryItemNode("kretzmann/0.1.0", "The Creation of Chaos and Light");
+        graph.Serving(ServedGraph.Card(NodeKind.CommentaryItem, legacy.Identity.Id, legacy.Identity.Label));
+
+        // Act
+        var popover = Render<ExplorerPopover>(p => p.Add(v => v.Opening, new PopoverOpening.Legacy(legacy)));
+
+        // Assert
+        popover.WaitForAssertion(() => Assert.Equal(legacy.Title, popover.Find("[data-testid='popover-title']").TextContent));
+        Assert.Equal(legacy.Identity.Id, ((ExplorationState.Open)atom.Value).Exploration.Current.Id);
     }
 
     private static ServedGraph Narratives() =>

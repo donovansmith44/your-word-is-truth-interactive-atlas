@@ -64,7 +64,7 @@
 
 @if (_hamburgerSaved is not null)
 {
-    <ExplorerPopover @key="_hamburgerSaved" Saved="_hamburgerSaved" OnClose="CloseHamburgerPopover" />
+    <ExplorerPopover @key="_hamburgerSaved" Opening="new PopoverOpening.Resume(_hamburgerSaved)" OnClose="CloseHamburgerPopover" />
 }
 
 @if (_hamburgerNotice is not null)
