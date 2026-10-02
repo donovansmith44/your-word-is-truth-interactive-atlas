@@ -1,4 +1,4 @@
-using BibleAtlas.Client.Exploring;
+using BibleAtlas.Client.Contract;
 using BibleAtlas.Client.Tests.State;
 using YamlDotNet.RepresentationModel;
 
@@ -6,10 +6,8 @@ namespace BibleAtlas.Client.Tests.Contract;
 
 public sealed class FirstPageTests
 {
-    private static readonly string[] PagedReads = ["/api/elements", "/api/node/{id}/edges"];
-
     [Fact]
-    public void The_page_store_keys_the_first_page_at_the_cursor_every_paged_read_publishes_as_its_default()
+    public void Every_paged_read_the_document_publishes_defaults_its_cursor_to_the_generated_first_page()
     {
         // Arrange
         var document = new YamlStream();
@@ -17,14 +15,22 @@ public sealed class FirstPageTests
         var paths = (YamlMappingNode)((YamlMappingNode)document.Documents[0].RootNode)["paths"];
 
         // Act
-        var defaults = PagedReads
-            .Select(path => ((YamlSequenceNode)((YamlMappingNode)((YamlMappingNode)paths[path])["get"])["parameters"])
-                .Cast<YamlMappingNode>()
-                .Single(parameter => parameter["name"].ToString() == "cursor"))
-            .Select(cursor => int.Parse(((YamlMappingNode)cursor["schema"])["default"].ToString()))
+        var cursors = paths.Children
+            .SelectMany(path => ((YamlMappingNode)path.Value).Children.Select(operation => (Operation: $"{operation.Key} {path.Key}", Body: (YamlMappingNode)operation.Value)))
+            .SelectMany(operation => Parameters(operation.Body)
+                .Where(parameter => parameter["name"].ToString() == "cursor" && parameter["in"].ToString() == "query")
+                .Select(cursor => (operation.Operation, Default: Default((YamlMappingNode)cursor["schema"]))))
             .ToList();
 
         // Assert
-        Assert.Equal(PagedReads.Select(_ => ServedPages.FirstPage), defaults);
+        Assert.Equal(
+            (true, cursors.Select(cursor => (cursor.Operation, (int?)PagedReads.FirstPage)).ToList()),
+            (cursors.Count > 0, cursors.Select(cursor => (cursor.Operation, cursor.Default)).ToList()));
     }
+
+    private static IEnumerable<YamlMappingNode> Parameters(YamlMappingNode operation) =>
+        operation.Children.TryGetValue(new YamlScalarNode("parameters"), out var parameters) ? ((YamlSequenceNode)parameters).Cast<YamlMappingNode>() : [];
+
+    private static int? Default(YamlMappingNode schema) =>
+        schema.Children.TryGetValue(new YamlScalarNode("default"), out var given) ? int.Parse(given.ToString()) : null;
 }

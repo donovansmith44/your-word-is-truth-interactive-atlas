@@ -59,4 +59,65 @@ public sealed class ContractGenerationTests
         // Assert
         Assert.Equal([false, false, true], new[] { union, subtypesOwnPart, unrelated }.Select(schema => schema.AllowAdditionalProperties));
     }
+
+    [Fact]
+    public async Task The_first_page_of_every_paged_read_is_generated_from_the_cursor_default_the_document_publishes()
+    {
+        // Arrange
+        var document = await Paged(7, 7);
+
+        // Act
+        var generated = ContractGeneration.PagedReads(document);
+
+        // Assert
+        Assert.Contains("public const int FirstPage = 7;", generated);
+    }
+
+    [Theory]
+    [InlineData(7, 8)]
+    [InlineData(7, null)]
+    public async Task A_paged_read_whose_cursor_default_is_absent_or_differs_from_the_others_is_refused(int first, int? second)
+    {
+        // Arrange
+        var document = await Paged(first, second);
+
+        // Act
+        var refused = Record.Exception(() => ContractGeneration.PagedReads(document));
+
+        // Assert
+        Assert.IsType<InvalidOperationException>(refused);
+    }
+
+    private static Task<OpenApiDocument> Paged(int? first, int? second) =>
+        OpenApiYamlDocument.FromYamlAsync($$"""
+            openapi: 3.1.0
+            info:
+              title: paged
+              version: '1'
+            paths:
+              /first:
+                get:
+                  operationId: first
+                  parameters:
+                  - name: cursor
+                    in: query
+                    schema:
+                      type: integer
+            {{(first is { } f ? $"          default: {f}" : "")}}
+                  responses:
+                    '200':
+                      description: a page
+              /second:
+                get:
+                  operationId: second
+                  parameters:
+                  - name: cursor
+                    in: query
+                    schema:
+                      type: integer
+            {{(second is { } s ? $"          default: {s}" : "")}}
+                  responses:
+                    '200':
+                      description: a page
+            """);
 }
