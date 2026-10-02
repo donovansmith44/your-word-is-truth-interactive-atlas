@@ -7,6 +7,8 @@ const NOT_A_PROMISE: [&str; 2] = ["/health", "/api/openapi.yaml"];
 const THE_ONLY_REQUEST_FOR_A_VERSE_S_CATECHISM: &str = "When I GET /api/catechism/MAT.28.19";
 const THE_ROUTE_IT_COVERS: &str = "/api/catechism/{sref}";
 
+const THE_RETIRED_VERSE_ROUTE: &str = "/api/verse/{vref}";
+
 #[test]
 fn every_served_route_is_referenced_by_a_contract_scenario() {
     // Arrange
@@ -28,6 +30,16 @@ fn a_route_whose_only_request_is_deleted_is_named_uncovered() {
     let uncovered = routes_no_scenario_requests(&documented, &requested);
     // Assert
     assert_eq!(uncovered, vec![THE_ROUTE_IT_COVERS.to_string()]);
+}
+
+#[test]
+fn no_route_serves_a_verse_by_its_reference() {
+    // Arrange
+    let documented = every_published_route();
+    // Act
+    let serving = documented.iter().any(|route| route == THE_RETIRED_VERSE_ROUTE);
+    // Assert
+    assert!(!serving, "{THE_RETIRED_VERSE_ROUTE} is published: a verse is read as an element and its neighbours");
 }
 
 fn every_path_the_scenarios_request(corpus: &str) -> Vec<String> {

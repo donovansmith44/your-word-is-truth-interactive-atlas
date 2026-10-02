@@ -90,10 +90,10 @@ fn john_1_1_carries_every_nt_applicable_edition_on_the_real_graph() {
 }
 
 #[tokio::test]
-async fn api_verse_still_projects_only_the_canonical_kjv_text() {
-    let (status, body) = get_json(real_app(), "/api/verse/GEN.1.1").await;
+async fn a_verses_record_still_projects_only_the_canonical_kjv_text() {
+    let (status, body) = get_json(real_app(), "/api/node/text-unit:GEN.1.1").await;
     assert_eq!(status, StatusCode::OK);
-    assert_eq!(body["text"], "In the beginning God created the heaven and the earth.");
+    assert_eq!(body["text"]["text"], "In the beginning God created the heaven and the earth.");
     assert!(body.get("renderings").is_none());
     assert!(body.get("latin_vulgate").is_none());
 }

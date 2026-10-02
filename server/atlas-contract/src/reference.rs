@@ -6,7 +6,7 @@ use std::str::FromStr;
 use axum::extract::{FromRequestParts, Path};
 use axum::http::request::Parts;
 
-use atlas_core::refs::{BookId, ScriptureRef, VerseId};
+use atlas_core::refs::{BookId, ScriptureRef};
 use atlas_graph_types::edge::EdgeId;
 use atlas_graph_types::graph::edge_hash;
 use atlas_graph_types::id::AnyNodeId;
@@ -115,18 +115,6 @@ impl FromStr for VerseSpan {
             Ok(span @ (ScriptureRef::Verse(_) | ScriptureRef::Passage { .. })) => Ok(VerseSpan(span)),
             _ => Err(NamesNoReference),
         }
-    }
-}
-
-/// A reference naming exactly one verse.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub struct VerseReference(pub VerseId);
-
-impl FromStr for VerseReference {
-    type Err = NamesNoReference;
-
-    fn from_str(raw: &str) -> Result<Self, NamesNoReference> {
-        VerseId::parse_canonical(raw).map(VerseReference).map_err(|_| NamesNoReference)
     }
 }
 
@@ -279,16 +267,6 @@ mod tests {
         let read: Vec<bool> = asked.iter().map(|raw| raw.parse::<VerseSpan>().is_ok()).collect();
         // Assert
         assert_eq!(read, vec![true, true, false, false, false]);
-    }
-
-    #[test]
-    fn a_verse_reference_names_exactly_one_verse() {
-        // Arrange
-        let asked = ["JHN.3.16", "JHN.3", "JHN.3.16-18", "nope"];
-        // Act
-        let read: Vec<bool> = asked.iter().map(|raw| raw.parse::<VerseReference>().is_ok()).collect();
-        // Assert
-        assert_eq!(read, vec![true, false, false, false]);
     }
 
     #[test]

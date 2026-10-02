@@ -84,9 +84,6 @@ fn bench_handlers(c: &mut Criterion) {
     group.bench_function("chapter", |b| {
         b.iter(|| rt.block_on(reading::chapter(State(data.clone()), State(graph.clone()), asked_for("JHN.3"))))
     });
-    group.bench_function("verse", |b| {
-        b.iter(|| rt.block_on(reading::verse(State(data.clone()), State(graph.clone()), asked_for("JHN.3.16"))))
-    });
     group.bench_function("xrefs", |b| b.iter(|| rt.block_on(reading::xrefs(State(graph.clone()), asked_for("JHN.3.16")))));
     group.bench_function("event", |b| {
         b.iter(|| rt.block_on(events::event(State(data.clone()), State(graph.clone()), AxPath("ab_ur".to_string()))))

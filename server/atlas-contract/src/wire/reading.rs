@@ -1,12 +1,8 @@
 use serde::Serialize;
 
-use atlas_core::data::BookMeta;
-use atlas_core::time::TimeRange;
-use atlas_core::wire::{NodeRef, VerseGroup};
+use atlas_core::wire::NodeRef;
 use atlas_core::xrefs::AggregatedXref;
 use atlas_graph::heading::Heading;
-
-use super::catechism::CatechismRef;
 
 #[derive(Debug, Serialize, utoipa::ToSchema)]
 #[serde(deny_unknown_fields)]
@@ -79,36 +75,6 @@ pub struct KretzmannChapterVerse {
 pub struct KretzmannChapterItem {
     pub id: String,
     pub heading: Option<String>,
-}
-
-#[derive(Debug, Serialize, utoipa::ToSchema)]
-#[serde(deny_unknown_fields)]
-#[schema(description = "One verse in full, with everything the graph attaches to it.")]
-pub struct VerseDetail {
-    pub r#ref: String,
-    pub text: String,
-    pub words_of_christ: Vec<WordsOfChristSpan>,
-    pub book_meta: BookMeta,
-    pub events: Vec<VerseEvent>,
-    pub cross_refs: Vec<CrossRef>,
-    pub catechism: Vec<CatechismRef>,
-    pub provenance: String,
-    pub cross_refs_provenance: Vec<String>,
-    pub catechism_provenance: Vec<String>,
-}
-
-#[derive(Debug, Serialize, utoipa::ToSchema)]
-#[serde(deny_unknown_fields)]
-#[schema(description = "One event or titled passage a verse belongs to.")]
-pub struct VerseEvent {
-    pub id: String,
-    pub label: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub when: Option<TimeRange>,
-    pub verse_groups: Vec<VerseGroup>,
-    pub places: Vec<String>,
-    pub kind: atlas_core::data::EventKind,
-    pub provenance: String,
 }
 
 #[derive(Debug, Serialize, utoipa::ToSchema)]
