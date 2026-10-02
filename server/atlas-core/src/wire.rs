@@ -34,11 +34,21 @@ atlas_graph_types::vocabulary! {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, utoipa::ToSchema)]
+#[serde(deny_unknown_fields)]
+#[schema(description = "A reference to a node: enough to show it, and the id to fetch it with.")]
+pub struct NodeRef {
+    pub id: String,
+    pub kind: atlas_graph_types::id::NodeKind,
+    pub label: String,
+}
+
 /// One lit place on the map, with the events that light it.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, utoipa::ToSchema)]
 #[serde(deny_unknown_fields)]
 pub struct ScenePlace {
     pub id: String,
+    pub node: NodeRef,
     /// The place's default name.
     pub name: String,
     /// The name to show: the one this place bore in the span asked about, or its
@@ -71,6 +81,7 @@ pub struct ScenePlace {
 #[serde(deny_unknown_fields)]
 pub struct QuietPlace {
     pub id: String,
+    pub node: NodeRef,
     /// The name to show, resolved for the same span the lit places use.
     pub display_name: String,
     /// Latitude in degrees, north positive.

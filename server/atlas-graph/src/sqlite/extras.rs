@@ -49,6 +49,9 @@ pub static PLACE: TableSpec = TableSpec { name: "place", columns: &["node_id", "
 pub static ERA: TableSpec = TableSpec { name: "era", columns: &["node_id", "label", "from_year", "to_year"], pk: &["node_id"] };
 pub static POLITY_ERA: TableSpec =
     TableSpec { name: "polity_era", columns: &["node_id", "ord", "name", "from_year", "to_year"], pk: &["node_id", "ord"] };
+pub static POLITY_REIGN: TableSpec = TableSpec { name: "polity_reign", columns: &["polity_id", "from_year", "to_year"], pk: &["polity_id"] };
+pub static PLACE_DEFAULT: TableSpec =
+    TableSpec { name: "place_default", columns: &["place_id", "display_name", "canonical_name", "blurb"], pk: &["place_id"] };
 pub static EVENT_DATE: TableSpec = TableSpec {
     name: "event_date",
     columns: &["event_id", "from_year", "to_year", "from_month", "from_day", "to_month", "to_day", "seq", "basis", "meta_to_year", "order_key"],
@@ -88,12 +91,12 @@ pub static TOKEN: TableSpec = TableSpec {
     pk: &["book", "chapter", "verse", "layer", "ord"],
 };
 
-/// Core's specs: the five graph-derived tables, then the 21 folded sidecars, in
-/// `extra_tables_of` order -- which the section's own table list must match.
-static CORE_SPECS: [&TableSpec; 26] = [
+static CORE_SPECS: [&TableSpec; 28] = [
     &PLACE,
     &ERA,
     &POLITY_ERA,
+    &POLITY_REIGN,
+    &PLACE_DEFAULT,
     &EVENT_DATE,
     &HEADING_INDEX,
     &super::sidecars::CANON_BOOK,
@@ -396,6 +399,7 @@ pub fn compute(
     tokens: &[atlas_etl::lexicon::TokenRow],
 ) -> Result<Extras, SqliteError> {
     let mut ex = Extras::graph_derived(g, chrono, red_letter)?;
+    ex.extend(crate::geography::Geography::compile(g, atlas).tables());
     ex.extend(super::sidecars::fold_sidecars(atlas, sources)?);
     ex.extend(vec![Extras::tokens(tokens)]);
     Ok(ex)

@@ -1,5 +1,6 @@
 use atlas_core::label::{TimeRange, Year};
 use atlas_core::{time, wire::*};
+use atlas_graph_types::id::NodeKind;
 use std::{fs, path::Path};
 
 fn sample_scene() -> Scene {
@@ -8,7 +9,7 @@ fn sample_scene() -> Scene {
         window: Some(TimeRange::of(time::TimeRange::new(-1450, -1400).unwrap())),
         r#ref: None,
         places: vec![ScenePlace {
-            id: "jericho".into(), name: "Jericho".into(), display_name: "Jericho".into(), lat: 31.8703, lon: 35.4436,
+            id: "jericho".into(), node: NodeRef { id: "Place:jericho".into(), kind: NodeKind::Place, label: "Jericho".into() }, name: "Jericho".into(), display_name: "Jericho".into(), lat: 31.8703, lon: 35.4436,
             brightness: 2,
             events: vec![SceneEvent {
                 id: "ev_jericho_falls".into(), label: "The walls of Jericho fall".into(),
@@ -21,7 +22,7 @@ fn sample_scene() -> Scene {
             merged_ids: vec![],
         }],
         quiet_places: vec![QuietPlace {
-            id: "shiloh".into(), display_name: "Shiloh".into(), lat: 32.0553, lon: 35.2897, total_events: 3,
+            id: "shiloh".into(), node: NodeRef { id: "Place:shiloh".into(), kind: NodeKind::Place, label: "Shiloh".into() }, display_name: "Shiloh".into(), lat: 32.0553, lon: 35.2897, total_events: 3,
             existence_from: Some(Year::of(-1399).unwrap()),
             existence_to: Some(Year::of(-1050).unwrap()),
             merged_ids: vec![],

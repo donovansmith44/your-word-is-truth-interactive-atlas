@@ -973,6 +973,9 @@
         "name": {
           "type": "string"
         },
+        "node": {
+          "$ref": "#/$defs/NodeRef"
+        },
         "to_year": {
           "format": "int32",
           "type": "integer"
@@ -983,9 +986,22 @@
       },
       "required": [
         "id",
+        "node",
         "name",
         "from_year",
         "to_year",
+        "window"
+      ],
+      "type": "object"
+    },
+    "EraDetail": {
+      "additionalProperties": false,
+      "properties": {
+        "window": {
+          "$ref": "#/$defs/TimeRange"
+        }
+      },
+      "required": [
         "window"
       ],
       "type": "object"
@@ -1440,6 +1456,18 @@
       ],
       "type": "string"
     },
+    "MapDetail": {
+      "additionalProperties": false,
+      "properties": {
+        "window": {
+          "$ref": "#/$defs/TimeRange"
+        }
+      },
+      "required": [
+        "window"
+      ],
+      "type": "object"
+    },
     "MissingElement": {
       "allOf": [
         {
@@ -1682,6 +1710,16 @@
           },
           "type": "array"
         },
+        "era": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/EraDetail"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "event": {
           "oneOf": [
             {
@@ -1701,6 +1739,16 @@
         "label": {
           "type": "string"
         },
+        "map": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/MapDetail"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "person": {
           "oneOf": [
             {
@@ -1715,6 +1763,16 @@
           "oneOf": [
             {
               "$ref": "#/$defs/PlaceDetail"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "polity": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/PolityDetail"
             },
             {
               "type": "null"
@@ -1894,6 +1952,12 @@
     "PlaceDetail": {
       "additionalProperties": false,
       "properties": {
+        "blurb": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
         "canonical_name": {
           "type": [
             "string",
@@ -2061,6 +2125,9 @@
         "name": {
           "type": "string"
         },
+        "node": {
+          "$ref": "#/$defs/NodeRef"
+        },
         "reign": {
           "$ref": "#/$defs/TimeRange"
         },
@@ -2090,6 +2157,7 @@
       },
       "required": [
         "id",
+        "node",
         "name",
         "from",
         "to",
@@ -2119,6 +2187,18 @@
         "event",
         "verses",
         "ref_note"
+      ],
+      "type": "object"
+    },
+    "PolityDetail": {
+      "additionalProperties": false,
+      "properties": {
+        "reign": {
+          "$ref": "#/$defs/TimeRange"
+        }
+      },
+      "required": [
+        "reign"
       ],
       "type": "object"
     },
@@ -2217,6 +2297,9 @@
           },
           "type": "array"
         },
+        "node": {
+          "$ref": "#/$defs/NodeRef"
+        },
         "total_events": {
           "format": "int32",
           "minimum": 0,
@@ -2225,6 +2308,7 @@
       },
       "required": [
         "id",
+        "node",
         "display_name",
         "lat",
         "lon",
@@ -2443,10 +2527,14 @@
         },
         "name": {
           "type": "string"
+        },
+        "node": {
+          "$ref": "#/$defs/NodeRef"
         }
       },
       "required": [
         "id",
+        "node",
         "name",
         "display_name",
         "lat",
@@ -3021,5 +3109,5 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "description": "Derived from contracts/openapi.yaml by export_contract; do not edit.",
   "title": "Atlas Query Contract -- shapes",
-  "version": "0.14.0"
+  "version": "0.15.0"
 }

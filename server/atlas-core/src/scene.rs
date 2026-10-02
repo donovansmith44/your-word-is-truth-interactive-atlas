@@ -55,6 +55,7 @@ pub fn compose_scripture_scene(d: &dyn SceneSource, r: &ScriptureRef) -> Scene {
         let (existence_from, existence_to) = labelled_existence(d.place_history_for(&place.id));
         places.push(ScenePlace {
             id: place.id.clone(),
+            node: d.place_node(&place.id),
             name: place.name.clone(),
             display_name: resolve_display_name(&place.name, d.place_history_for(&place.id), None, d.place_name_alias_for(&place.id)),
             lat: place.lat,
@@ -143,6 +144,7 @@ fn lit_places(d: &dyn SceneSource, kept: &[&Event], r: Option<&ScriptureRef>, na
             let (existence_from, existence_to) = labelled_existence(d.place_history_for(&place.id));
             Some(ScenePlace {
                 id: place.id.clone(),
+                node: d.place_node(&place.id),
                 name: place.name.clone(),
                 display_name: resolve_display_name(&place.name, d.place_history_for(&place.id), name_window, d.place_name_alias_for(&place.id)),
                 lat: place.lat,
@@ -181,6 +183,7 @@ fn quiet_places(d: &dyn SceneSource, lit: &[ScenePlace], window: TimeRange) -> V
             let (existence_from, existence_to) = labelled_existence(d.place_history_for(&place.id));
             Some(QuietPlace {
                 id: place.id.clone(),
+                node: d.place_node(&place.id),
                 display_name: resolve_display_name(&place.name, d.place_history_for(&place.id), Some(window), d.place_name_alias_for(&place.id)),
                 lat: place.lat,
                 lon: place.lon,
@@ -427,6 +430,7 @@ mod tests {
             scene.places,
             vec![ScenePlace {
                 id: "hebron".into(),
+                node: crate::wire::NodeRef { id: "Place:hebron".into(), kind: atlas_graph_types::id::NodeKind::Place, label: "Hebron".into() },
                 name: "Hebron".into(),
                 display_name: "Hebron".into(),
                 lat: 31.5326,

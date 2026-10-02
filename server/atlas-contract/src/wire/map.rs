@@ -46,6 +46,7 @@ pub struct LandMask {
 #[schema(description = "A named stretch of this atlas's timeline: its first and last years (negative for BC) and the same years labelled.")]
 pub struct Era {
     pub id: EraId,
+    pub node: super::NodeRef,
     pub name: String,
     pub from_year: i32,
     pub to_year: i32,
@@ -66,6 +67,7 @@ pub struct Polities {
 #[serde(deny_unknown_fields)]
 pub struct Polity {
     pub id: PolityId,
+    pub node: super::NodeRef,
     /// The polity's name during this era.
     pub name: String,
     /// The first year of this era, negative for BC.

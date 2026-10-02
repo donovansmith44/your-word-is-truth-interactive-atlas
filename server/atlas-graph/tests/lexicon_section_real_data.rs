@@ -12,7 +12,7 @@ use atlas_graph_types::sections::Section;
 use atlas_graph_types::store::GraphQuery;
 
 const PINNED: [(&str, &str); 4] = [
-    ("core", "c6a98eba9abf4fe3af72609e656a7418"),
+    ("core", "9ad5d635339cd2e07714b6aac199fd40"),
     ("kjv", "6f413a55daedb14b489139d97814d214"),
     ("concord", "bfe52b2b8fa22a3228b5d8a8ff2e1403"),
     ("kretzmann", "cfebcd669fe2737850598fbc8b57ff24"),

@@ -3,7 +3,7 @@ openapi: 3.1.0
 info:
   title: Bible Atlas API
   description: The Bible Atlas HTTP API, generated from the Rust that serves it. The `x-atlas-relations` extension lists every relation this atlas joins two nodes by, each with the label its forward and its inverse neighbours are asked for and the words each is displayed by, so a consumer builds its own vocabulary from that list rather than writing one out.
-  version: 0.14.0
+  version: 0.15.0
 paths:
   /api/books:
     get:
@@ -1649,6 +1649,7 @@ components:
       description: 'A named stretch of this atlas''s timeline: its first and last years (negative for BC) and the same years labelled.'
       required:
       - id
+      - node
       - name
       - from_year
       - to_year
@@ -1661,9 +1662,20 @@ components:
           $ref: '#/components/schemas/EraId'
         name:
           type: string
+        node:
+          $ref: '#/components/schemas/NodeRef'
         to_year:
           type: integer
           format: int32
+        window:
+          $ref: '#/components/schemas/TimeRange'
+      additionalProperties: false
+    EraDetail:
+      type: object
+      description: The years one era of this atlas's timeline spans, labelled.
+      required:
+      - window
+      properties:
         window:
           $ref: '#/components/schemas/TimeRange'
       additionalProperties: false
@@ -2063,6 +2075,15 @@ components:
       - sm
       - md
       - lg
+    MapDetail:
+      type: object
+      description: The years one map of the world shows, labelled.
+      required:
+      - window
+      properties:
+        window:
+          $ref: '#/components/schemas/TimeRange'
+      additionalProperties: false
     MissingElement:
       allOf:
       - $ref: '#/components/schemas/Element'
@@ -2250,6 +2271,10 @@ components:
           description: |-
             How many neighbours this node has of each kind, listing only the kinds it
             has any of.
+        era:
+          oneOf:
+          - $ref: '#/components/schemas/EraDetail'
+          - type: 'null'
         event:
           oneOf:
           - $ref: '#/components/schemas/EventDetail'
@@ -2260,6 +2285,10 @@ components:
           $ref: '#/components/schemas/NodeKind'
         label:
           type: string
+        map:
+          oneOf:
+          - $ref: '#/components/schemas/MapDetail'
+          - type: 'null'
         person:
           oneOf:
           - $ref: '#/components/schemas/PersonLife'
@@ -2268,6 +2297,10 @@ components:
         place:
           oneOf:
           - $ref: '#/components/schemas/PlaceDetail'
+          - type: 'null'
+        polity:
+          oneOf:
+          - $ref: '#/components/schemas/PolityDetail'
           - type: 'null'
         provenance:
           type: string
@@ -2394,12 +2427,16 @@ components:
       additionalProperties: false
     PlaceDetail:
       type: object
-      description: Where one place is (latitude north positive, longitude east positive), the name a reader of the King James Version knows it by, its plain canonical name only where that differs, and when it was founded and fell, where that is recorded.
+      description: Where one place is (latitude north positive, longitude east positive), the name a reader of the King James Version knows it by, its plain canonical name only where that differs, a sentence on its history across every period recorded for it, and when it was founded and fell, each only where recorded.
       required:
       - lat
       - lon
       - display_name
       properties:
+        blurb:
+          type:
+          - string
+          - 'null'
         canonical_name:
           type:
           - string
@@ -2507,6 +2544,7 @@ components:
         rings belong to this era alone.
       required:
       - id
+      - node
       - name
       - from
       - to
@@ -2533,6 +2571,8 @@ components:
         name:
           type: string
           description: The polity's name during this era.
+        node:
+          $ref: '#/components/schemas/NodeRef'
         reign:
           $ref: '#/components/schemas/TimeRange'
         rings:
@@ -2577,6 +2617,15 @@ components:
           description: |-
             The verses grounding it. May be empty for an event history records but no
             single verse pinpoints; never a fabricated reference.
+      additionalProperties: false
+    PolityDetail:
+      type: object
+      description: The years one polity stood, from the first year of its first era to the last year of its last, labelled.
+      required:
+      - reign
+      properties:
+        reign:
+          $ref: '#/components/schemas/TimeRange'
       additionalProperties: false
     PolityId:
       type: string
@@ -2631,6 +2680,7 @@ components:
         span asked about.
       required:
       - id
+      - node
       - display_name
       - lat
       - lon
@@ -2666,6 +2716,8 @@ components:
           description: |-
             The ids of other records for this same place, folded into this one. Omitted
             when there are none.
+        node:
+          $ref: '#/components/schemas/NodeRef'
         total_events:
           type: integer
           format: int32
@@ -2816,6 +2868,7 @@ components:
       description: One lit place on the map, with the events that light it.
       required:
       - id
+      - node
       - name
       - display_name
       - lat
@@ -2870,6 +2923,8 @@ components:
         name:
           type: string
           description: The place's default name.
+        node:
+          $ref: '#/components/schemas/NodeRef'
       additionalProperties: false
     SourceCategory:
       type: object

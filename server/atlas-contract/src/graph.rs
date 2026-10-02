@@ -11,7 +11,6 @@ use serde::Deserialize;
 use utoipa::IntoParams;
 
 use atlas_core::data::{AtlasData, Canon, Event, Place, PlaceDateClaim};
-use atlas_core::history::resolve_display_name_and_canonical;
 use atlas_core::refs::{BookId, VerseId};
 use atlas_core::scene::{accounts_of, Account};
 use atlas_graph::event_world::{event_node_id, ChronologyDerivation};
@@ -59,7 +58,7 @@ fn read_node_record(node_id: &AnyNodeId, data: &AtlasData, graph: &GraphService,
     let edge_summary = summary_at(snap, &Position::Node(node_id.clone()));
     let description = node_description(node_id, snap);
     let person = match &node.payload {
-        atlas_graph_types::node::NodePayload::Person { gender, birth_year, death_year, also_called, first_year, last_year, eternal, eternal_grounds, .. } => Some(wire::PersonLife {
+        NodePayload::Person { gender, birth_year, death_year, also_called, first_year, last_year, eternal, eternal_grounds, .. } => Some(wire::PersonLife {
             gender: gender.clone(),
             birth: recorded_year(*birth_year, node_id)?,
             death: recorded_year(*death_year, node_id)?,
@@ -71,7 +70,13 @@ fn read_node_record(node_id: &AnyNodeId, data: &AtlasData, graph: &GraphService,
         }),
         _ => None,
     };
-    let place = atlas_graph::legacy::place_from_node(node_id, snap).map(|place| place_detail(&place, data, snap)).transpose()?;
+    let place = atlas_graph::legacy::place_from_node(node_id, snap).map(|place| place_detail(&place, node_id, data, graph, snap)).transpose()?;
+    let (map, era, polity) = match &node.payload {
+        NodePayload::Map { from_year, to_year, .. } => (Some(wire::MapDetail { window: crate::map::curated_span(*from_year, *to_year) }), None, None),
+        NodePayload::Era { from_year, to_year, .. } => (None, Some(wire::EraDetail { window: crate::map::curated_span(*from_year, *to_year) }), None),
+        NodePayload::Polity { .. } => (None, None, Some(polity_detail(node_id, graph)?)),
+        _ => (None, None, None),
+    };
 
     Ok(Some(wire::NodeRecord {
         id: encode_node_id(node_id),
@@ -86,7 +91,15 @@ fn read_node_record(node_id: &AnyNodeId, data: &AtlasData, graph: &GraphService,
         place,
         catechism: catechism_detail(node_id, data),
         book: book_detail(node_id, data, snap)?,
+        map,
+        era,
+        polity,
     }))
+}
+
+fn polity_detail(polity: &AnyNodeId, graph: &GraphService) -> Result<wire::PolityDetail, ApiError> {
+    let reign = graph.geography.reign_of(polity).ok_or_else(|| ApiError::internal(&format!("{} is a polity and no reign is compiled for it", encode_node_id(polity))))?;
+    Ok(wire::PolityDetail { reign: wire::TimeRange::of(reign) })
 }
 
 fn read_edge_record(id: &EdgeId, snap: &impl GraphQuery) -> Result<Option<wire::EdgeRecord>, ApiError> {
@@ -203,14 +216,15 @@ fn event_detail(event: &Event) -> wire::EventDetail {
     }
 }
 
-fn place_detail(place: &Place, data: &AtlasData, snap: &impl GraphQuery) -> Result<wire::PlaceDetail, ApiError> {
+fn place_detail(place: &Place, node_id: &AnyNodeId, data: &AtlasData, graph: &GraphService, snap: &impl GraphQuery) -> Result<wire::PlaceDetail, ApiError> {
     let history = data.place_history_for(&place.id);
-    let (display_name, canonical_name) = resolve_display_name_and_canonical(&place.name, history, None, data.place_name_alias_for(&place.id));
+    let default = graph.geography.place_default(node_id).ok_or_else(|| ApiError::internal(&format!("{} is a place and no default is compiled for it", encode_node_id(node_id))))?;
     Ok(wire::PlaceDetail {
         lat: place.lat,
         lon: place.lon,
-        display_name,
-        canonical_name,
+        display_name: default.display_name.clone(),
+        canonical_name: default.canonical_name.clone(),
+        blurb: default.blurb.clone(),
         established: history.and_then(|h| h.established.as_ref()).map(|claim| date_claim(claim, snap)).transpose()?,
         destroyed: history.and_then(|h| h.destroyed.as_ref()).map(|claim| date_claim(claim, snap)).transpose()?,
     })

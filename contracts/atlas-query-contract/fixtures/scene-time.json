@@ -90,7 +90,12 @@
         "id": "bethel-1",
         "lat": 31.922778,
         "lon": 35.241389,
-        "name": "Bethel 1"
+        "name": "Bethel 1",
+        "node": {
+          "id": "Place:bethel-1",
+          "kind": "Place",
+          "label": "Bethel 1"
+        }
       },
       {
         "brightness": 1,
@@ -135,7 +140,12 @@
         "id": "egypt",
         "lat": 30.129444,
         "lon": 31.3075,
-        "name": "Egypt"
+        "name": "Egypt",
+        "node": {
+          "id": "Place:egypt",
+          "kind": "Place",
+          "label": "Egypt"
+        }
       },
       {
         "brightness": 1,
@@ -179,7 +189,12 @@
         "id": "haran",
         "lat": 36.864444,
         "lon": 39.032778,
-        "name": "Haran"
+        "name": "Haran",
+        "node": {
+          "id": "Place:haran",
+          "kind": "Place",
+          "label": "Haran"
+        }
       },
       {
         "brightness": 1,
@@ -215,7 +230,12 @@
         "id": "hebron",
         "lat": 31.525087,
         "lon": 35.10222,
-        "name": "Hebron"
+        "name": "Hebron",
+        "node": {
+          "id": "Place:hebron",
+          "kind": "Place",
+          "label": "Hebron"
+        }
       },
       {
         "brightness": 1,
@@ -251,7 +271,12 @@
         "id": "shechem",
         "lat": 32.213611,
         "lon": 35.281944,
-        "name": "Shechem"
+        "name": "Shechem",
+        "node": {
+          "id": "Place:shechem",
+          "kind": "Place",
+          "label": "Shechem"
+        }
       },
       {
         "brightness": 1,
@@ -290,7 +315,12 @@
         "merged_ids": [
           "ur_1189"
         ],
-        "name": "Ur 1"
+        "name": "Ur 1",
+        "node": {
+          "id": "Place:ur-1",
+          "kind": "Place",
+          "label": "Ur 1"
+        }
       }
     ],
     "quiet_places": [
@@ -299,6 +329,11 @@
         "id": "abel-beth-maacah",
         "lat": 33.258051,
         "lon": 35.581007,
+        "node": {
+          "id": "Place:abel-beth-maacah",
+          "kind": "Place",
+          "label": "Abel-beth-maacah"
+        },
         "total_events": 1
       },
       {
@@ -306,6 +341,11 @@
         "id": "abel-meholah",
         "lat": 32.3743,
         "lon": 35.56089,
+        "node": {
+          "id": "Place:abel-meholah",
+          "kind": "Place",
+          "label": "Abel-meholah"
+        },
         "total_events": 1
       },
       {
@@ -313,6 +353,11 @@
         "id": "accad",
         "lat": 33.025556,
         "lon": 44.391944,
+        "node": {
+          "id": "Place:accad",
+          "kind": "Place",
+          "label": "Accad"
+        },
         "total_events": 1
       },
       {
@@ -320,6 +365,11 @@
         "id": "achaia",
         "lat": 38.72,
         "lon": 22.54,
+        "node": {
+          "id": "Place:achaia",
+          "kind": "Place",
+          "label": "Achaia"
+        },
         "total_events": 2
       },
       {
@@ -327,6 +377,11 @@
         "id": "adramyttium",
         "lat": 39.500667,
         "lon": 26.932716,
+        "node": {
+          "id": "Place:adramyttium",
+          "kind": "Place",
+          "label": "Adramyttium"
+        },
         "total_events": 2
       },
       {
@@ -334,6 +389,11 @@
         "id": "adria_30",
         "lat": 42.415,
         "lon": 16.3735,
+        "node": {
+          "id": "Place:adria_30",
+          "kind": "Place",
+          "label": "Adria"
+        },
         "total_events": 2
       },
       {
@@ -341,6 +401,11 @@
         "id": "adullam",
         "lat": 31.651667,
         "lon": 35.001667,
+        "node": {
+          "id": "Place:adullam",
+          "kind": "Place",
+          "label": "Adullam"
+        },
         "total_events": 2
       },
       {
@@ -351,6 +416,11 @@
         "merged_ids": [
           "ai_36"
         ],
+        "node": {
+          "id": "Place:ai-1",
+          "kind": "Place",
+          "label": "Ai 1"
+        },
         "total_events": 2
       },
       {
@@ -358,6 +428,11 @@
         "id": "alexandria",
         "lat": 31.1825,
         "lon": 29.8965,
+        "node": {
+          "id": "Place:alexandria",
+          "kind": "Place",
+          "label": "Alexandria"
+        },
         "total_events": 2
       },
       {
@@ -365,6 +440,11 @@
         "id": "anathoth",
         "lat": 31.80752,
         "lon": 35.25758,
+        "node": {
+          "id": "Place:anathoth",
+          "kind": "Place",
+          "label": "Anathoth"
+        },
         "total_events": 1
       },
       {
@@ -372,6 +452,11 @@
         "id": "antioch-1",
         "lat": 36.226691,
         "lon": 36.171743,
+        "node": {
+          "id": "Place:antioch-1",
+          "kind": "Place",
+          "label": "Antioch 1"
+        },
         "total_events": 1
       },
       {
@@ -382,6 +467,11 @@
         "merged_ids": [
           "antioch_69"
         ],
+        "node": {
+          "id": "Place:antioch-2",
+          "kind": "Place",
+          "label": "Antioch 2"
+        },
         "total_events": 3
       },
       {
@@ -389,6 +479,11 @@
         "id": "antioch_68",
         "lat": 36.200663,
         "lon": 36.165318,
+        "node": {
+          "id": "Place:antioch_68",
+          "kind": "Place",
+          "label": "Antioch (Syria)"
+        },
         "total_events": 6
       },
       {
@@ -399,6 +494,11 @@
         "merged_ids": [
           "antipatris_70"
         ],
+        "node": {
+          "id": "Place:aphek-2",
+          "kind": "Place",
+          "label": "Aphek 2"
+        },
         "total_events": 2
       },
       {
@@ -406,6 +506,11 @@
         "id": "aphek-3",
         "lat": 32.783679,
         "lon": 35.63729,
+        "node": {
+          "id": "Place:aphek-3",
+          "kind": "Place",
+          "label": "Aphek 3"
+        },
         "total_events": 1
       },
       {
@@ -413,6 +518,11 @@
         "id": "ararat",
         "lat": 39.702761,
         "lon": 44.300381,
+        "node": {
+          "id": "Place:ararat",
+          "kind": "Place",
+          "label": "Ararat"
+        },
         "total_events": 3
       },
       {
@@ -420,6 +530,11 @@
         "id": "areopagus",
         "lat": 37.972222,
         "lon": 23.723611,
+        "node": {
+          "id": "Place:areopagus",
+          "kind": "Place",
+          "label": "Areopagus"
+        },
         "total_events": 1
       },
       {
@@ -427,6 +542,11 @@
         "id": "ashdod",
         "lat": 31.7572,
         "lon": 34.6578,
+        "node": {
+          "id": "Place:ashdod",
+          "kind": "Place",
+          "label": "Ashdod"
+        },
         "total_events": 1
       },
       {
@@ -434,6 +554,11 @@
         "id": "asia",
         "lat": 38.4,
         "lon": 28.3,
+        "node": {
+          "id": "Place:asia",
+          "kind": "Place",
+          "label": "Asia"
+        },
         "total_events": 6
       },
       {
@@ -441,6 +566,11 @@
         "id": "assos",
         "lat": 39.490556,
         "lon": 26.336667,
+        "node": {
+          "id": "Place:assos",
+          "kind": "Place",
+          "label": "Assos"
+        },
         "total_events": 1
       },
       {
@@ -448,6 +578,11 @@
         "id": "assyria",
         "lat": 36.3594,
         "lon": 43.1528,
+        "node": {
+          "id": "Place:assyria",
+          "kind": "Place",
+          "label": "Assyria"
+        },
         "total_events": 1
       },
       {
@@ -455,6 +590,11 @@
         "id": "athens",
         "lat": 37.971851,
         "lon": 23.726738,
+        "node": {
+          "id": "Place:athens",
+          "kind": "Place",
+          "label": "Athens"
+        },
         "total_events": 1
       },
       {
@@ -462,6 +602,11 @@
         "id": "attalia",
         "lat": 36.881272,
         "lon": 30.703614,
+        "node": {
+          "id": "Place:attalia",
+          "kind": "Place",
+          "label": "Attalia"
+        },
         "total_events": 3
       },
       {
@@ -469,6 +614,11 @@
         "id": "baal-perazim",
         "lat": 31.741854,
         "lon": 35.183317,
+        "node": {
+          "id": "Place:baal-perazim",
+          "kind": "Place",
+          "label": "Baal-perazim"
+        },
         "total_events": 1
       },
       {
@@ -476,6 +626,11 @@
         "id": "baal-zephon",
         "lat": 30.860556,
         "lon": 32.171389,
+        "node": {
+          "id": "Place:baal-zephon",
+          "kind": "Place",
+          "label": "Baal-zephon"
+        },
         "total_events": 1
       },
       {
@@ -483,6 +638,11 @@
         "id": "babel",
         "lat": 32.543333,
         "lon": 44.422222,
+        "node": {
+          "id": "Place:babel",
+          "kind": "Place",
+          "label": "Babel"
+        },
         "total_events": 2
       },
       {
@@ -490,6 +650,11 @@
         "id": "babylon-1",
         "lat": 32.543333,
         "lon": 44.422222,
+        "node": {
+          "id": "Place:babylon-1",
+          "kind": "Place",
+          "label": "Babylon 1"
+        },
         "total_events": 17
       },
       {
@@ -497,6 +662,11 @@
         "id": "beautiful-gate",
         "lat": 31.776667,
         "lon": 35.234167,
+        "node": {
+          "id": "Place:beautiful-gate",
+          "kind": "Place",
+          "label": "Beautiful Gate"
+        },
         "total_events": 1
       },
       {
@@ -504,6 +674,11 @@
         "id": "beersheba-1",
         "lat": 31.244722,
         "lon": 34.840833,
+        "node": {
+          "id": "Place:beersheba-1",
+          "kind": "Place",
+          "label": "Beersheba 1"
+        },
         "total_events": 8
       },
       {
@@ -511,6 +686,11 @@
         "id": "beersheba-2",
         "lat": 31.244722,
         "lon": 34.840833,
+        "node": {
+          "id": "Place:beersheba-2",
+          "kind": "Place",
+          "label": "Beersheba 2"
+        },
         "total_events": 2
       },
       {
@@ -518,6 +698,11 @@
         "id": "berea",
         "lat": 40.518333,
         "lon": 22.2,
+        "node": {
+          "id": "Place:berea",
+          "kind": "Place",
+          "label": "Berea"
+        },
         "total_events": 1
       },
       {
@@ -525,6 +710,11 @@
         "id": "bethany-1",
         "lat": 31.771661,
         "lon": 35.255903,
+        "node": {
+          "id": "Place:bethany-1",
+          "kind": "Place",
+          "label": "Bethany 1"
+        },
         "total_events": 5
       },
       {
@@ -532,6 +722,11 @@
         "id": "bethany-2",
         "lat": 31.837109,
         "lon": 35.550301,
+        "node": {
+          "id": "Place:bethany-2",
+          "kind": "Place",
+          "label": "Bethany 2"
+        },
         "total_events": 4
       },
       {
@@ -539,6 +734,11 @@
         "id": "bethany_186",
         "lat": 31.77078,
         "lon": 35.26917,
+        "node": {
+          "id": "Place:bethany_186",
+          "kind": "Place",
+          "label": "Bethany"
+        },
         "total_events": 1
       },
       {
@@ -546,6 +746,11 @@
         "id": "bethel_202",
         "lat": 31.93053921,
         "lon": 35.22103275,
+        "node": {
+          "id": "Place:bethel_202",
+          "kind": "Place",
+          "label": "Bethel (of Palestine)"
+        },
         "total_events": 1
       },
       {
@@ -556,6 +761,11 @@
         "merged_ids": [
           "bethlehem_218"
         ],
+        "node": {
+          "id": "Place:bethlehem-1",
+          "kind": "Place",
+          "label": "Bethlehem 1"
+        },
         "total_events": 13
       },
       {
@@ -566,6 +776,11 @@
         "merged_ids": [
           "bethsaida_231"
         ],
+        "node": {
+          "id": "Place:bethsaida-2",
+          "kind": "Place",
+          "label": "Bethsaida 2"
+        },
         "total_events": 4
       },
       {
@@ -573,6 +788,11 @@
         "id": "bochim",
         "lat": 31.922778,
         "lon": 35.241389,
+        "node": {
+          "id": "Place:bochim",
+          "kind": "Place",
+          "label": "Bochim"
+        },
         "total_events": 1
       },
       {
@@ -580,6 +800,11 @@
         "id": "caesarea",
         "lat": 32.5,
         "lon": 34.891667,
+        "node": {
+          "id": "Place:caesarea",
+          "kind": "Place",
+          "label": "Caesarea"
+        },
         "total_events": 11
       },
       {
@@ -587,6 +812,11 @@
         "id": "caesarea-philippi",
         "lat": 33.246111,
         "lon": 35.693333,
+        "node": {
+          "id": "Place:caesarea-philippi",
+          "kind": "Place",
+          "label": "Caesarea Philippi"
+        },
         "total_events": 7
       },
       {
@@ -594,6 +824,11 @@
         "id": "calah",
         "lat": 36.098056,
         "lon": 43.328889,
+        "node": {
+          "id": "Place:calah",
+          "kind": "Place",
+          "label": "Calah"
+        },
         "total_events": 1
       },
       {
@@ -604,6 +839,11 @@
         "merged_ids": [
           "calneh_269"
         ],
+        "node": {
+          "id": "Place:calneh-1",
+          "kind": "Place",
+          "label": "Calneh 1"
+        },
         "total_events": 1
       },
       {
@@ -611,6 +851,11 @@
         "id": "cana",
         "lat": 32.8222,
         "lon": 35.30269,
+        "node": {
+          "id": "Place:cana",
+          "kind": "Place",
+          "label": "Cana"
+        },
         "total_events": 2
       },
       {
@@ -618,6 +863,11 @@
         "id": "canaan",
         "lat": 32.766667,
         "lon": 35.333333,
+        "node": {
+          "id": "Place:canaan",
+          "kind": "Place",
+          "label": "Canaan"
+        },
         "total_events": 20
       },
       {
@@ -625,6 +875,11 @@
         "id": "capernaum",
         "lat": 32.881111,
         "lon": 35.575,
+        "node": {
+          "id": "Place:capernaum",
+          "kind": "Place",
+          "label": "Capernaum"
+        },
         "total_events": 22
       },
       {
@@ -632,6 +887,11 @@
         "id": "cenchreae",
         "lat": 37.884335,
         "lon": 22.996816,
+        "node": {
+          "id": "Place:cenchreae",
+          "kind": "Place",
+          "label": "Cenchreae"
+        },
         "total_events": 1
       },
       {
@@ -639,6 +899,11 @@
         "id": "chebar",
         "lat": 32.126944,
         "lon": 45.230833,
+        "node": {
+          "id": "Place:chebar",
+          "kind": "Place",
+          "label": "Chebar"
+        },
         "total_events": 9
       },
       {
@@ -646,6 +911,11 @@
         "id": "cherith",
         "lat": 32.394722,
         "lon": 35.591389,
+        "node": {
+          "id": "Place:cherith",
+          "kind": "Place",
+          "label": "Cherith"
+        },
         "total_events": 1
       },
       {
@@ -653,6 +923,11 @@
         "id": "chios",
         "lat": 38.3725,
         "lon": 26.1375,
+        "node": {
+          "id": "Place:chios",
+          "kind": "Place",
+          "label": "Chios"
+        },
         "total_events": 1
       },
       {
@@ -660,6 +935,11 @@
         "id": "cilicia",
         "lat": 36.913028,
         "lon": 34.892056,
+        "node": {
+          "id": "Place:cilicia",
+          "kind": "Place",
+          "label": "Cilicia"
+        },
         "total_events": 3
       },
       {
@@ -667,6 +947,11 @@
         "id": "cnidus",
         "lat": 36.685833,
         "lon": 27.375,
+        "node": {
+          "id": "Place:cnidus",
+          "kind": "Place",
+          "label": "Cnidus"
+        },
         "total_events": 2
       },
       {
@@ -674,6 +959,11 @@
         "id": "coos_308",
         "lat": 36.844,
         "lon": 27.17,
+        "node": {
+          "id": "Place:coos_308",
+          "kind": "Place",
+          "label": "Coos"
+        },
         "total_events": 1
       },
       {
@@ -681,6 +971,11 @@
         "id": "corinth",
         "lat": 37.905785,
         "lon": 22.878741,
+        "node": {
+          "id": "Place:corinth",
+          "kind": "Place",
+          "label": "Corinth"
+        },
         "total_events": 1
       },
       {
@@ -688,6 +983,11 @@
         "id": "crete",
         "lat": 35.309722,
         "lon": 24.893333,
+        "node": {
+          "id": "Place:crete",
+          "kind": "Place",
+          "label": "Crete"
+        },
         "total_events": 3
       },
       {
@@ -695,6 +995,11 @@
         "id": "cyprus",
         "lat": 35.0,
         "lon": 33.0,
+        "node": {
+          "id": "Place:cyprus",
+          "kind": "Place",
+          "label": "Cyprus"
+        },
         "total_events": 6
       },
       {
@@ -702,6 +1007,11 @@
         "id": "dalmanutha",
         "lat": 32.827069,
         "lon": 35.513552,
+        "node": {
+          "id": "Place:dalmanutha",
+          "kind": "Place",
+          "label": "Dalmanutha"
+        },
         "total_events": 2
       },
       {
@@ -709,6 +1019,11 @@
         "id": "damascus",
         "lat": 33.511112,
         "lon": 36.30639,
+        "node": {
+          "id": "Place:damascus",
+          "kind": "Place",
+          "label": "Damascus"
+        },
         "total_events": 2
       },
       {
@@ -716,6 +1031,11 @@
         "id": "decapolis",
         "lat": 32.716667,
         "lon": 35.8,
+        "node": {
+          "id": "Place:decapolis",
+          "kind": "Place",
+          "label": "Decapolis"
+        },
         "total_events": 2
       },
       {
@@ -723,6 +1043,11 @@
         "id": "derbe",
         "lat": 37.348569,
         "lon": 33.361453,
+        "node": {
+          "id": "Place:derbe",
+          "kind": "Place",
+          "label": "Derbe"
+        },
         "total_events": 2
       },
       {
@@ -730,6 +1055,11 @@
         "id": "dothan",
         "lat": 32.413528,
         "lon": 35.239861,
+        "node": {
+          "id": "Place:dothan",
+          "kind": "Place",
+          "label": "Dothan"
+        },
         "total_events": 1
       },
       {
@@ -737,6 +1067,11 @@
         "id": "ebenezer-1",
         "lat": 32.1046,
         "lon": 34.9645,
+        "node": {
+          "id": "Place:ebenezer-1",
+          "kind": "Place",
+          "label": "Ebenezer 1"
+        },
         "total_events": 1
       },
       {
@@ -744,6 +1079,11 @@
         "id": "ebenezer-2",
         "lat": 31.940941,
         "lon": 35.23695,
+        "node": {
+          "id": "Place:ebenezer-2",
+          "kind": "Place",
+          "label": "Ebenezer 2"
+        },
         "total_events": 1
       },
       {
@@ -751,6 +1091,11 @@
         "id": "elam",
         "lat": 32.18922,
         "lon": 48.25778,
+        "node": {
+          "id": "Place:elam",
+          "kind": "Place",
+          "label": "Elam"
+        },
         "total_events": 1
       },
       {
@@ -758,6 +1103,11 @@
         "id": "elim",
         "lat": 29.254722,
         "lon": 32.915833,
+        "node": {
+          "id": "Place:elim",
+          "kind": "Place",
+          "label": "Elim"
+        },
         "total_events": 2
       },
       {
@@ -765,6 +1115,11 @@
         "id": "emmaus",
         "lat": 31.79289,
         "lon": 35.16419,
+        "node": {
+          "id": "Place:emmaus",
+          "kind": "Place",
+          "label": "Emmaus"
+        },
         "total_events": 1
       },
       {
@@ -772,6 +1127,11 @@
         "id": "engedi",
         "lat": 31.45,
         "lon": 35.383333,
+        "node": {
+          "id": "Place:engedi",
+          "kind": "Place",
+          "label": "Engedi"
+        },
         "total_events": 2
       },
       {
@@ -779,6 +1139,11 @@
         "id": "ephesus",
         "lat": 37.939125,
         "lon": 27.3407,
+        "node": {
+          "id": "Place:ephesus",
+          "kind": "Place",
+          "label": "Ephesus"
+        },
         "total_events": 4
       },
       {
@@ -789,6 +1154,11 @@
         "merged_ids": [
           "ephraim_401"
         ],
+        "node": {
+          "id": "Place:ephraim-2",
+          "kind": "Place",
+          "label": "Ephraim 2"
+        },
         "total_events": 1
       },
       {
@@ -796,6 +1166,11 @@
         "id": "ephrath",
         "lat": 31.704306,
         "lon": 35.207639,
+        "node": {
+          "id": "Place:ephrath",
+          "kind": "Place",
+          "label": "Ephrath"
+        },
         "total_events": 1
       },
       {
@@ -803,6 +1178,11 @@
         "id": "erech",
         "lat": 31.322222,
         "lon": 45.636111,
+        "node": {
+          "id": "Place:erech",
+          "kind": "Place",
+          "label": "Erech"
+        },
         "total_events": 1
       },
       {
@@ -810,6 +1190,11 @@
         "id": "etham",
         "lat": 30.861009,
         "lon": 32.352252,
+        "node": {
+          "id": "Place:etham",
+          "kind": "Place",
+          "label": "Etham"
+        },
         "total_events": 1
       },
       {
@@ -817,6 +1202,11 @@
         "id": "fair-havens",
         "lat": 34.929694,
         "lon": 24.800306,
+        "node": {
+          "id": "Place:fair-havens",
+          "kind": "Place",
+          "label": "Fair Havens"
+        },
         "total_events": 3
       },
       {
@@ -824,6 +1214,11 @@
         "id": "gadara",
         "lat": 32.655998,
         "lon": 35.679352,
+        "node": {
+          "id": "Place:gadara",
+          "kind": "Place",
+          "label": "Gadara"
+        },
         "total_events": 1
       },
       {
@@ -831,6 +1226,11 @@
         "id": "galatia",
         "lat": 39.266667,
         "lon": 32.983333,
+        "node": {
+          "id": "Place:galatia",
+          "kind": "Place",
+          "label": "Galatia"
+        },
         "total_events": 2
       },
       {
@@ -838,6 +1238,11 @@
         "id": "galilee-1",
         "lat": 32.76,
         "lon": 35.527,
+        "node": {
+          "id": "Place:galilee-1",
+          "kind": "Place",
+          "label": "Galilee 1"
+        },
         "total_events": 17
       },
       {
@@ -845,6 +1250,11 @@
         "id": "galilee_433",
         "lat": 32.70674542474383,
         "lon": 35.30152807767973,
+        "node": {
+          "id": "Place:galilee_433",
+          "kind": "Place",
+          "label": "Galilee"
+        },
         "total_events": 5
       },
       {
@@ -852,6 +1262,11 @@
         "id": "gath-1",
         "lat": 31.69972,
         "lon": 34.84694,
+        "node": {
+          "id": "Place:gath-1",
+          "kind": "Place",
+          "label": "Gath 1"
+        },
         "total_events": 3
       },
       {
@@ -859,6 +1274,11 @@
         "id": "gaza",
         "lat": 31.504,
         "lon": 34.4644,
+        "node": {
+          "id": "Place:gaza",
+          "kind": "Place",
+          "label": "Gaza"
+        },
         "total_events": 2
       },
       {
@@ -866,6 +1286,11 @@
         "id": "gennesaret",
         "lat": 32.860556,
         "lon": 35.507222,
+        "node": {
+          "id": "Place:gennesaret",
+          "kind": "Place",
+          "label": "Gennesaret"
+        },
         "total_events": 1
       },
       {
@@ -873,6 +1298,11 @@
         "id": "gerar",
         "lat": 31.3821,
         "lon": 34.6065,
+        "node": {
+          "id": "Place:gerar",
+          "kind": "Place",
+          "label": "Gerar"
+        },
         "total_events": 3
       },
       {
@@ -880,6 +1310,11 @@
         "id": "geshur",
         "lat": 32.766667,
         "lon": 35.7,
+        "node": {
+          "id": "Place:geshur",
+          "kind": "Place",
+          "label": "Geshur"
+        },
         "total_events": 1
       },
       {
@@ -887,6 +1322,11 @@
         "id": "gethsemane",
         "lat": 31.779419,
         "lon": 35.239425,
+        "node": {
+          "id": "Place:gethsemane",
+          "kind": "Place",
+          "label": "Gethsemane"
+        },
         "total_events": 1
       },
       {
@@ -894,6 +1334,11 @@
         "id": "gibbethon",
         "lat": 31.856389,
         "lon": 34.865556,
+        "node": {
+          "id": "Place:gibbethon",
+          "kind": "Place",
+          "label": "Gibbethon"
+        },
         "total_events": 1
       },
       {
@@ -901,6 +1346,11 @@
         "id": "gibeon",
         "lat": 31.847451,
         "lon": 35.183351,
+        "node": {
+          "id": "Place:gibeon",
+          "kind": "Place",
+          "label": "Gibeon"
+        },
         "total_events": 2
       },
       {
@@ -908,6 +1358,11 @@
         "id": "gilead-1",
         "lat": 32.187016,
         "lon": 35.69211,
+        "node": {
+          "id": "Place:gilead-1",
+          "kind": "Place",
+          "label": "Gilead 1"
+        },
         "total_events": 1
       },
       {
@@ -915,6 +1370,11 @@
         "id": "gilgal-1",
         "lat": 31.881883,
         "lon": 35.459969,
+        "node": {
+          "id": "Place:gilgal-1",
+          "kind": "Place",
+          "label": "Gilgal 1"
+        },
         "total_events": 1
       },
       {
@@ -922,6 +1382,11 @@
         "id": "golgotha",
         "lat": 31.778444,
         "lon": 35.22975,
+        "node": {
+          "id": "Place:golgotha",
+          "kind": "Place",
+          "label": "Golgotha"
+        },
         "total_events": 6
       },
       {
@@ -929,6 +1394,11 @@
         "id": "gomorrah",
         "lat": 31.20849,
         "lon": 35.449223,
+        "node": {
+          "id": "Place:gomorrah",
+          "kind": "Place",
+          "label": "Gomorrah"
+        },
         "total_events": 1
       },
       {
@@ -936,6 +1406,11 @@
         "id": "goshen-1",
         "lat": 30.79937,
         "lon": 31.834217,
+        "node": {
+          "id": "Place:goshen-1",
+          "kind": "Place",
+          "label": "Goshen 1"
+        },
         "total_events": 4
       },
       {
@@ -943,6 +1418,11 @@
         "id": "greece",
         "lat": 37.971851,
         "lon": 23.726738,
+        "node": {
+          "id": "Place:greece",
+          "kind": "Place",
+          "label": "Greece"
+        },
         "total_events": 1
       },
       {
@@ -950,6 +1430,11 @@
         "id": "hazeroth",
         "lat": 28.896944,
         "lon": 34.421667,
+        "node": {
+          "id": "Place:hazeroth",
+          "kind": "Place",
+          "label": "Hazeroth"
+        },
         "total_events": 1
       },
       {
@@ -960,6 +1445,11 @@
         "merged_ids": [
           "hazor_545"
         ],
+        "node": {
+          "id": "Place:hazor-1",
+          "kind": "Place",
+          "label": "Hazor 1"
+        },
         "total_events": 2
       },
       {
@@ -967,6 +1457,11 @@
         "id": "helam",
         "lat": 32.75,
         "lon": 36.240833,
+        "node": {
+          "id": "Place:helam",
+          "kind": "Place",
+          "label": "Helam"
+        },
         "total_events": 1
       },
       {
@@ -974,6 +1469,11 @@
         "id": "horeb_576",
         "lat": 28.58771,
         "lon": 33.921682,
+        "node": {
+          "id": "Place:horeb_576",
+          "kind": "Place",
+          "label": "Horeb"
+        },
         "total_events": 2
       },
       {
@@ -981,6 +1481,11 @@
         "id": "iconium",
         "lat": 37.872202,
         "lon": 32.492331,
+        "node": {
+          "id": "Place:iconium",
+          "kind": "Place",
+          "label": "Iconium"
+        },
         "total_events": 3
       },
       {
@@ -988,6 +1493,11 @@
         "id": "italy",
         "lat": 41.8922,
         "lon": 12.4852,
+        "node": {
+          "id": "Place:italy",
+          "kind": "Place",
+          "label": "Italy"
+        },
         "total_events": 2
       },
       {
@@ -995,6 +1505,11 @@
         "id": "jericho-1",
         "lat": 31.871719,
         "lon": 35.444564,
+        "node": {
+          "id": "Place:jericho-1",
+          "kind": "Place",
+          "label": "Jericho 1"
+        },
         "total_events": 2
       },
       {
@@ -1002,6 +1517,11 @@
         "id": "jericho-2",
         "lat": 31.851872,
         "lon": 35.436238,
+        "node": {
+          "id": "Place:jericho-2",
+          "kind": "Place",
+          "label": "Jericho 2"
+        },
         "total_events": 3
       },
       {
@@ -1009,6 +1529,11 @@
         "id": "jericho_634",
         "lat": 31.8700465,
         "lon": 35.443876,
+        "node": {
+          "id": "Place:jericho_634",
+          "kind": "Place",
+          "label": "Jericho"
+        },
         "total_events": 1
       },
       {
@@ -1024,6 +1549,11 @@
         "id": "jerusalem",
         "lat": 31.776667,
         "lon": 35.234167,
+        "node": {
+          "id": "Place:jerusalem",
+          "kind": "Place",
+          "label": "Jerusalem"
+        },
         "total_events": 230
       },
       {
@@ -1031,6 +1561,11 @@
         "id": "jezreel-2",
         "lat": 32.557853,
         "lon": 35.327953,
+        "node": {
+          "id": "Place:jezreel-2",
+          "kind": "Place",
+          "label": "Jezreel 2"
+        },
         "total_events": 2
       },
       {
@@ -1038,6 +1573,11 @@
         "id": "joppa",
         "lat": 32.054481,
         "lon": 34.753039,
+        "node": {
+          "id": "Place:joppa",
+          "kind": "Place",
+          "label": "Joppa"
+        },
         "total_events": 4
       },
       {
@@ -1045,6 +1585,11 @@
         "id": "jordan",
         "lat": 31.761389,
         "lon": 35.558333,
+        "node": {
+          "id": "Place:jordan",
+          "kind": "Place",
+          "label": "Jordan"
+        },
         "total_events": 8
       },
       {
@@ -1052,6 +1597,11 @@
         "id": "judea-1",
         "lat": 31.776667,
         "lon": 35.234167,
+        "node": {
+          "id": "Place:judea-1",
+          "kind": "Place",
+          "label": "Judea 1"
+        },
         "total_events": 23
       },
       {
@@ -1059,6 +1609,11 @@
         "id": "judea_657",
         "lat": 31.777444,
         "lon": 35.234935,
+        "node": {
+          "id": "Place:judea_657",
+          "kind": "Place",
+          "label": "Judea"
+        },
         "total_events": 4
       },
       {
@@ -1066,6 +1621,11 @@
         "id": "kadesh-barnea",
         "lat": 30.648333,
         "lon": 34.422222,
+        "node": {
+          "id": "Place:kadesh-barnea",
+          "kind": "Place",
+          "label": "Kadesh-barnea"
+        },
         "total_events": 7
       },
       {
@@ -1073,6 +1633,11 @@
         "id": "keilah",
         "lat": 31.6137,
         "lon": 35.0036,
+        "node": {
+          "id": "Place:keilah",
+          "kind": "Place",
+          "label": "Keilah"
+        },
         "total_events": 1
       },
       {
@@ -1080,6 +1645,11 @@
         "id": "kibroth-hattaavah",
         "lat": 28.788667,
         "lon": 34.275439,
+        "node": {
+          "id": "Place:kibroth-hattaavah",
+          "kind": "Place",
+          "label": "Kibroth-hattaavah"
+        },
         "total_events": 1
       },
       {
@@ -1087,6 +1657,11 @@
         "id": "kiriath-jearim",
         "lat": 31.808957,
         "lon": 35.10378,
+        "node": {
+          "id": "Place:kiriath-jearim",
+          "kind": "Place",
+          "label": "Kiriath-jearim"
+        },
         "total_events": 1
       },
       {
@@ -1094,6 +1669,11 @@
         "id": "lachish",
         "lat": 31.565278,
         "lon": 34.849167,
+        "node": {
+          "id": "Place:lachish",
+          "kind": "Place",
+          "label": "Lachish"
+        },
         "total_events": 1
       },
       {
@@ -1101,6 +1681,11 @@
         "id": "lasea",
         "lat": 34.940556,
         "lon": 24.811111,
+        "node": {
+          "id": "Place:lasea",
+          "kind": "Place",
+          "label": "Lasea"
+        },
         "total_events": 2
       },
       {
@@ -1111,6 +1696,11 @@
         "merged_ids": [
           "lydda_741"
         ],
+        "node": {
+          "id": "Place:lod",
+          "kind": "Place",
+          "label": "Lod"
+        },
         "total_events": 1
       },
       {
@@ -1118,6 +1708,11 @@
         "id": "lycia",
         "lat": 36.733333,
         "lon": 29.9,
+        "node": {
+          "id": "Place:lycia",
+          "kind": "Place",
+          "label": "Lycia"
+        },
         "total_events": 2
       },
       {
@@ -1125,6 +1720,11 @@
         "id": "lystra",
         "lat": 37.6017,
         "lon": 32.3384,
+        "node": {
+          "id": "Place:lystra",
+          "kind": "Place",
+          "label": "Lystra"
+        },
         "total_events": 4
       },
       {
@@ -1132,6 +1732,11 @@
         "id": "macedonia",
         "lat": 41.6,
         "lon": 22.54,
+        "node": {
+          "id": "Place:macedonia",
+          "kind": "Place",
+          "label": "Macedonia"
+        },
         "total_events": 2
       },
       {
@@ -1139,6 +1744,11 @@
         "id": "machpelah",
         "lat": 31.524672,
         "lon": 35.110758,
+        "node": {
+          "id": "Place:machpelah",
+          "kind": "Place",
+          "label": "Machpelah"
+        },
         "total_events": 4
       },
       {
@@ -1146,6 +1756,11 @@
         "id": "mahanaim",
         "lat": 32.18575,
         "lon": 35.68667,
+        "node": {
+          "id": "Place:mahanaim",
+          "kind": "Place",
+          "label": "Mahanaim"
+        },
         "total_events": 3
       },
       {
@@ -1153,6 +1768,11 @@
         "id": "malta",
         "lat": 35.933464,
         "lon": 14.411732,
+        "node": {
+          "id": "Place:malta",
+          "kind": "Place",
+          "label": "Malta"
+        },
         "total_events": 1
       },
       {
@@ -1160,6 +1780,11 @@
         "id": "mamre",
         "lat": 31.556536,
         "lon": 35.105336,
+        "node": {
+          "id": "Place:mamre",
+          "kind": "Place",
+          "label": "Mamre"
+        },
         "total_events": 4
       },
       {
@@ -1167,6 +1792,11 @@
         "id": "marah",
         "lat": 29.34604,
         "lon": 32.94284,
+        "node": {
+          "id": "Place:marah",
+          "kind": "Place",
+          "label": "Marah"
+        },
         "total_events": 2
       },
       {
@@ -1174,6 +1804,11 @@
         "id": "massah",
         "lat": 28.623056,
         "lon": 33.880278,
+        "node": {
+          "id": "Place:massah",
+          "kind": "Place",
+          "label": "Massah"
+        },
         "total_events": 1
       },
       {
@@ -1181,6 +1816,11 @@
         "id": "megiddo",
         "lat": 32.585278,
         "lon": 35.184444,
+        "node": {
+          "id": "Place:megiddo",
+          "kind": "Place",
+          "label": "Megiddo"
+        },
         "total_events": 1
       },
       {
@@ -1188,6 +1828,11 @@
         "id": "melita_761",
         "lat": 35.87373581,
         "lon": 14.44874427,
+        "node": {
+          "id": "Place:melita_761",
+          "kind": "Place",
+          "label": "Melita"
+        },
         "total_events": 2
       },
       {
@@ -1195,6 +1840,11 @@
         "id": "meribah_783",
         "lat": 28.73106102564323,
         "lon": 33.84169995726504,
+        "node": {
+          "id": "Place:meribah_783",
+          "kind": "Place",
+          "label": "Meribah (of Horeb)"
+        },
         "total_events": 1
       },
       {
@@ -1202,6 +1852,11 @@
         "id": "mesopotamia",
         "lat": 36.864444,
         "lon": 39.032778,
+        "node": {
+          "id": "Place:mesopotamia",
+          "kind": "Place",
+          "label": "Mesopotamia"
+        },
         "total_events": 1
       },
       {
@@ -1209,6 +1864,11 @@
         "id": "midian",
         "lat": 28.4947,
         "lon": 35.0122,
+        "node": {
+          "id": "Place:midian",
+          "kind": "Place",
+          "label": "Midian"
+        },
         "total_events": 2
       },
       {
@@ -1216,6 +1876,11 @@
         "id": "migdol_799",
         "lat": 30.97269,
         "lon": 32.44456,
+        "node": {
+          "id": "Place:migdol_799",
+          "kind": "Place",
+          "label": "Migdol"
+        },
         "total_events": 1
       },
       {
@@ -1223,6 +1888,11 @@
         "id": "miletus",
         "lat": 37.531111,
         "lon": 27.275556,
+        "node": {
+          "id": "Place:miletus",
+          "kind": "Place",
+          "label": "Miletus"
+        },
         "total_events": 2
       },
       {
@@ -1230,6 +1900,11 @@
         "id": "mitylene",
         "lat": 39.110475,
         "lon": 26.547048,
+        "node": {
+          "id": "Place:mitylene",
+          "kind": "Place",
+          "label": "Mitylene"
+        },
         "total_events": 1
       },
       {
@@ -1237,6 +1912,11 @@
         "id": "mizpah-3",
         "lat": 31.885136,
         "lon": 35.216417,
+        "node": {
+          "id": "Place:mizpah-3",
+          "kind": "Place",
+          "label": "Mizpah 3"
+        },
         "total_events": 3
       },
       {
@@ -1244,6 +1924,11 @@
         "id": "moab-1",
         "lat": 31.180556,
         "lon": 35.701389,
+        "node": {
+          "id": "Place:moab-1",
+          "kind": "Place",
+          "label": "Moab 1"
+        },
         "total_events": 15
       },
       {
@@ -1251,6 +1936,11 @@
         "id": "moab-2",
         "lat": 31.84018,
         "lon": 35.67368,
+        "node": {
+          "id": "Place:moab-2",
+          "kind": "Place",
+          "label": "Moab 2"
+        },
         "total_events": 1
       },
       {
@@ -1258,6 +1948,11 @@
         "id": "moab_815",
         "lat": 31.499159,
         "lon": 35.780512,
+        "node": {
+          "id": "Place:moab_815",
+          "kind": "Place",
+          "label": "Moab"
+        },
         "total_events": 1
       },
       {
@@ -1268,6 +1963,11 @@
         "merged_ids": [
           "moreh_817"
         ],
+        "node": {
+          "id": "Place:moreh-1",
+          "kind": "Place",
+          "label": "Moreh 1"
+        },
         "total_events": 1
       },
       {
@@ -1275,6 +1975,11 @@
         "id": "moriah",
         "lat": 31.777778,
         "lon": 35.235556,
+        "node": {
+          "id": "Place:moriah",
+          "kind": "Place",
+          "label": "Moriah"
+        },
         "total_events": 1
       },
       {
@@ -1282,6 +1987,11 @@
         "id": "mount-carmel",
         "lat": 32.6725,
         "lon": 35.023333,
+        "node": {
+          "id": "Place:mount-carmel",
+          "kind": "Place",
+          "label": "Mount Carmel"
+        },
         "total_events": 1
       },
       {
@@ -1289,6 +1999,11 @@
         "id": "mount-gilboa",
         "lat": 32.433889,
         "lon": 35.414444,
+        "node": {
+          "id": "Place:mount-gilboa",
+          "kind": "Place",
+          "label": "Mount Gilboa"
+        },
         "total_events": 1
       },
       {
@@ -1296,6 +2011,11 @@
         "id": "mount-hermon",
         "lat": 33.4,
         "lon": 35.85,
+        "node": {
+          "id": "Place:mount-hermon",
+          "kind": "Place",
+          "label": "Mount Hermon"
+        },
         "total_events": 1
       },
       {
@@ -1303,6 +2023,11 @@
         "id": "mount-horeb",
         "lat": 28.539722,
         "lon": 33.973333,
+        "node": {
+          "id": "Place:mount-horeb",
+          "kind": "Place",
+          "label": "Mount Horeb"
+        },
         "total_events": 1
       },
       {
@@ -1310,6 +2035,11 @@
         "id": "mount-nebo",
         "lat": 31.766667,
         "lon": 35.75,
+        "node": {
+          "id": "Place:mount-nebo",
+          "kind": "Place",
+          "label": "Mount Nebo"
+        },
         "total_events": 2
       },
       {
@@ -1320,6 +2050,11 @@
         "merged_ids": [
           "olivet_907"
         ],
+        "node": {
+          "id": "Place:mount-of-olives",
+          "kind": "Place",
+          "label": "Mount of Olives"
+        },
         "total_events": 8
       },
       {
@@ -1327,6 +2062,11 @@
         "id": "mount-sinai",
         "lat": 28.539722,
         "lon": 33.973333,
+        "node": {
+          "id": "Place:mount-sinai",
+          "kind": "Place",
+          "label": "Mount Sinai"
+        },
         "total_events": 14
       },
       {
@@ -1334,6 +2074,11 @@
         "id": "myra",
         "lat": 36.259167,
         "lon": 29.985278,
+        "node": {
+          "id": "Place:myra",
+          "kind": "Place",
+          "label": "Myra"
+        },
         "total_events": 3
       },
       {
@@ -1341,6 +2086,11 @@
         "id": "mysia",
         "lat": 40.0,
         "lon": 28.5,
+        "node": {
+          "id": "Place:mysia",
+          "kind": "Place",
+          "label": "Mysia"
+        },
         "total_events": 1
       },
       {
@@ -1348,6 +2098,11 @@
         "id": "nain",
         "lat": 32.630694,
         "lon": 35.350139,
+        "node": {
+          "id": "Place:nain",
+          "kind": "Place",
+          "label": "Nain"
+        },
         "total_events": 1
       },
       {
@@ -1355,6 +2110,11 @@
         "id": "nazareth",
         "lat": 32.70214,
         "lon": 35.29769,
+        "node": {
+          "id": "Place:nazareth",
+          "kind": "Place",
+          "label": "Nazareth"
+        },
         "total_events": 6
       },
       {
@@ -1362,6 +2122,11 @@
         "id": "neapolis",
         "lat": 40.935,
         "lon": 24.415,
+        "node": {
+          "id": "Place:neapolis",
+          "kind": "Place",
+          "label": "Neapolis"
+        },
         "total_events": 1
       },
       {
@@ -1369,6 +2134,11 @@
         "id": "negeb",
         "lat": 31.244722,
         "lon": 34.840833,
+        "node": {
+          "id": "Place:negeb",
+          "kind": "Place",
+          "label": "Negeb"
+        },
         "total_events": 1
       },
       {
@@ -1380,6 +2150,11 @@
         "id": "nineveh",
         "lat": 36.3594,
         "lon": 43.1528,
+        "node": {
+          "id": "Place:nineveh",
+          "kind": "Place",
+          "label": "Nineveh"
+        },
         "total_events": 3
       },
       {
@@ -1387,6 +2162,11 @@
         "id": "nob",
         "lat": 31.7925,
         "lon": 35.244167,
+        "node": {
+          "id": "Place:nob",
+          "kind": "Place",
+          "label": "Nob"
+        },
         "total_events": 1
       },
       {
@@ -1394,6 +2174,11 @@
         "id": "pamphylia",
         "lat": 37.0,
         "lon": 31.0,
+        "node": {
+          "id": "Place:pamphylia",
+          "kind": "Place",
+          "label": "Pamphylia"
+        },
         "total_events": 4
       },
       {
@@ -1401,6 +2186,11 @@
         "id": "paphos",
         "lat": 34.755667,
         "lon": 32.404167,
+        "node": {
+          "id": "Place:paphos",
+          "kind": "Place",
+          "label": "Paphos"
+        },
         "total_events": 3
       },
       {
@@ -1408,6 +2198,11 @@
         "id": "patara",
         "lat": 36.260278,
         "lon": 29.314167,
+        "node": {
+          "id": "Place:patara",
+          "kind": "Place",
+          "label": "Patara"
+        },
         "total_events": 1
       },
       {
@@ -1415,6 +2210,11 @@
         "id": "penuel",
         "lat": 32.187016,
         "lon": 35.69211,
+        "node": {
+          "id": "Place:penuel",
+          "kind": "Place",
+          "label": "Penuel"
+        },
         "total_events": 2
       },
       {
@@ -1422,6 +2222,11 @@
         "id": "perga",
         "lat": 36.960353,
         "lon": 30.853686,
+        "node": {
+          "id": "Place:perga",
+          "kind": "Place",
+          "label": "Perga"
+        },
         "total_events": 3
       },
       {
@@ -1429,6 +2234,11 @@
         "id": "phenicia_944",
         "lat": 33.25,
         "lon": 35.25,
+        "node": {
+          "id": "Place:phenicia_944",
+          "kind": "Place",
+          "label": "Phenicia"
+        },
         "total_events": 1
       },
       {
@@ -1436,6 +2246,11 @@
         "id": "philippi",
         "lat": 41.012072,
         "lon": 24.284576,
+        "node": {
+          "id": "Place:philippi",
+          "kind": "Place",
+          "label": "Philippi"
+        },
         "total_events": 6
       },
       {
@@ -1443,6 +2258,11 @@
         "id": "philistia",
         "lat": 31.663889,
         "lon": 34.545833,
+        "node": {
+          "id": "Place:philistia",
+          "kind": "Place",
+          "label": "Philistia"
+        },
         "total_events": 1
       },
       {
@@ -1453,6 +2273,11 @@
         "merged_ids": [
           "phenice_945"
         ],
+        "node": {
+          "id": "Place:phoenix",
+          "kind": "Place",
+          "label": "Phoenix"
+        },
         "total_events": 2
       },
       {
@@ -1460,6 +2285,11 @@
         "id": "phrygia",
         "lat": 39.0,
         "lon": 31.0,
+        "node": {
+          "id": "Place:phrygia",
+          "kind": "Place",
+          "label": "Phrygia"
+        },
         "total_events": 2
       },
       {
@@ -1467,6 +2297,11 @@
         "id": "pi-hahiroth",
         "lat": 30.22518,
         "lon": 32.46951,
+        "node": {
+          "id": "Place:pi-hahiroth",
+          "kind": "Place",
+          "label": "Pi-hahiroth"
+        },
         "total_events": 1
       },
       {
@@ -1474,6 +2309,11 @@
         "id": "pisidia",
         "lat": 38.306111,
         "lon": 31.189167,
+        "node": {
+          "id": "Place:pisidia",
+          "kind": "Place",
+          "label": "Pisidia"
+        },
         "total_events": 2
       },
       {
@@ -1481,6 +2321,11 @@
         "id": "plain_of_jordan_654",
         "lat": 32.309099,
         "lon": 35.5599,
+        "node": {
+          "id": "Place:plain_of_jordan_654",
+          "kind": "Place",
+          "label": "Plain of Jordan"
+        },
         "total_events": 1
       },
       {
@@ -1488,6 +2333,11 @@
         "id": "ptolemais",
         "lat": 32.9214,
         "lon": 35.0692,
+        "node": {
+          "id": "Place:ptolemais",
+          "kind": "Place",
+          "label": "Ptolemais"
+        },
         "total_events": 1
       },
       {
@@ -1495,6 +2345,11 @@
         "id": "puteoli",
         "lat": 40.826111,
         "lon": 14.120556,
+        "node": {
+          "id": "Place:puteoli",
+          "kind": "Place",
+          "label": "Puteoli"
+        },
         "total_events": 2
       },
       {
@@ -1502,6 +2357,11 @@
         "id": "rabbah-1",
         "lat": 31.9547,
         "lon": 35.9343,
+        "node": {
+          "id": "Place:rabbah-1",
+          "kind": "Place",
+          "label": "Rabbah 1"
+        },
         "total_events": 3
       },
       {
@@ -1509,6 +2369,11 @@
         "id": "ramah-4",
         "lat": 31.85434,
         "lon": 35.23161,
+        "node": {
+          "id": "Place:ramah-4",
+          "kind": "Place",
+          "label": "Ramah 4"
+        },
         "total_events": 4
       },
       {
@@ -1516,6 +2381,11 @@
         "id": "rameses",
         "lat": 30.79937,
         "lon": 31.834217,
+        "node": {
+          "id": "Place:rameses",
+          "kind": "Place",
+          "label": "Rameses"
+        },
         "total_events": 1
       },
       {
@@ -1523,6 +2393,11 @@
         "id": "ramoth-gilead",
         "lat": 32.499852,
         "lon": 36.014988,
+        "node": {
+          "id": "Place:ramoth-gilead",
+          "kind": "Place",
+          "label": "Ramoth-gilead"
+        },
         "total_events": 2
       },
       {
@@ -1530,6 +2405,11 @@
         "id": "red-sea-1",
         "lat": 28.75,
         "lon": 33.0,
+        "node": {
+          "id": "Place:red-sea-1",
+          "kind": "Place",
+          "label": "Red Sea 1"
+        },
         "total_events": 1
       },
       {
@@ -1537,6 +2417,11 @@
         "id": "red_sea_986",
         "lat": 19.0,
         "lon": 39.5,
+        "node": {
+          "id": "Place:red_sea_986",
+          "kind": "Place",
+          "label": "Red Sea"
+        },
         "total_events": 1
       },
       {
@@ -1547,6 +2432,11 @@
         "merged_ids": [
           "rehoboth-ir_992"
         ],
+        "node": {
+          "id": "Place:rehoboth-ir",
+          "kind": "Place",
+          "label": "Rehoboth-Ir"
+        },
         "total_events": 1
       },
       {
@@ -1554,6 +2444,11 @@
         "id": "rephidim",
         "lat": 28.623056,
         "lon": 33.880278,
+        "node": {
+          "id": "Place:rephidim",
+          "kind": "Place",
+          "label": "Rephidim"
+        },
         "total_events": 2
       },
       {
@@ -1561,6 +2456,11 @@
         "id": "resen",
         "lat": 36.1437,
         "lon": 43.31452,
+        "node": {
+          "id": "Place:resen",
+          "kind": "Place",
+          "label": "Resen"
+        },
         "total_events": 1
       },
       {
@@ -1568,6 +2468,11 @@
         "id": "rhegium",
         "lat": 38.1088,
         "lon": 15.64412,
+        "node": {
+          "id": "Place:rhegium",
+          "kind": "Place",
+          "label": "Rhegium"
+        },
         "total_events": 2
       },
       {
@@ -1575,6 +2480,11 @@
         "id": "rhodes_1000",
         "lat": 36.41451,
         "lon": 28.15629,
+        "node": {
+          "id": "Place:rhodes_1000",
+          "kind": "Place",
+          "label": "Rhodes"
+        },
         "total_events": 1
       },
       {
@@ -1582,6 +2492,11 @@
         "id": "riblah-1",
         "lat": 34.459547,
         "lon": 36.572623,
+        "node": {
+          "id": "Place:riblah-1",
+          "kind": "Place",
+          "label": "Riblah 1"
+        },
         "total_events": 2
       },
       {
@@ -1589,6 +2504,11 @@
         "id": "rome",
         "lat": 41.8922,
         "lon": 12.4852,
+        "node": {
+          "id": "Place:rome",
+          "kind": "Place",
+          "label": "Rome"
+        },
         "total_events": 3
       },
       {
@@ -1596,6 +2516,11 @@
         "id": "salamis",
         "lat": 35.184944,
         "lon": 33.901944,
+        "node": {
+          "id": "Place:salamis",
+          "kind": "Place",
+          "label": "Salamis"
+        },
         "total_events": 3
       },
       {
@@ -1603,6 +2528,11 @@
         "id": "salem",
         "lat": 31.776667,
         "lon": 35.234167,
+        "node": {
+          "id": "Place:salem",
+          "kind": "Place",
+          "label": "Salem"
+        },
         "total_events": 1
       },
       {
@@ -1610,6 +2540,11 @@
         "id": "salmone",
         "lat": 35.31603,
         "lon": 26.31155,
+        "node": {
+          "id": "Place:salmone",
+          "kind": "Place",
+          "label": "Salmone"
+        },
         "total_events": 2
       },
       {
@@ -1617,6 +2552,11 @@
         "id": "samaria-1",
         "lat": 32.276111,
         "lon": 35.195,
+        "node": {
+          "id": "Place:samaria-1",
+          "kind": "Place",
+          "label": "Samaria 1"
+        },
         "total_events": 6
       },
       {
@@ -1624,6 +2564,11 @@
         "id": "samaria-2",
         "lat": 32.276111,
         "lon": 35.195,
+        "node": {
+          "id": "Place:samaria-2",
+          "kind": "Place",
+          "label": "Samaria 2"
+        },
         "total_events": 2
       },
       {
@@ -1639,6 +2584,11 @@
         "id": "samaria_1022",
         "lat": 32.331417,
         "lon": 35.228586,
+        "node": {
+          "id": "Place:samaria_1022",
+          "kind": "Place",
+          "label": "Samaria"
+        },
         "total_events": 27
       },
       {
@@ -1646,6 +2596,11 @@
         "id": "samos",
         "lat": 37.75,
         "lon": 26.8333,
+        "node": {
+          "id": "Place:samos",
+          "kind": "Place",
+          "label": "Samos"
+        },
         "total_events": 1
       },
       {
@@ -1653,6 +2608,11 @@
         "id": "samothrace",
         "lat": 40.45,
         "lon": 25.583333,
+        "node": {
+          "id": "Place:samothrace",
+          "kind": "Place",
+          "label": "Samothrace"
+        },
         "total_events": 1
       },
       {
@@ -1660,6 +2620,11 @@
         "id": "saron_1063",
         "lat": 32.639068,
         "lon": 34.945929,
+        "node": {
+          "id": "Place:saron_1063",
+          "kind": "Place",
+          "label": "Saron"
+        },
         "total_events": 1
       },
       {
@@ -1667,6 +2632,11 @@
         "id": "sea-of-galilee",
         "lat": 32.818906,
         "lon": 35.590033,
+        "node": {
+          "id": "Place:sea-of-galilee",
+          "kind": "Place",
+          "label": "Sea of Galilee"
+        },
         "total_events": 10
       },
       {
@@ -1674,6 +2644,11 @@
         "id": "seleucia",
         "lat": 36.124,
         "lon": 35.922,
+        "node": {
+          "id": "Place:seleucia",
+          "kind": "Place",
+          "label": "Seleucia"
+        },
         "total_events": 3
       },
       {
@@ -1689,6 +2664,11 @@
         "id": "shiloh",
         "lat": 32.055703,
         "lon": 35.289536,
+        "node": {
+          "id": "Place:shiloh",
+          "kind": "Place",
+          "label": "Shiloh"
+        },
         "total_events": 9
       },
       {
@@ -1696,6 +2676,11 @@
         "id": "shinar",
         "lat": 32.543333,
         "lon": 44.422222,
+        "node": {
+          "id": "Place:shinar",
+          "kind": "Place",
+          "label": "Shinar"
+        },
         "total_events": 1
       },
       {
@@ -1703,6 +2688,11 @@
         "id": "shittim",
         "lat": 31.84018,
         "lon": 35.67368,
+        "node": {
+          "id": "Place:shittim",
+          "kind": "Place",
+          "label": "Shittim"
+        },
         "total_events": 2
       },
       {
@@ -1710,6 +2700,11 @@
         "id": "shur",
         "lat": 30.493333,
         "lon": 32.956667,
+        "node": {
+          "id": "Place:shur",
+          "kind": "Place",
+          "label": "Shur"
+        },
         "total_events": 2
       },
       {
@@ -1717,6 +2712,11 @@
         "id": "sidon",
         "lat": 33.560985,
         "lon": 35.371944,
+        "node": {
+          "id": "Place:sidon",
+          "kind": "Place",
+          "label": "Sidon"
+        },
         "total_events": 5
       },
       {
@@ -1724,6 +2724,11 @@
         "id": "sin",
         "lat": 29.147778,
         "lon": 33.536667,
+        "node": {
+          "id": "Place:sin",
+          "kind": "Place",
+          "label": "Sin"
+        },
         "total_events": 1
       },
       {
@@ -1731,6 +2736,11 @@
         "id": "sinai_1098",
         "lat": 29.5,
         "lon": 34.0,
+        "node": {
+          "id": "Place:sinai_1098",
+          "kind": "Place",
+          "label": "Sinai"
+        },
         "total_events": 1
       },
       {
@@ -1738,6 +2748,11 @@
         "id": "sodom",
         "lat": 31.20849,
         "lon": 35.449223,
+        "node": {
+          "id": "Place:sodom",
+          "kind": "Place",
+          "label": "Sodom"
+        },
         "total_events": 4
       },
       {
@@ -1748,6 +2763,11 @@
         "merged_ids": [
           "solomons_portico_1109"
         ],
+        "node": {
+          "id": "Place:solomon-s-portico",
+          "kind": "Place",
+          "label": "Solomon’s Portico"
+        },
         "total_events": 2
       },
       {
@@ -1755,6 +2775,11 @@
         "id": "straight_1112",
         "lat": 33.519299,
         "lon": 36.31344999999999,
+        "node": {
+          "id": "Place:straight_1112",
+          "kind": "Place",
+          "label": "Straight Gate"
+        },
         "total_events": 1
       },
       {
@@ -1762,6 +2787,11 @@
         "id": "succoth-2",
         "lat": 30.5527,
         "lon": 32.099,
+        "node": {
+          "id": "Place:succoth-2",
+          "kind": "Place",
+          "label": "Succoth 2"
+        },
         "total_events": 1
       },
       {
@@ -1769,6 +2799,11 @@
         "id": "succoth_1114",
         "lat": 30.62077414,
         "lon": 32.25869322,
+        "node": {
+          "id": "Place:succoth_1114",
+          "kind": "Place",
+          "label": "Succoth"
+        },
         "total_events": 1
       },
       {
@@ -1776,6 +2811,11 @@
         "id": "susa",
         "lat": 32.18922,
         "lon": 48.25778,
+        "node": {
+          "id": "Place:susa",
+          "kind": "Place",
+          "label": "Susa"
+        },
         "total_events": 14
       },
       {
@@ -1783,6 +2823,11 @@
         "id": "sychar",
         "lat": 32.21776,
         "lon": 35.28897,
+        "node": {
+          "id": "Place:sychar",
+          "kind": "Place",
+          "label": "Sychar"
+        },
         "total_events": 1
       },
       {
@@ -1790,6 +2835,11 @@
         "id": "syracuse",
         "lat": 37.063889,
         "lon": 15.293056,
+        "node": {
+          "id": "Place:syracuse",
+          "kind": "Place",
+          "label": "Syracuse"
+        },
         "total_events": 2
       },
       {
@@ -1797,6 +2847,11 @@
         "id": "syria_1122",
         "lat": 37.5,
         "lon": 37.5,
+        "node": {
+          "id": "Place:syria_1122",
+          "kind": "Place",
+          "label": "Syria"
+        },
         "total_events": 3
       },
       {
@@ -1804,6 +2859,11 @@
         "id": "syrtis",
         "lat": 31.5,
         "lon": 18.0,
+        "node": {
+          "id": "Place:syrtis",
+          "kind": "Place",
+          "label": "Syrtis"
+        },
         "total_events": 2
       },
       {
@@ -1811,6 +2871,11 @@
         "id": "tahpanhes",
         "lat": 30.860556,
         "lon": 32.171389,
+        "node": {
+          "id": "Place:tahpanhes",
+          "kind": "Place",
+          "label": "Tahpanhes"
+        },
         "total_events": 2
       },
       {
@@ -1818,6 +2883,11 @@
         "id": "tarsus",
         "lat": 36.913028,
         "lon": 34.892056,
+        "node": {
+          "id": "Place:tarsus",
+          "kind": "Place",
+          "label": "Tarsus"
+        },
         "total_events": 1
       },
       {
@@ -1825,6 +2895,11 @@
         "id": "tekoa",
         "lat": 31.63247,
         "lon": 35.21048,
+        "node": {
+          "id": "Place:tekoa",
+          "kind": "Place",
+          "label": "Tekoa"
+        },
         "total_events": 1
       },
       {
@@ -1832,6 +2907,11 @@
         "id": "thessalonica",
         "lat": 40.637771,
         "lon": 22.945767,
+        "node": {
+          "id": "Place:thessalonica",
+          "kind": "Place",
+          "label": "Thessalonica"
+        },
         "total_events": 1
       },
       {
@@ -1839,6 +2919,11 @@
         "id": "three-taverns",
         "lat": 41.561944,
         "lon": 12.873889,
+        "node": {
+          "id": "Place:three-taverns",
+          "kind": "Place",
+          "label": "Three Taverns"
+        },
         "total_events": 1
       },
       {
@@ -1846,6 +2931,11 @@
         "id": "tiberias",
         "lat": 32.773611,
         "lon": 35.544167,
+        "node": {
+          "id": "Place:tiberias",
+          "kind": "Place",
+          "label": "Tiberias"
+        },
         "total_events": 1
       },
       {
@@ -1853,6 +2943,11 @@
         "id": "tigris",
         "lat": 31.0043,
         "lon": 47.4421,
+        "node": {
+          "id": "Place:tigris",
+          "kind": "Place",
+          "label": "Tigris"
+        },
         "total_events": 1
       },
       {
@@ -1860,6 +2955,11 @@
         "id": "timnah-1",
         "lat": 31.784831,
         "lon": 34.910297,
+        "node": {
+          "id": "Place:timnah-1",
+          "kind": "Place",
+          "label": "Timnah 1"
+        },
         "total_events": 2
       },
       {
@@ -1867,6 +2967,11 @@
         "id": "timnath-serah_1167",
         "lat": 32.121473,
         "lon": 35.150392,
+        "node": {
+          "id": "Place:timnath-serah_1167",
+          "kind": "Place",
+          "label": "Timnath-serah"
+        },
         "total_events": 1
       },
       {
@@ -1874,6 +2979,11 @@
         "id": "tiphsah-2",
         "lat": 32.10415,
         "lon": 35.23007,
+        "node": {
+          "id": "Place:tiphsah-2",
+          "kind": "Place",
+          "label": "Tiphsah 2"
+        },
         "total_events": 1
       },
       {
@@ -1881,6 +2991,11 @@
         "id": "tirzah",
         "lat": 32.2874,
         "lon": 35.3378,
+        "node": {
+          "id": "Place:tirzah",
+          "kind": "Place",
+          "label": "Tirzah"
+        },
         "total_events": 1
       },
       {
@@ -1888,6 +3003,11 @@
         "id": "tishbe",
         "lat": 33.028611,
         "lon": 35.539722,
+        "node": {
+          "id": "Place:tishbe",
+          "kind": "Place",
+          "label": "Tishbe"
+        },
         "total_events": 1
       },
       {
@@ -1895,6 +3015,11 @@
         "id": "troas",
         "lat": 39.751944,
         "lon": 26.158611,
+        "node": {
+          "id": "Place:troas",
+          "kind": "Place",
+          "label": "Troas"
+        },
         "total_events": 4
       },
       {
@@ -1902,6 +3027,11 @@
         "id": "trogyllium",
         "lat": 37.659431,
         "lon": 27.003279,
+        "node": {
+          "id": "Place:trogyllium",
+          "kind": "Place",
+          "label": "Trogyllium"
+        },
         "total_events": 1
       },
       {
@@ -1909,6 +3039,11 @@
         "id": "tyre",
         "lat": 33.270833,
         "lon": 35.196111,
+        "node": {
+          "id": "Place:tyre",
+          "kind": "Place",
+          "label": "Tyre"
+        },
         "total_events": 7
       },
       {
@@ -1916,6 +3051,11 @@
         "id": "uz",
         "lat": 30.745843,
         "lon": 35.603919,
+        "node": {
+          "id": "Place:uz",
+          "kind": "Place",
+          "label": "Uz"
+        },
         "total_events": 3
       },
       {
@@ -1923,6 +3063,11 @@
         "id": "uzza",
         "lat": 31.776667,
         "lon": 35.234167,
+        "node": {
+          "id": "Place:uzza",
+          "kind": "Place",
+          "label": "Uzza"
+        },
         "total_events": 2
       },
       {
@@ -1930,6 +3075,11 @@
         "id": "valley-of-beracah",
         "lat": 31.60894,
         "lon": 35.17164,
+        "node": {
+          "id": "Place:valley-of-beracah",
+          "kind": "Place",
+          "label": "Valley of Beracah"
+        },
         "total_events": 1
       },
       {
@@ -1937,6 +3087,11 @@
         "id": "zarephath",
         "lat": 33.464227,
         "lon": 35.295136,
+        "node": {
+          "id": "Place:zarephath",
+          "kind": "Place",
+          "label": "Zarephath"
+        },
         "total_events": 1
       },
       {
@@ -1944,6 +3099,11 @@
         "id": "ziklag",
         "lat": 31.3912,
         "lon": 34.6816,
+        "node": {
+          "id": "Place:ziklag",
+          "kind": "Place",
+          "label": "Ziklag"
+        },
         "total_events": 3
       },
       {
@@ -1951,6 +3111,11 @@
         "id": "ziph-1",
         "lat": 31.47475,
         "lon": 35.13514,
+        "node": {
+          "id": "Place:ziph-1",
+          "kind": "Place",
+          "label": "Ziph 1"
+        },
         "total_events": 1
       },
       {
@@ -1958,6 +3123,11 @@
         "id": "zoar",
         "lat": 31.036904,
         "lon": 35.487657,
+        "node": {
+          "id": "Place:zoar",
+          "kind": "Place",
+          "label": "Zoar"
+        },
         "total_events": 1
       },
       {
@@ -1965,6 +3135,11 @@
         "id": "zorah",
         "lat": 31.773992,
         "lon": 34.985289,
+        "node": {
+          "id": "Place:zorah",
+          "kind": "Place",
+          "label": "Zorah"
+        },
         "total_events": 1
       }
     ],

@@ -9,20 +9,7 @@ use atlas_graph_types::store::GraphQuery;
 use crate::error::ApiError;
 use crate::wire::{EdgeRef, NodeRef, PositionRef};
 
-pub fn encode_node_id(id: &AnyNodeId) -> String {
-    match id.kind {
-        NodeKind::TextUnit => match atlas_graph::kjv_adapter::decode_text_unit(id) {
-            Some((book, chapter, verse)) => format!("text-unit:{}", atlas_graph::kjv_adapter::dot_ref(book, chapter, verse)),
-            None => match atlas_graph::concord_adapter::decode_text_unit(id) {
-                Some((part, article, paragraph)) => format!("text-unit:BoC {part}.{article}.{paragraph}"),
-                None => format!("text-unit:{}", id.raw),
-            },
-        },
-        // The fallback keeps this total for a kind with no prettier wire form,
-        // rather than leaving one unreachable through the generic endpoints.
-        other => format!("{other:?}:{}", id.raw),
-    }
-}
+pub use atlas_graph::node_ref::encode_node_id;
 
 pub fn decode_node_id(s: &str) -> Option<AnyNodeId> {
     let (kind, rest) = s.split_once(':')?;
@@ -113,7 +100,7 @@ pub fn node_ref(id: &AnyNodeId, query: &dyn GraphQuery) -> Result<NodeRef, ApiEr
 }
 
 fn labelled(id: &AnyNodeId, label: String) -> NodeRef {
-    NodeRef { id: encode_node_id(id), kind: id.kind, label }
+    atlas_graph::node_ref::node_ref(id, label)
 }
 
 #[cfg(test)]

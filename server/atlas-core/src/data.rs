@@ -979,6 +979,12 @@ impl crate::scene_source::SceneSource for AtlasData {
     fn total_events_for(&self, id: &str) -> u32 {
         AtlasData::total_events_for(self, id)
     }
+
+    fn place_node(&self, id: &str) -> crate::wire::NodeRef {
+        let kind = atlas_graph_types::id::NodeKind::Place;
+        let label = AtlasData::place_by_id(self, id).map(|place| place.name.clone()).unwrap_or_default();
+        crate::wire::NodeRef { id: format!("{kind:?}:{id}"), kind, label }
+    }
 }
 
 /// Removes the zero-year gap: `..., -2, -1, 1, 2, ...` becomes `..., -2, -1, 0, 1, ...`, so

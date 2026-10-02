@@ -14,6 +14,11 @@
   "places": [
     {
       "id": "jericho",
+      "node": {
+        "id": "Place:jericho",
+        "kind": "Place",
+        "label": "Jericho"
+      },
       "name": "Jericho",
       "display_name": "Jericho",
       "lat": 31.8703,
@@ -52,6 +57,11 @@
   "quiet_places": [
     {
       "id": "shiloh",
+      "node": {
+        "id": "Place:shiloh",
+        "kind": "Place",
+        "label": "Shiloh"
+      },
       "display_name": "Shiloh",
       "lat": 32.0553,
       "lon": 35.2897,

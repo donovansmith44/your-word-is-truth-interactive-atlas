@@ -826,6 +826,7 @@ async fn an_era_carries_its_window_beside_the_integers_the_edge_suite_consumes()
         serde_json::json!([
             {
                 "id": "patriarchs",
+                "node": { "id": "Era:patriarchs", "kind": "Era", "label": "Patriarchs" },
                 "name": "Patriarchs",
                 "from_year": -2166,
                 "to_year": -1877,
@@ -833,6 +834,7 @@ async fn an_era_carries_its_window_beside_the_integers_the_edge_suite_consumes()
             },
             {
                 "id": "conquest-judges",
+                "node": { "id": "Era:conquest-judges", "kind": "Era", "label": "Conquest & Judges" },
                 "name": "Conquest & Judges",
                 "from_year": -1406,
                 "to_year": -1051,
@@ -857,6 +859,7 @@ async fn a_polity_carries_its_reign_beside_its_integers() {
         serde_json::json!({
             "polities": [{
                 "id": "egypt",
+                "node": { "id": "Polity:egypt", "kind": "Polity", "label": "Ptolemaic Egypt" },
                 "name": "Egypt",
                 "from": -2100,
                 "to": -1200,

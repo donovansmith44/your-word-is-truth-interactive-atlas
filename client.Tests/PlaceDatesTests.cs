@@ -51,7 +51,7 @@ public sealed class PlaceDatesTests
     }
 
     private static PlaceDetail Jerusalem(DateClaim? established, DateClaim? destroyed) =>
-        new(canonicalName: null, destroyed: destroyed, displayName: "Jerusalem", established: established, lat: 31.78, lon: 35.23);
+        new(blurb: null, canonicalName: null, destroyed: destroyed, displayName: "Jerusalem", established: established, lat: 31.78, lon: 35.23);
 
     private static TextSpan Verse(BookId book, int chapter, int verse) =>
         new(from: new TextPoint(unit: new BibleRef(book, chapter, verse), word: null), to: new TextPoint(unit: new BibleRef(book, chapter, verse), word: null));

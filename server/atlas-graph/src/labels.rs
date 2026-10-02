@@ -22,7 +22,7 @@ pub fn edge_label(kind: EdgeKind, subject: &str, object: &str) -> String {
 
 pub fn compile(graph: &mut Graph) {
     let edges = graph.edge_records();
-    let mut labels: BTreeMap<Position, String> = BTreeMap::new();
+    let mut labels = std::mem::take(&mut graph.labels);
     for position in graph.positions().into_iter().chain(edges.keys().map(|id| Position::Edge(id.clone()))) {
         label_of(&position, graph, &edges, &mut labels);
     }
