@@ -108,14 +108,16 @@ impl SqliteSnapshot {
             total = total.saturating_add(std::fs::metadata(path)?.len());
         }
         let mmap_bytes = total.min(MMAP_CAP);
-        let mut edge_view = String::from("CREATE TEMP VIEW all_edge_index AS SELECT 0 AS sec, * FROM main.edge_index");
-        let mut node_view = String::from("CREATE TEMP VIEW all_node AS SELECT 0 AS sec, * FROM main.node");
-        let mut label_view = String::from("CREATE TEMP VIEW all_label AS SELECT 0 AS sec, * FROM main.label");
-        for (rank, (section, _)) in present.iter().enumerate().skip(1) {
-            edge_view.push_str(&format!(" UNION ALL SELECT {rank}, * FROM {}.edge_index", section.name()));
-            node_view.push_str(&format!(" UNION ALL SELECT {rank}, * FROM {}.node", section.name()));
-            label_view.push_str(&format!(" UNION ALL SELECT {rank}, * FROM {}.label", section.name()));
-        }
+        let views: Vec<String> = ["edge_index", "node", "label", "edge_count"]
+            .iter()
+            .map(|table| {
+                let first = format!("CREATE TEMP VIEW all_{table} AS SELECT 0 AS sec, * FROM main.{table}");
+                present.iter().enumerate().skip(1).fold(first, |view, (rank, (section, _))| {
+                    format!("{view} UNION ALL SELECT {rank}, * FROM {}.{table}", section.name())
+                })
+            })
+            .collect();
+        let views = views.join("; ");
         let mut conns = Vec::with_capacity(workers);
         for _ in 0..workers {
             let conn = open_read_only(&present[0].1)?;
@@ -136,7 +138,7 @@ impl SqliteSnapshot {
             // `query_only = ON` also refuses TEMP objects, so it is lifted just long enough to build
             // the two views; the file itself stays read-only through the open flag.
             conn.execute_batch(&format!(
-                "PRAGMA query_only = OFF; PRAGMA mmap_size = {mmap_bytes}; {edge_view}; {node_view}; {label_view}; PRAGMA query_only = ON;"
+                "PRAGMA query_only = OFF; PRAGMA mmap_size = {mmap_bytes}; {views}; PRAGMA query_only = ON;"
             ))?;
             conns.push(Mutex::new(conn));
         }
@@ -357,19 +359,16 @@ impl GraphQuery for SqliteSnapshot {
     fn edge_summary(&self, p: &Position) -> EdgeSummary {
         let subject = position_str(p);
         self.with_conn(|conn| {
-            let mut stmt =
-                conn.prepare_cached("SELECT rel, dir, COUNT(DISTINCT edge_id) FROM all_edge_index WHERE subject = ?1 GROUP BY rel, dir")?;
+            let mut stmt = conn.prepare_cached("SELECT rel, dir, count FROM all_edge_count WHERE subject = ?1")?;
             let mut rows = stmt.query([subject.as_str()])?;
             let mut out = EdgeSummary::new();
             while let Some(row) = rows.next()? {
                 let rel: i64 = row.get(0)?;
                 let dir: i64 = row.get(1)?;
-                let n: i64 = row.get(2)?;
+                let n: usize = row.get(2)?;
                 let kind = Self::kind_of(rel, dir)
-                    .ok_or_else(|| SqliteError(format!("edge_index (rel {rel}, dir {dir}) names no EdgeKind")))?;
-                if n > 0 {
-                    out.insert(kind, n as usize);
-                }
+                    .ok_or_else(|| SqliteError(format!("edge_count (rel {rel}, dir {dir}) names no EdgeKind")))?;
+                *out.entry(kind).or_insert(0) += n;
             }
             Ok(out)
         })

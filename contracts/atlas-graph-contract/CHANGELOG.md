@@ -34,6 +34,13 @@ hatch — and adding one to a previously-green scenario is classified
 
 ---
 
+- **0.21.0** (stack fix wave 2, F-69: edge counts are compiled) — **MINOR under the 0.x policy (MAJOR class: blessed fixtures moved).**
+  Every section carries a compiled `edge_count` table, the distinct count per position, relation
+  and direction, and the served edge summary reads it instead of counting the adjacency.
+  Re-blessed: `contract` and `graph-vocabulary` (`section_schema_version` 21 -> 22),
+  `kretzmann-chapter-gen-1` (the version root moved with it); the http and cli pacts carry them
+  too. No count, scenario or projection changed.
+
 - **0.20.1** (FOCUS-6 Task R11b, the backend vocabulary gate reaches the whole suite) — **PATCH.** Prose only: three comment/description lines say "node record" and `NodeRecord` where they said "node card" and `NodeCardOut`. No scenario, step, projection or fixture changed; the projection wire name `node-card` stays, because the received `atlas-edge` suite names it.
 
 - **0.20.0** (FOCUS-6 Task R10, the legacy place route is gone) — **MINOR under the 0.x policy (MAJOR class: a scenario and its fixture removed).**
