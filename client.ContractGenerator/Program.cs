@@ -8,4 +8,4 @@ var document = await OpenApiYamlDocument.FromFileAsync(contract);
 ContractGeneration.CloseDiscriminatedUnions(document);
 
 Directory.CreateDirectory(Path.GetDirectoryName(output)!);
-await File.WriteAllTextAsync(output, new CSharpClientGenerator(document, ContractGeneration.Settings(document)).GenerateFile());
+await File.WriteAllTextAsync(output, new CSharpClientGenerator(document, ContractGeneration.Settings(document)).GenerateFile() + ContractGeneration.PagedReads(document));

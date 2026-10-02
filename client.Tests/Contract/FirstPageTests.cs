@@ -23,9 +23,8 @@ public sealed class FirstPageTests
             .ToList();
 
         // Assert
-        Assert.Equal(
-            (true, cursors.Select(cursor => (cursor.Operation, (int?)PagedReads.FirstPage)).ToList()),
-            (cursors.Count > 0, cursors.Select(cursor => (cursor.Operation, cursor.Default)).ToList()));
+        Assert.NotEmpty(cursors);
+        Assert.Equal(cursors.Select(cursor => (cursor.Operation, (int?)PagedReads.FirstPage)), cursors.Select(cursor => (cursor.Operation, cursor.Default)));
     }
 
     private static IEnumerable<YamlMappingNode> Parameters(YamlMappingNode operation) =>
