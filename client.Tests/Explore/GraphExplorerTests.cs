@@ -1,7 +1,7 @@
 using System.Reflection;
 using System.Text.RegularExpressions;
 using BibleAtlas.Client.Contract;
-using BibleAtlas.Client.Explore;
+using BibleAtlas.Client.Exploring;
 using BibleAtlas.Client.Tests.State;
 
 namespace BibleAtlas.Client.Tests;
@@ -164,23 +164,6 @@ public sealed class GraphExplorerTests
 
         // Assert
         Assert.Equal((typeof(ContractBreach), true), (breach?.GetType(), breach?.Message.Contains(AbsentId)));
-    }
-
-    [Fact]
-    public async Task Resolving_many_targets_is_one_element_read_answered_in_the_order_asked()
-    {
-        // Arrange
-        var graph = new ServedGraph()
-            .Serving(ServedGraph.Card(NodeKind.TextUnit, Exodus14.Id, Exodus14.Label))
-            .Serving(ServedGraph.Card(NodeKind.Event, ExodusEvent.Id, ExodusEvent.Label))
-            .Serving(ServedGraph.EdgeRecordOf(AttestedIn, ExodusEvent, Exodus14));
-        var explorer = new GraphExplorer(graph);
-
-        // Act
-        var resolved = await explorer.Resolve([ServedGraph.At(Exodus14), ServedGraph.AtEdge(AttestedIn), ServedGraph.At(ExodusEvent)]);
-
-        // Assert
-        Assert.Equal((1, string.Join(" ", Exodus14.Id, AttestedIn.Id, ExodusEvent.Id)), (graph.ElementReads, string.Join(" ", resolved.Select(element => element.Id))));
     }
 
     [Fact]

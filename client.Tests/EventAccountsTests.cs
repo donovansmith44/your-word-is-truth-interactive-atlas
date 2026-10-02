@@ -1,5 +1,5 @@
 using BibleAtlas.Client.Contract;
-using BibleAtlas.Client.Explore;
+using BibleAtlas.Client.Exploring;
 
 namespace BibleAtlas.Client.Tests;
 
@@ -16,8 +16,8 @@ public sealed class EventAccountsTests
         // Arrange
         var atlas = new StubbedAtlas(new Dictionary<string, string>
         {
-            ["/api/node/Event%3Arob_sermon_on_the_mount/edges?kind=attested-in&limit=200"] = Page(next: 2, Attestation("MAT.5.1", MatthewsSermon, MatthewsNote), Attestation("MAT.5.2", MatthewsSermon, MatthewsNote)),
-            ["/api/node/Event%3Arob_sermon_on_the_mount/edges?kind=attested-in&limit=200&cursor=2"] = Page(next: null, Attestation("LUK.6.17", LukesSermon, note: null), Unplaced("LUK.6.18", "null"), Unplaced("LUK.6.19", "[]")),
+            [$"/api/node/Event%3Arob_sermon_on_the_mount/edges?kind=attested-in&limit={int.MaxValue}"] = Page(next: 2, Attestation("MAT.5.1", MatthewsSermon, MatthewsNote), Attestation("MAT.5.2", MatthewsSermon, MatthewsNote)),
+            [$"/api/node/Event%3Arob_sermon_on_the_mount/edges?kind=attested-in&limit={int.MaxValue}&cursor=2"] = Page(next: null, Attestation("LUK.6.17", LukesSermon, note: null), Unplaced("LUK.6.18", "null"), Unplaced("LUK.6.19", "[]")),
         });
 
         // Act

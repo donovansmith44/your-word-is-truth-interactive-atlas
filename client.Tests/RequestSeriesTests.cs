@@ -213,4 +213,36 @@ public sealed class RequestSeriesTests
     }
 
     private const string Offline = "offline";
+
+    [Fact]
+    public async Task A_walk_answers_with_its_own_outcome_not_one_wrapped_in_an_arrival()
+    {
+        // Arrange
+        var request = new RequestSeries().Next();
+
+        // Act
+        var answers = (
+            await request.Walk(() => Task.FromResult<Outcome<string>>(new Outcome<string>.Arrived("the trail"))),
+            await request.Walk(() => Task.FromResult<Outcome<string>>(new Outcome<string>.Failed())));
+
+        // Assert
+        Assert.Equal(((Outcome<string>)new Outcome<string>.Arrived("the trail"), (Outcome<string>)new Outcome<string>.Failed()), answers);
+    }
+
+    [Fact]
+    public async Task A_walk_ending_after_a_newer_request_went_out_is_dropped()
+    {
+        // Arrange
+        var series = new RequestSeries();
+        var slow = new TaskCompletionSource<Outcome<string>>();
+        var pending = series.Next().Walk(() => slow.Task);
+
+        // Act
+        series.Next();
+        slow.SetResult(new Outcome<string>.Arrived("the old trail"));
+        var answer = await pending;
+
+        // Assert
+        Assert.Equal<Outcome<string>>(new Outcome<string>.Superseded(), answer);
+    }
 }

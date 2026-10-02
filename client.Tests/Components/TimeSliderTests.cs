@@ -1,7 +1,7 @@
 using System.Globalization;
 using BibleAtlas.Client.Components;
 using BibleAtlas.Client.Contract;
-using BibleAtlas.Client.Explore;
+using BibleAtlas.Client.Exploring;
 using Bunit;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;

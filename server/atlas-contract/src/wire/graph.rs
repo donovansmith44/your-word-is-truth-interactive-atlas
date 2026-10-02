@@ -276,9 +276,11 @@ impl ToSchema for Element {
 
 #[derive(Debug, Serialize, utoipa::ToSchema)]
 #[serde(deny_unknown_fields)]
-#[schema(description = "The elements asked for, in the order their ids were given: `elements[i]` answers the i-th id. `version` stamps the data set they were read from.")]
+#[schema(description = "The elements asked for, in the order their ids were given: `elements[i]` answers the i-th id. At most the server's largest page is answered; `next` continues. `version` stamps the data set they were read from.")]
 pub struct ElementPage {
     pub elements: Vec<Element>,
+    /// Pass this back as `cursor`, with the same ids, for the elements that follow; absent on the last page.
+    pub next: Option<usize>,
     pub version: String,
 }
 

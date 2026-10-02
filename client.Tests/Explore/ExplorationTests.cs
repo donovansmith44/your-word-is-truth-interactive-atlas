@@ -1,5 +1,5 @@
 using BibleAtlas.Client.Contract;
-using BibleAtlas.Client.Explore;
+using BibleAtlas.Client.Exploring;
 
 namespace BibleAtlas.Client.Tests;
 
@@ -7,18 +7,14 @@ public sealed class ExplorationTests
 {
     private const string Genesis1Id = "Container:bible-chapter-GEN-1";
     private const string Genesis2Id = "Container:bible-chapter-GEN-2";
-    private const string Genesis3Id = "Container:bible-chapter-GEN-3";
     private const string GenesisId = "Container:bible-book-GEN";
 
     private static readonly Explorable Genesis1 = Resolved.Node(NodeKind.Container, Genesis1Id, "Genesis 1");
     private static readonly Explorable Genesis2 = Resolved.Node(NodeKind.Container, Genesis2Id, "Genesis 2");
-    private static readonly Explorable Genesis3 = Resolved.Node(NodeKind.Container, Genesis3Id, "Genesis 3");
     private static readonly Explorable Genesis = Resolved.Node(NodeKind.Container, GenesisId, "Genesis");
 
     private static readonly Step ToGenesis2 = new(EdgeKind.FollowsIn, Genesis2);
-    private static readonly Step ToGenesis3 = new(EdgeKind.FollowsIn, Genesis3);
     private static readonly Step BackToGenesis1 = new(EdgeKind.PrecedesIn, Genesis1);
-    private static readonly Step BackToGenesis2 = new(EdgeKind.PrecedesIn, Genesis2);
     private static readonly Step UpToGenesis = new(EdgeKind.MemberOf, Genesis);
 
     [Fact]
@@ -45,58 +41,6 @@ public sealed class ExplorationTests
 
         // Assert
         Assert.Equal((new Exploration(Genesis1, [ToGenesis2]), Genesis2), (next, next.Current));
-    }
-
-    [Fact]
-    public void Going_back_follows_the_dual_of_the_last_step_to_the_node_it_left()
-    {
-        // Arrange
-        var exploration = new Exploration(Genesis1, [ToGenesis2]);
-
-        // Act
-        var back = exploration.Back();
-
-        // Assert
-        Assert.Equal((new Exploration(Genesis1, [ToGenesis2, BackToGenesis1]), Genesis1), (back, back.Current));
-    }
-
-    [Fact]
-    public void Going_back_twice_retraces_two_hops()
-    {
-        // Arrange
-        var exploration = new Exploration(Genesis1, [ToGenesis2, ToGenesis3]);
-
-        // Act
-        var back = exploration.Back().Back();
-
-        // Assert
-        Assert.Equal(new Exploration(Genesis1, [ToGenesis2, ToGenesis3, BackToGenesis2, BackToGenesis1]), back);
-    }
-
-    [Fact]
-    public void Going_back_from_the_start_changes_nothing()
-    {
-        // Arrange
-        var exploration = new Exploration(Genesis1, []);
-
-        // Act
-        var back = exploration.Back();
-
-        // Assert
-        Assert.Equal(exploration, back);
-    }
-
-    [Fact]
-    public void Going_back_once_every_hop_has_been_retraced_changes_nothing()
-    {
-        // Arrange
-        var exploration = new Exploration(Genesis1, [ToGenesis2, BackToGenesis1]);
-
-        // Act
-        var back = exploration.Back();
-
-        // Assert
-        Assert.Equal(exploration, back);
     }
 
     [Fact]

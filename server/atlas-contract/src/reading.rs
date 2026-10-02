@@ -255,7 +255,7 @@ pub(crate) fn drain_edges(
     let mut cursor = None;
     let mut out = Vec::new();
     loop {
-        let page = snap.edges(p, &atlas_graph_types::adjacency::EdgeQuery { kind, cursor, limit: 200 });
+        let page = snap.edges(p, &atlas_graph_types::adjacency::EdgeQuery { kind, cursor, limit: usize::MAX });
         out.extend(page.entries);
         match page.next {
             Some(c) => cursor = Some(c),

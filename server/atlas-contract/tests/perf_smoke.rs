@@ -182,7 +182,7 @@ fn an_element_read_at_the_cap_answers_inside_the_read_budget() {
     let compiled = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data/compiled");
     let (graph, data) = atlas_contract::load::load_graph_and_data(&compiled).expect("the committed sections load");
     let snap = graph.snapshot();
-    let half = atlas_contract::graph::MAX_ELEMENTS / 2;
+    let half = atlas_contract::graph::LARGEST_PAGE / 2;
     let verses = snap.nodes_of_kind(NodeKind::TextUnit, None, half).ids;
     let edges: Vec<ElementId> = verses
         .iter()
@@ -201,5 +201,5 @@ fn an_element_read_at_the_cap_answers_inside_the_read_budget() {
 
     // Assert
     println!("PERF SMOKE {}: {elapsed:?} for {} ids (gate {:?})", "an_element_read_at_the_cap_answers_inside_the_read_budget", ids.len(), ELEMENT_READ_BUDGET);
-    assert_eq!((ids.len(), elapsed < ELEMENT_READ_BUDGET), (atlas_contract::graph::MAX_ELEMENTS, true), "the element read took {elapsed:?}");
+    assert_eq!((ids.len(), elapsed < ELEMENT_READ_BUDGET), (atlas_contract::graph::LARGEST_PAGE, true), "the element read took {elapsed:?}");
 }

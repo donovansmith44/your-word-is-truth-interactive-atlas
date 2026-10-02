@@ -1,6 +1,6 @@
 using BibleAtlas.Client.Contract;
 using BibleAtlas.Client.Contracts;
-using BibleAtlas.Client.Explore;
+using BibleAtlas.Client.Exploring;
 using BibleAtlas.Client.State;
 
 namespace BibleAtlas.Client.Tests.State;
@@ -119,7 +119,7 @@ public sealed class ExplorationOwnershipHandoffTests
         popover.Open(Genesis1);
 
         // Act
-        atom.Dispatch(new ExplorationIntent.Follow(ToGenesis2));
+        atom.Dispatch(new ExplorationIntent.Reseed(new Exploration(Genesis1, [ToGenesis2])));
 
         // Assert
         Assert.Equal(new ExplorationState.Open(new Exploration(Genesis1, [ToGenesis2])), popover.Value);

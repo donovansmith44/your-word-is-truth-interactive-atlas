@@ -1,5 +1,5 @@
 using BibleAtlas.Client.Contract;
-using BibleAtlas.Client.Explore;
+using BibleAtlas.Client.Exploring;
 
 namespace BibleAtlas.Client.Tests;
 
@@ -16,6 +16,8 @@ internal sealed class ServedGraph : IExplorableClient
     public int? LimitAsked { get; private set; }
 
     public int ElementReads { get; private set; }
+
+    public int NeighbourReads { get; private set; }
 
     public ServedGraph Serving(NodeRecord card)
     {
@@ -35,6 +37,12 @@ internal sealed class ServedGraph : IExplorableClient
         return this;
     }
 
+    public ServedGraph Failing(string id, EdgeKind kind)
+    {
+        _pages.Remove((id, kind, null));
+        return this;
+    }
+
     public Task<NodeRecord> Card(string id) => Task.FromResult(_cards[id]);
 
     public Task<IReadOnlyList<Element>> Elements(IReadOnlyList<string> ids)
@@ -46,6 +54,7 @@ internal sealed class ServedGraph : IExplorableClient
     public Task<EdgePage> Edges(string positionId, EdgeKind kind, int? cursor = null, int limit = IExplorableClient.DefaultPageSize)
     {
         LimitAsked = limit;
+        NeighbourReads++;
         return Task.FromResult(_pages[(positionId, kind, cursor)]);
     }
 
@@ -125,4 +134,12 @@ internal static class Resolved
 
     public static Explorable At(ServedGraph graph, PositionRef target) =>
         new GraphExplorer(graph).Resolve(target).GetAwaiter().GetResult();
+}
+
+internal static class Walked
+{
+    public static Exploration WalkedBack(this Exploration trail) =>
+        Explore.Back.Run(new GraphExplorer(new ServedGraph()), trail).GetAwaiter().GetResult() is Outcome<(Explorable Value, Exploration Trail)>.Arrived { Value.Trail: var back }
+            ? back
+            : throw new InvalidOperationException($"going back from {trail.Current.Label} asked the graph");
 }

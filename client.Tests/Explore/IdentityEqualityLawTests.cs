@@ -1,6 +1,6 @@
 using System.Text.RegularExpressions;
 using BibleAtlas.Client.Contract;
-using BibleAtlas.Client.Explore;
+using BibleAtlas.Client.Exploring;
 using BibleAtlas.Client.State;
 using BibleAtlas.Client.Tests.State;
 

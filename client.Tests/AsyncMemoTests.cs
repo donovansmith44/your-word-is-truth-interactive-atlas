@@ -2,7 +2,7 @@ namespace BibleAtlas.Client.Tests;
 
 /// <summary>
 /// PERF-3 fix round 1 (review Q-2, Major -- "faulted-task poisoning"):
-/// direct, isolated proof of <see cref="Explore.AsyncMemo{T}"/>'s own two
+/// direct, isolated proof of <see cref="Exploring.AsyncMemo{T}"/>'s own two
 /// load-bearing properties -- (1) concurrent callers before the first
 /// fetch resolves share ONE in-flight task (the original PERF-3
 /// conviction: VerseNode.DetailAsync raced under
@@ -23,7 +23,7 @@ public class AsyncMemoTests
     [Fact]
     public async Task ConcurrentCallersBeforeTheFirstResolveShareOneInFlightTask()
     {
-        var memo = new Explore.AsyncMemo<int>();
+        var memo = new Exploring.AsyncMemo<int>();
         var callCount = 0;
         var gate = new TaskCompletionSource<int>();
 
@@ -50,7 +50,7 @@ public class AsyncMemoTests
     [Fact]
     public async Task AFaultedFetchResetsTheCache_TheNextGetIsAGenuineRetry()
     {
-        var memo = new Explore.AsyncMemo<int>();
+        var memo = new Exploring.AsyncMemo<int>();
         var callCount = 0;
 
         Task<int> Fetch()
@@ -80,7 +80,7 @@ public class AsyncMemoTests
     [Fact]
     public async Task ASuccessfulFetchStaysCached_RepeatedGetNeverRefetches()
     {
-        var memo = new Explore.AsyncMemo<int>();
+        var memo = new Exploring.AsyncMemo<int>();
         var callCount = 0;
 
         Task<int> Fetch()

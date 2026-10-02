@@ -244,7 +244,7 @@ async fn then_bijection_witness(world: &mut AqcWorld, field: String) {
     for entry in &entries {
         let target_id = entry["neighbour"]["node"]["id"].as_str().unwrap();
         let this_edge = entry["edge"]["id"].as_str().unwrap();
-        let (status, inverse_page) = get(&format!("/api/node/{}/edges?kind={inverse_label}&limit=200", path_encode(target_id))).await;
+        let (status, inverse_page) = get(&format!("/api/node/{}/edges?kind={inverse_label}&limit={}", path_encode(target_id), atlas_contract::graph::LARGEST_PAGE)).await;
         assert_eq!(status, StatusCode::OK.as_u16(), "the target's own inverse-kind page must resolve");
         let inverse_entries = inverse_page["entries"].as_array().unwrap();
         assert!(

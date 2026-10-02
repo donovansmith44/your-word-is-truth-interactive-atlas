@@ -1,7 +1,7 @@
 using BibleAtlas.Client.Tests.State;
 using System.Text.RegularExpressions;
 using BibleAtlas.Client.Contract;
-using BibleAtlas.Client.Explore;
+using BibleAtlas.Client.Exploring;
 
 namespace BibleAtlas.Client.Tests;
 
@@ -13,7 +13,7 @@ public class PopoverChromeConformanceTests
 
     private static IEnumerable<string> ExploreNodeFiles()
     {
-        var exploreDir = Path.Combine(ConformanceTests.RepoRoot(), "client", "Explore");
+        var exploreDir = Path.Combine(ConformanceTests.RepoRoot(), "client", "Exploring");
         return Directory.EnumerateFiles(exploreDir, "*Node.cs", SearchOption.TopDirectoryOnly);
     }
 
@@ -46,7 +46,7 @@ public class PopoverChromeConformanceTests
             var text = StripLineComments(File.ReadAllText(file));
 
             var kindMatch = KindPattern.Match(text);
-            Assert.True(kindMatch.Success, $"{relative}: no `public string Kind => \"...\";` found -- every *Node.cs file under client/Explore is expected to declare one (IExplorable.Kind).");
+            Assert.True(kindMatch.Success, $"{relative}: no `public string Kind => \"...\";` found -- every *Node.cs file under client/Exploring is expected to declare one (IExplorable.Kind).");
             var kind = kindMatch.Groups[1].Value;
             filesChecked++;
 
@@ -77,7 +77,7 @@ public class PopoverChromeConformanceTests
 
         foreach (var declaredKind in PopoverChromeRegistry.ByKind.Keys)
         {
-            Assert.True(realKinds.Contains(declaredKind), $"PopoverChromeRegistry declares a Kind (\"{declaredKind}\") that no real client/Explore/*Node.cs file's own IExplorable.Kind produces -- a stale/orphaned registry row.");
+            Assert.True(realKinds.Contains(declaredKind), $"PopoverChromeRegistry declares a Kind (\"{declaredKind}\") that no real client/Exploring/*Node.cs file's own IExplorable.Kind produces -- a stale/orphaned registry row.");
         }
 
         Assert.Equal(realKinds.Count, PopoverChromeRegistry.ByKind.Count);

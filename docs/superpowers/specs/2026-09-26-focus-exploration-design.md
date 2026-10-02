@@ -563,3 +563,66 @@ Nothing open remains; the spec awaits the plans.
   edges alike, many ids per call); its justification and anything positioned
   on it are the generic neighbour read at its position. Its label is compiled
   into the artifact and read, never composed per request or on the client.
+- **R19 — the explore monad, for real** (owner, 2026-10-01: "Good."). R15
+  named the monad; R19 builds it, client only (PRINCIPLES 27):
+  `Explore<T>` = StateT Exploration (ReaderT IExplorer (ExceptT Failure Task)).
+  ```csharp
+  public sealed class Explore<T>
+  {
+      public Task<Outcome<(T Value, Exploration Trail)>> Run(IExplorer explorer, Exploration from);
+  }
+  public static class Explore
+  {
+      public static Explore<T> Return<T>(T value);
+      public static Explore<Explorable> Here { get; }
+      public static Explore<Page<Link>> Links(EdgeKind kind, int? cursor = null);   // through the one Paging door (F-59)
+      public static Explore<Explorable> Follow(Link link);                           // records one Step
+      public static Explore<Explorable> Back { get; }                                // R17, moved here
+      public static Explore<Unit> Replay(IReadOnlyList<Link> links);                 // signed as IReadOnlyList<Step>; see below
+      public static Task<Outcome<Exploration>> Begin(IExplorer explorer, PositionRef start);
+      public static Explore<U> Select<T, U>(this Explore<T> m, Func<T, U> f);
+      public static Explore<U> SelectMany<T, U>(this Explore<T> m, Func<T, Explore<U>> f);
+      public static Explore<V> SelectMany<T, U, V>(this Explore<T> m, Func<T, Explore<U>> f, Func<T, U, V> project);
+  }
+  ```
+  Rulings:
+  - No Resolve inside a walk. Only `Begin` starts one, so a trail stays
+    continuous (R15: a reference is resolved, never promoted). The one
+    exception is `Replay`: it resolves every target in one batched element
+    read, then records the steps locally (PRINCIPLES 27c: a screen is a few
+    round trips). Replaying no links asks the graph nothing.
+  - Back is a monad primitive. It is the dual of the last un-returned hop
+    (R17), it asks the graph nothing, and Back after Back never goes forward.
+  - Failure is the existing `Outcome` (F-58). A failed request ends the walk:
+    later binds never run, no request goes out after the failure, nothing
+    throws. A component runs a walk through `Request.Walk`, which drops a
+    superseded answer like `Request.Fetch`.
+  - A walk lands as `ExplorationIntent.Arrive(From, Trail)`, which applies
+    only while the atom still holds the exploration the walk started from.
+    A walk that arrives after another navigation, or after the exploration
+    closed, changes nothing (`ExplorationInterleavingTests`). A resume
+    replaces the exploration outright (`Reseed`).
+  - Laws, as tests: left identity, right identity and associativity over
+    generated walks on `ServedGraph`, comparing value and trail; a query
+    walk's trail is its breadcrumb; Replay of a trail reproduces it; Back
+    after Follow returns to the prior Here.
+  - Migrated onto the monad and deleted: the popover's Follow and Back, the
+    saved-exploration resume (`Begin` then `Replay`: two element reads
+    whatever the trail's length), the World view's era crossing
+    (`Crossing.Walk`, a query walk over `Here`, `Links` and `Follow`; an
+    `Explorable` reads each page of its neighbours, per kind, cursor and
+    limit, once, so a crossing after the frame is presented costs one
+    element read and no neighbour read);
+    `Exploration.Back`, `ExplorationIntent.Follow`/`Back`,
+    `ExplorationState.Continue`. The batched `IExplorer.Resolve` stays, and
+    only the monad calls it.
+  - The namespace is `BibleAtlas.Client.Exploring`, so the type `Explore`
+    is not shadowed by a namespace of the same name (`NamespaceLawTests`).
+  - Closed (24b): a source law, `ExploreDoorLawTests`, fails if any client
+    file but the monad and the explorer calls `IExplorer.Follow` or
+    `Resolve`; the fetch law sees `Explore.Begin` and `.Run(Explorer` as
+    fetches that must go through a request.
+  - `Replay` takes the links a saved exploration holds. The signed text said
+    `IReadOnlyList<Step>`, but a `Step` carries a resolved `Explorable`, and
+    a save has only links, so resume could not go through it. Built as
+    `IReadOnlyList<Link>`, pending the owner's confirmation.

@@ -17,7 +17,7 @@ public sealed class OneDoorLawTests
     public void No_explorable_or_section_provider_catches_a_failure_it_could_report()
     {
         // Arrange
-        var explore = ConformanceTests.ClientSourceFiles().Where(file => Path.GetFileName(Path.GetDirectoryName(file)) == "Explore");
+        var explore = ConformanceTests.ClientSourceFiles().Where(file => Path.GetFileName(Path.GetDirectoryName(file)) == "Exploring");
 
         // Act
         var catching = explore.Where(file => Catch.IsMatch(File.ReadAllText(file))).Select(Path.GetFileName);

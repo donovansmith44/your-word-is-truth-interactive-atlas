@@ -10,18 +10,18 @@ public sealed class AtlasClient
     private readonly HttpClient _http;
     private readonly LruCache<string, Scene> _sceneCache = new(capacity: 48);
     private readonly LruCache<string, Chapter> _chapterCache = new(capacity: 24);
-    private readonly LruCache<string, Explore.ChapterText> _chapterTextCache = new(capacity: 24);
+    private readonly LruCache<string, Exploring.ChapterText> _chapterTextCache = new(capacity: 24);
     private readonly LruCache<string, Polities> _politiesCache = new(capacity: 12);
     private readonly LruCache<string, IReadOnlyList<CrossRef>> _xrefsCache = new(capacity: 24);
     private readonly LruCache<string, IReadOnlyList<CatechismRef>> _catechismSpanCache = new(capacity: 24);
     // AsyncMemo, not a plain cache: several callers can independently invoke Books()/Eras()/etc.
     // concurrently before any has resolved (e.g. around app startup), so a plain cache would
     // double-fetch without in-flight dedup.
-    private readonly Explore.AsyncMemo<List<CanonBook>> _booksCache = new();
-    private readonly Explore.AsyncMemo<List<Era>> _erasCache = new();
-    private readonly Explore.AsyncMemo<IReadOnlyList<Landmark>> _landmarksCache = new();
-    private readonly Explore.AsyncMemo<LandMask> _landMaskCache = new();
-    private readonly Explore.AsyncMemo<SourcesDocument> _sourcesCache = new();
+    private readonly Exploring.AsyncMemo<List<CanonBook>> _booksCache = new();
+    private readonly Exploring.AsyncMemo<List<Era>> _erasCache = new();
+    private readonly Exploring.AsyncMemo<IReadOnlyList<Landmark>> _landmarksCache = new();
+    private readonly Exploring.AsyncMemo<LandMask> _landMaskCache = new();
+    private readonly Exploring.AsyncMemo<SourcesDocument> _sourcesCache = new();
 
     public AtlasClient(HttpClient http)
     {
@@ -84,7 +84,7 @@ public sealed class AtlasClient
         return result;
     }
 
-    public async Task<Explore.ChapterText> ChapterText(string book, int chapter)
+    public async Task<Exploring.ChapterText> ChapterText(string book, int chapter)
     {
         var key = $"{book}.{chapter}";
         if (_chapterTextCache.TryGet(key, out var cached))
@@ -92,7 +92,7 @@ public sealed class AtlasClient
             return cached;
         }
 
-        var result = new Explore.ChapterText(await _http.GetRequired<TextWindow>($"api/text?ref={key}&scope={TextScope.Chapter.WireName()}"));
+        var result = new Exploring.ChapterText(await _http.GetRequired<TextWindow>($"api/text?ref={key}&scope={TextScope.Chapter.WireName()}"));
         _chapterTextCache.Put(key, result);
         return result;
     }
@@ -168,12 +168,12 @@ public sealed class AtlasClient
     {
         if (!_contentsCache.TryGetValue(corpus, out var memo))
         {
-            memo = new Explore.AsyncMemo<Contract.Contents>();
+            memo = new Exploring.AsyncMemo<Contract.Contents>();
             _contentsCache[corpus] = memo;
         }
 
         return memo.Get(() => _http.GetRequired<Contract.Contents>($"api/contents/{corpus.WireName()}"));
     }
 
-    private readonly Dictionary<Corpus, Explore.AsyncMemo<Contract.Contents>> _contentsCache = new();
+    private readonly Dictionary<Corpus, Exploring.AsyncMemo<Contract.Contents>> _contentsCache = new();
 }
