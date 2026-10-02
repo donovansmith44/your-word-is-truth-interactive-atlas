@@ -238,7 +238,7 @@ Protocol: `AGENTS.md`. Plan: `docs/superpowers/plans/2026-09-30-v1-roadmap.md`.
 
 ### A-FSTYLE: FocusView in the house style (F-77)
 - **Owner ruling (2026-10-02):** "Use overpass for all header fonts and Atkinson hyperlegible for everything else." Bundled (owner chose: unmodified OFL-1.1 files + license text; exception recorded in LICENSES.md — fonts are presentation, not ingested data). Being added to `lane/claude/FSTYLE`; Codex reviews the whole range.
-- **Status:** review (Codex): `b3d7cfa..lane/claude/FSTYLE` 5af437f (1018890 + 5af437f); law `client.Tests/Views/ViewStyleLawTests.cs` red on the eight classes, then green; client 734/734, contract 55/55, FocusView Playwright 122 pass / 3 skip / 1 carried (density smoke); WebKit before/after screenshots shown to the owner. Was: claimed (base `b3d7cfa`, branch `lane/claude/FSTYLE`; touches `client/wwwroot/css/app.css`, `client/Views/FocusView.razor` class names only, `client.Tests` law; lands before FOCUS-2, which rebases on it)
+- **Status:** review (Codex): `b3d7cfa..lane/claude/FSTYLE` b2ff768 (1018890 + 5af437f + b2ff768 fonts: bundled OFL woff2, `--font-heading`/`--font-body`, `TypefaceLawTests` red then green; client 735/735; reader/popover Playwright 113/4/0); law `client.Tests/Views/ViewStyleLawTests.cs` red on the eight classes, then green; client 734/734, contract 55/55, FocusView Playwright 122 pass / 3 skip / 1 carried (density smoke); WebKit before/after screenshots shown to the owner. Was: claimed (base `b3d7cfa`, branch `lane/claude/FSTYLE`; touches `client/wwwroot/css/app.css`, `client/Views/FocusView.razor` class names only, `client.Tests` law; lands before FOCUS-2, which rebases on it)
 
 ### A-REVIEW: review every Codex item in `review`
 - **Status:** standing
