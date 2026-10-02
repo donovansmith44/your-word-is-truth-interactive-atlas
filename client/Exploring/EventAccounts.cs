@@ -10,8 +10,6 @@ public sealed record EventAccount(IReadOnlyList<TextSpan> Runs, string? Note)
 
     public string FirstRunEnd => CanonRef.VerseOf(CanonRef.LastVerseOf(Runs[0]));
 
-    public bool Reads(BibleRef verse) => Runs.Any(run => CanonRef.Covers(run, verse));
-
     private static string AfterRun(BibleRef previousEnd, TextSpan run)
     {
         var (first, last) = (CanonRef.FirstVerseOf(run), CanonRef.LastVerseOf(run));

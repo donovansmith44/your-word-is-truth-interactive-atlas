@@ -19,55 +19,19 @@ public class PopoverSectionRegistryTests
         PopoverSectionRegistry.Providers.ToList().FindIndex(p => p is T);
 
     [Fact]
-    public void VerseComesBeforeEvent()
+    public void A_passages_text_comes_before_its_catechism_and_its_catechism_before_its_cross_references()
     {
-        Assert.True(IndexOfProvider<VerseTextSectionProvider>() < IndexOfProvider<VerseEventMembershipSection>());
+        Assert.True(IndexOfProvider<PassageTextSection>() < IndexOfProvider<PassageCatechismSection>());
+        Assert.True(IndexOfProvider<PassageCatechismSection>() < IndexOfProvider<PassageCrossRefsSection>());
     }
 
     [Fact]
-    public void EventComesBeforeCatechism()
-    {
-        Assert.True(IndexOfProvider<VerseEventMembershipSection>() < IndexOfProvider<CatechismSeamSection>());
-    }
-
-    [Fact]
-    public void CatechismComesBeforeParallels()
-    {
-        Assert.True(IndexOfProvider<CatechismSeamSection>() < IndexOfProvider<VerseParallelsSection>());
-    }
-
-    [Fact]
-    public void ParallelsComesBeforeCrossReferences()
-    {
-        Assert.True(IndexOfProvider<VerseParallelsSection>() < IndexOfProvider<CrossRefsSection>());
-    }
-
-    // The general-kind Passage membership row is the sibling of EVENT
-    // membership (PERI-1's own "dated first, general second" rule) --
-    // still ahead of Catechism/Parallels/CrossRefs in the owner's own
-    // ruled sequence.
-    [Fact]
-    public void GeneralPassageMembershipComesAfterEventAndBeforeCatechism()
-    {
-        var eventIdx = IndexOfProvider<VerseEventMembershipSection>();
-        var passageIdx = IndexOfProvider<VersePassageMembershipSection>();
-        var catechismIdx = IndexOfProvider<CatechismSeamSection>();
-        Assert.True(eventIdx < passageIdx);
-        Assert.True(passageIdx < catechismIdx);
-    }
-
-    // Every provider actually appears exactly once -- a sanity guard that
-    // the OrderBy projection never silently drops or duplicates an entry.
-    [Fact]
-    public void EveryVersePassageFrontierProviderAppearsExactlyOnce()
+    public void Every_passage_provider_appears_exactly_once()
     {
         var providers = PopoverSectionRegistry.Providers;
-        Assert.Single(providers, p => p is VerseTextSectionProvider);
-        Assert.Single(providers, p => p is VerseEventMembershipSection);
-        Assert.Single(providers, p => p is VersePassageMembershipSection);
-        Assert.Single(providers, p => p is CatechismSeamSection);
-        Assert.Single(providers, p => p is VerseParallelsSection);
-        Assert.Single(providers, p => p is CrossRefsSection);
+        Assert.Single(providers, p => p is PassageTextSection);
+        Assert.Single(providers, p => p is PassageCatechismSection);
+        Assert.Single(providers, p => p is PassageCrossRefsSection);
     }
 
     // Batch ATTEST-1, THE OWNER'S PLACEMENT AMENDMENT (verbatim): "let's
@@ -147,11 +111,8 @@ public class PopoverSectionRegistryTests
     {
         var providers = PopoverSectionRegistry.Providers.ToList();
         Assert.Equal(1, providers.Count(p => p is CatechismInConcordSection));
-        Assert.Equal(1, providers.Count(p => p is ConcordSmallCatechismSection));
         Assert.True(IndexOfProvider<CatechismScripturesSection>() < IndexOfProvider<CatechismInConcordSection>(), "the Book of Concord list follows THE SCRIPTURES on an item's card");
         Assert.True(new CatechismInConcordSection().AppliesTo(new CatechismNode("first-commandment", "The First Commandment")));
-        Assert.True(new ConcordSmallCatechismSection().AppliesTo(new ConcordUnitNode("BoC 7.2.1")));
-        Assert.False(new ConcordSmallCatechismSection().AppliesTo(new CatechismNode("first-commandment", "The First Commandment")));
     }
 
     /// <summary>

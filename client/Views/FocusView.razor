@@ -17,6 +17,8 @@
 
     [Parameter] public EventCallback OnMoved { get; set; }
 
+    [Parameter] public EventCallback<BibleRef> OnReadInContext { get; set; }
+
     private readonly RequestSeries _series = new();
     private PresentationRequest? _request;
     private Outcome<Presented>? _outcome;
@@ -94,6 +96,12 @@
         {
             <button type="button" class="popover-head-action" data-testid="@($"{handle}-chip-map")" aria-label="Show on the map" title="Show on the map"
                     @onclick="() => OnShowOnWorld.InvokeAsync()">&#8982;</button>
+        }
+
+        @if (OnReadInContext.HasDelegate && presented.Presentation is Presentation.Text { Unit.Locus: BibleRef verse })
+        {
+            <button type="button" class="popover-head-action" data-testid="@($"{handle}-chip-context")" aria-label="Read in context" title="Read in context"
+                    @onclick="() => OnReadInContext.InvokeAsync(verse)">&#182;</button>
         }
 
         @foreach (var end in request.Element.Ends.Where(request.Offers))

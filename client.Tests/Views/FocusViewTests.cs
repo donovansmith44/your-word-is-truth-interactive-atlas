@@ -129,6 +129,10 @@ public sealed class FocusViewTests : BunitContext
         <button type="button" class="popover-head-action" data-testid="popover-chip-map" aria-label="Show on the map" title="Show on the map">&#8982;</button>
         """;
 
+    private const string WayToTheReader = """
+        <button type="button" class="popover-head-action" data-testid="popover-chip-context" aria-label="Read in context" title="Read in context">&#182;</button>
+        """;
+
     public FocusViewTests() => Services.AddSingleton<IPresenter>(new GraphPresenter());
 
     [Fact]
@@ -923,6 +927,60 @@ public sealed class FocusViewTests : BunitContext
                 <div class="focus-field" data-testid="popover-field-Provenance"><dt>Provenance</dt><dd>kjv</dd></div>
             </dl>
             """);
+    }
+
+    [Fact]
+    public void A_verse_offers_its_host_the_way_to_read_it_in_context()
+    {
+        // Arrange
+        var verse = Resolved.Node(new ServedGraph().Serving(ServedGraph.TextCard(John316, John316Text)), John316);
+
+        // Act
+        var view = Render<FocusView>(p => p.Add(v => v.Node, verse).Add(v => v.Surface, Surface.Popover).Add(v => v.OnReadInContext, (BibleRef _) => { }));
+
+        // Assert
+        view.Find("[data-testid='popover-chip-context']").MarkupMatches(WayToTheReader);
+    }
+
+    [Fact]
+    public void Choosing_the_way_to_read_in_context_asks_the_host_to_read_at_the_verses_served_locus()
+    {
+        // Arrange
+        var asked = new List<BibleRef>();
+        var verse = Resolved.Node(new ServedGraph().Serving(ServedGraph.TextCard(John316, John316Text)), John316);
+        var view = Render<FocusView>(p => p.Add(v => v.Node, verse).Add(v => v.Surface, Surface.Popover).Add(v => v.OnReadInContext, (BibleRef locus) => asked.Add(locus)));
+
+        // Act
+        view.Find("[data-testid='popover-chip-context']").Click();
+
+        // Assert
+        Assert.Equal([John316Text.Locus], asked);
+    }
+
+    [Fact]
+    public void A_paragraph_offers_no_way_to_read_a_verse_in_context()
+    {
+        // Arrange
+        var paragraph = Resolved.Node(new ServedGraph().Serving(ServedGraph.TextCard(AugsburgIv, AugsburgIvText)), AugsburgIv);
+
+        // Act
+        var view = Render<FocusView>(p => p.Add(v => v.Node, paragraph).Add(v => v.Surface, Surface.Popover).Add(v => v.OnReadInContext, (BibleRef _) => { }));
+
+        // Assert
+        Assert.Empty(view.FindAll("[data-testid='popover-chip-context']"));
+    }
+
+    [Fact]
+    public void A_host_that_offers_no_way_to_the_reader_shows_none()
+    {
+        // Arrange
+        var verse = Resolved.Node(new ServedGraph().Serving(ServedGraph.TextCard(John316, John316Text)), John316);
+
+        // Act
+        var view = Render<FocusView>(p => p.Add(v => v.Node, verse).Add(v => v.Surface, Surface.Popover));
+
+        // Assert
+        Assert.Empty(view.FindAll("[data-testid='popover-chip-context']"));
     }
 
     private static readonly NodeRef Genesis2Ref = ServedGraph.Ref(NodeKind.Container, Genesis2Id, Genesis2Label);

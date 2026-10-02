@@ -77,14 +77,14 @@
                         <PericopeHeading Heading="@heading" OnExplore="OnLineExplore" />
                     }
                     <section class="kretzmann-verse-block" data-testid="@($"kretzmann-verse-group-{row.Verse.Number}")">
-                        <VerseLine Verse="@row.Verse" Unit="@row.Unit" Book="@_book" Chapter="@_chapterNum" OnExplore="OnLineExplore"
+                        <VerseLine Verse="@row.Verse" Unit="@row.Unit" OnExplore="OnLineExplore"
                                    Id="@($"v{row.Verse.Number}{VerseTestIdSuffix}")"
                                    RowClass="verse-line explorable kretzmann-scripture-row" RowTestIdPrefix="verse-line" TestIdSuffix="@VerseTestIdSuffix"
                                    VerseNumClass="verse-num" ShowVerseNumButton="true" VerseNumTestIdPrefix="verse-num"
                                    OnVerseNumClick="@(e => OnVerseNumClick(e, row.Verse.Number))"
                                    TextClass="verse-text kretzmann-scripture-text" MentionClass="verse-mention"
                                    XrefMarkerGlyph="@xrefLetters.GetValueOrDefault(row.Verse.Number, "")"
-                                   OnXrefClick="OpenVerseXrefEntry"
+                                   OnXrefClick="@(_ => OpenVerseXrefEntry(row.Unit))"
                                    OnToggleSelect="OnToggleSelect" />
 
                         @foreach (var item in row.CommentaryItems)
@@ -562,15 +562,15 @@
         _opening = new PopoverOpening.Legacy(new PassageNode(PassageRef(range), text));
     }
 
-    private void OpenVerseXrefEntry(int verseNum)
+    private void OpenVerseXrefEntry(TextUnit unit)
     {
-        var vref = $"{_book}.{_chapterNum}.{verseNum}";
-        if (_opening?.OpensLegacy(node => node is VerseNode { XrefEntryPoint: true } current && current.Title == vref) == true)
+        PopoverOpening opening = new PopoverOpening.Explore(new NodePosition(unit.Node));
+        if (opening == _opening)
         {
             return;
         }
 
-        _opening = new PopoverOpening.Legacy(new VerseNode(vref, xrefEntryPoint: true));
+        _opening = opening;
     }
 
     private void OnExploreNode(PopoverOpening opening) => _opening = opening;

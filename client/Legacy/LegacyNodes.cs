@@ -16,24 +16,17 @@ public static class LegacyNodes
     private const string BookContainerPrefix = "bible-book-";
     private const string ChapterContainerPrefix = "bible-chapter-";
     private const char ChapterSeparator = '-';
-    private const string ConcordCitationPrefix = "BoC ";
 
     private static IExplorable? For(NodeKind kind, Explorable node) => kind switch
     {
-        NodeKind.TextUnit => TextUnit(NodeIds.LocalPart(node.Id)),
         NodeKind.Container => Container(NodeIds.LocalPart(node.Id)),
         NodeKind.Person => new PersonNode(node.Id, node.Label),
         NodeKind.Event => new EventNode(NodeIds.LocalPart(node.Id), node.Label),
         NodeKind.CatechismItem => new CatechismNode(NodeIds.LocalPart(node.Id), node.Label),
         NodeKind.CommentaryItem => new CommentaryItemNode(NodeIds.LocalPart(node.Id), node.Label),
-        NodeKind.Place or NodeKind.Narrative or NodeKind.Anchor or NodeKind.Era or NodeKind.Polity or NodeKind.Source
+        NodeKind.TextUnit or NodeKind.Place or NodeKind.Narrative or NodeKind.Anchor or NodeKind.Era or NodeKind.Polity or NodeKind.Source
             or NodeKind.Translation or NodeKind.PeopleGroup or NodeKind.LexiconEntry or NodeKind.Map => null,
     };
-
-    private static IExplorable TextUnit(string citation) =>
-        citation.StartsWith(ConcordCitationPrefix, StringComparison.Ordinal)
-            ? new ConcordUnitNode(citation)
-            : new VerseNode(citation);
 
     private static IExplorable? Container(string local)
     {

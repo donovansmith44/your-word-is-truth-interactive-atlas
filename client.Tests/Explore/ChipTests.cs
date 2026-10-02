@@ -12,7 +12,6 @@ public sealed class ChipTests
         // Arrange
         var authors = new IExplorable[]
         {
-            new VerseNode("GEN.1.1"),
             new ChapterNode("GEN", 1),
             new PassageNode("GEN.1.1-5", "In the beginning"),
             new BookNode("GEN"),
@@ -30,7 +29,6 @@ public sealed class ChipTests
         // Assert
         Assert.Equal(
             [
-                ("VerseNode", "GEN", "Container:bible-book-GEN", EdgeKind.MemberOf),
                 ("ChapterNode", "GEN", "Container:bible-book-GEN", EdgeKind.MemberOf),
                 ("PassageNode", "GEN", "Container:bible-book-GEN", EdgeKind.MemberOf),
                 ("BookNode", "GEN", "Container:bible-book-GEN", EdgeKind.AuthoredBy),

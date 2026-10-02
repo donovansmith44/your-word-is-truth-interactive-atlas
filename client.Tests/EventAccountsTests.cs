@@ -49,20 +49,6 @@ public sealed class EventAccountsTests
             references);
     }
 
-    [Fact]
-    public void An_account_reads_a_verse_inside_one_of_its_runs_and_no_other()
-    {
-        // Arrange
-        var peterDenies = new EventAccount([Span(BookId.MRK, (14, 54), (14, 54)), Span(BookId.MRK, (14, 66), (14, 72))], null);
-        var verses = new[] { new BibleRef(BookId.MRK, 14, 54), new BibleRef(BookId.MRK, 14, 60), new BibleRef(BookId.MRK, 14, 72), new BibleRef(BookId.MAT, 14, 54) };
-
-        // Act
-        var read = verses.Select(peterDenies.Reads).ToList();
-
-        // Assert
-        Assert.Equal([true, false, true, false], read);
-    }
-
     internal static TextSpan Span(BookId book, (int Chapter, int Verse) from, (int Chapter, int Verse) to) =>
         new(from: new TextPoint(unit: new BibleRef(book, from.Chapter, from.Verse), word: null), to: new TextPoint(unit: new BibleRef(book, to.Chapter, to.Verse), word: null));
 

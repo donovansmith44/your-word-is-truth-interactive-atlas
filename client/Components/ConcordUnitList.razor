@@ -6,10 +6,9 @@
     <div class="popover-catechism-list">
         @foreach (var unit in Items)
         {
-            var citation = NodeIds.LocalPart(unit);
-            <button type="button" class="popover-catechism-item explorable" data-testid="@($"concord-link-{Slug(citation)}")"
-                    @onclick="() => OnExplore.InvokeAsync(new PopoverOpening.Legacy(new ConcordUnitNode(citation)))">
-                @citation
+            <button type="button" class="popover-catechism-item explorable" data-testid="@($"concord-link-{Slug(unit.Label)}")"
+                    @onclick="() => OnExplore.InvokeAsync(new PopoverOpening.Explore(new NodePosition(unit)))">
+                @unit.Label
             </button>
         }
     </div>

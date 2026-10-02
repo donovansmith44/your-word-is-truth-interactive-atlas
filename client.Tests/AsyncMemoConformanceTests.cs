@@ -17,7 +17,7 @@ public class AsyncMemoConformanceTests
     [Fact]
     public void PlantedDirectShapeViolation_IsCaught()
     {
-        const string planted = "public Task<VerseDetail> DetailAsync(AtlasClient api) => _cachedDetail ??= await api.Verse($\"{_bookCode}.1.1\");";
+        const string planted = "public Task<IReadOnlyList<CrossRef>> XrefsAsync(AtlasClient api) => _cachedXrefs ??= await api.Xrefs(_sref);";
 
         Assert.Matches(RawAwaitMemoizationPattern, planted);
     }
@@ -41,7 +41,7 @@ public class AsyncMemoConformanceTests
     [Fact]
     public void StripLineComments_ADocCommentQuotingTheBannedIdiomIsNotSelfFlagged()
     {
-        const string commentedOut = "    // history: this used to be `_cached ??= await api.Verse(_vref)`, now AsyncMemo-backed.";
+        const string commentedOut = "    // history: this used to be `_cached ??= await api.Xrefs(_sref)`, now AsyncMemo-backed.";
 
         Assert.Matches(RawAwaitMemoizationPattern, commentedOut);
         Assert.DoesNotMatch(RawAwaitMemoizationPattern, StripLineComments(commentedOut));

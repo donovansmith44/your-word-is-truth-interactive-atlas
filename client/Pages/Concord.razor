@@ -378,7 +378,7 @@
         }
     }
 
-    private void OnExplore(TextUnit unit) => _opening = new PopoverOpening.Legacy(new ConcordUnitNode(unit.Ref, unit.Body.Text));
+    private void OnExplore(TextUnit unit) => _opening = new PopoverOpening.Explore(new NodePosition(unit.Node));
 
     private void OnUnitKeyDown(KeyboardEventArgs e, TextUnit unit)
     {
