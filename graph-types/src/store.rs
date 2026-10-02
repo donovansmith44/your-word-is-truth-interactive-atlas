@@ -5,7 +5,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
 
-use crate::adjacency::{EdgeEntry, EdgeEntryWithNode, EdgePage, EdgePageWithNodes, EdgeQuery, EdgeSummary, Adjacent, NodePage, PositionRef};
+use crate::adjacency::{Cursor, EdgeEntry, EdgeEntryWithNode, EdgePage, EdgePageWithNodes, EdgeQuery, EdgeSummary, Adjacent, NodePage, PositionRef};
 use crate::graph::Graph;
 use crate::id::{AnyNodeId, ContentAddressed, ContentHash, NodeKind, Pid, Position};
 use crate::node::Node;
@@ -298,13 +298,13 @@ fn position_inventory(model: &Graph) -> BTreeSet<Position> {
 }
 
 fn drain(q: &impl GraphQuery, p: &Position, kind: crate::edge::EdgeKind, limit: usize) -> Vec<EdgeEntry> {
-    let mut cursor = None;
+    let mut cursor = Cursor::FIRST;
     let mut out = Vec::new();
     loop {
         let page = q.edges(p, &EdgeQuery { kind, cursor, limit });
         out.extend(page.entries);
         match page.next {
-            Some(c) => cursor = Some(c),
+            Some(c) => cursor = c,
             None => break,
         }
     }
@@ -361,7 +361,7 @@ fn check_position_answers<Q: GraphQuery>(candidate: &Q, model: &Graph, p: &Posit
 
 fn check_position_rows<Q: GraphQuery>(candidate: &Q, model: &Graph, p: &Position) {
     for (kind, _) in model.edge_summary(p) {
-        let q = EdgeQuery { kind, cursor: None, limit: 1 };
+        let q = EdgeQuery { kind, cursor: Cursor::FIRST, limit: 1 };
         let a = candidate.edges_with_nodes(p, &q);
         let b = model.edges_with_nodes(p, &q);
         assert_eq!((a.kind, a.next, a.entries.len()), (b.kind, b.next, b.entries.len()), "conformance: edges_with_nodes({p:?}, {kind:?}) page shape diverges");
@@ -810,10 +810,10 @@ mod laws {
         assert!(got[0].is_some() && got[1].is_none());
         let e1 = Position::Node(EventId::new("e1").erase());
         let kind = crate::edge::EdgeKind::Directed(crate::edge::RelationId::LocatedAt, crate::edge::Direction::Forward);
-        let page = g.edges_with_nodes(&e1, &EdgeQuery { kind, cursor: None, limit: 10 });
+        let page = g.edges_with_nodes(&e1, &EdgeQuery { kind, cursor: Cursor::FIRST, limit: 10 });
         assert_eq!(page.entries.len(), 1);
         assert!(page.entries[0].node.is_none());
-        assert_eq!(page.entries[0].entry, g.edges(&e1, &EdgeQuery { kind, cursor: None, limit: 10 }).entries[0]);
+        assert_eq!(page.entries[0].entry, g.edges(&e1, &EdgeQuery { kind, cursor: Cursor::FIRST, limit: 10 }).entries[0]);
         let v = Position::Node(AnyNodeId { kind: NodeKind::TextUnit, raw: "bible/1.1.1".into() });
         let g2 = {
             let mut g2 = graph_with(&[("bible/1.1.1", "a")]);
@@ -831,7 +831,7 @@ mod laws {
             g2
         };
         let kind = crate::edge::EdgeKind::Directed(crate::edge::RelationId::Attests, crate::edge::Direction::Forward);
-        let page = g2.edges_with_nodes(&e1, &EdgeQuery { kind, cursor: None, limit: 10 });
+        let page = g2.edges_with_nodes(&e1, &EdgeQuery { kind, cursor: Cursor::FIRST, limit: 10 });
         assert_eq!(page.entries[0].entry.node, v);
         assert_eq!(page.entries[0].node.as_ref().map(|n| n.id.clone()), Some(AnyNodeId { kind: NodeKind::TextUnit, raw: "bible/1.1.1".into() }));
     }
@@ -841,7 +841,7 @@ mod laws {
         let g = with_edges(graph_with(&[("bible/1.1.1", "a"), ("bible/1.1.2", "b")]));
         let e1 = Position::Node(EventId::new("e1").erase());
         let kind = crate::edge::EdgeKind::Directed(crate::edge::RelationId::LocatedAt, crate::edge::Direction::Forward);
-        let entry = g.edges(&e1, &EdgeQuery { kind, cursor: None, limit: 1 }).entries[0].clone();
+        let entry = g.edges(&e1, &EdgeQuery { kind, cursor: Cursor::FIRST, limit: 1 }).entries[0].clone();
         let r = g.row_provenance(&entry.edge).expect("a located_at row produced this edge");
         assert_eq!((r.family, r.row_id, r.provenance.as_str()), (crate::canon::RowFamily::LocatedAt, 0, "p"));
         assert_eq!(g.row_provenance(&crate::edge::EdgeId("LocatedAt:0000000000000000".into())), None);
@@ -875,7 +875,7 @@ mod laws {
         let edge = crate::edge::entry_id(crate::edge::RelationId::LocatedAt, &e1, &jordan);
 
         // Act
-        let page = g.edges(&e1, &EdgeQuery { kind, cursor: None, limit: 10 });
+        let page = g.edges(&e1, &EdgeQuery { kind, cursor: Cursor::FIRST, limit: 10 });
         let summary = g.edge_summary(&e1);
         let rows: Vec<(u64, String)> = g.rows_behind(&edge).into_iter().map(|r| (r.row_id, r.provenance)).collect();
         let first = g.row_provenance(&edge).map(|r| r.row_id);
@@ -906,7 +906,7 @@ mod laws {
         let place = |name: &str| Position::Node(PlaceId::new(name).erase());
 
         // Act
-        let walked: Vec<(Vec<Position>, Option<usize>)> = [(None, 1), (Some(2), 1), (Some(3), 1), (None, 2), (Some(3), 5)]
+        let walked: Vec<(Vec<Position>, Option<Cursor>)> = [(Cursor::FIRST, 1), (Cursor(2), 1), (Cursor(3), 1), (Cursor::FIRST, 2), (Cursor(3), 5)]
             .into_iter()
             .map(|(cursor, limit)| {
                 let page = g.edges(&e1, &EdgeQuery { kind, cursor, limit });
@@ -918,10 +918,10 @@ mod laws {
         assert_eq!(
             walked,
             vec![
-                (vec![place("jordan")], Some(2)),
-                (vec![place("bethel")], Some(3)),
+                (vec![place("jordan")], Some(Cursor(2))),
+                (vec![place("bethel")], Some(Cursor(3))),
                 (vec![place("hebron")], None),
-                (vec![place("jordan"), place("bethel")], Some(3)),
+                (vec![place("jordan"), place("bethel")], Some(Cursor(3))),
                 (vec![place("hebron")], None),
             ]
         );

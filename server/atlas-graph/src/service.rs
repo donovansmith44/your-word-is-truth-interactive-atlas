@@ -423,9 +423,9 @@ impl GraphService {
     /// The distinct, sorted provenance of every row behind the edges of one kind at one position. A
     /// synthesised edge contributes nothing.
     fn provenance_over(&self, p: &atlas_graph_types::id::Position, kind: atlas_graph_types::edge::EdgeKind) -> Vec<String> {
-        use atlas_graph_types::adjacency::EdgeQuery;
+        use atlas_graph_types::adjacency::{Cursor, EdgeQuery};
         let mut set: std::collections::BTreeSet<String> = std::collections::BTreeSet::new();
-        let mut cursor = None;
+        let mut cursor = Cursor::FIRST;
         loop {
             let page = self.snapshot.edges(p, &EdgeQuery { kind, cursor, limit: 256 });
             for e in &page.entries {
@@ -435,7 +435,7 @@ impl GraphService {
                 }
             }
             match page.next {
-                Some(c) => cursor = Some(c),
+                Some(c) => cursor = c,
                 None => break set.into_iter().collect(),
             }
         }
@@ -457,18 +457,18 @@ impl GraphService {
     /// The provenance of the ONE `Analogue` row joining two events, from either end.
     pub fn analogue_provenance(&self, a_raw: &str, b_raw: &str) -> Option<String> {
         use atlas_graph_types::edge::{at, EdgeKind, SymRelationId};
-        use atlas_graph_types::adjacency::EdgeQuery;
+        use atlas_graph_types::adjacency::{Cursor, EdgeQuery};
         let a = at(&atlas_graph_types::id::EventId::new(a_raw).erase());
         let b = at(&atlas_graph_types::id::EventId::new(b_raw).erase());
         let kind = EdgeKind::Symmetric(SymRelationId::Analogue);
-        let mut cursor = None;
+        let mut cursor = Cursor::FIRST;
         loop {
             let page = self.snapshot.edges(&a, &EdgeQuery { kind, cursor, limit: 256 });
             if let Some(e) = page.entries.iter().find(|e| e.node == b) {
                 return self.snapshot.row_provenance(&e.edge).map(|r| r.provenance);
             }
             match page.next {
-                Some(c) => cursor = Some(c),
+                Some(c) => cursor = c,
                 None => return None,
             }
         }
@@ -478,7 +478,7 @@ impl GraphService {
     /// all: adjacency comes from the `temporal-adjacency` edges and direction from that order.
     pub fn temporal_neighbors_of(&self, event_raw: &str) -> Option<(Option<String>, Option<String>)> {
         use atlas_graph_types::edge::{at, EdgeKind, SymRelationId};
-        use atlas_graph_types::adjacency::EdgeQuery;
+        use atlas_graph_types::adjacency::{Cursor, EdgeQuery};
         use atlas_graph_types::id::Position;
         let order = &self.chronology.chrono.order;
         let me = order.iter().position(|x| x == event_raw)?;
@@ -486,7 +486,7 @@ impl GraphService {
         let kind = EdgeKind::Symmetric(SymRelationId::TemporalAdjacency);
         let mut prior: Option<(usize, String)> = None;
         let mut following: Option<(usize, String)> = None;
-        let mut cursor = None;
+        let mut cursor = Cursor::FIRST;
         loop {
             let page = self.snapshot.edges(&p, &EdgeQuery { kind, cursor, limit: 256 });
             for e in &page.entries {
@@ -501,7 +501,7 @@ impl GraphService {
                 }
             }
             match page.next {
-                Some(c) => cursor = Some(c),
+                Some(c) => cursor = c,
                 None => break,
             }
         }
@@ -523,13 +523,13 @@ impl GraphService {
 
     pub fn persons_at_verse(&self, book: u8, chapter: u16, verse: u16) -> Vec<(String, String)> {
         use atlas_graph_types::edge::{at, Direction, EdgeKind, RelationId};
-        use atlas_graph_types::adjacency::EdgeQuery;
+        use atlas_graph_types::adjacency::{Cursor, EdgeQuery};
         use atlas_graph_types::id::NodeKind;
         use atlas_graph_types::node::NodePayload;
         let p = at(&crate::kjv_adapter::verse_node_id(book, chapter, verse));
         let kind = EdgeKind::Directed(RelationId::Mentions, Direction::Forward);
         let mut out = Vec::new();
-        let mut cursor = None;
+        let mut cursor = Cursor::FIRST;
         loop {
             let page = self.snapshot.edges_with_nodes(&p, &EdgeQuery { kind, cursor, limit: 256 });
             for e in page.entries {
@@ -542,7 +542,7 @@ impl GraphService {
                 }
             }
             match page.next {
-                Some(c) => cursor = Some(c),
+                Some(c) => cursor = c,
                 None => {
                     out.dedup();
                     break out;

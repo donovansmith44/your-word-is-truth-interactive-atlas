@@ -599,7 +599,7 @@ pub fn corpus_key<C: Corpus>() -> &'static str {
 mod tests {
     use super::*;
     use crate::edge::{Contains, Direction, EdgeKind, RelationId};
-    use crate::adjacency::{EdgeQuery, Adjacent, PositionRef};
+    use crate::adjacency::{Cursor, EdgeQuery, Adjacent, PositionRef};
     use crate::id::{ContainerNodeId, NodeKind};
     use crate::ingest::ProvenanceId;
     use crate::node::{Node, NodePayload};
@@ -675,12 +675,12 @@ mod tests {
         g.build_indexes();
 
         let forward = EdgeKind::Directed(RelationId::Contains, Direction::Forward);
-        let page = PositionRef(crate::id::Position::Node(container_id.erase())).edges(&g, &EdgeQuery { kind: forward, cursor: None, limit: 10 });
+        let page = PositionRef(crate::id::Position::Node(container_id.erase())).edges(&g, &EdgeQuery { kind: forward, cursor: Cursor::FIRST, limit: 10 });
         assert_eq!(page.entries.len(), 2, "the container's own forward 'contains' frontier lists both paragraphs");
 
         let p1_node = crate::id::AnyNodeId { kind: NodeKind::TextUnit, raw: "concord/3.4.1".into() };
         let inverse = EdgeKind::Directed(RelationId::Contains, Direction::Inverse);
-        let back = PositionRef(crate::id::Position::Node(p1_node.clone())).edges(&g, &EdgeQuery { kind: inverse, cursor: None, limit: 10 });
+        let back = PositionRef(crate::id::Position::Node(p1_node.clone())).edges(&g, &EdgeQuery { kind: inverse, cursor: Cursor::FIRST, limit: 10 });
         assert_eq!(back.entries.len(), 1, "the paragraph's own inverse 'member-of' frontier lists its container");
         assert_eq!(back.entries[0].node, crate::id::Position::Node(container_id.erase()));
 
@@ -722,22 +722,22 @@ mod tests {
         g.build_indexes();
 
         let forward = EdgeKind::Directed(RelationId::Contains, Direction::Forward);
-        let page = PositionRef(crate::id::Position::Node(book.erase())).edges(&g, &EdgeQuery { kind: forward, cursor: None, limit: 10 });
+        let page = PositionRef(crate::id::Position::Node(book.erase())).edges(&g, &EdgeQuery { kind: forward, cursor: Cursor::FIRST, limit: 10 });
         assert_eq!(page.entries.len(), 2, "the book's own forward 'contains' frontier lists both chapter containers");
         let inverse = EdgeKind::Directed(RelationId::Contains, Direction::Inverse);
-        let back = PositionRef(crate::id::Position::Node(ch1.erase())).edges(&g, &EdgeQuery { kind: inverse, cursor: None, limit: 10 });
+        let back = PositionRef(crate::id::Position::Node(ch1.erase())).edges(&g, &EdgeQuery { kind: inverse, cursor: Cursor::FIRST, limit: 10 });
         assert_eq!(back.entries.len(), 1, "a chapter is a member of exactly its book");
         assert_eq!(back.entries[0].node, crate::id::Position::Node(book.erase()));
         let fwd_entry = page.entries.iter().find(|e| e.node == crate::id::Position::Node(ch1.erase())).expect("book page lists chapter 1");
         assert_eq!(fwd_entry.edge, back.entries[0].edge, "the SAME edge id, from either end -- the bijection witness");
 
         let follows = EdgeKind::Directed(RelationId::Succession, Direction::Forward);
-        let succ = PositionRef(crate::id::Position::Node(ch1.erase())).edges(&g, &EdgeQuery { kind: follows, cursor: None, limit: 10 });
+        let succ = PositionRef(crate::id::Position::Node(ch1.erase())).edges(&g, &EdgeQuery { kind: follows, cursor: Cursor::FIRST, limit: 10 });
         assert_eq!(succ.entries.len(), 1);
         assert_eq!(succ.entries[0].node, crate::id::Position::Node(ch2.erase()));
         assert_eq!(succ.entries[0].meta, crate::adjacency::EdgeMeta::None, "a canon step carries no narrative annotation");
         let precedes = EdgeKind::Directed(RelationId::Succession, Direction::Inverse);
-        let prev = PositionRef(crate::id::Position::Node(ch2.erase())).edges(&g, &EdgeQuery { kind: precedes, cursor: None, limit: 10 });
+        let prev = PositionRef(crate::id::Position::Node(ch2.erase())).edges(&g, &EdgeQuery { kind: precedes, cursor: Cursor::FIRST, limit: 10 });
         assert_eq!(prev.entries.len(), 1);
         assert_eq!(prev.entries[0].node, crate::id::Position::Node(ch1.erase()));
         assert_eq!(prev.entries[0].edge, succ.entries[0].edge);
@@ -770,12 +770,12 @@ mod tests {
         g.build_indexes();
 
         let forward = EdgeKind::Directed(RelationId::CommentsOn, Direction::Forward);
-        let page = PositionRef(crate::id::Position::Node(item_id.erase())).edges(&g, &EdgeQuery { kind: forward, cursor: None, limit: 10 });
+        let page = PositionRef(crate::id::Position::Node(item_id.erase())).edges(&g, &EdgeQuery { kind: forward, cursor: Cursor::FIRST, limit: 10 });
         assert_eq!(page.entries.len(), 1, "the CommentaryItem's own forward 'comments-on' frontier reaches its verse");
         assert_eq!(page.entries[0].node, crate::id::Position::Node(verse_id.clone()));
 
         let inverse = EdgeKind::Directed(RelationId::CommentsOn, Direction::Inverse);
-        let back = PositionRef(crate::id::Position::Node(verse_id)).edges(&g, &EdgeQuery { kind: inverse, cursor: None, limit: 10 });
+        let back = PositionRef(crate::id::Position::Node(verse_id)).edges(&g, &EdgeQuery { kind: inverse, cursor: Cursor::FIRST, limit: 10 });
         assert_eq!(back.entries.len(), 1, "the verse's own inverse 'commented-on-by' frontier lists the CommentaryItem back");
         assert_eq!(back.entries[0].edge, page.entries[0].edge, "the SAME edge id, from either end -- the bijection witness");
     }
@@ -808,22 +808,22 @@ mod tests {
         g.build_indexes();
 
         let forward_by = EdgeKind::Directed(RelationId::SpokenBy, Direction::Forward);
-        let page = PositionRef(crate::id::Position::Node(verse_id.clone())).edges(&g, &EdgeQuery { kind: forward_by, cursor: None, limit: 10 });
+        let page = PositionRef(crate::id::Position::Node(verse_id.clone())).edges(&g, &EdgeQuery { kind: forward_by, cursor: Cursor::FIRST, limit: 10 });
         assert_eq!(page.entries.len(), 1, "the verse's own forward 'spoken-by' frontier reaches Jesus");
         assert_eq!(page.entries[0].node, crate::id::Position::Node(jesus_id.erase()));
 
         let inverse_by = EdgeKind::Directed(RelationId::SpokenBy, Direction::Inverse);
-        let back = PositionRef(crate::id::Position::Node(jesus_id.erase())).edges(&g, &EdgeQuery { kind: inverse_by, cursor: None, limit: 10 });
+        let back = PositionRef(crate::id::Position::Node(jesus_id.erase())).edges(&g, &EdgeQuery { kind: inverse_by, cursor: Cursor::FIRST, limit: 10 });
         assert_eq!(back.entries.len(), 1, "Jesus's own inverse 'speech-of' frontier lists the verse back");
         assert_eq!(back.entries[0].edge, page.entries[0].edge, "the SAME edge id, from either end -- the bijection witness");
 
         let forward_at = EdgeKind::Directed(RelationId::SpokenAt, Direction::Forward);
-        let at_page = PositionRef(crate::id::Position::Node(verse_id.clone())).edges(&g, &EdgeQuery { kind: forward_at, cursor: None, limit: 10 });
+        let at_page = PositionRef(crate::id::Position::Node(verse_id.clone())).edges(&g, &EdgeQuery { kind: forward_at, cursor: Cursor::FIRST, limit: 10 });
         assert_eq!(at_page.entries.len(), 1, "the verse's own forward 'spoken-at' frontier reaches the place");
         assert_eq!(at_page.entries[0].node, crate::id::Position::Node(place_id.erase()));
 
         let inverse_at = EdgeKind::Directed(RelationId::SpokenAt, Direction::Inverse);
-        let at_back = PositionRef(crate::id::Position::Node(place_id.erase())).edges(&g, &EdgeQuery { kind: inverse_at, cursor: None, limit: 10 });
+        let at_back = PositionRef(crate::id::Position::Node(place_id.erase())).edges(&g, &EdgeQuery { kind: inverse_at, cursor: Cursor::FIRST, limit: 10 });
         assert_eq!(at_back.entries.len(), 1, "the place's own inverse 'site-of-speech' frontier lists the verse back");
         assert_eq!(at_back.entries[0].edge, at_page.entries[0].edge, "the SAME edge id, from either end -- the bijection witness");
     }
@@ -867,20 +867,20 @@ mod tests {
         g.build_indexes();
 
         let sym = EdgeKind::Symmetric(SymRelationId::Analogue);
-        let from_a = PositionRef(crate::id::Position::Node(a.erase())).edges(&g, &EdgeQuery { kind: sym, cursor: None, limit: 10 });
+        let from_a = PositionRef(crate::id::Position::Node(a.erase())).edges(&g, &EdgeQuery { kind: sym, cursor: Cursor::FIRST, limit: 10 });
         assert_eq!(from_a.entries.len(), 1, "the first event's own 'analogous-to' frontier reaches the second");
         assert_eq!(from_a.entries[0].node, crate::id::Position::Node(b.erase()));
-        let from_b = PositionRef(crate::id::Position::Node(b.erase())).edges(&g, &EdgeQuery { kind: sym, cursor: None, limit: 10 });
+        let from_b = PositionRef(crate::id::Position::Node(b.erase())).edges(&g, &EdgeQuery { kind: sym, cursor: Cursor::FIRST, limit: 10 });
         assert_eq!(from_b.entries.len(), 1, "and the second's reaches the first -- symmetric, no direction to get backwards");
         assert_eq!(from_b.entries[0].node, crate::id::Position::Node(a.erase()));
         assert_eq!(from_a.entries[0].edge, from_b.entries[0].edge, "the SAME edge id from either end -- the symmetric bijection witness");
 
         let fwd = EdgeKind::Directed(RelationId::Mentions, Direction::Forward);
-        let verse_side = PositionRef(crate::id::Position::Node(verse_id.clone())).edges(&g, &EdgeQuery { kind: fwd, cursor: None, limit: 10 });
+        let verse_side = PositionRef(crate::id::Position::Node(verse_id.clone())).edges(&g, &EdgeQuery { kind: fwd, cursor: Cursor::FIRST, limit: 10 });
         assert_eq!(verse_side.entries.len(), 1, "the verse's own forward 'mentions' frontier reaches the event");
         assert_eq!(verse_side.entries[0].node, crate::id::Position::Node(espousal.erase()));
         let inv = EdgeKind::Directed(RelationId::Mentions, Direction::Inverse);
-        let event_side = PositionRef(crate::id::Position::Node(espousal.erase())).edges(&g, &EdgeQuery { kind: inv, cursor: None, limit: 10 });
+        let event_side = PositionRef(crate::id::Position::Node(espousal.erase())).edges(&g, &EdgeQuery { kind: inv, cursor: Cursor::FIRST, limit: 10 });
         assert_eq!(event_side.entries.len(), 1, "the EVENT's own inverse 'mentioned-in' frontier lists the verse back -- L3's mention-only frontier");
         assert_eq!(event_side.entries[0].node, crate::id::Position::Node(verse_id));
         assert_eq!(event_side.entries[0].edge, verse_side.entries[0].edge, "the SAME edge id, from either end");
@@ -899,7 +899,7 @@ mod tests {
             justification: Default::default(),
         });
         g.build_indexes();
-        let query = |kind| EdgeQuery { kind, cursor: None, limit: 10 };
+        let query = |kind| EdgeQuery { kind, cursor: Cursor::FIRST, limit: 10 };
         // Act
         let children = PositionRef(crate::id::Position::Node(father.erase())).edges(&g, &query(EdgeKind::Directed(RelationId::ParentOf, Direction::Forward)));
         let parents = PositionRef(crate::id::Position::Node(son.erase())).edges(&g, &query(EdgeKind::Directed(RelationId::ParentOf, Direction::Inverse)));

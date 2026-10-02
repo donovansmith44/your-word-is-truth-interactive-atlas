@@ -252,13 +252,13 @@ pub(crate) fn drain_edges(
     p: &atlas_graph_types::id::Position,
     kind: atlas_graph_types::edge::EdgeKind,
 ) -> Vec<atlas_graph_types::adjacency::EdgeEntry> {
-    let mut cursor = None;
+    let mut cursor = atlas_graph_types::adjacency::Cursor::FIRST;
     let mut out = Vec::new();
     loop {
         let page = snap.edges(p, &atlas_graph_types::adjacency::EdgeQuery { kind, cursor, limit: usize::MAX });
         out.extend(page.entries);
         match page.next {
-            Some(c) => cursor = Some(c),
+            Some(c) => cursor = c,
             None => break,
         }
     }

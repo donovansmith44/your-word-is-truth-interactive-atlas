@@ -7,7 +7,7 @@ use crate::edge::{
     dual, at, Attests, Direction, EdgeKind, Justification, LocatedAt, RelationId, Succession,
     SymRelationId,
 };
-use crate::adjacency::{EdgeQuery, Adjacent, Holdings, PositionRef};
+use crate::adjacency::{Cursor, EdgeQuery, Adjacent, Holdings, PositionRef};
 use crate::graph::Graph;
 use crate::id::{AnyNodeId, EventId, NodeKind, PlaceId, Position};
 use crate::text::{BibleLocus, BibleLocusRange, VerseRef};
@@ -133,13 +133,13 @@ fn step_page_agreement_pages_are_windows_over_the_total() {
     let total = Holdings::focus(n.clone()).step(&g, FOLLOWS);
 
     let r = PositionRef(n);
-    let mut cursor = None;
+    let mut cursor = Cursor::FIRST;
     let mut paged: BTreeSet<Position> = BTreeSet::new();
     loop {
         let page = r.edges(&g, &EdgeQuery { kind: FOLLOWS, cursor, limit: 1 });
         paged.extend(page.entries.iter().map(|e| e.node.clone()));
         match page.next {
-            Some(c) => cursor = Some(c),
+            Some(c) => cursor = c,
             None => break,
         }
     }

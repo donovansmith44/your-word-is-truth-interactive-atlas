@@ -1,14 +1,41 @@
 
 use std::collections::{BTreeMap, BTreeSet, HashSet};
+use std::num::NonZeroUsize;
 
 use crate::edge::{dual, Direction, EdgeId, EdgeKind};
 use crate::graph::Graph;
 use crate::id::Position;
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct Cursor(pub usize);
+
+impl Cursor {
+    pub const FIRST: Cursor = Cursor(0);
+
+    pub fn asked(given: Option<usize>) -> Cursor {
+        given.map_or(Cursor::FIRST, Cursor)
+    }
+
+    pub fn previous(self, preceding: usize, limit: usize, back: impl FnOnce(NonZeroUsize) -> Cursor) -> Option<Cursor> {
+        match (preceding, NonZeroUsize::new(limit)) {
+            (0, _) => None,
+            (_, None) => Some(self),
+            (n, Some(_)) if n <= limit => Some(Cursor::FIRST),
+            (_, Some(limit)) => Some(back(limit)),
+        }
+    }
+}
+
+impl std::fmt::Display for Cursor {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.0.fmt(f)
+    }
+}
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct EdgeQuery {
     pub kind: EdgeKind,
-    pub cursor: Option<usize>,
+    pub cursor: Cursor,
     pub limit: usize,
 }
 
@@ -34,8 +61,8 @@ pub struct EdgeEntry {
 pub struct EdgePage {
     pub kind: EdgeKind,
     pub entries: Vec<EdgeEntry>,
-    pub previous: Option<usize>,
-    pub next: Option<usize>,
+    pub previous: Option<Cursor>,
+    pub next: Option<Cursor>,
 }
 
 pub type EdgeSummary = BTreeMap<EdgeKind, usize>;
@@ -60,7 +87,7 @@ pub struct EdgeEntryWithNode {
 pub struct EdgePageWithNodes {
     pub kind: EdgeKind,
     pub entries: Vec<EdgeEntryWithNode>,
-    pub next: Option<usize>,
+    pub next: Option<Cursor>,
 }
 
 pub trait Adjacent {
@@ -98,11 +125,10 @@ impl Adjacency {
     }
 
     pub fn page(&self, q: &EdgeQuery) -> EdgePage {
-        let from = self.edges.partition_point(|&ord| (ord as usize) < q.cursor.unwrap_or(0));
+        let from = self.edges.partition_point(|&ord| (ord as usize) < q.cursor.0);
         let entries = self.edges[from..].iter().take(q.limit).map(|&ord| self.rows[ord as usize].clone()).collect();
-        let next = self.edges.get(from.saturating_add(q.limit)).map(|&ord| ord as usize);
-        let before = from.saturating_sub(q.limit);
-        let previous = (before > 0 && q.limit > 0).then(|| self.edges[before] as usize);
+        let next = self.edges.get(from.saturating_add(q.limit)).map(|&ord| Cursor(ord as usize));
+        let previous = q.cursor.previous(from, q.limit, |back| Cursor(self.edges[from - back.get()] as usize));
         EdgePage { kind: q.kind, entries, previous, next }
     }
 }

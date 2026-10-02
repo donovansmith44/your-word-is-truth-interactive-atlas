@@ -296,7 +296,7 @@ mod tests {
     #[test]
     fn spoken_by_and_spoken_at_rows_lower_into_the_directed_index_both_ways() {
         use atlas_graph_types::edge::{Direction, EdgeKind, RelationId};
-        use atlas_graph_types::adjacency::{EdgeQuery, Adjacent, PositionRef};
+        use atlas_graph_types::adjacency::{Cursor, EdgeQuery, Adjacent, PositionRef};
         use atlas_graph_types::id::{NodeKind as NK, Position};
         use atlas_graph_types::node::{Node, NodePayload};
 
@@ -324,17 +324,17 @@ mod tests {
         ctx.graph.build_indexes();
 
         let forward_by = EdgeKind::Directed(RelationId::SpokenBy, Direction::Forward);
-        let page = PositionRef(Position::Node(verse_id.clone())).edges(&ctx.graph, &EdgeQuery { kind: forward_by, cursor: None, limit: 10 });
+        let page = PositionRef(Position::Node(verse_id.clone())).edges(&ctx.graph, &EdgeQuery { kind: forward_by, cursor: Cursor::FIRST, limit: 10 });
         assert_eq!(page.entries.len(), 1, "the verse's own forward 'spoken-by' frontier reaches Jesus");
         assert_eq!(page.entries[0].node, Position::Node(jesus_id.clone()));
 
         let inverse_by = EdgeKind::Directed(RelationId::SpokenBy, Direction::Inverse);
-        let back = PositionRef(Position::Node(jesus_id)).edges(&ctx.graph, &EdgeQuery { kind: inverse_by, cursor: None, limit: 10 });
+        let back = PositionRef(Position::Node(jesus_id)).edges(&ctx.graph, &EdgeQuery { kind: inverse_by, cursor: Cursor::FIRST, limit: 10 });
         assert_eq!(back.entries.len(), 1, "Jesus's own inverse 'speech-of' frontier lists the verse back");
         assert_eq!(back.entries[0].edge, page.entries[0].edge, "the SAME edge id, from either end -- the bijection witness");
 
         let forward_at = EdgeKind::Directed(RelationId::SpokenAt, Direction::Forward);
-        let at_page = PositionRef(Position::Node(verse_id)).edges(&ctx.graph, &EdgeQuery { kind: forward_at, cursor: None, limit: 10 });
+        let at_page = PositionRef(Position::Node(verse_id)).edges(&ctx.graph, &EdgeQuery { kind: forward_at, cursor: Cursor::FIRST, limit: 10 });
         assert_eq!(at_page.entries.len(), 1, "the verse's own forward 'spoken-at' frontier reaches the mountain");
         assert_eq!(at_page.entries[0].node, Position::Node(place_id));
     }

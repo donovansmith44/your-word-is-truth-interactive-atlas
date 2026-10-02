@@ -3,7 +3,7 @@ mod common;
 use common::OptionalCorpora;
 
 use atlas_graph_types::edge::{Direction, EdgeKind, RelationId, SymRelationId};
-use atlas_graph_types::adjacency::{EdgeQuery, Adjacent, PositionRef};
+use atlas_graph_types::adjacency::{Cursor, EdgeQuery, Adjacent, PositionRef};
 use atlas_graph_types::id::Position;
 use atlas_graph_types::text::TextRef;
 
@@ -36,12 +36,12 @@ fn the_first_commandment_catechism_item_reaches_its_concord_home_over_real_data(
     let item_pos = Position::Node(atlas_graph::catechism_adapter::catechism_item_node_id("commandment-1"));
     let kind = EdgeKind::Symmetric(SymRelationId::CatechismLink);
     let mut all_entries = Vec::new();
-    let mut cursor = None;
+    let mut cursor = Cursor::FIRST;
     loop {
         let page = PositionRef(item_pos.clone()).edges(graph, &EdgeQuery { kind, cursor, limit: usize::MAX });
         all_entries.extend(page.entries);
         match page.next {
-            Some(n) => cursor = Some(n),
+            Some(n) => cursor = n,
             None => break,
         }
     }
@@ -66,6 +66,6 @@ fn augsburg_confession_article_iv_container_holds_exactly_its_three_paragraphs()
     let graph = real_graph();
     let article_container = atlas_graph_types::id::ContainerNodeId::new("concord-art-augsburg-confession-5");
     let forward = EdgeKind::Directed(RelationId::Contains, Direction::Forward);
-    let page = PositionRef(Position::Node(article_container.erase())).edges(graph, &EdgeQuery { kind: forward, cursor: None, limit: 10 });
+    let page = PositionRef(Position::Node(article_container.erase())).edges(graph, &EdgeQuery { kind: forward, cursor: Cursor::FIRST, limit: 10 });
     assert_eq!(page.entries.len(), 3, "Augsburg Confession Article IV (Of Justification) has exactly 3 real paragraphs");
 }

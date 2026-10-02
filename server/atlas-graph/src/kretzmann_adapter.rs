@@ -6,7 +6,7 @@ use std::collections::BTreeSet;
 
 use atlas_etl::kretzmann::{KretzmannCorpus, KretzUnit, BOOKS};
 use atlas_graph_types::edge::{CommentsOn, Direction, EdgeKind, Ground, Justification, RelationId};
-use atlas_graph_types::adjacency::EdgeQuery;
+use atlas_graph_types::adjacency::{Cursor, EdgeQuery};
 use atlas_graph_types::id::{AnyNodeId, CommentaryItemId, NodeKind, Position, SourceId};
 use atlas_graph_types::node::{Node, NodePayload};
 use atlas_graph_types::store::GraphQuery;
@@ -111,7 +111,7 @@ pub fn chapter_commentary(query: &dyn GraphQuery, book_index: u8, chapter: u16, 
         let text_node = Position::Node(crate::kjv_adapter::verse_node_id(book_index, chapter, verse));
 
         let mut items: Vec<(AnyNodeId, Option<String>, u64)> = Vec::new();
-        let mut cursor = None;
+        let mut cursor = Cursor::FIRST;
         loop {
             let page = query.edges(&text_node, &EdgeQuery { kind: EdgeKind::Directed(RelationId::CommentsOn, Direction::Inverse), cursor, limit: usize::MAX });
             for entry in &page.entries {
@@ -126,7 +126,7 @@ pub fn chapter_commentary(query: &dyn GraphQuery, book_index: u8, chapter: u16, 
                 items.push((item_id.clone(), heading, ordinal_of(&item_id.raw)));
             }
             match page.next {
-                Some(c) => cursor = Some(c),
+                Some(c) => cursor = c,
                 None => break,
             }
         }

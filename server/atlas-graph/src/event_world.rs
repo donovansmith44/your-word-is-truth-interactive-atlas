@@ -744,7 +744,7 @@ mod tests {
         let dated_by_edge_id = entry_id(RelationId::DatedBy, &at(&EventId::new("e1").erase()), &at(&AnchorId::new("a").erase()));
         let page = PositionRef(Position::Edge(dated_by_edge_id.clone())).edges(
             &graph,
-            &atlas_graph_types::adjacency::EdgeQuery { kind: atlas_graph_types::edge::EdgeKind::Directed(RelationId::JustifiedBy, Direction::Forward), cursor: None, limit: 10 },
+            &atlas_graph_types::adjacency::EdgeQuery { kind: atlas_graph_types::edge::EdgeKind::Directed(RelationId::JustifiedBy, Direction::Forward), cursor: atlas_graph_types::adjacency::Cursor::FIRST, limit: 10 },
         );
         assert_eq!(page.entries.len(), 1);
         assert_eq!(page.entries[0].node, Position::Node(AnchorId::new("a").erase()), "the dated-by edge's own justified-by target must be the anchor it names as ground");
@@ -769,7 +769,7 @@ mod tests {
     #[test]
     fn justified_by_wires_fulfills_typology_and_named_after_rows_own_grounds() {
         use atlas_graph_types::edge::{at, entry_id, Direction, EdgeKind, Fulfills, Namesake, NamedAfter, RelationId, Typology};
-        use atlas_graph_types::adjacency::{EdgeQuery, Adjacent, PositionRef};
+        use atlas_graph_types::adjacency::{Cursor, EdgeQuery, Adjacent, PositionRef};
         use atlas_graph_types::id::{PeopleGroupId, Position};
         use std::collections::BTreeSet;
 
@@ -814,17 +814,17 @@ mod tests {
         assert_eq!(n, 3, "one ground each, across the three new tables");
 
         let fulfills_edge_id = entry_id(RelationId::Fulfillment, &Position::Node(bible_locus_node_id(&prophecy.from.unit)), &Position::Node(bible_locus_node_id(&fulfillment.from.unit)));
-        let page = PositionRef(Position::Edge(fulfills_edge_id)).edges(&graph, &EdgeQuery { kind: EdgeKind::Directed(RelationId::JustifiedBy, Direction::Forward), cursor: None, limit: 10 });
+        let page = PositionRef(Position::Edge(fulfills_edge_id)).edges(&graph, &EdgeQuery { kind: EdgeKind::Directed(RelationId::JustifiedBy, Direction::Forward), cursor: Cursor::FIRST, limit: 10 });
         assert_eq!(page.entries.len(), 1);
         assert_eq!(page.entries[0].node, Position::Node(bible_locus_node_id(&fulfillment.from.unit)), "the fulfills row's own justified-by target must be the fulfillment passage it self-attests as ground");
 
         let typology_edge_id = entry_id(RelationId::Typology, &Position::Node(bible_locus_node_id(&type_passage.from.unit)), &Position::Node(bible_locus_node_id(&antitype_passage.from.unit)));
-        let page2 = PositionRef(Position::Edge(typology_edge_id)).edges(&graph, &EdgeQuery { kind: EdgeKind::Directed(RelationId::JustifiedBy, Direction::Forward), cursor: None, limit: 10 });
+        let page2 = PositionRef(Position::Edge(typology_edge_id)).edges(&graph, &EdgeQuery { kind: EdgeKind::Directed(RelationId::JustifiedBy, Direction::Forward), cursor: Cursor::FIRST, limit: 10 });
         assert_eq!(page2.entries.len(), 1);
         assert_eq!(page2.entries[0].node, Position::Node(bible_locus_node_id(&antitype_passage.from.unit)), "the typology row's own justified-by target must be the antitype passage it self-attests as ground");
 
         let named_after_edge_id = entry_id(RelationId::NamedAfter, &at(&PeopleGroupId::new("some-group").erase()), &at(&atlas_graph_types::id::PersonId::new("some-person").erase()));
-        let page3 = PositionRef(Position::Edge(named_after_edge_id)).edges(&graph, &EdgeQuery { kind: EdgeKind::Directed(RelationId::JustifiedBy, Direction::Forward), cursor: None, limit: 10 });
+        let page3 = PositionRef(Position::Edge(named_after_edge_id)).edges(&graph, &EdgeQuery { kind: EdgeKind::Directed(RelationId::JustifiedBy, Direction::Forward), cursor: Cursor::FIRST, limit: 10 });
         assert_eq!(page3.entries.len(), 1);
         assert_eq!(page3.entries[0].node, Position::Node(bible_locus_node_id(&named_after_ground.from.unit)));
     }

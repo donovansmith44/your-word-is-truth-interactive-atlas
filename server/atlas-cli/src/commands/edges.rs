@@ -2,7 +2,7 @@
 
 use atlas_graph::GraphService;
 use atlas_graph_types::edge::EdgeKind;
-use atlas_graph_types::adjacency::EdgeQuery;
+use atlas_graph_types::adjacency::{Cursor, EdgeQuery};
 use atlas_graph_types::id::{NodeKind, Position};
 use atlas_graph_types::store::GraphQuery;
 use atlas_contract::graph_wire::{decode_node_id, describe_position, edge_ref, labelled_positions};
@@ -77,7 +77,7 @@ fn resolve(graph: &GraphService, args: &EdgesArgs) -> Result<ResolvedPage, CliEr
     })?;
 
     let limit = args.limit.unwrap_or(DEFAULT_LIMIT).clamp(1, atlas_contract::graph::LARGEST_PAGE);
-    let page = snap.edges(&Position::Node(node_id), &EdgeQuery { kind, cursor: args.cursor, limit });
+    let page = snap.edges(&Position::Node(node_id), &EdgeQuery { kind, cursor: Cursor::asked(args.cursor), limit });
 
     // A PeopleGroup neighbour is filtered out because its id cannot be decoded back by
     // `node`/`edges`: handing one out would be a dead end this command never discloses.
@@ -101,7 +101,7 @@ fn resolve(graph: &GraphService, args: &EdgesArgs) -> Result<ResolvedPage, CliEr
         ));
     }
 
-    Ok(ResolvedPage { kind_label: kind.label().to_string(), entries, next: page.next })
+    Ok(ResolvedPage { kind_label: kind.label().to_string(), entries, next: page.next.map(|after| after.0) })
 }
 
 pub fn run(graph: &GraphService, args: EdgesArgs) -> Result<String, CliError> {

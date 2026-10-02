@@ -870,7 +870,7 @@ public sealed class FocusViewTests : BunitContext
             var (asked, read) = _reads.GetValueOrDefault(kind);
             _reads[kind] = (asked + 1, read + to - from);
             var people = Enumerable.Range(from, to - from).Select(n => ServedGraph.Ref(NodeKind.Person, $"Person:{n}", $"Person {n}")).ToArray();
-            var page = ServedGraph.Page(kind, to < size ? to : null, people);
+            var page = ServedGraph.Page(kind, to < size ? to : null, people) with { Previous = ServedGraph.PageBefore(from, limit) };
             if (!held || cursor is null)
             {
                 return Task.FromResult(page);

@@ -208,7 +208,7 @@ mod tests {
         let gen11 = kjv_adapter::verse_node_id(0, 1, 1);
         let cites = EdgeKind::Directed(RelationId::Cites, Direction::Forward);
         let page = PositionRef(Position::Node(gen11))
-            .edges(&graph, &atlas_graph_types::adjacency::EdgeQuery { kind: cites, cursor: None, limit: 10 });
+            .edges(&graph, &atlas_graph_types::adjacency::EdgeQuery { kind: cites, cursor: atlas_graph_types::adjacency::Cursor::FIRST, limit: 10 });
         assert_eq!(page.entries.len(), 1);
         let target = kjv_adapter::verse_node_id(8, 1, 1);
         assert_eq!(page.entries[0].node, Position::Node(target));

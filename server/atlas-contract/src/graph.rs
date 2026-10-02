@@ -23,7 +23,7 @@ use atlas_graph::window::{self, WindowDir};
 use atlas_graph::sqlite::SqliteError;
 use atlas_graph::GraphService;
 use atlas_graph_types::edge::{Direction, EdgeId, EdgeKind, RelationId};
-use atlas_graph_types::adjacency::{EdgeMeta, EdgeQuery};
+use atlas_graph_types::adjacency::{Cursor, EdgeMeta, EdgeQuery};
 use atlas_graph_types::id::{AnyNodeId, NodeKind, Position};
 use atlas_graph_types::node::NodePayload;
 use atlas_graph_types::store::GraphQuery;
@@ -166,7 +166,7 @@ fn element_wire_id(id: &ElementId) -> String {
     get,
     path = "/api/elements",
     summary = "Nodes and edges of the graph by id, many in one request, each answered in the order asked.",
-    description = "`ids` lists node ids (the form `/api/node/{id}` takes) and edge ids (the id an edge page carries for its edge), separated by commas: `ids=Event:ab_ur,LocatedAt:…`. Each id is answered by its own record, or by `missing` where it reads as an id but names nothing. One id that does not read as a node's or an edge's refuses the whole read as `bad_ref`, as does asking for none. At most the server's largest page of ids is answered at once: `next`, when present, is the `cursor` that reads the ids that follow, and its absence is the last page; `previous`, when present, is the `cursor` of the page before, and its absence is the first page.",
+    description = "`ids` lists node ids (the form `/api/node/{id}` takes) and edge ids (the id an edge page carries for its edge), separated by commas: `ids=Event:ab_ur,LocatedAt:…`. Each id is answered by its own record, or by `missing` where it reads as an id but names nothing. One id that does not read as a node's or an edge's refuses the whole read as `bad_ref`, as does asking for none. At most the server's largest page of ids is answered at once: `next`, when present, is the `cursor` that reads the ids that follow, and its absence is the last page. `previous` is absent on the first page alone, which has no page before it; every other page names the `cursor` of the page before it, the second page naming the first page's own `cursor`, 0. Leaving `cursor` out reads at 0: both are the first page, one page under two spellings.",
     params(ElementsQuery),
     responses((status = 200, body = wire::ElementPage), ElementRefusals),
     tag = "graph"
@@ -177,11 +177,12 @@ pub async fn elements(
     Contract(asked): Contract<ElementsQuery>,
 ) -> Result<Json<wire::ElementPage>, ApiError> {
     let snap = graph.snapshot();
-    let from = asked.cursor.given().unwrap_or(0).min(asked.ids.0.len());
+    let cursor = Cursor::asked(asked.cursor.given());
+    let from = cursor.0.min(asked.ids.0.len());
     let to = from.saturating_add(LARGEST_PAGE).min(asked.ids.0.len());
     let elements = read_elements(&data, &graph, &snap, &asked.ids.0[from..to])?;
     let next = (to < asked.ids.0.len()).then_some(to);
-    let previous = Some(from.saturating_sub(LARGEST_PAGE)).filter(|&before| before > 0);
+    let previous = cursor.previous(from, LARGEST_PAGE, |back| Cursor(from - back.get())).map(|before| before.0);
     Ok(Json(wire::ElementPage { elements, previous, next, version: atlas_graph::version_hex(graph.version()) }))
 }
 
@@ -191,7 +192,7 @@ pub struct ElementsQuery {
     #[param(value_type = Vec<String>, style = Form, explode = false, min_items = 1)]
     pub ids: ElementIds,
     #[serde(default)]
-    #[param(value_type = Option<usize>)]
+    #[param(value_type = Option<usize>, default = json!(Cursor::FIRST.0))]
     pub cursor: AsGiven<usize>,
 }
 
@@ -287,7 +288,7 @@ fn node_description(id: &AnyNodeId, q: &impl GraphQuery) -> Option<String> {
     get,
     path = "/api/node/{id}/edges",
     summary = "One page of the neighbours of a node or of an edge, of a single kind, each with the edge that joins them.",
-    description = "`{id}` takes the same form `/api/node/{id}` does, or an edge's id as an edge page carries it. The required `kind` is an edge label such as `cites` or `cited-by`; anything else is `bad_kind`, an unrecognised id is `bad_ref`, and an id naming nothing is `not_found`. `limit` defaults to 20 and is clamped to the server's largest page; pass the response's `next` back as `cursor` for the following page, and its absence is the last page; its `previous` is the `cursor` of the page of the same `limit` before it, and its absence is the first page. A `limit` or `cursor` that does not read as a whole number is not refused: it leaves its default standing.",
+    description = "`{id}` takes the same form `/api/node/{id}` does, or an edge's id as an edge page carries it. The required `kind` is an edge label such as `cites` or `cited-by`; anything else is `bad_kind`, an unrecognised id is `bad_ref`, and an id naming nothing is `not_found`. `limit` defaults to 20 and is clamped to the server's largest page; pass the response's `next` back as `cursor` for the following page, and its absence is the last page; its `previous` is absent on the first page alone, which has no page before it, and every other page names the `cursor` of the page of the same `limit` before it, the second page naming the first page's own `cursor`, 0. Leaving `cursor` out reads at 0: both are the first page, one page under two spellings. A `limit` or `cursor` that does not read as a whole number is not refused: it leaves its default standing.",
     params(("id" = String, Path), EdgePageQuery),
     responses((status = 200, body = wire::EdgePage), NeighbourRefusals),
     tag = "graph"
@@ -332,7 +333,7 @@ pub async fn node_edges(
         entries.push(wire::EdgeEntry { edge: edge_ref(&e.edge, edge_label)?, neighbour, votes, narrative, loci, note, parentage });
     }
 
-    Ok(Json(wire::EdgePage { kind: asked.kind, entries, previous: page.previous, next: page.next, version: atlas_graph::version_hex(graph.version()) }))
+    Ok(Json(wire::EdgePage { kind: asked.kind, entries, previous: page.previous.map(|before| before.0), next: page.next.map(|after| after.0), version: atlas_graph::version_hex(graph.version()) }))
 }
 
 #[derive(Default)]
@@ -411,7 +412,7 @@ fn account_verses(account: &Account) -> Vec<VerseRef> {
 pub struct EdgePageQuery {
     pub kind: EdgeKind,
     #[serde(default)]
-    #[param(value_type = Option<usize>)]
+    #[param(value_type = Option<usize>, default = json!(Cursor::FIRST.0))]
     pub cursor: AsGiven<usize>,
     #[serde(default)]
     #[param(value_type = Option<usize>)]
@@ -426,7 +427,7 @@ impl EdgePageQuery {
     fn page(&self) -> EdgeQuery {
         EdgeQuery {
             kind: self.kind,
-            cursor: self.cursor.given(),
+            cursor: Cursor::asked(self.cursor.given()),
             limit: self.limit.given().unwrap_or(DEFAULT_EDGE_LIMIT).clamp(SMALLEST_EDGE_LIMIT, LARGEST_PAGE),
         }
     }

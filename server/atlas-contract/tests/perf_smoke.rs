@@ -127,7 +127,7 @@ fn chapter_window_completes_within_smoke_threshold() {
 #[test]
 #[ignore = "wall-clock gate: run serialized via scripts/timing-gates.sh (CONTENTION-1)"]
 fn adjacency_page_latency_corpus_over_both_arms() {
-    use atlas_graph_types::adjacency::EdgeQuery;
+    use atlas_graph_types::adjacency::{Cursor, EdgeQuery};
     use atlas_graph_types::id::{NodeKind, Position};
     use atlas_graph_types::store::GraphQuery;
     use atlas_graph_types::store::{GraphPublisher, GraphStore, MemStore};
@@ -153,7 +153,7 @@ fn adjacency_page_latency_corpus_over_both_arms() {
             let summary = snap.edge_summary(p);
             for (kind, _) in summary.iter() {
                 let t = Instant::now();
-                let page = snap.edges_with_nodes(p, &EdgeQuery { kind: *kind, cursor: None, limit: 25 });
+                let page = snap.edges_with_nodes(p, &EdgeQuery { kind: *kind, cursor: Cursor::FIRST, limit: 25 });
                 samples.push(t.elapsed());
                 pages += page.entries.len().min(1);
             }
@@ -175,7 +175,7 @@ const ELEMENT_READ_BUDGET: Duration = Duration::from_millis(100);
 #[ignore = "wall-clock gate: run serialized via scripts/timing-gates.sh (CONTENTION-1)"]
 fn an_element_read_at_the_cap_answers_inside_the_read_budget() {
     use atlas_contract::reference::ElementId;
-    use atlas_graph_types::adjacency::EdgeQuery;
+    use atlas_graph_types::adjacency::{Cursor, EdgeQuery};
     use atlas_graph_types::id::{NodeKind, Position};
     use atlas_graph_types::store::GraphQuery;
     // Arrange
@@ -188,7 +188,7 @@ fn an_element_read_at_the_cap_answers_inside_the_read_budget() {
         .iter()
         .flat_map(|verse| {
             let at = Position::Node(verse.clone());
-            snap.edge_summary(&at).into_keys().flat_map(|kind| snap.edges(&at, &EdgeQuery { kind, cursor: None, limit: 1 }).entries).map(|entry| ElementId::Edge(entry.edge)).collect::<Vec<_>>()
+            snap.edge_summary(&at).into_keys().flat_map(|kind| snap.edges(&at, &EdgeQuery { kind, cursor: Cursor::FIRST, limit: 1 }).entries).map(|entry| ElementId::Edge(entry.edge)).collect::<Vec<_>>()
         })
         .take(half)
         .collect();
