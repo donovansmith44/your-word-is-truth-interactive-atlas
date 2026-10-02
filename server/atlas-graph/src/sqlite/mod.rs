@@ -12,6 +12,7 @@ pub mod serve;
 pub mod sidecars;
 pub mod snapshot;
 pub mod source;
+pub mod words;
 pub mod writer;
 
 use std::path::Path;

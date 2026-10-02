@@ -5,7 +5,8 @@
 use std::cmp::Ordering;
 use std::collections::HashMap;
 
-use atlas_graph_types::canon::ids::any_node_id_str;
+use atlas_graph_types::canon::ids::{any_node_id_str, parse_any_node_id};
+use atlas_graph_types::id::AnyNodeId;
 use atlas_graph_types::canon::Value;
 use atlas_graph_types::chrono::PlacementBasis;
 use atlas_graph_types::graph::Graph;
@@ -62,7 +63,7 @@ pub static HEADING_INDEX: TableSpec = TableSpec {
     columns: &["book", "chapter", "verse", "event_id", "title", "kind", "continuation"],
     pk: &["book", "chapter", "verse"],
 };
-pub static VERSE: TableSpec = TableSpec { name: "verse", columns: &["node_id", "book", "chapter", "verse"], pk: &["node_id"] };
+pub static VERSE: TableSpec = TableSpec { name: "verse", columns: &["node_id", "book", "chapter", "verse", "reference"], pk: &["node_id"] };
 pub static RED_LETTER_SPAN: TableSpec = TableSpec {
     name: "red_letter_span",
     columns: &["book", "chapter", "verse", "ord", "start", "end_"],
@@ -74,12 +75,25 @@ pub static KJV_TOKEN: TableSpec = TableSpec {
     pk: &["book", "chapter", "verse", "ord"],
 };
 pub static CONCORD_UNIT: TableSpec =
-    TableSpec { name: "concord_unit", columns: &["node_id", "part", "article", "paragraph"], pk: &["node_id"] };
+    TableSpec { name: "concord_unit", columns: &["node_id", "part", "article", "paragraph", "reference"], pk: &["node_id"] };
 pub static CONCORD_TOKEN: TableSpec = TableSpec {
     name: "concord_token",
     columns: &["part", "article", "paragraph", "ord", "char_start", "char_end"],
     pk: &["part", "article", "paragraph", "ord"],
 };
+pub static REFERENCED_UNITS: [&TableSpec; 2] = [&VERSE, &CONCORD_UNIT];
+
+pub fn is_referenced_unit_table(spec: &TableSpec) -> bool {
+    REFERENCED_UNITS.iter().any(|units| units.name == spec.name)
+}
+
+pub fn unit_reference_of(row: &[Col]) -> Result<(AnyNodeId, String), SqliteError> {
+    match (row.first(), row.last()) {
+        (Some(Col::Text(unit)), Some(Col::Text(reference))) => Ok((parse_any_node_id(unit, "reference")?, reference.clone())),
+        _ => Err(SqliteError(format!("a referenced unit row {row:?} names no unit and reference"))),
+    }
+}
+
 pub static LEXICON_ENTRY: TableSpec = TableSpec {
     name: "lexicon_entry",
     columns: &["node_id", "strong", "lang", "lemma", "translit", "pos", "root_strong"],
@@ -262,16 +276,17 @@ impl Extras {
                     ]);
                 }
                 NodePayload::TextUnit { .. } => {
+                    let reference = g.references.get(&n.id).ok_or_else(|| SqliteError(format!("TextUnit {id} carries no compiled reference")))?.clone();
                     if let Some((b, c, v)) = crate::kjv_adapter::decode_text_unit(&n.id) {
                         let text = crate::kjv_adapter::kjv_text(n)
                             .ok_or_else(|| SqliteError(format!("TextUnit {id} carries no KJV text to tokenize")))?;
                         kjv_token.extend(token_rows([b as i64, c as i64, v as i64], text));
-                        verse.push(vec![Col::Text(id), Col::Int(b as i64), Col::Int(c as i64), Col::Int(v as i64)]);
+                        verse.push(vec![Col::Text(id), Col::Int(b as i64), Col::Int(c as i64), Col::Int(v as i64), Col::Text(reference)]);
                     } else if let Some((p, a, par)) = crate::concord_adapter::decode_text_unit(&n.id) {
                         let text = crate::concord_adapter::concord_text(n)
                             .ok_or_else(|| SqliteError(format!("TextUnit {id} carries no Concord text to tokenize")))?;
                         concord_token.extend(token_rows([p as i64, a as i64, par as i64], text));
-                        concord.push(vec![Col::Text(id), Col::Int(p as i64), Col::Int(a as i64), Col::Int(par as i64)]);
+                        concord.push(vec![Col::Text(id), Col::Int(p as i64), Col::Int(a as i64), Col::Int(par as i64), Col::Text(reference)]);
                     } else {
                         return Err(SqliteError(format!("TextUnit {id} is neither a bible nor a concord unit")));
                     }

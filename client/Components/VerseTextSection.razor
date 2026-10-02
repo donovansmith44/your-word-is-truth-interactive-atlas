@@ -8,7 +8,7 @@
                 {
                     @foreach (var v in FocalVerses)
                     {
-                        <MentionText Text="@v.Text" Anchors="@v.Anchors" WordsOfChrist="@v.WordsOfChrist" Verse="@(((BibleRef)v.Locus).Verse)"
+                        <MentionText Text="@v.Body.Text" Anchors="@v.Body.Anchors" WordsOfChrist="@v.Body.WordsOfChrist" Verse="@(((BibleRef)v.Body.Locus).Verse)"
                                      ClassPrefix="popover-verse-mention" OnExplore="OnExplore" /><text> </text>
                     }
                 }

@@ -5,7 +5,6 @@ use atlas_graph_types::edge::{EdgeId, EdgeKind, EdgeRecord};
 use atlas_graph_types::graph::Graph;
 use atlas_graph_types::id::{AnchorId, AnyNodeId, Position};
 use atlas_graph_types::node::{Node, NodePayload};
-use atlas_graph_types::text::{ConcordRef, ConcordTag, Corpus};
 
 use crate::geography::Geography;
 
@@ -43,13 +42,7 @@ impl<'a> ReaderNames<'a> {
 }
 
 pub fn node_label(id: &AnyNodeId, node: Option<&Node>, names: &ReaderNames) -> Option<String> {
-    if let Some((book, chapter, verse)) = crate::kjv_adapter::decode_text_unit(id) {
-        return Some(crate::kjv_adapter::dot_ref(book, chapter, verse));
-    }
-    if let Some((part, article, paragraph)) = crate::concord_adapter::decode_text_unit(id) {
-        return Some(ConcordTag::cite(&ConcordRef { part, article, paragraph }));
-    }
-    node.and_then(|n| names.of_node(n))
+    crate::references::unit_reference(id).or_else(|| node.and_then(|n| names.of_node(n)))
 }
 
 pub fn edge_label(kind: EdgeKind, subject: &str, object: &str) -> String {

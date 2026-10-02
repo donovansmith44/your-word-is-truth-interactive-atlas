@@ -367,9 +367,9 @@ public class AqcSteps
     public void ThenSpansWithinLength()
     {
         Assert.All(Body<TextWindow>().Units, unit =>
-            Assert.All(unit.WordsOfChrist, span =>
-                Assert.True(span.Start <= span.End && span.End <= unit.Text.Length,
-                    $"span [{span.Start},{span.End}) is outside its own verse's text length {unit.Text.Length}")));
+            Assert.All(unit.Body.WordsOfChrist, span =>
+                Assert.True(span.Start <= span.End && span.End <= unit.Body.Text.Length,
+                    $"span [{span.Start},{span.End}) is outside its own verse's text length {unit.Body.Text.Length}")));
     }
 
     [Then("\"([^\"]+)\" is empty")]

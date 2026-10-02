@@ -174,7 +174,13 @@ impl FromStr for PositionReference {
 pub const ELEMENT_ID_SEPARATOR: char = ',';
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct ElementIds(pub Vec<ElementId>);
+pub struct AskedElement {
+    pub asked: String,
+    pub id: ElementId,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct ElementIds(pub Vec<AskedElement>);
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum ElementIdsRefused {
@@ -190,7 +196,7 @@ impl FromStr for ElementIds {
             return Err(ElementIdsRefused::NoId);
         }
         raw.split(ELEMENT_ID_SEPARATOR)
-            .map(|id| decode_element_id(id).ok_or_else(|| ElementIdsRefused::Malformed(id.to_string())))
+            .map(|asked| decode_element_id(asked).map(|id| AskedElement { asked: asked.to_string(), id }).ok_or_else(|| ElementIdsRefused::Malformed(asked.to_string())))
             .collect::<Result<Vec<_>, _>>()
             .map(ElementIds)
     }
@@ -351,7 +357,10 @@ mod tests {
         assert_eq!(
             read,
             vec![
-                Ok(ElementIds(vec![ElementId::Node(decode_node_id("Event:ab_ur").unwrap()), ElementId::Edge(EdgeId(AN_EDGE.to_string()))])),
+                Ok(ElementIds(vec![
+                    AskedElement { asked: "Event:ab_ur".to_string(), id: ElementId::Node(decode_node_id("Event:ab_ur").unwrap()) },
+                    AskedElement { asked: AN_EDGE.to_string(), id: ElementId::Edge(EdgeId(AN_EDGE.to_string())) },
+                ])),
                 Err(ElementIdsRefused::NoId),
                 Err(ElementIdsRefused::Malformed("nope".to_string())),
                 Err(ElementIdsRefused::Malformed(String::new())),

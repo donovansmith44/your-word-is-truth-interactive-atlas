@@ -34,6 +34,13 @@ hatch — and adding one to a previously-green scenario is classified
 
 ---
 
+- **0.22.0** (FOCUS-2 Task 1 Part A, a text unit's reference is compiled) — **MINOR under the 0.x policy (MAJOR class: blessed fixtures moved).**
+  The `verse` and `concord_unit` tables carry each text unit's compiled `reference`, and the
+  served text read takes its references and its anchors' characters from the artifact.
+  Re-blessed: `contract` and `graph-vocabulary` (`section_schema_version` 22 -> 23),
+  `kretzmann-chapter-gen-1` (the version root moved with it); the http pact carries them too.
+  No id, scenario or projection changed.
+
 - **0.21.0** (stack fix wave 2, F-69: edge counts are compiled) — **MINOR under the 0.x policy (MAJOR class: blessed fixtures moved).**
   Every section carries a compiled `edge_count` table, the distinct count per position, relation
   and direction, and the served edge summary reads it instead of counting the adjacency.

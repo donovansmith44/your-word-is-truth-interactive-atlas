@@ -38,7 +38,7 @@ fn hits(graph: &GraphService, data: &AtlasData, term: &str) -> Result<Vec<Hit>, 
         for id in &graph.ids_of_kind(kind) {
             let label = describe_node(id, &snap).map_err(CliError::unlabelled)?;
             if label.to_lowercase().contains(&needle) {
-                out.push(Hit { kind: kind_name, id: encode_node_id(id), label });
+                out.push(Hit { kind: kind_name, id: encode_node_id(id, &snap).map_err(|unreferenced| CliError::unlabelled(unreferenced.into()))?, label });
             }
         }
     }
@@ -47,7 +47,7 @@ fn hits(graph: &GraphService, data: &AtlasData, term: &str) -> Result<Vec<Hit>, 
         for item in &part.items {
             if item.name.to_lowercase().contains(&needle) {
                 let id = AnyNodeId { kind: NodeKind::CatechismItem, raw: item.id.clone() };
-                out.push(Hit { kind: "CatechismItem", id: encode_node_id(&id), label: item.name.clone() });
+                out.push(Hit { kind: "CatechismItem", id: encode_node_id(&id, &snap).map_err(|unreferenced| CliError::unlabelled(unreferenced.into()))?, label: item.name.clone() });
             }
         }
     }

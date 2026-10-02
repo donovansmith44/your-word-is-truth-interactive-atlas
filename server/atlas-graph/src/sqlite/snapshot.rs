@@ -17,6 +17,7 @@ use atlas_graph_types::node::Node;
 use atlas_graph_types::store::{GraphQuery, GraphSnapshot, GraphVersion, RowRef};
 use rusqlite::{Connection, OptionalExtension};
 
+use super::extras::{is_referenced_unit_table, table_specs_of};
 use super::manifest::{read_manifest, Manifest};
 use super::SCHEMA_VERSION;
 use super::source::{is_missing, SectionSource};
@@ -51,6 +52,12 @@ impl std::fmt::Debug for SqliteSnapshot {
 
 /// 1 GiB: enough to map every shipped section, with room for the lexicon.
 pub const MMAP_CAP: u64 = 1 << 30;
+
+const NO_REFERENCE: &str = "SELECT NULL AS node_id, NULL AS reference WHERE 0";
+
+fn schema_name(section: Section) -> String {
+    if section == Section::Core { "main".to_string() } else { section.name().to_string() }
+}
 
 fn section_named(name: &str) -> Option<Section> {
     Section::MANIFEST_ORDER.iter().copied().find(|s| s.name() == name)
@@ -117,7 +124,16 @@ impl SqliteSnapshot {
                 })
             })
             .collect();
-        let views = views.join("; ");
+        let references = present
+            .iter()
+            .flat_map(|(section, _)| {
+                let schema = schema_name(*section);
+                table_specs_of(*section).iter().filter(|spec| is_referenced_unit_table(spec)).map(move |spec| format!("SELECT node_id, reference FROM {schema}.{}", spec.name))
+            })
+            .chain(std::iter::once(NO_REFERENCE.to_string()))
+            .collect::<Vec<_>>()
+            .join(" UNION ALL ");
+        let views = format!("{}; CREATE TEMP VIEW all_reference AS {references}", views.join("; "));
         let mut conns = Vec::with_capacity(workers);
         for _ in 0..workers {
             let conn = open_read_only(&present[0].1)?;
@@ -126,7 +142,7 @@ impl SqliteSnapshot {
                 conn.execute(&sql, [path.to_string_lossy().as_ref()])?;
             }
             for (section, _) in &present {
-                let schema = if *section == Section::Core { "main".to_string() } else { section.name().to_string() };
+                let schema = schema_name(*section);
                 let v: u32 = conn.query_row(&format!("PRAGMA {schema}.user_version"), [], |r| r.get(0))?;
                 if v != SCHEMA_VERSION {
                     return Err(SqliteError(format!(
@@ -281,6 +297,23 @@ impl SqliteSnapshot {
         })
     }
 
+    fn references_inner(&self, units: &[AnyNodeId]) -> Result<HashMap<String, String>, SqliteError> {
+        if units.is_empty() {
+            return Ok(HashMap::new());
+        }
+        let keys: Vec<String> = units.iter().map(any_node_id_str).collect();
+        self.with_conn(|conn| {
+            let mut stmt = conn.prepare_cached("SELECT node_id, reference FROM all_reference WHERE node_id IN (SELECT value FROM json_each(?1))")?;
+            let asked = serde_json::to_string(&keys).map_err(|e| SqliteError(format!("units as a JSON array: {e}")))?;
+            let mut rows = stmt.query([asked])?;
+            let mut held = HashMap::new();
+            while let Some(row) = rows.next()? {
+                held.insert(row.get(0)?, row.get(1)?);
+            }
+            Ok(held)
+        })
+    }
+
     fn edge_inner(&self, id: &EdgeId) -> Result<Option<EdgeRecord>, SqliteError> {
         let Some(kind) = id.recorded_kind() else { return Ok(None) };
         let Ok(blob) = super::writer::edge_id_blob(id) else { return Ok(None) };
@@ -308,6 +341,11 @@ impl GraphQuery for SqliteSnapshot {
     fn labels(&self, at: &[Position]) -> Vec<Option<String>> {
         let held = self.labels_inner(at).unwrap_or_default();
         at.iter().map(|p| held.get(&position_str(p)).cloned()).collect()
+    }
+
+    fn references(&self, units: &[AnyNodeId]) -> Vec<Option<String>> {
+        let held = self.references_inner(units).unwrap_or_default();
+        units.iter().map(|unit| held.get(&any_node_id_str(unit)).cloned()).collect()
     }
 
     fn edge(&self, id: &EdgeId) -> Option<EdgeRecord> {

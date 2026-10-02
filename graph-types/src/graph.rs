@@ -85,6 +85,7 @@ pub struct Graph {
     /// Resolving a unit's position is a lookup instead of a scan of the spine.
     pub spine_index: BTreeMap<&'static str, BTreeMap<AnyNodeId, usize>>,
     pub labels: BTreeMap<Position, String>,
+    pub references: BTreeMap<AnyNodeId, String>,
     pub edges_by_id: BTreeMap<crate::edge::EdgeId, crate::edge::EdgeRecord>,
 }
 

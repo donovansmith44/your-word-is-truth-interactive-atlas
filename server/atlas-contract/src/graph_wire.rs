@@ -9,7 +9,8 @@ use atlas_graph_types::store::GraphQuery;
 use crate::error::ApiError;
 use crate::wire::{EdgeRef, NodeRef, PositionRef};
 
-pub use atlas_graph::node_ref::encode_node_id;
+pub use atlas_graph::node_ref::{encode_node_id, encode_node_ids, UnreferencedUnit};
+use atlas_graph_types::canon::ids::any_node_id_str;
 
 pub fn decode_node_id(s: &str) -> Option<AnyNodeId> {
     let (kind, rest) = s.split_once(':')?;
@@ -56,17 +57,27 @@ pub fn describe_node(id: &AnyNodeId, query: &dyn GraphQuery) -> Result<String, A
 }
 
 pub fn describe_nodes(ids: &BTreeSet<AnyNodeId>, query: &dyn GraphQuery) -> Result<BTreeMap<AnyNodeId, NodeRef>, ApiError> {
+    let ids: Vec<AnyNodeId> = ids.iter().cloned().collect();
     let at: Vec<Position> = ids.iter().map(|id| Position::Node(id.clone())).collect();
     let labels = labelled_positions(&at, query)?;
-    Ok(ids.iter().cloned().zip(labels).map(|(id, label)| (id.clone(), labelled(&id, label))).collect())
+    let wire_ids = encode_node_ids(&ids, query)?;
+    Ok(ids.into_iter().zip(wire_ids).zip(labels).map(|((id, wire_id), label)| (id.clone(), NodeRef { id: wire_id, kind: id.kind, label })).collect())
 }
 
 pub fn describe_positions(at: &[Position], query: &dyn GraphQuery) -> Result<Vec<PositionRef>, ApiError> {
     let labels = labelled_positions(at, query)?;
+    let nodes: Vec<AnyNodeId> = at.iter().filter_map(|position| match position {
+        Position::Node(id) => Some(id.clone()),
+        Position::Edge(_) => None,
+    }).collect();
+    let mut wire_ids = encode_node_ids(&nodes, query)?.into_iter();
     at.iter()
         .zip(labels)
         .map(|(position, label)| match position {
-            Position::Node(id) => Ok(PositionRef::Node { node: labelled(id, label) }),
+            Position::Node(id) => {
+                let wire_id = wire_ids.next().ok_or_else(|| ApiError::internal(&format!("{} was asked for and no wire id was encoded for it", named(position))))?;
+                Ok(PositionRef::Node { node: NodeRef { id: wire_id, kind: id.kind, label } })
+            }
             Position::Edge(id) => edge_ref(id, label).map(|edge| PositionRef::Edge { edge }),
         })
         .collect()
@@ -84,23 +95,26 @@ pub fn edge_ref(id: &EdgeId, label: String) -> Result<EdgeRef, ApiError> {
 pub fn labelled_positions(at: &[Position], query: &dyn GraphQuery) -> Result<Vec<String>, ApiError> {
     at.iter()
         .zip(query.labels(at))
-        .map(|(position, label)| label.ok_or_else(|| ApiError::internal(&format!("{} is held but no label is compiled for it", wire_position(position)))))
+        .map(|(position, label)| label.ok_or_else(|| ApiError::internal(&format!("{} is held but no label is compiled for it", named(position)))))
         .collect()
 }
 
-fn wire_position(at: &Position) -> String {
+pub fn node_ref(id: &AnyNodeId, query: &dyn GraphQuery) -> Result<NodeRef, ApiError> {
+    let label = describe_node(id, query)?;
+    Ok(atlas_graph::node_ref::node_ref(id, label, query)?)
+}
+
+fn named(at: &Position) -> String {
     match at {
-        Position::Node(id) => encode_node_id(id),
+        Position::Node(id) => any_node_id_str(id),
         Position::Edge(id) => id.0.clone(),
     }
 }
 
-pub fn node_ref(id: &AnyNodeId, query: &dyn GraphQuery) -> Result<NodeRef, ApiError> {
-    describe_node(id, query).map(|label| labelled(id, label))
-}
-
-fn labelled(id: &AnyNodeId, label: String) -> NodeRef {
-    atlas_graph::node_ref::node_ref(id, label)
+impl From<UnreferencedUnit> for ApiError {
+    fn from(unreferenced: UnreferencedUnit) -> Self {
+        ApiError::internal(&format!("{} is a text unit and no reference is compiled for it", any_node_id_str(&unreferenced.0)))
+    }
 }
 
 #[cfg(test)]
@@ -110,6 +124,7 @@ mod tests {
     const A_DATING: &str = "DatedBy:00ff";
     const A_DATING_LABEL: &str = "Solomon crowned · Dated by · 970 BC";
     const VERSE_LABEL: &str = "JHN.3.16";
+    const VERSE_REFERENCE: &str = "JHN.3.16";
 
     #[test]
     fn a_position_is_described_as_the_node_or_the_edge_it_names_by_its_compiled_label() {
@@ -118,6 +133,7 @@ mod tests {
         let dating = atlas_graph_types::edge::EdgeId(A_DATING.to_string());
         let mut graph = atlas_graph_types::graph::Graph::default();
         graph.labels.insert(Position::Node(verse.clone()), VERSE_LABEL.to_string());
+        graph.references.insert(verse.clone(), VERSE_REFERENCE.to_string());
         graph.labels.insert(Position::Edge(dating.clone()), A_DATING_LABEL.to_string());
         // Act
         let described = describe_positions(&[Position::Node(verse), Position::Edge(dating)], &graph).unwrap();
@@ -145,7 +161,7 @@ mod tests {
         // Act
         let refused = describe_position(&Position::Node(verse), &graph).unwrap_err();
         // Assert
-        assert_eq!((refused.code, refused.message), (crate::error::ErrorCode::Internal, "text-unit:JHN.3.16 is held but no label is compiled for it".to_string()));
+        assert_eq!((refused.code, refused.message), (crate::error::ErrorCode::Internal, "TextUnit:bible/42.3.16 is held but no label is compiled for it".to_string()));
     }
 
     #[test]
@@ -168,7 +184,7 @@ mod tests {
             (NodeKind::Map, "era-primeval", "Map:era-primeval"),
         ] {
             let id = AnyNodeId { kind, raw: raw.to_string() };
-            let wire = encode_node_id(&id);
+            let wire = encode_node_id(&id, &atlas_graph_types::graph::Graph::default()).unwrap();
             assert_eq!(wire, expected_wire, "encode_node_id's own pre-existing generic fallback must already produce this shape");
             assert_eq!(decode_node_id(&wire), Some(id), "decode must be encode's exact inverse for every M-B/M-C kind");
         }
@@ -183,8 +199,24 @@ mod tests {
     #[test]
     fn text_unit_id_round_trips_through_the_wire_form() {
         let id = atlas_graph::kjv_adapter::verse_node_id(42, 3, 16);
-        let wire = encode_node_id(&id);
+        let mut graph = atlas_graph_types::graph::Graph::default();
+        graph.references.insert(id.clone(), VERSE_REFERENCE.to_string());
+        let wire = encode_node_id(&id, &graph).unwrap();
         assert_eq!(wire, "text-unit:JHN.3.16");
         assert_eq!(decode_node_id(&wire), Some(id));
+    }
+
+    #[test]
+    fn a_text_unit_with_no_compiled_reference_is_an_internal_defect_naming_it() {
+        // Arrange
+        let verse = atlas_graph::kjv_adapter::verse_node_id(42, 3, 16);
+        let mut graph = atlas_graph_types::graph::Graph::default();
+        graph.labels.insert(Position::Node(verse.clone()), VERSE_LABEL.to_string());
+
+        // Act
+        let refused = node_ref(&verse, &graph).unwrap_err();
+
+        // Assert
+        assert_eq!((refused.code, refused.message), (crate::error::ErrorCode::Internal, "TextUnit:bible/42.3.16 is a text unit and no reference is compiled for it".to_string()));
     }
 }

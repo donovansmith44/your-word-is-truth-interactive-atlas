@@ -106,13 +106,13 @@
                         else if (row is UnitRow ur)
                         {
                             var unit = ur.Unit;
-                            if (ConcordToc.IsExplorablePart(PartOf(unit.Locus)) && unit.EdgeSummary.Count > 0)
+                            if (ConcordToc.IsExplorablePart(PartOf(unit.Body.Locus)) && unit.EdgeSummary.Count > 0)
                             {
                                 <div class="concord-unit explorable" data-testid="@($"concord-unit-{Slug(unit.Ref)}")"
                                      tabindex="0" role="button"
                                      @onclick="@(() => OnExplore(unit))" @onkeydown="@(e => OnUnitKeyDown(e, unit))">
                                     <span class="concord-unit-ref">@unit.Ref</span>
-                                    <ScriptureRefText Text="@unit.Text" Citations="@unit.Anchors" ClassPrefix="concord-ref"
+                                    <ScriptureRefText Text="@unit.Body.Text" Citations="@unit.Body.Anchors" ClassPrefix="concord-ref"
                                                        OwnerSlug="@Slug(unit.Ref)" OnExplore="OnExploreNode" />
                                 </div>
                             }
@@ -120,7 +120,7 @@
                             {
                                 <div class="concord-unit" data-testid="@($"concord-unit-{Slug(unit.Ref)}")">
                                     <span class="concord-unit-ref">@unit.Ref</span>
-                                    <ScriptureRefText Text="@unit.Text" Citations="@unit.Anchors" ClassPrefix="concord-ref"
+                                    <ScriptureRefText Text="@unit.Body.Text" Citations="@unit.Body.Anchors" ClassPrefix="concord-ref"
                                                        OwnerSlug="@Slug(unit.Ref)" OnExplore="OnExploreNode" />
                                 </div>
                             }
@@ -178,7 +178,7 @@
 
     private static string Slug(string reference) => reference.Replace(' ', '-').Replace('.', '-');
 
-    private int? CurrentPart => _units.Count > 0 ? PartOf(_units[0].Locus) : null;
+    private int? CurrentPart => _units.Count > 0 ? PartOf(_units[0].Body.Locus) : null;
 
     private List<ConcordRenderRow> RenderRows
     {
@@ -189,7 +189,7 @@
             int? lastArticle = null;
             foreach (var unit in _units)
             {
-                var locus = (ConcordRef)unit.Locus;
+                var locus = (ConcordRef)unit.Body.Locus;
                 if (locus.Part != lastPart)
                 {
                     rows.Add(new PartHeadingRow(locus.Part, ConcordToc.TitleOf(locus.Part)));
@@ -378,7 +378,7 @@
         }
     }
 
-    private void OnExplore(TextUnit unit) => _opening = new PopoverOpening.Legacy(new ConcordUnitNode(unit.Ref, unit.Text));
+    private void OnExplore(TextUnit unit) => _opening = new PopoverOpening.Legacy(new ConcordUnitNode(unit.Ref, unit.Body.Text));
 
     private void OnUnitKeyDown(KeyboardEventArgs e, TextUnit unit)
     {

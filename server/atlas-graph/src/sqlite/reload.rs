@@ -9,7 +9,7 @@ use atlas_graph_types::canon::Canon;
 use atlas_graph_types::graph::{Graph, ReadingSpine};
 use atlas_graph_types::node::Node;
 
-use super::extras::{read_table, row_body, table_specs_of};
+use super::extras::{is_referenced_unit_table, read_table, row_body, table_specs_of, unit_reference_of};
 use super::manifest::Manifest;
 use super::rows::{read_rows, RowOwned};
 use super::snapshot::SqliteSnapshot;
@@ -114,6 +114,10 @@ pub fn graph_from_sections(layout: &SectionLayout, manifest: &Manifest, present:
         for spec in table_specs_of(section) {
             let mut bodies = Vec::new();
             for row in read_table(&conn, spec)? {
+                if is_referenced_unit_table(spec) {
+                    let (unit, reference) = unit_reference_of(&row)?;
+                    g.references.insert(unit, reference);
+                }
                 bodies.push(row_body(spec, &row)?);
             }
             g.extra_tables.insert(spec.name, bodies);

@@ -93,6 +93,8 @@ pub trait GraphQuery {
 
     fn labels(&self, at: &[Position]) -> Vec<Option<String>>;
 
+    fn references(&self, units: &[AnyNodeId]) -> Vec<Option<String>>;
+
     fn edge(&self, id: &crate::edge::EdgeId) -> Option<crate::edge::EdgeRecord>;
 }
 
@@ -154,6 +156,9 @@ impl GraphQuery for Graph {
     }
     fn labels(&self, at: &[Position]) -> Vec<Option<String>> {
         at.iter().map(|p| self.labels.get(p).cloned()).collect()
+    }
+    fn references(&self, units: &[AnyNodeId]) -> Vec<Option<String>> {
+        units.iter().map(|unit| self.references.get(unit).cloned()).collect()
     }
     fn edge(&self, id: &crate::edge::EdgeId) -> Option<crate::edge::EdgeRecord> {
         self.edges_by_id.get(id).cloned()
@@ -251,6 +256,9 @@ impl GraphQuery for MemSnapshot {
     }
     fn labels(&self, at: &[Position]) -> Vec<Option<String>> {
         self.graph.labels(at)
+    }
+    fn references(&self, units: &[AnyNodeId]) -> Vec<Option<String>> {
+        self.graph.references(units)
     }
     fn edge(&self, id: &crate::edge::EdgeId) -> Option<crate::edge::EdgeRecord> {
         self.graph.edge(id)
@@ -449,6 +457,7 @@ pub fn assert_answers_match<Q: GraphQuery + Sync>(candidate: &Q, model: &Graph) 
         for (x, y) in a.iter().zip(&b) {
             assert!(node_eq(x, y), "conformance: nodes() diverges");
         }
+        assert_eq!(candidate.references(chunk), model.references(chunk), "conformance: references() diverges");
     }
     sweep_positions(candidate, model, &inventory, check_position_rows::<Q>);
 
@@ -720,6 +729,9 @@ mod laws {
             fn labels(&self, at: &[Position]) -> Vec<Option<String>> {
                 self.0.labels(at)
             }
+            fn references(&self, units: &[AnyNodeId]) -> Vec<Option<String>> {
+                self.0.references(units)
+            }
             fn edge(&self, id: &crate::edge::EdgeId) -> Option<crate::edge::EdgeRecord> {
                 self.0.edge(id)
             }
@@ -961,6 +973,9 @@ mod laws {
             fn labels(&self, at: &[Position]) -> Vec<Option<String>> {
                 self.0.labels(at)
             }
+            fn references(&self, units: &[AnyNodeId]) -> Vec<Option<String>> {
+                self.0.references(units)
+            }
             fn edge(&self, id: &crate::edge::EdgeId) -> Option<crate::edge::EdgeRecord> {
                 self.0.edge(id)
             }
@@ -973,10 +988,16 @@ mod laws {
         assert!(caught.is_err(), "a provenance lie must fail conformance");
     }
 
+    #[derive(Clone, Copy, PartialEq)]
+    enum Lie {
+        Relabels,
+        MovesAnEnd,
+        Rereferences,
+    }
+
     struct Altered {
         honest: MemSnapshot,
-        relabels: bool,
-        moves_an_end: bool,
+        lie: Option<Lie>,
     }
 
     impl GraphQuery for Altered {
@@ -1005,16 +1026,31 @@ mod laws {
             self.honest.position_of(c, id)
         }
         fn labels(&self, at: &[Position]) -> Vec<Option<String>> {
-            self.honest.labels(at).into_iter().map(|label| label.map(|l| if self.relabels { format!("{l}!") } else { l })).collect()
+            self.honest.labels(at).into_iter().map(|label| label.map(|l| if self.lie == Some(Lie::Relabels) { format!("{l}!") } else { l })).collect()
+        }
+        fn references(&self, units: &[AnyNodeId]) -> Vec<Option<String>> {
+            self.honest.references(units).into_iter().map(|reference| reference.map(|r| if self.lie == Some(Lie::Rereferences) { format!("{r}!") } else { r })).collect()
         }
         fn edge(&self, id: &crate::edge::EdgeId) -> Option<crate::edge::EdgeRecord> {
             self.honest.edge(id).map(|mut record| {
-                if self.moves_an_end {
+                if self.lie == Some(Lie::MovesAnEnd) {
                     record.object = record.subject.clone();
                 }
                 record
             })
         }
+    }
+
+    const GENESIS_1_1_RAW: &str = "bible/1.1.1";
+    const GENESIS_1_1_REFERENCE: &str = "GEN.1.1";
+
+    fn model() -> Graph {
+        referenced(labelled(with_edges(graph_with(&[(GENESIS_1_1_RAW, "a")]))))
+    }
+
+    fn referenced(mut g: Graph) -> Graph {
+        g.references = [(AnyNodeId { kind: NodeKind::TextUnit, raw: GENESIS_1_1_RAW.into() }, GENESIS_1_1_REFERENCE.to_string())].into_iter().collect();
+        g
     }
 
     fn labelled(mut g: Graph) -> Graph {
@@ -1027,31 +1063,47 @@ mod laws {
         std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| assert_answers_match(candidate, model))).is_ok()
     }
 
-    fn altered(relabels: bool, moves_an_end: bool) -> Altered {
+    fn altered(lie: Option<Lie>) -> Altered {
         let mut store = MemStore::default();
-        let v = store.publish(labelled(with_edges(graph_with(&[("bible/1.1.1", "a")]))));
-        Altered { honest: store.open(v).unwrap(), relabels, moves_an_end }
+        let v = store.publish(model());
+        Altered { honest: store.open(v).unwrap(), lie }
     }
 
     #[test]
     fn every_held_position_answers_one_compiled_label() {
         // Arrange
-        let model = labelled(with_edges(graph_with(&[("bible/1.1.1", "a")])));
+        let model = model();
         let verse = Position::Node(AnyNodeId { kind: NodeKind::TextUnit, raw: "bible/1.1.1".into() });
         let unheld = Position::Node(AnyNodeId { kind: NodeKind::TextUnit, raw: "bible/9.9.9".into() });
 
         // Act
         let read = model.labels(&[verse.clone(), unheld]);
-        let verdicts = (admitted(&altered(false, false), &model), admitted(&altered(true, false), &model));
+        let verdicts = (admitted(&altered(None), &model), admitted(&altered(Some(Lie::Relabels)), &model));
 
         // Assert
         assert_eq!((read, verdicts), (vec![Some(format!("{verse:?}")), None], (true, false)));
     }
 
     #[test]
+    fn every_text_unit_answers_one_compiled_reference_and_no_other_node_answers_one() {
+        // Arrange
+        let model = model();
+        let verse = AnyNodeId { kind: NodeKind::TextUnit, raw: GENESIS_1_1_RAW.into() };
+        let unheld = AnyNodeId { kind: NodeKind::TextUnit, raw: "bible/9.9.9".into() };
+        let event = EventId::new("e1").erase();
+
+        // Act
+        let read = model.references(&[verse, unheld, event]);
+        let verdicts = (admitted(&altered(None), &model), admitted(&altered(Some(Lie::Rereferences)), &model));
+
+        // Assert
+        assert_eq!((read, verdicts), (vec![Some(GENESIS_1_1_REFERENCE.to_string()), None, None], (true, false)));
+    }
+
+    #[test]
     fn every_edge_is_read_by_its_id_with_its_ends_and_its_meta() {
         // Arrange
-        let model = labelled(with_edges(graph_with(&[("bible/1.1.1", "a")])));
+        let model = model();
         let e1 = Position::Node(EventId::new("e1").erase());
         let e2 = Position::Node(EventId::new("e2").erase());
         let jordan = Position::Node(PlaceId::new("jordan").erase());
@@ -1060,7 +1112,7 @@ mod laws {
 
         // Act
         let read = (model.edge(&located), model.edge(&followed), model.edge(&crate::edge::EdgeId("LocatedAt:00".into())));
-        let verdicts = (admitted(&altered(false, false), &model), admitted(&altered(false, true), &model));
+        let verdicts = (admitted(&altered(None), &model), admitted(&altered(Some(Lie::MovesAnEnd)), &model));
 
         // Assert
         assert_eq!(

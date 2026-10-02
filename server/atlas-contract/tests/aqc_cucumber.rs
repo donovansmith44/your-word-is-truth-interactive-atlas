@@ -314,8 +314,8 @@ fn then_spans_within_length(world: &mut AqcWorld, field: String) {
     assert_eq!(field, "words_of_christ");
     let units = world.body["units"].as_array().unwrap();
     for unit in units {
-        let len = unit["text"].as_str().unwrap().chars().count();
-        for span in unit["words_of_christ"].as_array().unwrap() {
+        let len = unit["body"]["text"].as_str().unwrap().chars().count();
+        for span in unit["body"]["words_of_christ"].as_array().unwrap() {
             let start = span["start"].as_u64().unwrap() as usize;
             let end = span["end"].as_u64().unwrap() as usize;
             assert!(start <= end && end <= len, "span [{start},{end}) is outside its own verse's text length {len} (ref {})", unit["ref"]);

@@ -49,7 +49,7 @@ pub struct PersonRef {
     pub name: String,
 }
 
-#[derive(Debug, Serialize, utoipa::ToSchema)]
+#[derive(Debug, Clone, PartialEq, Serialize, utoipa::ToSchema)]
 #[serde(deny_unknown_fields)]
 #[schema(description = "One span of the words of Christ within a verse's text: character offsets into it, half-open, so the span is the text from `start` up to but not including `end`.")]
 pub struct WordsOfChristSpan {
