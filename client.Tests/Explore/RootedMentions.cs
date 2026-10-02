@@ -40,7 +40,7 @@ internal sealed class RootedMentions(int size) : IExplorableClient
         var from = cursor ?? 0;
         var to = Math.Min(from + limit, size);
         var verses = Enumerable.Range(from, to - from).Select(n => ServedGraph.Ref(NodeKind.TextUnit, $"text-unit:{Label(Root, n)}", Label(Root, n))).ToArray();
-        return Task.FromResult(ServedGraph.Page(kind, to < size ? to : null, verses) with { Previous = from > 0 ? Math.Max(0, from - limit) : null, Version = Root });
+        return Task.FromResult(ServedGraph.Page(kind, to < size ? to : null, verses) with { Previous = ServedGraph.PageBefore(from, limit), Version = Root });
     }
 
     public Task<TextWindow> Reading(string fromRef, int n, WindowDir dir = WindowDir.Onward, Corpus corpus = Corpus.Bible) =>

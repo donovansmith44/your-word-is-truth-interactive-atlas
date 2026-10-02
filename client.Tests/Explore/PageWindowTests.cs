@@ -347,7 +347,7 @@ public sealed class PageWindowTests
                     reads++;
                     var from = cursor ?? 0;
                     var to = Math.Min(from + limit, cardinality);
-                    return Task.FromResult(new Page<int>(Enumerable.Range(from, to - from).ToList(), from > 0 ? Math.Max(0, from - limit) : null, to < cardinality ? to : null));
+                    return Task.FromResult(new Page<int>(Enumerable.Range(from, to - from).ToList(), ServedGraph.PageBefore(from, limit), to < cardinality ? to : null));
                 }
 
                 var window = await PageWindow<int>.Opened(Read, Paging.Everything, Step, () => false);
@@ -461,7 +461,7 @@ public sealed class PageWindowTests
             var from = cursor ?? 0;
             var to = Math.Min(from + limit, size);
             var verses = Enumerable.Range(from, to - from).Select(n => ServedGraph.Ref(NodeKind.TextUnit, $"text-unit:GEN.1.{n}", $"GEN.1.{n}")).ToArray();
-            return Task.FromResult(ServedGraph.Page(kind, to < size ? to : null, verses) with { Previous = from > 0 ? Math.Max(0, from - limit) : null });
+            return Task.FromResult(ServedGraph.Page(kind, to < size ? to : null, verses) with { Previous = ServedGraph.PageBefore(from, limit) });
         }
 
         public Task<TextWindow> Reading(string fromRef, int n, WindowDir dir = WindowDir.Onward, Corpus corpus = Corpus.Bible) =>
@@ -481,7 +481,7 @@ public sealed class PageWindowTests
             Asked.Add(cursor);
             var from = cursor ?? 0;
             var to = Math.Min(from + limit, size);
-            var page = new Page<int>(Enumerable.Range(from, to - from).ToList(), from > 0 ? Math.Max(0, from - limit) : null, to < size ? to : null);
+            var page = new Page<int>(Enumerable.Range(from, to - from).ToList(), ServedGraph.PageBefore(from, limit), to < size ? to : null);
             if (!Held || cursor is null)
             {
                 return Task.FromResult(page);
