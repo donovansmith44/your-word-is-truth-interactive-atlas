@@ -7,13 +7,14 @@ public sealed class Explorable
     private readonly IExplorableClient _graph;
 
     internal Explorable(NodeRecord node, IExplorableClient graph)
-        : this(new NodePosition(new NodeRef(id: node.Id, kind: node.Kind, label: node.Label)), node.Provenance, node.EdgeSummary, [], graph)
+        : this(new NodePosition(new NodeRef(id: node.Id, kind: node.Kind, label: node.Label)), node, node.Provenance, node.EdgeSummary, [], graph)
     {
     }
 
     internal Explorable(EdgeRecord edge, IExplorableClient graph)
         : this(
             new EdgePosition(new EdgeRef(id: edge.Id, kind: edge.Kind, label: edge.Label)),
+            null,
             edge.Provenance,
             edge.EdgeSummary,
             [new Link(edge.Kind.Dual(), edge.Subject), new Link(edge.Kind, edge.Object)],
@@ -21,9 +22,10 @@ public sealed class Explorable
     {
     }
 
-    private Explorable(PositionRef identity, string? provenance, IEnumerable<EdgeSummaryEntry> summary, IReadOnlyList<Link> ends, IExplorableClient graph)
+    private Explorable(PositionRef identity, NodeRecord? record, string? provenance, IEnumerable<EdgeSummaryEntry> summary, IReadOnlyList<Link> ends, IExplorableClient graph)
     {
         Identity = identity;
+        Record = record;
         (Kind, Id, Label) = Positions.Of(identity);
         Provenance = provenance;
         Groups = summary.Select(entry => new FrontierGroup(entry.Kind, entry.Count)).ToList();
@@ -44,6 +46,8 @@ public sealed class Explorable
     public IReadOnlyList<Link> Ends { get; }
 
     internal string? Provenance { get; }
+
+    internal NodeRecord? Record { get; }
 
     public async Task<Page<Entry>> Entries(EdgeKind kind, int? cursor = null)
     {

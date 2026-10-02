@@ -61,4 +61,6 @@ public abstract record Presentation
     }
 
     public sealed record Field(string Name, string Value);
+
+    public sealed record Geography(Frame Frame, Emphasis Emphasis) : Presentation;
 }

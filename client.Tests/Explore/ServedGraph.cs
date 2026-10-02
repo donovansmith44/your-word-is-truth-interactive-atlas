@@ -72,6 +72,17 @@ internal sealed class ServedGraph : IExplorableClient
             edgeSummary: Summary(groups), id: edge.Id, kind: edge.Kind, label: edge.Label, narrative: null,
             @object: At(@object), parentage: null, provenance: provenance, subject: At(subject), votes: null);
 
+    public static MapDetail MapWindow(TimeRange window) => new(window: window);
+
+    public static EraDetail EraWindow(TimeRange window) => new(window: window);
+
+    public static PolityDetail Reign(TimeRange reign) => new(reign: reign);
+
+    public static PlaceDetail PlaceAt(string displayName, double lat, double lon) =>
+        new(blurb: null, canonicalName: null, destroyed: null, displayName: displayName, established: null, lat: lat, lon: lon);
+
+    public static TimeRange Range(Year from, Year to, string label) => new(from: from, label: label, to: to);
+
     public static NodeRef Ref(NodeKind kind, string id, string label) => new(id: id, kind: kind, label: label);
 
     public static EdgeRef EdgeRef(EdgeKind kind, string id, string label) => new(id: id, kind: kind, label: label);
