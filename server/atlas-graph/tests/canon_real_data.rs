@@ -116,6 +116,8 @@ fn every_row_of_every_family_round_trips() {
         pid_index: _,
         edge_rows: _,
         spine_index: _,
+        labels: _,
+        edges_by_id: _,
     } = committed_graph();
     let mut counts: Vec<(RowFamily, usize)> = Vec::new();
 

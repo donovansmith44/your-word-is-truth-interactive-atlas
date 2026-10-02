@@ -18,7 +18,7 @@ async fn the_contract_declares_only_the_schema_versions_it_was_built_with() {
     let app = app();
     let expected = serde_json::json!({
         "manifest_schema": 1,
-        "section_schema_version": 18,
+        "section_schema_version": 19,
     });
     // Act
     let answered = get_json(&app, "/api/contract").await;
@@ -34,7 +34,7 @@ fn every_served_route_is_documented() {
         "/api/chapter/{cref}", "/api/kretzmann/chapter/{cref}", "/api/verse/{vref}", "/api/xrefs/{sref}",
         "/api/catechism/item/{id}", "/api/catechism/{sref}", "/api/place/{id}", "/api/narratives",
         "/api/narrative/event/{id}", "/api/event/{id}", "/api/eras", "/api/polities", "/api/landmarks",
-        "/api/land-mask", "/api/sources", "/api/node/{id}", "/api/node/{id}/edges", "/api/text",
+        "/api/land-mask", "/api/sources", "/api/node/{id}", "/api/node/{id}/edges", "/api/elements", "/api/text",
         "/api/contents/{corpus}", "/api/openapi.yaml",
     ];
     // Act

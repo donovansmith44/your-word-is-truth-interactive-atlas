@@ -20,9 +20,13 @@ CREATE TABLE node (
   id         TEXT    PRIMARY KEY,
   kind       INTEGER NOT NULL,
   pid        BLOB    NOT NULL,
-  label      TEXT,
   provenance TEXT    NOT NULL,
   payload    BLOB    NOT NULL
+) WITHOUT ROWID;
+
+CREATE TABLE label (
+  position TEXT PRIMARY KEY,
+  label    TEXT NOT NULL
 ) WITHOUT ROWID;
 
 CREATE TABLE justification (

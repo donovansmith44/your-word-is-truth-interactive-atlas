@@ -212,6 +212,7 @@ public class AqcSteps
             "/api/text?ref=JHN.3.16&n=1" => TextWindowFixture("JHN.3.16", 1),
             "/api/text?ref=BoC%207.2.1&corpus=concord&scope=chapter" => "text-window-concord-chapter-bad-scope",
             "/api/place/hazor-1?from=notayear" => "place-period-bad-window",
+            "/api/elements?ids=text-unit:JHN.3.16,Person:nonexistent-xyz" => "element-read",
             _ => throw new NotSupportedException($"AqcSteps: no fixture mapped for path '{path}'."),
         };
         Answer(Query.ByPath, name);
@@ -326,7 +327,7 @@ public class AqcSteps
     {
         var entries = Body<EdgePage>().Entries;
         Assert.NotEmpty(entries);
-        Assert.All(entries, e => Assert.False(string.IsNullOrEmpty(e.Edge)));
+        Assert.All(entries, e => Assert.False(string.IsNullOrEmpty(e.Edge.Id)));
     }
 
     [Then("the response \"entries\" array has at most (\\d+) entry")]

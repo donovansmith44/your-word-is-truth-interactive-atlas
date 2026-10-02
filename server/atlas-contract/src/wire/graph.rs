@@ -146,9 +146,7 @@ pub struct EdgePage {
 #[serde(deny_unknown_fields)]
 #[schema(description = "One neighbour, with the edge that joins it and what that edge records: `neighbour` is what the edge leads to, a node or, on a `justifies` page, the edge the node grounds; `votes` only on a cross reference, `narrative` only on a narrative's succession, `loci` on an attestation (for `attested-in`, the runs of verses its account reads on without a break; for `attests`, the verse itself) and on a mention (each occurrence of the name in the verse as a span of its words, absent where the name is not found among the verse's words), `note` only on an attestation, `parentage` only on a parent-of edge. A page lists an edge once however many rows record it.")]
 pub struct EdgeEntry {
-    /// The edge's own id. The neighbour's page for the opposite kind carries this
-    /// same id for this same connection, and the edge itself can be read.
-    pub edge: String,
+    pub edge: EdgeRef,
     pub neighbour: PositionRef,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub votes: Option<u32>,
@@ -173,9 +171,93 @@ pub struct NodeRef {
 
 #[derive(Debug, Clone, PartialEq, Serialize, utoipa::ToSchema)]
 #[serde(deny_unknown_fields)]
-#[schema(description = "A reference to an edge: the id its own page carries as `edge`.")]
+#[schema(description = "A reference to an edge: its id, which the page of either end carries for this same connection and the element read answers, the kind it is recorded in, and its compiled label.")]
 pub struct EdgeRef {
     pub id: String,
+    pub kind: EdgeKind,
+    pub label: String,
+}
+
+#[derive(Debug, Serialize, utoipa::ToSchema)]
+#[serde(deny_unknown_fields)]
+#[schema(description = "One edge of the graph: its id, the kind it is recorded in, its compiled label, its two ends in that direction, the source that asserts it (absent for an edge derived from the grounds of the edge it justifies), what it records (`votes` on a cross reference, `narrative` on a narrative's succession, `parentage` on a parent-of edge), and how many neighbours it has of each kind.")]
+pub struct EdgeRecord {
+    pub id: String,
+    pub kind: EdgeKind,
+    pub label: String,
+    pub subject: PositionRef,
+    pub object: PositionRef,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub provenance: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub votes: Option<u32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub narrative: Option<NarrativeId>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub parentage: Option<atlas_graph_types::edge::Parentage>,
+    pub edge_summary: Vec<EdgeSummaryEntry>,
+}
+
+#[derive(Debug)]
+pub enum Element {
+    Node { node: NodeRecord },
+    Edge { edge: EdgeRecord },
+    Missing { id: String },
+}
+
+const ELEMENT: &str = "element";
+const ELEMENT_DESCRIPTION: &str = "One answer of the element read: the node or the edge an id names, or the id itself where it names nothing. `element` says which shape follows.";
+const NODE_ELEMENT: Case = Case { tag: "node", name: "NodeElement", description: "The node an id names, as its own record." };
+const EDGE_ELEMENT: Case = Case { tag: "edge", name: "EdgeElement", description: "The edge an id names, as its own record." };
+const MISSING_ELEMENT: Case = Case { tag: "missing", name: "MissingElement", description: "An id that reads as a node's or an edge's but names nothing this atlas holds." };
+const ELEMENT_CASES: [Case; 3] = [NODE_ELEMENT, EDGE_ELEMENT, MISSING_ELEMENT];
+const MISSING_ID: &str = "id";
+
+impl Serialize for Element {
+    fn serialize<S: Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
+        let mut element = s.serialize_map(None)?;
+        match self {
+            Element::Node { node } => {
+                element.serialize_entry(ELEMENT, NODE_ELEMENT.tag)?;
+                element.serialize_entry(NODE_ELEMENT.tag, node)?;
+            }
+            Element::Edge { edge } => {
+                element.serialize_entry(ELEMENT, EDGE_ELEMENT.tag)?;
+                element.serialize_entry(EDGE_ELEMENT.tag, edge)?;
+            }
+            Element::Missing { id } => {
+                element.serialize_entry(ELEMENT, MISSING_ELEMENT.tag)?;
+                element.serialize_entry(MISSING_ID, id)?;
+            }
+        }
+        element.end()
+    }
+}
+
+impl PartialSchema for Element {
+    fn schema() -> RefOr<Schema> {
+        tagged_by(ELEMENT, &ELEMENT_CASES, ELEMENT_DESCRIPTION)
+    }
+}
+
+impl ToSchema for Element {
+    fn schemas(schemas: &mut Vec<(String, RefOr<Schema>)>) {
+        schemas.push((NODE_ELEMENT.name.to_string(), case_of(&Element::name(), &NODE_ELEMENT, [(NODE_ELEMENT.tag, Ref::from_schema_name(NodeRecord::name()).into())])));
+        schemas.push((EDGE_ELEMENT.name.to_string(), case_of(&Element::name(), &EDGE_ELEMENT, [(EDGE_ELEMENT.tag, Ref::from_schema_name(EdgeRecord::name()).into())])));
+        schemas.push((MISSING_ELEMENT.name.to_string(), case_of(&Element::name(), &MISSING_ELEMENT, [(MISSING_ID, String::schema())])));
+        schemas.push((NodeRecord::name().to_string(), NodeRecord::schema()));
+        NodeRecord::schemas(schemas);
+        schemas.push((EdgeRecord::name().to_string(), EdgeRecord::schema()));
+        EdgeRecord::schemas(schemas);
+    }
+}
+
+#[derive(Debug, Serialize, utoipa::ToSchema)]
+#[serde(deny_unknown_fields)]
+#[schema(description = "The elements asked for, in the order their ids were given: `elements[i]` answers the i-th id. `version` stamps the data set they were read from.")]
+pub struct ElementPage {
+    pub elements: Vec<Element>,
+    pub version: String,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -279,13 +361,14 @@ mod tests {
     const HAZOR: &str = "Place:hazor-1";
     const HAZOR_LABEL: &str = "Hazor 1";
     const A_DATING: &str = "DatedBy:00ff";
+    const A_DATING_LABEL: &str = "Solomon crowned · Dated by · 970 BC";
 
     #[test]
     fn a_neighbour_is_written_as_its_position_then_the_node_or_the_edge_it_leads_to() {
         // Arrange
         let neighbours = [
             PositionRef::Node { node: NodeRef { id: HAZOR.to_string(), kind: NodeKind::Place, label: HAZOR_LABEL.to_string() } },
-            PositionRef::Edge { edge: EdgeRef { id: A_DATING.to_string() } },
+            PositionRef::Edge { edge: EdgeRef { id: A_DATING.to_string(), kind: EdgeKind::Directed(atlas_graph_types::edge::RelationId::DatedBy, atlas_graph_types::edge::Direction::Forward), label: A_DATING_LABEL.to_string() } },
         ];
         // Act
         let written = serde_json::to_value(neighbours).unwrap();
@@ -294,7 +377,7 @@ mod tests {
             written,
             serde_json::json!([
                 { "position": "node", "node": { "id": HAZOR, "kind": "Place", "label": HAZOR_LABEL } },
-                { "position": "edge", "edge": { "id": A_DATING } },
+                { "position": "edge", "edge": { "id": A_DATING, "kind": "dated-by", "label": A_DATING_LABEL } },
             ])
         );
     }

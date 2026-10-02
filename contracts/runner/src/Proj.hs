@@ -198,9 +198,10 @@ projections = Map.fromList
         , field1 "section_schema_version" Keep
         , field1 "node_kinds" Keep
         , field1 "relations" (Each (Fields
-            [ field1 "name" Keep, field1 "forward" Keep, field1 "inverse" Keep ]))
+            [ field1 "name" Keep, field1 "forward" Keep, field1 "inverse" Keep
+            , field1 "forward_display" Keep, field1 "inverse_display" Keep ]))
         , field1 "symmetric" (Each (Fields
-            [ field1 "name" Keep, field1 "label" Keep ]))
+            [ field1 "name" Keep, field1 "label" Keep, field1 "display" Keep ]))
         ]
     )
   , ( "node-card"

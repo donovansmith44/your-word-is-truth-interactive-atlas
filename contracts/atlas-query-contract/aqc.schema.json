@@ -627,11 +627,30 @@
       ],
       "type": "object"
     },
+    "EdgeElement": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Element"
+        },
+        {
+          "properties": {
+            "edge": {
+              "$ref": "#/$defs/EdgeRecord"
+            }
+          },
+          "required": [
+            "edge"
+          ],
+          "type": "object"
+        }
+      ],
+      "unevaluatedProperties": false
+    },
     "EdgeEntry": {
       "additionalProperties": false,
       "properties": {
         "edge": {
-          "type": "string"
+          "$ref": "#/$defs/EdgeRef"
         },
         "loci": {
           "items": {
@@ -791,15 +810,92 @@
       ],
       "unevaluatedProperties": false
     },
+    "EdgeRecord": {
+      "additionalProperties": false,
+      "properties": {
+        "edge_summary": {
+          "items": {
+            "$ref": "#/$defs/EdgeSummaryEntry"
+          },
+          "type": "array"
+        },
+        "id": {
+          "type": "string"
+        },
+        "kind": {
+          "$ref": "#/$defs/EdgeKind"
+        },
+        "label": {
+          "type": "string"
+        },
+        "narrative": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/NarrativeId"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "object": {
+          "$ref": "#/$defs/PositionRef"
+        },
+        "parentage": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/Parentage"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "provenance": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "subject": {
+          "$ref": "#/$defs/PositionRef"
+        },
+        "votes": {
+          "format": "int32",
+          "minimum": 0,
+          "type": [
+            "integer",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "kind",
+        "label",
+        "subject",
+        "object",
+        "edge_summary"
+      ],
+      "type": "object"
+    },
     "EdgeRef": {
       "additionalProperties": false,
       "properties": {
         "id": {
           "type": "string"
+        },
+        "kind": {
+          "$ref": "#/$defs/EdgeKind"
+        },
+        "label": {
+          "type": "string"
         }
       },
       "required": [
-        "id"
+        "id",
+        "kind",
+        "label"
       ],
       "type": "object"
     },
@@ -817,6 +913,50 @@
       "required": [
         "kind",
         "count"
+      ],
+      "type": "object"
+    },
+    "Element": {
+      "additionalProperties": true,
+      "discriminator": {
+        "mapping": {
+          "edge": "#/$defs/EdgeElement",
+          "missing": "#/$defs/MissingElement",
+          "node": "#/$defs/NodeElement"
+        },
+        "propertyName": "element"
+      },
+      "properties": {
+        "element": {
+          "enum": [
+            "node",
+            "edge",
+            "missing"
+          ],
+          "type": "string"
+        }
+      },
+      "required": [
+        "element"
+      ],
+      "type": "object"
+    },
+    "ElementPage": {
+      "additionalProperties": false,
+      "properties": {
+        "elements": {
+          "items": {
+            "$ref": "#/$defs/Element"
+          },
+          "type": "array"
+        },
+        "version": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "elements",
+        "version"
       ],
       "type": "object"
     },
@@ -873,6 +1013,7 @@
         "bad_window",
         "bad_corpus",
         "bad_dir",
+        "too_many",
         "not_found",
         "internal"
       ],
@@ -1299,6 +1440,25 @@
       ],
       "type": "string"
     },
+    "MissingElement": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Element"
+        },
+        {
+          "properties": {
+            "id": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "id"
+          ],
+          "type": "object"
+        }
+      ],
+      "unevaluatedProperties": false
+    },
     "Narrative": {
       "additionalProperties": false,
       "properties": {
@@ -1427,6 +1587,25 @@
         "event_label"
       ],
       "type": "object"
+    },
+    "NodeElement": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Element"
+        },
+        {
+          "properties": {
+            "node": {
+              "$ref": "#/$defs/NodeRecord"
+            }
+          },
+          "required": [
+            "node"
+          ],
+          "type": "object"
+        }
+      ],
+      "unevaluatedProperties": false
     },
     "NodeKind": {
       "enum": [
@@ -2842,5 +3021,5 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "description": "Derived from contracts/openapi.yaml by export_contract; do not edit.",
   "title": "Atlas Query Contract -- shapes",
-  "version": "0.13.0"
+  "version": "0.14.0"
 }

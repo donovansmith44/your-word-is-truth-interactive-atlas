@@ -40,6 +40,10 @@ impl CliError {
         CliError::IntegrityFailed { what: what.into(), why: why.into(), do_: do_.into() }
     }
 
+    pub fn unlabelled(refused: atlas_contract::error::ApiError) -> Self {
+        CliError::integrity_failed(refused.message, "the compiled artifact holds a position it compiled no label for", "recompile the artifact with atlas-graph-compile")
+    }
+
     pub fn code(&self) -> &'static str {
         match self {
             CliError::BadUsage { .. } => "bad_usage",

@@ -39,6 +39,7 @@ pub const FIXTURES: &[(&str, &str)] = &[
     ("contents-concord", "/api/contents/concord"),
     ("contents-bad-corpus", "/api/contents/nope"),
     ("contract", "/api/contract"),
+    ("element-read", "/api/elements?ids=text-unit:JHN.3.16,Person:nonexistent-xyz"),
 ];
 
 /// Percent-encodes the one wire-id character that collides with axum's own

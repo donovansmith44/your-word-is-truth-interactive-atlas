@@ -21,142 +21,193 @@
     "relations": [
         {
             "forward": "contains",
+            "forward_display": "Contains",
             "inverse": "member-of",
+            "inverse_display": "Member of",
             "name": "Contains"
         },
         {
             "forward": "attested-in",
+            "forward_display": "Attested in",
             "inverse": "attests",
+            "inverse_display": "Attests",
             "name": "Attests"
         },
         {
             "forward": "follows-in",
+            "forward_display": "Follows in",
             "inverse": "precedes-in",
+            "inverse_display": "Precedes in",
             "name": "Succession"
         },
         {
             "forward": "dated-by",
+            "forward_display": "Dated by",
             "inverse": "dates",
+            "inverse_display": "Dates",
             "name": "DatedBy"
         },
         {
             "forward": "located-at",
+            "forward_display": "Located at",
             "inverse": "site-of",
+            "inverse_display": "Site of",
             "name": "LocatedAt"
         },
         {
             "forward": "mentions",
+            "forward_display": "Mentions",
             "inverse": "mentioned-in",
+            "inverse_display": "Mentioned in",
             "name": "Mentions"
         },
         {
             "forward": "cites",
+            "forward_display": "Cites",
             "inverse": "cited-by",
+            "inverse_display": "Cited by",
             "name": "Cites"
         },
         {
             "forward": "quotes",
+            "forward_display": "Quotes",
             "inverse": "quoted-by",
+            "inverse_display": "Quoted by",
             "name": "Quotes"
         },
         {
             "forward": "confesses",
+            "forward_display": "Confesses",
             "inverse": "confessed-in",
+            "inverse_display": "Confessed in",
             "name": "Confesses"
         },
         {
             "forward": "fulfilled-in",
+            "forward_display": "Fulfilled in",
             "inverse": "fulfills",
+            "inverse_display": "Fulfills",
             "name": "Fulfillment"
         },
         {
             "forward": "prefigures",
+            "forward_display": "Prefigures",
             "inverse": "prefigured-by",
+            "inverse_display": "Prefigured by",
             "name": "Typology"
         },
         {
             "forward": "named-after",
+            "forward_display": "Named after",
             "inverse": "namesake-of",
+            "inverse_display": "Namesake of",
             "name": "NamedAfter"
         },
         {
             "forward": "justified-by",
+            "forward_display": "Justified by",
             "inverse": "justifies",
+            "inverse_display": "Justifies",
             "name": "JustifiedBy"
         },
         {
             "forward": "comments-on",
+            "forward_display": "Comments on",
             "inverse": "commented-on-by",
+            "inverse_display": "Commented on by",
             "name": "CommentsOn"
         },
         {
             "forward": "spoken-by",
+            "forward_display": "Spoken by",
             "inverse": "speech-of",
+            "inverse_display": "Speech of",
             "name": "SpokenBy"
         },
         {
             "forward": "spoken-at",
+            "forward_display": "Spoken at",
             "inverse": "site-of-speech",
+            "inverse_display": "Site of speech",
             "name": "SpokenAt"
         },
         {
             "forward": "derived-from",
+            "forward_display": "Derived from",
             "inverse": "derives",
+            "inverse_display": "Derives",
             "name": "DerivedFrom"
         },
         {
             "forward": "occurs-in",
+            "forward_display": "Occurs in",
             "inverse": "words",
+            "inverse_display": "Words",
             "name": "Occurs"
         },
         {
             "forward": "parent-of",
+            "forward_display": "Parent of",
             "inverse": "child-of",
+            "inverse_display": "Child of",
             "name": "ParentOf"
         },
         {
             "forward": "participates-in",
+            "forward_display": "Participates in",
             "inverse": "participants",
+            "inverse_display": "Participants",
             "name": "Participates"
         },
         {
             "forward": "authored-by",
+            "forward_display": "Authored by",
             "inverse": "authored",
+            "inverse_display": "Authored",
             "name": "AuthoredBy"
         },
         {
             "forward": "shows",
+            "forward_display": "Shows",
             "inverse": "shown-on",
+            "inverse_display": "Shown on",
             "name": "Shows"
         }
     ],
-    "section_schema_version": 18,
+    "section_schema_version": 19,
     "symmetric": [
         {
+            "display": "Analogous to",
             "label": "analogous-to",
             "name": "Analogue"
         },
         {
+            "display": "Catechism link",
             "label": "catechism-link",
             "name": "CatechismLink"
         },
         {
+            "display": "Corresponds to",
             "label": "corresponds-to",
             "name": "Corresponds"
         },
         {
+            "display": "Parallel",
             "label": "parallel",
             "name": "Parallel"
         },
         {
+            "display": "Temporal adjacency",
             "label": "temporal-adjacency",
             "name": "TemporalAdjacency"
         },
         {
+            "display": "Spouse of",
             "label": "spouse-of",
             "name": "Spouses"
         },
         {
+            "display": "Brethren of",
             "label": "brethren-of",
             "name": "Brethren"
         }

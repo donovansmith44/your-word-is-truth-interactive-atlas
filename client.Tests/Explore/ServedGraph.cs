@@ -51,7 +51,7 @@ internal sealed class ServedGraph : IExplorableClient
 
     public static EdgePage Page(EdgeKind kind, int? next, params PositionRef[] neighbours) =>
         new(
-            entries: neighbours.Select(neighbour => new EdgeEntry(edge: EdgeId, loci: null, narrative: null, neighbour: neighbour, note: null, parentage: null, votes: null)).ToList(),
+            entries: neighbours.Select(neighbour => new EdgeEntry(edge: new EdgeRef(id: EdgeId, kind: kind, label: EdgeId), loci: null, narrative: null, neighbour: neighbour, note: null, parentage: null, votes: null)).ToList(),
             kind: kind, next: next, version: Version);
 }
 

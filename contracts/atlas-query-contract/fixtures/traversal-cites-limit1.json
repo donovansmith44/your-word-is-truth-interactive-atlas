@@ -2,7 +2,11 @@
   "body": {
     "entries": [
       {
-        "edge": "Cites:fa43f1d5a42a2c7dacd443a1a0e105d0",
+        "edge": {
+          "id": "Cites:fa43f1d5a42a2c7dacd443a1a0e105d0",
+          "kind": "cites",
+          "label": "JHN.3.16 · Cites · ROM.5.8"
+        },
         "neighbour": {
           "node": {
             "id": "text-unit:ROM.5.8",
@@ -16,7 +20,7 @@
     ],
     "kind": "cites",
     "next": 1,
-    "version": "03b477816961916c7e520c183cd9531c"
+    "version": "8d01e50b4270c7aa8b6180a33ae47717"
   },
   "status": 200
 }

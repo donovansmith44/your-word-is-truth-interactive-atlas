@@ -1,7 +1,11 @@
 {
     "entries": [
         {
-            "edge": "LocatedAt:ba554caa302fbfebb1c80f4267da7c35",
+            "edge": {
+                "id": "LocatedAt:ba554caa302fbfebb1c80f4267da7c35",
+                "kind": "located-at",
+                "label": "Hazor is defeated and burned · Located at · Hazor 1"
+            },
             "neighbour": {
                 "node": {
                     "id": "Event:cq_hazor",
@@ -12,7 +16,11 @@
             }
         },
         {
-            "edge": "LocatedAt:741c521c9d67d4ae5a1c2a1d96c114cb",
+            "edge": {
+                "id": "LocatedAt:741c521c9d67d4ae5a1c2a1d96c114cb",
+                "kind": "located-at",
+                "label": "Subjugation by Jabin · Located at · Hazor 1"
+            },
             "neighbour": {
                 "node": {
                     "id": "Event:theo-138",

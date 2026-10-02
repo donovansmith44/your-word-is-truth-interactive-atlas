@@ -1064,6 +1064,14 @@ resolver = "2"
 # AQC corpus 47 -> 47 scenarios / 195 -> 194 steps: `versioning.feature`'s
 # server scenario loses its `advertises` line with the version range it
 # pinned, and is renamed for the schema versions it still pins.
+#
+# FOCUS-6 Task 2 (A-EDGES server, the element read):
+#
+#   AQC corpus: 48 scenarios / 196 steps (harness=false; NOT in the canonical sum)
+#
+# AQC corpus 47 -> 48 scenarios / 194 -> 196 steps: `element-read.feature`
+# adds one scenario (`I query "/api/elements?ids=..."`, `the response is a
+# valid "ElementPage"`); none removed or reworded.
 
 # DB-2b: the bundled SQLite amalgamation is C compiled by the `cc` crate at
 # the profile's opt-level -- `-O0` under `dev`, which made the DB-2b

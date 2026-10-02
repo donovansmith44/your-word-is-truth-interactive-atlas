@@ -55,7 +55,7 @@ public class GraphExplorableClientTests
     {
         var (client, handler) = MakeClient();
         handler.ResponseBody = """
-            {"kind":"cites","entries":[{"edge":"e1","neighbour":{"position":"node","node":{"id":"text-unit:ROM.3.23","kind":"TextUnit","label":"ROM.3.23"}}}],"next":null,"version":"abc123"}
+            {"kind":"cites","entries":[{"edge":{"id":"e1","kind":"cites","label":"JHN.3.16 · Cites · ROM.3.23"},"neighbour":{"position":"node","node":{"id":"text-unit:ROM.3.23","kind":"TextUnit","label":"ROM.3.23"}}}],"next":null,"version":"abc123"}
             """;
 
         var page = await client.Edges("text-unit:JHN.3.16", EdgeKind.Cites, cursor: null, limit: 5);
@@ -64,7 +64,7 @@ public class GraphExplorableClientTests
         Assert.Equal("?kind=cites&limit=5", handler.LastRequestUri.Query);
         Assert.Equal(EdgeKind.Cites, page.Kind);
         Assert.Single(page.Entries);
-        Assert.Equal("e1", page.Entries[0].Edge);
+        Assert.Equal(new EdgeRef(id: "e1", kind: EdgeKind.Cites, label: "JHN.3.16 · Cites · ROM.3.23"), page.Entries[0].Edge);
         Assert.Equal(new NodePosition(new NodeRef(id: "text-unit:ROM.3.23", kind: NodeKind.TextUnit, label: "ROM.3.23")), page.Entries[0].Neighbour);
         Assert.Null(page.Next);
     }
@@ -74,12 +74,12 @@ public class GraphExplorableClientTests
     {
         var (client, handler) = MakeClient();
         handler.ResponseBody = """
-            {"kind":"justifies","entries":[{"edge":"JustifiedBy:00aa","neighbour":{"position":"edge","edge":{"id":"DatedBy:00ff"}}}],"next":null,"version":"abc123"}
+            {"kind":"justifies","entries":[{"edge":{"id":"JustifiedBy:00aa","kind":"justified-by","label":"A dating · Justified by · Solomon crowned"},"neighbour":{"position":"edge","edge":{"id":"DatedBy:00ff","kind":"dated-by","label":"A dating"}}}],"next":null,"version":"abc123"}
             """;
 
         var page = await client.Edges("Anchor:solomon-crowned", EdgeKind.Justifies, cursor: null, limit: 5);
 
-        Assert.Equal(new EdgePosition(new EdgeRef(id: "DatedBy:00ff")), page.Entries[0].Neighbour);
+        Assert.Equal(new EdgePosition(new EdgeRef(id: "DatedBy:00ff", kind: EdgeKind.DatedBy, label: "A dating")), page.Entries[0].Neighbour);
     }
 
     [Fact]

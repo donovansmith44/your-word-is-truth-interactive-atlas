@@ -118,6 +118,7 @@ pub fn graph_from_sections(layout: &SectionLayout, manifest: &Manifest, present:
     }
     g.build_indexes();
     crate::event_world::add_justified_by(&mut g);
+    crate::labels::compile(&mut g);
     Ok(g)
 }
 

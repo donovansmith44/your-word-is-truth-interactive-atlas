@@ -90,6 +90,10 @@ pub trait GraphQuery {
 
     /// `None` off-spine, and for an unknown corpus.
     fn position_of(&self, corpus: &'static str, id: &AnyNodeId) -> Option<usize>;
+
+    fn labels(&self, at: &[Position]) -> Vec<Option<String>>;
+
+    fn edge(&self, id: &crate::edge::EdgeId) -> Option<crate::edge::EdgeRecord>;
 }
 
 /// The canonical instance: the graph answers its own questions, so conformance is typed
@@ -147,6 +151,12 @@ impl GraphQuery for Graph {
     }
     fn position_of(&self, corpus: &'static str, id: &AnyNodeId) -> Option<usize> {
         self.spine_index.get(corpus).and_then(|m| m.get(id)).copied()
+    }
+    fn labels(&self, at: &[Position]) -> Vec<Option<String>> {
+        at.iter().map(|p| self.labels.get(p).cloned()).collect()
+    }
+    fn edge(&self, id: &crate::edge::EdgeId) -> Option<crate::edge::EdgeRecord> {
+        self.edges_by_id.get(id).cloned()
     }
 }
 
@@ -239,6 +249,12 @@ impl GraphQuery for MemSnapshot {
     fn position_of(&self, corpus: &'static str, id: &AnyNodeId) -> Option<usize> {
         self.graph.position_of(corpus, id)
     }
+    fn labels(&self, at: &[Position]) -> Vec<Option<String>> {
+        self.graph.labels(at)
+    }
+    fn edge(&self, id: &crate::edge::EdgeId) -> Option<crate::edge::EdgeRecord> {
+        self.graph.edge(id)
+    }
 }
 
 impl GraphSnapshot for MemSnapshot {
@@ -278,22 +294,7 @@ impl GraphPublisher for MemStore {
 /// The node table PLUS every subject and object in the built indexes, so a sparse node table
 /// cannot make a conformance check pass vacuously.
 fn position_inventory(model: &Graph) -> BTreeSet<Position> {
-    let mut out: BTreeSet<Position> = model
-        .nodes
-        .keys()
-        .map(|id| Position::Node(id.clone()))
-        .collect();
-    for ix in model.indexes.values() {
-        out.extend(ix.fwd.keys().cloned());
-        out.extend(ix.inv.keys().cloned());
-    }
-    // A row whose only lowering is symmetric has both of its ends live here alone, so leaving
-    // this loop out would put them outside "every position the model knows".
-    for ix in model.symmetric_indexes.values() {
-        out.extend(ix.fwd.keys().cloned());
-        out.extend(ix.inv.keys().cloned());
-    }
-    out
+    model.positions()
 }
 
 fn drain(q: &impl GraphQuery, p: &Position, kind: crate::edge::EdgeKind, limit: usize) -> Vec<EdgeEntry> {
@@ -337,6 +338,8 @@ fn check_position_answers<Q: GraphQuery>(candidate: &Q, model: &Graph, p: &Posit
             );
         }
     }
+
+    assert_eq!(candidate.labels(std::slice::from_ref(p)), model.labels(std::slice::from_ref(p)), "conformance: labels({:?}) diverges", p);
 
     let sa = candidate.edge_summary(p);
     let sb = model.edge_summary(p);
@@ -448,6 +451,12 @@ pub fn assert_answers_match<Q: GraphQuery + Sync>(candidate: &Q, model: &Graph) 
         }
     }
     sweep_positions(candidate, model, &inventory, check_position_rows::<Q>);
+
+    for id in model.edges_by_id.keys() {
+        let at = Position::Edge(id.clone());
+        assert_eq!(candidate.edge(id), model.edge(id), "conformance: edge({id:?}) diverges");
+        assert_eq!(candidate.labels(std::slice::from_ref(&at)), model.labels(std::slice::from_ref(&at)), "conformance: labels({at:?}) diverges");
+    }
 
     for (corpus, spine) in &model.reading {
         let len = spine.order.len();
@@ -708,6 +717,12 @@ mod laws {
             fn position_of(&self, c: &'static str, id: &AnyNodeId) -> Option<usize> {
                 self.0.position_of(c, id)
             }
+            fn labels(&self, at: &[Position]) -> Vec<Option<String>> {
+                self.0.labels(at)
+            }
+            fn edge(&self, id: &crate::edge::EdgeId) -> Option<crate::edge::EdgeRecord> {
+                self.0.edge(id)
+            }
         }
 
         let g = with_edges(graph_with(&[("bible/1.1.1", "a")]));
@@ -943,6 +958,12 @@ mod laws {
             fn position_of(&self, c: &'static str, id: &AnyNodeId) -> Option<usize> {
                 self.0.position_of(c, id)
             }
+            fn labels(&self, at: &[Position]) -> Vec<Option<String>> {
+                self.0.labels(at)
+            }
+            fn edge(&self, id: &crate::edge::EdgeId) -> Option<crate::edge::EdgeRecord> {
+                self.0.edge(id)
+            }
         }
         let g = with_edges(graph_with(&[("bible/1.1.1", "a"), ("bible/1.1.2", "b")]));
         let mut store = MemStore::default();
@@ -950,5 +971,142 @@ mod laws {
         let snap = store.open(v).unwrap();
         let caught = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| assert_answers_match(&LiesAboutRows(snap), &g)));
         assert!(caught.is_err(), "a provenance lie must fail conformance");
+    }
+
+    struct Altered {
+        honest: MemSnapshot,
+        relabels: bool,
+        moves_an_end: bool,
+    }
+
+    impl GraphQuery for Altered {
+        fn node(&self, id: &AnyNodeId) -> Option<Node> {
+            self.honest.node(id)
+        }
+        fn derive(&self, pid: &Pid) -> Option<Vec<u8>> {
+            self.honest.derive(pid)
+        }
+        fn edge_summary(&self, p: &Position) -> EdgeSummary {
+            self.honest.edge_summary(p)
+        }
+        fn edges(&self, p: &Position, q: &EdgeQuery) -> EdgePage {
+            self.honest.edges(p, q)
+        }
+        fn reading_window(&self, c: &'static str, s: usize, n: usize) -> Vec<AnyNodeId> {
+            self.honest.reading_window(c, s, n)
+        }
+        fn nodes_of_kind(&self, k: NodeKind, c: Option<usize>, l: usize) -> NodePage {
+            self.honest.nodes_of_kind(k, c, l)
+        }
+        fn row_provenance(&self, e: &crate::edge::EdgeId) -> Option<RowRef> {
+            self.honest.row_provenance(e)
+        }
+        fn position_of(&self, c: &'static str, id: &AnyNodeId) -> Option<usize> {
+            self.honest.position_of(c, id)
+        }
+        fn labels(&self, at: &[Position]) -> Vec<Option<String>> {
+            self.honest.labels(at).into_iter().map(|label| label.map(|l| if self.relabels { format!("{l}!") } else { l })).collect()
+        }
+        fn edge(&self, id: &crate::edge::EdgeId) -> Option<crate::edge::EdgeRecord> {
+            self.honest.edge(id).map(|mut record| {
+                if self.moves_an_end {
+                    record.object = record.subject.clone();
+                }
+                record
+            })
+        }
+    }
+
+    fn labelled(mut g: Graph) -> Graph {
+        g.edges_by_id = g.edge_records();
+        g.labels = g.positions().into_iter().map(|p| { let shown = format!("{p:?}"); (p, shown) }).collect();
+        g
+    }
+
+    fn admitted(candidate: &Altered, model: &Graph) -> bool {
+        std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| assert_answers_match(candidate, model))).is_ok()
+    }
+
+    fn altered(relabels: bool, moves_an_end: bool) -> Altered {
+        let mut store = MemStore::default();
+        let v = store.publish(labelled(with_edges(graph_with(&[("bible/1.1.1", "a")]))));
+        Altered { honest: store.open(v).unwrap(), relabels, moves_an_end }
+    }
+
+    #[test]
+    fn every_held_position_answers_one_compiled_label() {
+        // Arrange
+        let model = labelled(with_edges(graph_with(&[("bible/1.1.1", "a")])));
+        let verse = Position::Node(AnyNodeId { kind: NodeKind::TextUnit, raw: "bible/1.1.1".into() });
+        let unheld = Position::Node(AnyNodeId { kind: NodeKind::TextUnit, raw: "bible/9.9.9".into() });
+
+        // Act
+        let read = model.labels(&[verse.clone(), unheld]);
+        let verdicts = (admitted(&altered(false, false), &model), admitted(&altered(true, false), &model));
+
+        // Assert
+        assert_eq!((read, verdicts), (vec![Some(format!("{verse:?}")), None], (true, false)));
+    }
+
+    #[test]
+    fn every_edge_is_read_by_its_id_with_its_ends_and_its_meta() {
+        // Arrange
+        let model = labelled(with_edges(graph_with(&[("bible/1.1.1", "a")])));
+        let e1 = Position::Node(EventId::new("e1").erase());
+        let e2 = Position::Node(EventId::new("e2").erase());
+        let jordan = Position::Node(PlaceId::new("jordan").erase());
+        let located = crate::edge::entry_id(crate::edge::RelationId::LocatedAt, &e1, &jordan);
+        let followed = crate::edge::entry_id(crate::edge::RelationId::Succession, &e1, &e2);
+
+        // Act
+        let read = (model.edge(&located), model.edge(&followed), model.edge(&crate::edge::EdgeId("LocatedAt:00".into())));
+        let verdicts = (admitted(&altered(false, false), &model), admitted(&altered(false, true), &model));
+
+        // Assert
+        assert_eq!(
+            (read, verdicts),
+            (
+                (
+                    Some(crate::edge::EdgeRecord {
+                        id: located,
+                        kind: crate::edge::EdgeKind::Directed(crate::edge::RelationId::LocatedAt, crate::edge::Direction::Forward),
+                        subject: e1.clone(),
+                        object: jordan,
+                        meta: crate::adjacency::EdgeMeta::None,
+                    }),
+                    Some(crate::edge::EdgeRecord {
+                        id: followed,
+                        kind: crate::edge::EdgeKind::Directed(crate::edge::RelationId::Succession, crate::edge::Direction::Forward),
+                        subject: e1,
+                        object: e2,
+                        meta: crate::adjacency::EdgeMeta::Narrative(crate::id::NarrativeId::new("n")),
+                    }),
+                    None,
+                ),
+                (true, false),
+            )
+        );
+    }
+
+    #[test]
+    fn a_symmetric_edge_is_recorded_once_from_its_lesser_end() {
+        // Arrange
+        let mut g = Graph::default();
+        g.analogue.push(Analogue { a: EventId::new("e2"), b: EventId::new("e1"), provenance: "p".into() });
+        g.build_indexes();
+        let (lesser, greater) = (Position::Node(EventId::new("e1").erase()), Position::Node(EventId::new("e2").erase()));
+        let id = crate::edge::entry_id_symmetric(crate::edge::SymRelationId::Analogue, &lesser, &greater);
+
+        // Act
+        let records = g.edge_records();
+
+        // Assert
+        assert_eq!(
+            records.into_iter().collect::<Vec<_>>(),
+            vec![(
+                id.clone(),
+                crate::edge::EdgeRecord { id, kind: crate::edge::EdgeKind::Symmetric(crate::edge::SymRelationId::Analogue), subject: lesser, object: greater, meta: crate::adjacency::EdgeMeta::None }
+            )]
+        );
     }
 }

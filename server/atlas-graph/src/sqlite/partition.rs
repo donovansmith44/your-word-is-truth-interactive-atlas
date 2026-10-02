@@ -101,6 +101,7 @@ pub struct SectionPartition<'a> {
     pub edges: Vec<EdgeEntryOut>,
     /// `("bible", …)` for Kjv, `("concord", …)` for Concord.
     pub spine: Option<(&'static str, &'a [AnyNodeId])>,
+    pub labels: Vec<(Position, &'a str)>,
 }
 
 /// The global ord is the row's index in its family Vec -- the same number for both halves of a
@@ -245,6 +246,8 @@ pub fn partition(g: &Graph) -> Result<Vec<SectionPartition<'_>>, SqliteError> {
         v.sort_by_cached_key(|e| (position_str(&e.subject), e.rel, e.dir, e.ord));
     }
 
+    let mut labels = labels_of_sections(g, &sections, &edges);
+
     let mut out = Vec::with_capacity(sections.len());
     for (i, s) in sections.iter().enumerate() {
         let spine = if has_spine(*s) {
@@ -263,9 +266,32 @@ pub fn partition(g: &Graph) -> Result<Vec<SectionPartition<'_>>, SqliteError> {
             rows: rows_of_section(g, *s),
             edges: std::mem::take(&mut edges[i]),
             spine,
+            labels: std::mem::take(&mut labels[i]),
         });
     }
     Ok(out)
+}
+
+fn labels_of_sections<'a>(g: &'a Graph, sections: &[Section], edges: &[Vec<EdgeEntryOut>]) -> Vec<Vec<(Position, &'a str)>> {
+    let slot = |s: Section| sections.iter().position(|x| *x == s);
+    let mut placed: Vec<BTreeMap<Position, &'a str>> = vec![BTreeMap::new(); sections.len()];
+    for (position, label) in &g.labels {
+        if let Position::Node(id) = position {
+            let home = g.nodes.get(id).map_or(Section::Core, section_of_node);
+            if let Some(i) = slot(home) {
+                placed[i].insert(position.clone(), label.as_str());
+            }
+        }
+    }
+    for (i, entries) in edges.iter().enumerate() {
+        for entry in entries.iter().filter(|e| e.dir == DIR_FORWARD || (e.dir == DIR_SYMMETRIC && e.subject <= e.object)) {
+            let at = Position::Edge(entry.edge_id.clone());
+            if let Some(label) = g.labels.get(&at) {
+                placed[i].insert(at, label.as_str());
+            }
+        }
+    }
+    placed.into_iter().map(|labels| labels.into_iter().collect()).collect()
 }
 
 #[cfg(test)]

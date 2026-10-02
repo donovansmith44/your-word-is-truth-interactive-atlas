@@ -1,0 +1,48 @@
+{
+  "body": {
+    "elements": [
+      {
+        "element": "node",
+        "node": {
+          "edge_summary": [
+            {
+              "count": 1,
+              "kind": "member-of"
+            },
+            {
+              "count": 1,
+              "kind": "attests"
+            },
+            {
+              "count": 2,
+              "kind": "mentions"
+            },
+            {
+              "count": 23,
+              "kind": "cites"
+            },
+            {
+              "count": 72,
+              "kind": "cited-by"
+            },
+            {
+              "count": 4,
+              "kind": "catechism-link"
+            }
+          ],
+          "id": "text-unit:JHN.3.16",
+          "kind": "TextUnit",
+          "label": "JHN.3.16",
+          "provenance": "kjv",
+          "version": "8d01e50b4270c7aa8b6180a33ae47717"
+        }
+      },
+      {
+        "element": "missing",
+        "id": "Person:nonexistent-xyz"
+      }
+    ],
+    "version": "8d01e50b4270c7aa8b6180a33ae47717"
+  },
+  "status": 200
+}

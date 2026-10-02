@@ -88,6 +88,12 @@ impl GraphQuery for Snap {
     fn position_of(&self, corpus: &'static str, id: &AnyNodeId) -> Option<usize> {
         delegate!(self, s => s.position_of(corpus, id))
     }
+    fn labels(&self, at: &[Position]) -> Vec<Option<String>> {
+        delegate!(self, s => s.labels(at))
+    }
+    fn edge(&self, id: &EdgeId) -> Option<atlas_graph_types::edge::EdgeRecord> {
+        delegate!(self, s => s.edge(id))
+    }
 }
 
 impl GraphSnapshot for Snap {

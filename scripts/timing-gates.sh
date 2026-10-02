@@ -57,6 +57,9 @@ GATES=(
   # DB-4c (gate 11): spec 12's frontier p50/p99 stand-in -- the first edge page
   # of every inhabited kind at 736 fixed positions, both arms; served p99 < 100 ms.
   "atlas-contract|perf_smoke|frontier_page_latency_corpus_over_both_arms"
+  # FOCUS-6 Task 2: the element read at its cap (100 verses + 100 of their
+  # edges) answers inside the same 100 ms per-read budget.
+  "atlas-contract|perf_smoke|an_element_read_at_the_cap_answers_inside_the_read_budget"
 )
 
 names_in_script() { printf '%s\n' "${GATES[@]}" | awk -F'|' '{print $3}' | sort; }

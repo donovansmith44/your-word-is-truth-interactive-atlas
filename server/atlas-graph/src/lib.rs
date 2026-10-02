@@ -18,6 +18,7 @@ pub mod fulfillment_adapter;
 pub mod heading;
 pub mod kjv_adapter;
 pub mod kretzmann_adapter;
+pub mod labels;
 pub mod law_check;
 pub mod legacy;
 pub mod mention_spans;
