@@ -103,8 +103,10 @@ public sealed class RootConsistencyLawTests
             seen.Add(Roots(window));
         }
 
-        return seen.All(roots => roots.SequenceEqual([RootA])) && window.Moved ? null : $"showed roots {string.Join(" then ", seen.Select(roots => string.Join("+", roots)))}, moved {window.Moved}";
+        return seen.All(roots => roots.SequenceEqual([RootA])) && window.Moved == !ReadsOnlyHeldPages.Contains(moment) ? null : $"showed roots {string.Join(" then ", seen.Select(roots => string.Join("+", roots)))}, moved {window.Moved}";
     }
+
+    private static readonly Moment[] ReadsOnlyHeldPages = [Moment.Less];
 
     private sealed record Walk(RootedMentions Graph, PresentationRequest Presenting, Func<PresentationRequest, Task<PageWindow<Entry>>> Door, Action<PageWindow<Entry>> Reopened);
 

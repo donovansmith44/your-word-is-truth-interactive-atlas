@@ -99,7 +99,7 @@ internal sealed class ServedGraph : IExplorableClient
 
     public static TimeRange Range(Year from, Year to, string label) => new(from: from, label: label, to: to);
 
-    public static int? PageBefore(int from, int limit) => from > 0 ? Math.Max(0, from - limit) : null;
+    public static int? PageBefore(int from, int limit) => from - limit > 0 ? from - limit : null;
 
     public static NodeRef Ref(NodeKind kind, string id, string label) => new(id: id, kind: kind, label: label);
 

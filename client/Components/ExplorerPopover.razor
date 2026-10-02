@@ -351,7 +351,7 @@
         _failedAttempt = null;
         _usingSectionRegistry = false;
 
-        if (_legacy is { } legacy && !await LoadLegacy(legacy, request))
+        if (_legacy is { } legacy && !await LoadLegacy(legacy, exploration.Current, request))
         {
             return;
         }
@@ -365,13 +365,13 @@
         await SyncNarrativeFocusAsync(request);
     }
 
-    private async Task<bool> LoadLegacy(IExplorable legacy, Request request)
+    private async Task<bool> LoadLegacy(IExplorable legacy, Explorable current, Request request)
     {
         var applicable = PopoverSectionRegistry.Providers.Where(p => p.AppliesTo(legacy)).ToList();
         _usingSectionRegistry = applicable.Count > 0;
 
         return _usingSectionRegistry
-            ? await LoadSections(legacy, applicable, request)
+            ? await LoadSections(legacy, current, applicable, request)
             : (await request.Fetch(() => legacy.ExploreAsync(Atlas), () => legacy.BodyAsync(Atlas))).Match(
                 arrived: loaded =>
                 {
@@ -382,10 +382,10 @@
                 superseded: () => false);
     }
 
-    private async Task<bool> LoadSections(IExplorable legacy, IReadOnlyList<IPopoverSectionProvider> applicable, Request request)
+    private async Task<bool> LoadSections(IExplorable legacy, Explorable current, IReadOnlyList<IPopoverSectionProvider> applicable, Request request)
     {
         var chips = request.Fetch(() => legacy.ExploreAsync(Atlas));
-        var sections = await Task.WhenAll(applicable.Select(provider => request.Fetch(() => provider.ResolveAsync(legacy, Atlas, this))));
+        var sections = await Task.WhenAll(applicable.Select(provider => request.Fetch(() => provider.ResolveAsync(legacy, current, Atlas, this))));
         var chipsOutcome = await chips;
         if (request.Superseded)
         {
@@ -506,8 +506,6 @@
     public bool XrefEntryPoint => _legacy is VerseNode { XrefEntryPoint: true };
 
     public IExplorableClient Graph => GraphClient;
-
-    Explorable IPopoverSectionContext.Current => Exploration?.Current ?? throw new InvalidOperationException("a section is resolved only for the element an exploration stands on");
 
     Task IPopoverSectionContext.RenewAsync() => Renew();
 

@@ -16,7 +16,7 @@ public sealed class ChapterCardSection : IPopoverSectionProvider
 
     public bool AppliesTo(IExplorable node) => node.Kind == "Chapter";
 
-    public async Task<PopoverSection?> ResolveAsync(IExplorable node, AtlasClient api, IPopoverSectionContext ctx)
+    public async Task<PopoverSection?> ResolveAsync(IExplorable node, Explorable current, AtlasClient api, IPopoverSectionContext ctx)
     {
         if (node is not ChapterNode chapterNode)
         {
@@ -144,7 +144,7 @@ public sealed class YearFrontierSection : IPopoverSectionProvider
 {
     public bool AppliesTo(IExplorable node) => node.Kind == "Year";
 
-    public Task<PopoverSection?> ResolveAsync(IExplorable node, AtlasClient api, IPopoverSectionContext ctx) =>
+    public Task<PopoverSection?> ResolveAsync(IExplorable node, Explorable current, AtlasClient api, IPopoverSectionContext ctx) =>
         node is YearNode year ? year.ResolveFrontierAsync(api, ctx) : Task.FromResult<PopoverSection?>(null);
 }
 
@@ -152,7 +152,7 @@ public sealed class VerseTextSectionProvider : IPopoverSectionProvider
 {
     public bool AppliesTo(IExplorable node) => node.Kind is "Verse" or "Passage";
 
-    public async Task<PopoverSection?> ResolveAsync(IExplorable node, AtlasClient api, IPopoverSectionContext ctx)
+    public async Task<PopoverSection?> ResolveAsync(IExplorable node, Explorable current, AtlasClient api, IPopoverSectionContext ctx)
     {
         string book;
         int chapter, focalFrom, focalTo;
@@ -274,7 +274,7 @@ public sealed class CrossRefsSection : IPopoverSectionProvider
 
     public bool AppliesTo(IExplorable node) => node.Kind is "Verse" or "Passage";
 
-    public async Task<PopoverSection?> ResolveAsync(IExplorable node, AtlasClient api, IPopoverSectionContext ctx)
+    public async Task<PopoverSection?> ResolveAsync(IExplorable node, Explorable current, AtlasClient api, IPopoverSectionContext ctx)
     {
         IReadOnlyList<CrossRef> xrefs;
         IReadOnlyList<string> xrefProvenance = Array.Empty<string>();
@@ -369,7 +369,7 @@ public sealed class CatechismSeamSection : IPopoverSectionProvider
 {
     public bool AppliesTo(IExplorable node) => node.Kind is "Verse" or "Passage";
 
-    public async Task<PopoverSection?> ResolveAsync(IExplorable node, AtlasClient api, IPopoverSectionContext ctx)
+    public async Task<PopoverSection?> ResolveAsync(IExplorable node, Explorable current, AtlasClient api, IPopoverSectionContext ctx)
     {
         IReadOnlyList<CatechismRef> items;
         IReadOnlyList<string> catechismProvenance = Array.Empty<string>();
@@ -444,7 +444,7 @@ public sealed class CatechismTextSection : IPopoverSectionProvider
 {
     public bool AppliesTo(IExplorable node) => node.Kind == "Catechism";
 
-    public async Task<PopoverSection?> ResolveAsync(IExplorable node, AtlasClient api, IPopoverSectionContext ctx)
+    public async Task<PopoverSection?> ResolveAsync(IExplorable node, Explorable current, AtlasClient api, IPopoverSectionContext ctx)
     {
         if (node is not CatechismNode item)
         {
@@ -473,7 +473,7 @@ public sealed class CatechismExplanationSection : IPopoverSectionProvider
 {
     public bool AppliesTo(IExplorable node) => node.Kind == "Catechism";
 
-    public async Task<PopoverSection?> ResolveAsync(IExplorable node, AtlasClient api, IPopoverSectionContext ctx)
+    public async Task<PopoverSection?> ResolveAsync(IExplorable node, Explorable current, AtlasClient api, IPopoverSectionContext ctx)
     {
         if (node is not CatechismNode item)
         {
@@ -495,7 +495,7 @@ public sealed class CatechismWhereWrittenSection : IPopoverSectionProvider
 {
     public bool AppliesTo(IExplorable node) => node.Kind == "Catechism";
 
-    public async Task<PopoverSection?> ResolveAsync(IExplorable node, AtlasClient api, IPopoverSectionContext ctx)
+    public async Task<PopoverSection?> ResolveAsync(IExplorable node, Explorable current, AtlasClient api, IPopoverSectionContext ctx)
     {
         if (node is not CatechismNode item)
         {
@@ -522,7 +522,7 @@ public sealed class CatechismScripturesSection : IPopoverSectionProvider
 {
     public bool AppliesTo(IExplorable node) => node.Kind == "Catechism";
 
-    public async Task<PopoverSection?> ResolveAsync(IExplorable node, AtlasClient api, IPopoverSectionContext ctx)
+    public async Task<PopoverSection?> ResolveAsync(IExplorable node, Explorable current, AtlasClient api, IPopoverSectionContext ctx)
     {
         if (node is not CatechismNode item)
         {
@@ -598,7 +598,7 @@ public sealed class VerseEventMembershipSection : IPopoverSectionProvider
 {
     public bool AppliesTo(IExplorable node) => node.Kind == "Verse";
 
-    public async Task<PopoverSection?> ResolveAsync(IExplorable node, AtlasClient api, IPopoverSectionContext ctx)
+    public async Task<PopoverSection?> ResolveAsync(IExplorable node, Explorable current, AtlasClient api, IPopoverSectionContext ctx)
     {
         if (node is not VerseNode v)
         {
@@ -650,7 +650,7 @@ public sealed class VersePassageMembershipSection : IPopoverSectionProvider
 {
     public bool AppliesTo(IExplorable node) => node.Kind == "Verse";
 
-    public async Task<PopoverSection?> ResolveAsync(IExplorable node, AtlasClient api, IPopoverSectionContext ctx)
+    public async Task<PopoverSection?> ResolveAsync(IExplorable node, Explorable current, AtlasClient api, IPopoverSectionContext ctx)
     {
         if (node is not VerseNode v)
         {
@@ -673,7 +673,7 @@ public sealed class EventProvenanceSection : IPopoverSectionProvider
 {
     public bool AppliesTo(IExplorable node) => node.Kind == "Event";
 
-    public async Task<PopoverSection?> ResolveAsync(IExplorable node, AtlasClient api, IPopoverSectionContext ctx)
+    public async Task<PopoverSection?> ResolveAsync(IExplorable node, Explorable current, AtlasClient api, IPopoverSectionContext ctx)
     {
         if (node is not EventNode ev)
         {
@@ -697,7 +697,7 @@ public sealed class EventDateAndPlacesSection : IPopoverSectionProvider
 {
     public bool AppliesTo(IExplorable node) => node.Kind == "Event";
 
-    public async Task<PopoverSection?> ResolveAsync(IExplorable node, AtlasClient api, IPopoverSectionContext ctx)
+    public async Task<PopoverSection?> ResolveAsync(IExplorable node, Explorable current, AtlasClient api, IPopoverSectionContext ctx)
     {
         if (node is not EventNode ev)
         {
@@ -792,7 +792,7 @@ public sealed class EventWitnessesSection : IPopoverSectionProvider
 {
     public bool AppliesTo(IExplorable node) => node.Kind == "Event";
 
-    public async Task<PopoverSection?> ResolveAsync(IExplorable node, AtlasClient api, IPopoverSectionContext ctx)
+    public async Task<PopoverSection?> ResolveAsync(IExplorable node, Explorable current, AtlasClient api, IPopoverSectionContext ctx)
     {
         if (node is not EventNode ev)
         {
@@ -843,7 +843,7 @@ public sealed class EventMentionsSection : IPopoverSectionProvider
 {
     public bool AppliesTo(IExplorable node) => node.Kind == "Event";
 
-    public async Task<PopoverSection?> ResolveAsync(IExplorable node, AtlasClient api, IPopoverSectionContext ctx)
+    public async Task<PopoverSection?> ResolveAsync(IExplorable node, Explorable current, AtlasClient api, IPopoverSectionContext ctx)
     {
         if (node is not EventNode ev)
         {
@@ -885,7 +885,7 @@ public sealed class EventAnaloguesSection : IPopoverSectionProvider
 {
     public bool AppliesTo(IExplorable node) => node.Kind == "Event";
 
-    public async Task<PopoverSection?> ResolveAsync(IExplorable node, AtlasClient api, IPopoverSectionContext ctx)
+    public async Task<PopoverSection?> ResolveAsync(IExplorable node, Explorable current, AtlasClient api, IPopoverSectionContext ctx)
     {
         if (node is not EventNode ev)
         {
@@ -929,7 +929,7 @@ public sealed class VerseParallelsSection : IPopoverSectionProvider
 {
     public bool AppliesTo(IExplorable node) => node.Kind is "Verse" or "Passage";
 
-    public async Task<PopoverSection?> ResolveAsync(IExplorable node, AtlasClient api, IPopoverSectionContext ctx)
+    public async Task<PopoverSection?> ResolveAsync(IExplorable node, Explorable current, AtlasClient api, IPopoverSectionContext ctx)
     {
         IReadOnlyList<VerseEvent> events;
         string ownVref;
@@ -1012,7 +1012,7 @@ public sealed class EventChronologySection : IPopoverSectionProvider
 {
     public bool AppliesTo(IExplorable node) => node.Kind == "Event";
 
-    public async Task<PopoverSection?> ResolveAsync(IExplorable node, AtlasClient api, IPopoverSectionContext ctx)
+    public async Task<PopoverSection?> ResolveAsync(IExplorable node, Explorable current, AtlasClient api, IPopoverSectionContext ctx)
     {
         if (node is not INarrativeAware aware)
         {
@@ -1103,7 +1103,7 @@ public sealed class PolityDeltaEventSection : IPopoverSectionProvider
 {
     public bool AppliesTo(IExplorable node) => node.Kind == "PolityDelta";
 
-    public Task<PopoverSection?> ResolveAsync(IExplorable node, AtlasClient api, IPopoverSectionContext ctx)
+    public Task<PopoverSection?> ResolveAsync(IExplorable node, Explorable current, AtlasClient api, IPopoverSectionContext ctx)
     {
         if (node is not PolityDeltaNode delta || delta.EventText is not { } eventText)
         {
@@ -1125,7 +1125,7 @@ public sealed class PolityDeltaScripturesSection : IPopoverSectionProvider
 {
     public bool AppliesTo(IExplorable node) => node.Kind == "PolityDelta";
 
-    public async Task<PopoverSection?> ResolveAsync(IExplorable node, AtlasClient api, IPopoverSectionContext ctx)
+    public async Task<PopoverSection?> ResolveAsync(IExplorable node, Explorable current, AtlasClient api, IPopoverSectionContext ctx)
     {
         if (node is not PolityDeltaNode delta || delta.Verses.Count == 0)
         {
@@ -1162,7 +1162,7 @@ public sealed class PolityDeltaGroundingSection : IPopoverSectionProvider
 {
     public bool AppliesTo(IExplorable node) => node.Kind == "PolityDelta";
 
-    public Task<PopoverSection?> ResolveAsync(IExplorable node, AtlasClient api, IPopoverSectionContext ctx)
+    public Task<PopoverSection?> ResolveAsync(IExplorable node, Explorable current, AtlasClient api, IPopoverSectionContext ctx)
     {
         if (node is not PolityDeltaNode delta || delta.RefNote is not { } refNote)
         {
@@ -1186,7 +1186,7 @@ public sealed class VersePersonsSection : IPopoverSectionProvider
 {
     public bool AppliesTo(IExplorable node) => node.Kind is "Verse" or "Passage";
 
-    public async Task<PopoverSection?> ResolveAsync(IExplorable node, AtlasClient api, IPopoverSectionContext ctx)
+    public async Task<PopoverSection?> ResolveAsync(IExplorable node, Explorable current, AtlasClient api, IPopoverSectionContext ctx)
     {
         string wireId;
         switch (node)
@@ -1259,14 +1259,14 @@ public sealed class PersonCardAndMentionsSection : IPopoverSectionProvider
 {
     public bool AppliesTo(IExplorable node) => node.Kind == "Person";
 
-    public async Task<PopoverSection?> ResolveAsync(IExplorable node, AtlasClient api, IPopoverSectionContext ctx)
+    public async Task<PopoverSection?> ResolveAsync(IExplorable node, Explorable current, AtlasClient api, IPopoverSectionContext ctx)
     {
         if (node is not PersonNode person)
         {
             return null;
         }
 
-        var presenting = new PresentationRequest(ctx.Current, Surface.Popover);
+        var presenting = new PresentationRequest(current, Surface.Popover);
         var cardTask = person.CardAsync(() => ctx.Graph.Card(person.PersonId));
         var mentionsTask = Paging.Window(presenting, EdgeKind.MentionedIn);
         var (card, mentions) = (await cardTask, await mentionsTask);
@@ -1301,7 +1301,7 @@ public sealed class CommentaryItemProseSection : IPopoverSectionProvider
 {
     public bool AppliesTo(IExplorable node) => node.Kind == "CommentaryItem";
 
-    public async Task<PopoverSection?> ResolveAsync(IExplorable node, AtlasClient api, IPopoverSectionContext ctx)
+    public async Task<PopoverSection?> ResolveAsync(IExplorable node, Explorable current, AtlasClient api, IPopoverSectionContext ctx)
     {
         if (node is not CommentaryItemNode item)
         {
@@ -1330,7 +1330,7 @@ public sealed class CatechismInConcordSection : IPopoverSectionProvider
 {
     public bool AppliesTo(IExplorable node) => node.Kind == "Catechism";
 
-    public async Task<PopoverSection?> ResolveAsync(IExplorable node, AtlasClient api, IPopoverSectionContext ctx)
+    public async Task<PopoverSection?> ResolveAsync(IExplorable node, Explorable current, AtlasClient api, IPopoverSectionContext ctx)
     {
         if (node is not CatechismNode item)
         {
@@ -1369,7 +1369,7 @@ public sealed class ConcordSmallCatechismSection : IPopoverSectionProvider
 {
     public bool AppliesTo(IExplorable node) => node.Kind == "ConcordUnit";
 
-    public async Task<PopoverSection?> ResolveAsync(IExplorable node, AtlasClient api, IPopoverSectionContext ctx)
+    public async Task<PopoverSection?> ResolveAsync(IExplorable node, Explorable current, AtlasClient api, IPopoverSectionContext ctx)
     {
         if (node is not ConcordUnitNode unit)
         {
@@ -1412,7 +1412,7 @@ public sealed class ConcordUnitTextSection : IPopoverSectionProvider
 {
     public bool AppliesTo(IExplorable node) => node.Kind == "ConcordUnit";
 
-    public async Task<PopoverSection?> ResolveAsync(IExplorable node, AtlasClient api, IPopoverSectionContext ctx)
+    public async Task<PopoverSection?> ResolveAsync(IExplorable node, Explorable current, AtlasClient api, IPopoverSectionContext ctx)
     {
         if (node is not ConcordUnitNode unit)
         {
@@ -1480,7 +1480,7 @@ public sealed class PersonLifeSection : IPopoverSectionProvider
 {
     public bool AppliesTo(IExplorable node) => node.Kind == "Person";
 
-    public async Task<PopoverSection?> ResolveAsync(IExplorable node, AtlasClient api, IPopoverSectionContext ctx)
+    public async Task<PopoverSection?> ResolveAsync(IExplorable node, Explorable current, AtlasClient api, IPopoverSectionContext ctx)
     {
         if (node is not PersonNode person)
         {
@@ -1540,7 +1540,7 @@ public sealed class PersonEventsSection : IPopoverSectionProvider
 {
     public bool AppliesTo(IExplorable node) => node.Kind == "Person";
 
-    public async Task<PopoverSection?> ResolveAsync(IExplorable node, AtlasClient api, IPopoverSectionContext ctx)
+    public async Task<PopoverSection?> ResolveAsync(IExplorable node, Explorable current, AtlasClient api, IPopoverSectionContext ctx)
     {
         if (node is not PersonNode person)
         {
@@ -1567,7 +1567,7 @@ public sealed class PersonFamilySection : IPopoverSectionProvider
 {
     public bool AppliesTo(IExplorable node) => node.Kind == "Person";
 
-    public async Task<PopoverSection?> ResolveAsync(IExplorable node, AtlasClient api, IPopoverSectionContext ctx)
+    public async Task<PopoverSection?> ResolveAsync(IExplorable node, Explorable current, AtlasClient api, IPopoverSectionContext ctx)
     {
         if (node is not PersonNode person)
         {

@@ -101,7 +101,8 @@ impl Adjacency {
         let from = self.edges.partition_point(|&ord| (ord as usize) < q.cursor.unwrap_or(0));
         let entries = self.edges[from..].iter().take(q.limit).map(|&ord| self.rows[ord as usize].clone()).collect();
         let next = self.edges.get(from.saturating_add(q.limit)).map(|&ord| ord as usize);
-        let previous = (from > 0 && q.limit > 0).then(|| self.edges[from.saturating_sub(q.limit)] as usize);
+        let before = from.saturating_sub(q.limit);
+        let previous = (before > 0 && q.limit > 0).then(|| self.edges[before] as usize);
         EdgePage { kind: q.kind, entries, previous, next }
     }
 }

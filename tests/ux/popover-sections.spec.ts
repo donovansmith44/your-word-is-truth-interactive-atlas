@@ -1,5 +1,6 @@
 import { test, expect, Page } from '@playwright/test';
 import { openVerse } from './lib/verse';
+import { popoverSectionsHolding } from './lib/popover';
 import fc from 'fast-check';
 import { api } from './lib/api';
 import { loadToc, arbVerseRef } from './lib/canon';
@@ -72,7 +73,7 @@ test('REGISTRY-1: a verse with real cross-references shows them inline, no butto
   // Catechism in between are each independently conditional, so this
   // checks the two firm anchors structurally rather than assuming which
   // (if any) of the middle four also showed for this sampled verse.
-  const sectionIds = await page.getByTestId(/^popover-section-/).evaluateAll(els => els.map(el => el.getAttribute('data-testid')));
+  const sectionIds = await popoverSectionsHolding(page, ['popover-section-verse-text', 'popover-section-xrefs']);
   expect(sectionIds[0]).toBe('popover-section-verse-text');
   expect(sectionIds[sectionIds.length - 1]).toBe('popover-section-xrefs');
 
@@ -168,16 +169,15 @@ test('FRONTIER-ORDER-1: a content-rich verse (MAT.26.28) shows every category in
   // section resolves together in one batch, and this last-in-order section
   // (xrefs, per the owner's own ruling) is the direct, retrying proxy for
   // "the whole batch landed."
-  await expect(page.getByTestId('popover-section-xrefs')).toBeVisible();
-
-  const sectionIds = await page.getByTestId(/^popover-section-/).evaluateAll(els => els.map(el => el.getAttribute('data-testid')));
-  expect(sectionIds).toEqual([
+  const inTheOwnersOrder = [
     'popover-section-verse-text',
     'popover-section-event-membership',
     'popover-section-catechism',
     'popover-section-parallels',
     'popover-section-xrefs',
-  ]);
+  ];
+  const sectionIds = await popoverSectionsHolding(page, inTheOwnersOrder);
+  expect(sectionIds).toEqual(inTheOwnersOrder);
 });
 
 // The general conditional-presence half of the owner's own words ("if
@@ -407,8 +407,7 @@ test('REGISTRY-1: a PLACE popover shows its window-free record, then its site-of
   const cap = 20;
 
   // Act
-  await expect(page.getByTestId('popover-section-site-of')).toBeVisible();
-  const sectionIds = await page.getByTestId(/^popover-section-(card|site-of|mentioned-in)$/).evaluateAll(els => els.map(el => el.getAttribute('data-testid')));
+  const sectionIds = await popoverSectionsHolding(page, ['popover-section-card', 'popover-section-site-of'], /^popover-section-(card|site-of|mentioned-in)$/);
 
   // Assert
   expect(siteOf).toBeGreaterThan(cap);
@@ -967,7 +966,7 @@ test('CATECH-1: the Baptism institution verse keeps its item-level citation, now
   // own verse range (MAT.28.16-20), so it's EVENT-linked in the real
   // curated data -- event membership is present, and now comes BEFORE
   // catechism, not after.
-  const sectionIds = await page.getByTestId(/^popover-section-/).evaluateAll(els => els.map(el => el.getAttribute('data-testid')));
+  const sectionIds = await popoverSectionsHolding(page, ['popover-section-verse-text', 'popover-section-xrefs']);
   expect(sectionIds[0]).toBe('popover-section-verse-text');
   const catechismIndex = sectionIds.indexOf('popover-section-catechism');
   expect(catechismIndex).toBeGreaterThan(-1);

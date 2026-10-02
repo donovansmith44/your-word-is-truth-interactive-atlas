@@ -1595,7 +1595,7 @@ fn every_page_names_the_page_before_it_and_reading_there_answers_that_page_in_bo
                     let pages = walk(store, &at, kind, limit);
                     walked += pages.len();
                     let before: Vec<Option<EdgePage>> = pages.iter().map(|page| page.previous.map(|cursor| store.edges(&at, &EdgeQuery { kind, cursor: Some(cursor), limit }))).collect();
-                    let expected: Vec<Option<EdgePage>> = std::iter::once(None).chain(pages.iter().take(pages.len() - 1).cloned().map(Some)).collect();
+                    let expected: Vec<Option<EdgePage>> = pages.iter().enumerate().map(|(i, _)| i.checked_sub(1).filter(|&before| before > 0).map(|before| pages[before].clone())).collect();
                     if before != expected {
                         offenders.push(format!("{id:?} {kind:?} limit {limit}"));
                     }

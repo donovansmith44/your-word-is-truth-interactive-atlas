@@ -331,6 +331,34 @@ public sealed class PageWindowTests
     }
 
     [Fact]
+    public async Task Less_back_to_the_first_block_reads_it_from_the_page_store_without_asking_again()
+    {
+        await Task.Run(async () =>
+        {
+            // Arrange
+            var graph = new EdgesGraph(Cardinalities[0]);
+            var window = await Paging.Window(new PresentationRequest(Resolved.At(graph, Subject), Surface.Popover), EdgeKind.MentionedIn);
+            for (var more = 0; more <= PageWindow.BlocksShown(Step); more++)
+            {
+                await window.More();
+            }
+
+            while (window.Position(Cardinalities[0]).Less && window.Position(Cardinalities[0]).From - 1 > Step)
+            {
+                await window.Fewer();
+            }
+
+            var asked = graph.Asked;
+
+            // Act
+            await window.Fewer();
+
+            // Assert
+            Assert.Equal((asked, 0), (graph.Asked, window.Position(Cardinalities[0]).From - 1));
+        });
+    }
+
+    [Fact]
     public async Task A_whole_walk_holds_the_same_cursors_and_does_the_same_work_each_turn_however_large_the_collection()
     {
         await Task.Run(async () =>

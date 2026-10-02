@@ -181,7 +181,7 @@ pub async fn elements(
     let to = from.saturating_add(LARGEST_PAGE).min(asked.ids.0.len());
     let elements = read_elements(&data, &graph, &snap, &asked.ids.0[from..to])?;
     let next = (to < asked.ids.0.len()).then_some(to);
-    let previous = (from > 0).then(|| from.saturating_sub(LARGEST_PAGE));
+    let previous = Some(from.saturating_sub(LARGEST_PAGE)).filter(|&before| before > 0);
     Ok(Json(wire::ElementPage { elements, previous, next, version: atlas_graph::version_hex(graph.version()) }))
 }
 

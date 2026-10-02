@@ -247,11 +247,10 @@ impl SqliteSnapshot {
                  AND NOT EXISTS (SELECT 1 FROM all_edge_index AS earlier WHERE earlier.subject = first.subject AND earlier.rel = first.rel AND earlier.dir = first.dir AND earlier.edge_id = first.edge_id AND earlier.ord < first.ord) \
                  ORDER BY ord DESC LIMIT ?5",
             )?;
-            let previous = before
-                .query_map(rusqlite::params![subject, rel, dir, start as i64, i64::try_from(q.limit).unwrap_or(i64::MAX)], |row| row.get::<_, i64>(0))?
-                .last()
-                .transpose()?
-                .map(|ord| ord as usize);
+            let earlier = before
+                .query_map(rusqlite::params![subject, rel, dir, start as i64, i64::try_from(q.limit).unwrap_or(i64::MAX).saturating_add(1)], |row| row.get::<_, i64>(0))?
+                .collect::<Result<Vec<_>, _>>()?;
+            let previous = (q.limit > 0).then(|| earlier.get(q.limit.saturating_sub(1)).filter(|_| earlier.len() > q.limit).map(|&ord| ord as usize)).flatten();
             Ok(EdgePage { kind: q.kind, entries, previous, next })
         })
     }

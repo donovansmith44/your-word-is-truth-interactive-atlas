@@ -62,7 +62,7 @@ public sealed class PlaceOpeningTests : BunitContext
             new Verse(heading: null, persons: [], places: [new PlaceRef(id: "hazor-1", name: Mentioned, node: Hazor)], text: Mentioned, number: VerseNumber, wordsOfChrist: [], xrefCount: 0),
         ]);
         var context = new RecordingContext();
-        var section = await new ChapterCardSection().ResolveAsync(new ChapterNode(ChapterBook, ChapterNumber) { AlreadyLoaded = chapter }, new StubbedAtlas("{}").Client(), context);
+        var section = await new ChapterCardSection().ResolveAsync(new ChapterNode(ChapterBook, ChapterNumber) { AlreadyLoaded = chapter }, Resolved.Node(NodeKind.Container, $"Container:{ChapterBook}", ChapterBook), new StubbedAtlas("{}").Client(), context);
         var card = Render(section!.Body);
 
         // Act
@@ -89,8 +89,6 @@ public sealed class PlaceOpeningTests : BunitContext
         public bool XrefEntryPoint => false;
 
         public IExplorableClient Graph => throw new NotSupportedException();
-
-        public Explorable Current => throw new NotSupportedException();
 
         public Task RenewAsync() => Task.CompletedTask;
 

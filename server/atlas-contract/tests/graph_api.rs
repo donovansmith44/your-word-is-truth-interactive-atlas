@@ -790,7 +790,7 @@ async fn every_neighbour_page_names_the_page_before_it_and_reading_there_answers
     }
 
     // Assert
-    let expected: Vec<Option<Vec<String>>> = std::iter::once(None).chain(pages.iter().take(pages.len() - 1).map(|page| Some(edges(page)))).collect();
+    let expected: Vec<Option<Vec<String>>> = [None, None].into_iter().chain(pages.iter().skip(1).take(pages.len() - 2).map(|page| Some(edges(page)))).collect();
     assert_eq!((pages.len() > 2, before), (true, expected));
 }
 
@@ -798,15 +798,19 @@ async fn every_neighbour_page_names_the_page_before_it_and_reading_there_answers
 async fn an_element_read_names_the_page_of_ids_before_it() {
     // Arrange
     let app = compiled_app();
-    let ids = vec![A_SAMPLE_VERSE; LARGEST_PAGE + 1];
+    let ids = vec![A_SAMPLE_VERSE; 2 * LARGEST_PAGE + 1];
     let asked = ids.iter().map(|id| encoded(id)).collect::<Vec<_>>().join(",");
 
     // Act
     let (_, first, _) = get(&app, &format!("/api/elements?ids={asked}")).await;
     let (_, second, _) = get(&app, &format!("/api/elements?ids={asked}&cursor={LARGEST_PAGE}")).await;
+    let (_, third, _) = get(&app, &format!("/api/elements?ids={asked}&cursor={}", 2 * LARGEST_PAGE)).await;
 
     // Assert
-    assert_eq!((first.get("previous").cloned(), second.get("previous").cloned()), (Some(serde_json::Value::Null), Some(serde_json::json!(0))));
+    assert_eq!(
+        [&first, &second, &third].map(|page| page.get("previous").cloned()),
+        [Some(serde_json::Value::Null), Some(serde_json::Value::Null), Some(serde_json::json!(LARGEST_PAGE))]
+    );
 }
 
 #[tokio::test]

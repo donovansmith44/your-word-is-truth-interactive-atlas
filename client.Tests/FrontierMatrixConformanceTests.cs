@@ -150,7 +150,7 @@ public class FrontierMatrixConformanceTests
         public bool AppliesTo(IExplorable node) =>
             FrontierMatrix.CrossReferences.Contains(FocusKinds.Parse(node.Kind)) || FocusKinds.Parse(node.Kind) == FocusKind.Event;
 
-        public Task<PopoverSection?> ResolveAsync(IExplorable node, AtlasClient api, IPopoverSectionContext ctx) =>
+        public Task<PopoverSection?> ResolveAsync(IExplorable node, Explorable current, AtlasClient api, IPopoverSectionContext ctx) =>
             Task.FromResult<PopoverSection?>(null);
     }
 

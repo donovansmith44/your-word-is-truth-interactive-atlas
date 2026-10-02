@@ -21,8 +21,6 @@ public interface IPopoverSectionContext
 
     IExplorableClient Graph { get; }
 
-    Explorable Current { get; }
-
     Task RenewAsync();
 
     Task NavigateWorldAsync(string query);
@@ -34,7 +32,7 @@ public interface IPopoverSectionProvider
 {
     bool AppliesTo(IExplorable node);
 
-    Task<PopoverSection?> ResolveAsync(IExplorable node, AtlasClient api, IPopoverSectionContext ctx);
+    Task<PopoverSection?> ResolveAsync(IExplorable node, Explorable current, AtlasClient api, IPopoverSectionContext ctx);
 }
 
 public static class PopoverSectionRegistry

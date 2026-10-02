@@ -1,5 +1,6 @@
 import { test, expect, Page } from '@playwright/test';
 import { api } from './lib/api';
+import { popoverSectionsHolding } from './lib/popover';
 
 // EVT-3 Ticket 3 (owner verbatim, EVENT-TIMEPLACE-1): "At the top, right
 // below the header of the 'event' frontier, I want Time: and Place: ...
@@ -103,9 +104,7 @@ test('EVT-META-TOP-1: The Sermon on the Mount\'s own real Time:/Place: values ar
 
 test('EVT-META-TOP-1: the time/place row renders FIRST among Event sections, right below the header -- ABOVE Chronology now (supersedes CHRONO-MERGE-1\'s own "Chronology always on top")', async ({ page }) => {
   await openEventPopover(page, 'rob_last_nazareth_visit');
-  const sectionOrder = await page.locator('[data-testid^="popover-section-"]').evaluateAll(
-    (els) => els.map((el) => el.getAttribute('data-testid')),
-  );
+  const sectionOrder = await popoverSectionsHolding(page, ['popover-section-event-date-places', 'popover-section-event-chronology']);
   const dateplacesIdx = sectionOrder.indexOf('popover-section-event-date-places');
   const chronologyIdx = sectionOrder.indexOf('popover-section-event-chronology');
   expect(dateplacesIdx).toBeGreaterThanOrEqual(0);
