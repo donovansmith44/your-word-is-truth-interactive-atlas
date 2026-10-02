@@ -99,13 +99,20 @@
                 {
                     <span class="place-card-dates-sep" aria-hidden="true">&middot;</span>
                 }
-                <button type="button" class="place-card-date explorable" data-testid="@($"place-card-date-{date.Label.ToLowerInvariant()}")"
-                        aria-label="@($"Explore {date.Label.ToLowerInvariant()} date: {date.Claim.Label}")"
-                        @onclick="() => ExploreDate(date)">
-                    <span class="place-card-date-label">@date.Label</span>
-                    <span class="place-card-date-value">@date.Claim.Label</span>
-                    <span class="place-card-date-explore" aria-hidden="true">Explore</span>
-                </button>
+                var dateTestId = $"place-card-date-{date.Label.ToLowerInvariant()}";
+                @if (YearNode.Of(Place.Id, date) is { } year)
+                {
+                    <button type="button" class="place-card-date explorable" data-testid="@dateTestId"
+                            aria-label="@($"Explore {date.Label.ToLowerInvariant()} date: {date.Claim.Label}")"
+                            @onclick="() => OnExploreNode.InvokeAsync(year)">
+                        @DateText(date)
+                        <span class="place-card-date-explore" aria-hidden="true">Explore</span>
+                    </button>
+                }
+                else
+                {
+                    <span class="place-card-date" data-testid="@dateTestId">@DateText(date)</span>
+                }
             }
         </div>
     }
@@ -140,6 +147,9 @@
 </div>
 
 @code {
+    private readonly RenderFragment<PlaceDate> DateText = date =>
+        @<text><span class="place-card-date-label">@date.Label</span><span class="place-card-date-value">@date.Claim.Label</span></text>;
+
     [Parameter, EditorRequired] public ScenePlace Place { get; set; } = default!;
     [Parameter] public double X { get; set; }
     [Parameter] public double Y { get; set; }
@@ -376,8 +386,6 @@
             _narrativePositions = new List<NarrativePosition>();
         }
     }
-
-    private Task ExploreDate(PlaceDate date) => OnExploreNode.InvokeAsync(new YearNode(Place.Id, date));
 
     private Task ExploreVerse(string vref) => OnExploreNode.InvokeAsync(new VerseNode(vref));
 

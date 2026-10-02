@@ -25,6 +25,7 @@ public sealed class ChapterNode : IExplorable
 
     public string Title => $"{_book}.{_chapter}";
     public string Kind => "Chapter";
+    public NodeRef Identity => new(id: LegacyNodes.ChapterContainerId(_book, _chapter), kind: PositionKind.Container, label: Title);
 
     public Task<IReadOnlyList<Chip>> ExploreAsync(AtlasClient api)
     {
@@ -37,7 +38,7 @@ public sealed class ChapterNode : IExplorable
             new Chip("Read in context", "popover-chip-context",
                 new ChipTarget.NavigateReader(_book, _chapter, null)),
             new Chip("About this book", "popover-chip-book",
-                new ChipTarget.Push(new AuthorNode(_book))),
+                new ChipTarget.Push(new AuthorNode(_book), EdgeKind.MemberOf)),
         };
         return Task.FromResult(list);
     }

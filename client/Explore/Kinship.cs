@@ -2,7 +2,7 @@ using BibleAtlas.Client.Contract;
 
 namespace BibleAtlas.Client.Explore;
 
-public sealed record KinGroup(string Heading, string TestId, IReadOnlyList<NodeRef> People);
+public sealed record KinGroup(string Heading, string TestId, IReadOnlyList<NodeRef> People, EdgeKind Via);
 
 public static class Kinship
 {
@@ -27,23 +27,23 @@ public static class Kinship
     {
         IEnumerable<KinGroup> all =
         [
-            .. ByParentage(parents, "parents", AsParent),
-            Counted("Spouses", "spouses", spouses),
-            .. ByParentage(children, "children", AsChild),
-            Counted("Siblings", "siblings", siblings),
-            Counted("Brethren", "brethren", brethren),
+            .. ByParentage(parents, "parents", AsParent, EdgeKind.ChildOf),
+            Counted("Spouses", "spouses", spouses, EdgeKind.SpouseOf),
+            .. ByParentage(children, "children", AsChild, EdgeKind.ParentOf),
+            Counted("Siblings", "siblings", siblings, EdgeKind.BrethrenOf),
+            Counted("Brethren", "brethren", brethren, EdgeKind.BrethrenOf),
         ];
         return all.Where(g => g.People.Count > 0).ToList();
     }
 
-    private static KinGroup Counted(string label, string testId, IReadOnlyList<NodeRef> people) => new($"{label} ({people.Count})", testId, people);
+    private static KinGroup Counted(string label, string testId, IReadOnlyList<NodeRef> people, EdgeKind via) => new($"{label} ({people.Count})", testId, people, via);
 
-    private static IEnumerable<KinGroup> ByParentage(IReadOnlyList<EdgeEntry> entries, string testId, Func<Parentage, string> label) =>
+    private static IEnumerable<KinGroup> ByParentage(IReadOnlyList<EdgeEntry> entries, string testId, Func<Parentage, string> label, EdgeKind via) =>
         Enum.GetValues<Parentage>().Select(parentage =>
         {
             var people = entries.Where(e => Of(e) == parentage).Select(e => e.Node).ToList();
             return parentage == Parentage.Natural
-                ? Counted(label(parentage), testId, people)
-                : new KinGroup(label(parentage), $"{testId}-{parentage.ToString().ToLowerInvariant()}", people);
+                ? Counted(label(parentage), testId, people, via)
+                : new KinGroup(label(parentage), $"{testId}-{parentage.ToString().ToLowerInvariant()}", people, via);
         });
 }

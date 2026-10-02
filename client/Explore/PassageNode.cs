@@ -18,6 +18,7 @@ public sealed class PassageNode : IExplorable
 
     public string Title => _sref;
     public string Kind => "Passage";
+    public NodeRef Identity => new(id: NodeIds.Of(NodeKind.TextUnit, CanonRef.FirstVerseOf(_sref)), kind: PositionKind.TextUnit, label: _sref);
 
     public string Text => _text;
 
@@ -29,7 +30,7 @@ public sealed class PassageNode : IExplorable
             new Chip("Read in context", "popover-chip-context",
                 new ChipTarget.NavigateReader(book, chapter, verse)),
             new Chip("About this book", "popover-chip-book",
-                new ChipTarget.Push(new AuthorNode(book))),
+                new ChipTarget.Push(new AuthorNode(book), EdgeKind.MemberOf)),
         };
         return Task.FromResult(list);
     }

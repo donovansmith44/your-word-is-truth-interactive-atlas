@@ -1,11 +1,12 @@
 using System.Linq;
+using BibleAtlas.Client.Contract;
 using Microsoft.AspNetCore.Components;
 
 namespace BibleAtlas.Client.Explore;
 
 public interface IPopoverSectionContext
 {
-    Task PushAsync(IExplorable node);
+    Task PushAsync(IExplorable node, EdgeKind via);
 
     Task ToggleSelectAsync(IExplorable node);
 

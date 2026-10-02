@@ -1,5 +1,6 @@
 using BibleAtlas.Client.Tests.State;
 using System.Text.RegularExpressions;
+using BibleAtlas.Client.Contract;
 using BibleAtlas.Client.Explore;
 
 namespace BibleAtlas.Client.Tests;
@@ -108,7 +109,7 @@ public class PopoverChromeConformanceTests
             {
                 IReadOnlyList<Chip> list = new[]
                 {
-                    new Chip("About this book", "popover-chip-book", new ChipTarget.Push(new AuthorNode(book))),
+                    new Chip("About this book", "popover-chip-book", new ChipTarget.Push(new AuthorNode(book), EdgeKind.MemberOf)),
                     new Chip("Read in context", "popover-chip-context", new ChipTarget.NavigateReader(book, chapter, verse)),
                     new Chip("A planted dead chip", "popover-chip-planted-violation", new ChipTarget.NavigateWorld("ref=GEN")),
                 };

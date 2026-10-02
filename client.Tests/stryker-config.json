@@ -10,7 +10,7 @@
       "**/IExplorableClient.cs",
       "**/GraphExplorableClient.cs",
       "**/AtlasClient.cs",
-      "**/Explore/EdgeSectionRegistry.cs",
+      "**/Explore/Affordances.cs",
       "**/YearInput.cs",
       "**/Explore/AnchoredText.cs",
       "**/Explore/ChapterText.cs",

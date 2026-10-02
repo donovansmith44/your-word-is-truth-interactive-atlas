@@ -142,6 +142,7 @@ public class ConformanceTests
         AssertSingletonWithName<TimeWindow>(provider, AtomNames.TimeWindow);
         AssertSingletonWithName<ViewArrangement>(provider, AtomNames.ViewArrangement);
         AssertSingletonWithName<FocusStack>(provider, AtomNames.FocusStack);
+        AssertSingletonWithName<Explore.ExplorationState>(provider, AtomNames.Exploration);
         AssertSingletonWithName<IReadOnlyList<Explore.ExplorationDescriptor>>(provider, AtomNames.Selection);
     }
 

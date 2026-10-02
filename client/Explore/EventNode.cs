@@ -30,6 +30,7 @@ public sealed class EventNode : IExplorable, INarrativeAware
     public string EventId { get; }
     public string Title { get; }
     public string Kind => "Event";
+    public NodeRef Identity => new(id: NodeIds.Of(NodeKind.Event, EventId), kind: PositionKind.Event, label: Title);
 
     public EventKind? CachedKind => _detail.CompletedValueOrDefault?.Kind ?? _knownKind;
 
@@ -64,7 +65,7 @@ public sealed class EventNode : IExplorable, INarrativeAware
 
     public Task<EventPage> DetailAsync(AtlasClient api) => _detail.Get(() => api.Event(EventId));
 
-    public Task<NodeCard> CardAsync(AtlasClient api) => _card.Get(() => api.NodeCard(NodeIds.Of(NodeKind.Event, EventId)));
+    public Task<NodeCard> CardAsync(AtlasClient api) => _card.Get(() => api.NodeCard(Identity.Id));
 
     public Task<NarrativeEventPositions> NarrativePositionsAsync(AtlasClient api) =>
         _positions.Get(() => api.NarrativeEventPositions(EventId));

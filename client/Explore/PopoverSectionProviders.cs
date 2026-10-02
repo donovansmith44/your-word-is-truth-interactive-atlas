@@ -83,7 +83,7 @@ public sealed class ChapterCardSection : IPopoverSectionProvider
                     builder.AddAttribute(seq++, "type", "button");
                     builder.AddAttribute(seq++, "class", "popover-event-row popover-event-row-button explorable");
                     builder.AddAttribute(seq++, "data-testid", $"chapter-card-heading-{eventId}");
-                    builder.AddAttribute(seq++, "onclick", EventCallback.Factory.Create(ctx, () => ctx.PushAsync(new EventNode(eventId, title, headingKind))));
+                    builder.AddAttribute(seq++, "onclick", EventCallback.Factory.Create(ctx, () => ctx.PushAsync(new EventNode(eventId, title, headingKind), EdgeKind.Attests)));
                     builder.AddContent(seq++, title);
                     builder.CloseElement();
                 }
@@ -118,7 +118,7 @@ public sealed class ChapterCardSection : IPopoverSectionProvider
                     builder.AddAttribute(seq++, "type", "button");
                     builder.AddAttribute(seq++, "class", "popover-event-row popover-event-row-button explorable");
                     builder.AddAttribute(seq++, "data-testid", $"chapter-card-place-{placeId}");
-                    builder.AddAttribute(seq++, "onclick", EventCallback.Factory.Create(ctx, () => ctx.PushAsync(new PlaceNode(placeId, placeName))));
+                    builder.AddAttribute(seq++, "onclick", EventCallback.Factory.Create(ctx, () => ctx.PushAsync(new PlaceNode(placeId, placeName), EdgeKind.Mentions)));
                     builder.AddContent(seq++, placeName);
                     builder.CloseElement();
                 }
@@ -221,7 +221,7 @@ public sealed class VerseTextSectionProvider : IPopoverSectionProvider
             builder.AddAttribute(seq++, "FocalToVerse", focalTo);
             builder.AddAttribute(seq++, "CompactText", compactText);
             builder.AddAttribute(seq++, "FocalVerses", focalVerses);
-            builder.AddAttribute(seq++, "OnExplore", EventCallback.Factory.Create<IExplorable>(ctx, n => ctx.PushAsync(n)));
+            builder.AddAttribute(seq++, "OnExplore", EventCallback.Factory.Create<IExplorable>(ctx, n => ctx.PushAsync(n, EdgeKind.Mentions)));
             builder.CloseComponent();
 
             seq = FrontierProvenance.Affordance(
@@ -347,8 +347,8 @@ public sealed class CrossRefsSection : IPopoverSectionProvider
         // more"); targets beyond that keep their full identity and are resolved lazily via
         // ResolveUnits on first reveal, never narrowed to a single-verse preview.
         var spans = xrefs.Select(x => (Xref: x, Span: CanonRef.TargetSpan(x.Target))).ToList();
-        var eagerSpans = spans.Take(EdgeSectionRegistry.Cites.InitialClamp).ToList();
-        var lazySpans = spans.Skip(EdgeSectionRegistry.Cites.InitialClamp).ToList();
+        var eagerSpans = spans.Take(Affordances.Cites.InitialClamp).ToList();
+        var lazySpans = spans.Skip(Affordances.Cites.InitialClamp).ToList();
         var units = await ResolveUnits(api, eagerSpans);
         var registry = await FrontierProvenance.RegistryOrNull(api);
 
@@ -365,13 +365,13 @@ public sealed class CrossRefsSection : IPopoverSectionProvider
             builder.AddAttribute(seq++, "TrueTotal", xrefs.Count);
             builder.AddAttribute(seq++, "ResolveRemainingAsync", (Func<Task<IReadOnlyList<PassageSourceUnit>>>)(async () => await ResolveUnits(api, lazySpans)));
             builder.AddAttribute(seq++, "RefTestIdPrefix", "xref-item");
-            builder.AddAttribute(seq++, "Cap", ctx.XrefEntryPoint ? EdgeSectionRegistry.Cites.InitialClamp : (ctx.OtherContextSectionCount > 0 ? 2 : EdgeSectionRegistry.Cites.InitialClamp));
+            builder.AddAttribute(seq++, "Cap", ctx.XrefEntryPoint ? Affordances.Cites.InitialClamp : (ctx.OtherContextSectionCount > 0 ? 2 : Affordances.Cites.InitialClamp));
             builder.AddAttribute(seq++, "MoreTestId", "xrefs-more");
             builder.AddAttribute(seq++, "CollapseTestId", "xrefs-collapse");
             builder.AddAttribute(seq++, "RevealNoun", "cross-references");
             builder.AddAttribute(seq++, "ClampVerses", Components.PassageList.StandardVerseClamp);
             builder.AddAttribute(seq++, "ExploreAsVerse", true);
-            builder.AddAttribute(seq++, "OnExplore", EventCallback.Factory.Create<IExplorable>(ctx, n => ctx.PushAsync(n)));
+            builder.AddAttribute(seq++, "OnExplore", EventCallback.Factory.Create<IExplorable>(ctx, n => ctx.PushAsync(n, EdgeKind.Cites)));
             builder.AddAttribute(seq++, "OnToggleSelect", EventCallback.Factory.Create<IExplorable>(ctx, n => ctx.ToggleSelectAsync(n)));
             builder.CloseComponent();
         };
@@ -462,7 +462,7 @@ public sealed class CatechismSeamSection : IPopoverSectionProvider
             builder.OpenComponent<Components.CatechismList>(seq++);
             builder.AddAttribute(seq++, "Items", items);
             builder.AddAttribute(seq++, "Cap", CatechismDefaultCap);
-            builder.AddAttribute(seq++, "OnExplore", EventCallback.Factory.Create<IExplorable>(ctx, n => ctx.PushAsync(n)));
+            builder.AddAttribute(seq++, "OnExplore", EventCallback.Factory.Create<IExplorable>(ctx, n => ctx.PushAsync(n, EdgeKind.CatechismLink)));
             builder.CloseComponent();
         };
         return new PopoverSection("catechism", body);
@@ -669,7 +669,7 @@ public sealed class CatechismScripturesSection : IPopoverSectionProvider
             builder.OpenComponent<Components.PassageList>(seq++);
             builder.AddAttribute(seq++, "Units", (IReadOnlyList<PassageSourceUnit>)units);
             builder.AddAttribute(seq++, "RefTestIdPrefix", "catechism-verse");
-            builder.AddAttribute(seq++, "OnExplore", EventCallback.Factory.Create<IExplorable>(ctx, n => ctx.PushAsync(n)));
+            builder.AddAttribute(seq++, "OnExplore", EventCallback.Factory.Create<IExplorable>(ctx, n => ctx.PushAsync(n, EdgeKind.CatechismLink)));
             builder.CloseComponent();
         };
         return new PopoverSection("catechism-scriptures", body);
@@ -788,7 +788,7 @@ public sealed class PlaceDatesSection : IPopoverSectionProvider
             builder.AddAttribute(seq++, "MoreTestId", $"popover-place-date-{testidSuffix}-more");
             builder.AddAttribute(seq++, "CollapseTestId", $"popover-place-date-{testidSuffix}-collapse");
             builder.AddAttribute(seq++, "RevealNoun", "verses");
-            builder.AddAttribute(seq++, "OnExplore", EventCallback.Factory.Create<IExplorable>(ctx, n => ctx.PushAsync(n)));
+            builder.AddAttribute(seq++, "OnExplore", EventCallback.Factory.Create<IExplorable>(ctx, n => ctx.PushAsync(n, EdgeKind.MentionedIn)));
             builder.CloseComponent();
         }
     }
@@ -867,7 +867,7 @@ public sealed class PlaceEventsSection : IPopoverSectionProvider
             builder.AddAttribute(1, "PlaceId", place.PlaceId);
             builder.AddAttribute(2, "PlaceName", placeName);
             builder.AddAttribute(3, "Events", events);
-            builder.AddAttribute(4, "OnExplore", EventCallback.Factory.Create<IExplorable>(ctx, n => ctx.PushAsync(n)));
+            builder.AddAttribute(4, "OnExplore", EventCallback.Factory.Create<IExplorable>(ctx, n => ctx.PushAsync(n, EdgeKind.SiteOf)));
             builder.AddAttribute(5, "OnToggleSelect", EventCallback.Factory.Create<IExplorable>(ctx, n => ctx.ToggleSelectAsync(n)));
             builder.CloseComponent();
         };
@@ -939,7 +939,7 @@ public sealed class VerseEventMembershipSection : IPopoverSectionProvider
             builder.AddAttribute(seq++, "type", "button");
             builder.AddAttribute(seq++, "class", $"popover-event-row popover-event-row-button {explorableClass}");
             builder.AddAttribute(seq++, "data-testid", $"verse-event-{id}");
-            builder.AddAttribute(seq++, "onclick", EventCallback.Factory.Create(ctx, () => ctx.PushAsync(new EventNode(id, label, rowKind))));
+            builder.AddAttribute(seq++, "onclick", EventCallback.Factory.Create(ctx, () => ctx.PushAsync(new EventNode(id, label, rowKind), EdgeKind.Attests)));
             builder.AddContent(seq++, label);
             builder.CloseElement();
         }
@@ -1056,7 +1056,7 @@ public sealed class EventDateAndPlacesSection : IPopoverSectionProvider
                     {
                         valueBuilder.AddAttribute(vseq++, "title", refNote);
                     }
-                    valueBuilder.AddAttribute(vseq++, "onclick", EventCallback.Factory.Create(ctx, () => ctx.PushAsync(new YearNode(when))));
+                    valueBuilder.AddAttribute(vseq++, "onclick", EventCallback.Factory.Create(ctx, () => ctx.PushAsync(new YearNode(when, ev.Identity), EdgeKind.DatedBy)));
                     valueBuilder.AddContent(vseq++, when.Label);
                     valueBuilder.CloseElement();
 
@@ -1080,10 +1080,10 @@ public sealed class EventDateAndPlacesSection : IPopoverSectionProvider
         return new PopoverSection("event-date-places", body);
     }
 
-    internal static void RenderArrowNav(RenderTreeBuilder builder, ref int seq, IPopoverSectionContext ctx, string direction, string eventTestIdPrefix, string roleTestIdPrefix, string idSuffix, NarrativeAdjacentEvent? adjacent, string glyph, bool inline = false, string? inlinePrefixText = null)
+    internal static void RenderArrowNav(RenderTreeBuilder builder, ref int seq, IPopoverSectionContext ctx, ArrowDirection direction, string eventTestIdPrefix, string roleTestIdPrefix, string idSuffix, NarrativeAdjacentEvent? adjacent, string glyph, bool inline = false, string? inlinePrefixText = null)
     {
         builder.OpenComponent<Components.ArrowNav>(seq++);
-        builder.AddAttribute(seq++, "Direction", direction);
+        builder.AddAttribute(seq++, "Direction", direction.Name);
         builder.AddAttribute(seq++, "EventTestIdPrefix", eventTestIdPrefix);
         builder.AddAttribute(seq++, "RoleTestIdPrefix", roleTestIdPrefix);
         builder.AddAttribute(seq++, "IdSuffix", idSuffix);
@@ -1091,9 +1091,15 @@ public sealed class EventDateAndPlacesSection : IPopoverSectionProvider
         builder.AddAttribute(seq++, "Glyph", glyph);
         builder.AddAttribute(seq++, "Inline", inline);
         builder.AddAttribute(seq++, "InlinePrefixText", inlinePrefixText);
-        builder.AddAttribute(seq++, "OnExplore", EventCallback.Factory.Create<IExplorable>(ctx, n => ctx.PushAsync(n)));
+        builder.AddAttribute(seq++, "OnExplore", EventCallback.Factory.Create<IExplorable>(ctx, n => ctx.PushAsync(n, direction.Via)));
         builder.CloseComponent();
     }
+}
+
+public sealed record ArrowDirection(string Name, EdgeKind Via)
+{
+    public static readonly ArrowDirection Prior = new("prior", EdgeKind.PrecedesIn);
+    public static readonly ArrowDirection Following = new("following", EdgeKind.FollowsIn);
 }
 
 file static class WitnessUnitsResolver
@@ -1153,7 +1159,7 @@ public sealed class EventWitnessesSection : IPopoverSectionProvider
             builder.AddAttribute(seq++, "Units", (IReadOnlyList<PassageSourceUnit>)units);
             builder.AddAttribute(seq++, "RefTestIdPrefix", "event-witness");
             builder.AddAttribute(seq++, "ClampVerses", Components.PassageList.StandardVerseClamp);
-            builder.AddAttribute(seq++, "OnExplore", EventCallback.Factory.Create<IExplorable>(ctx, n => ctx.PushAsync(n)));
+            builder.AddAttribute(seq++, "OnExplore", EventCallback.Factory.Create<IExplorable>(ctx, n => ctx.PushAsync(n, EdgeKind.AttestedIn)));
             builder.CloseComponent();
         };
         return new PopoverSection(multi ? "event-witnesses" : "event-witness", body);
@@ -1205,7 +1211,7 @@ public sealed class EventMentionsSection : IPopoverSectionProvider
             builder.OpenComponent<Components.RefsList>(seq++);
             builder.AddAttribute(seq++, "Refs", (IReadOnlyList<Components.RefsList.RefDescriptor>)refs);
             builder.AddAttribute(seq++, "TestIdPrefix", "event-mentioned-in");
-            builder.AddAttribute(seq++, "OnExplore", EventCallback.Factory.Create<IExplorable>(ctx, n => ctx.PushAsync(n)));
+            builder.AddAttribute(seq++, "OnExplore", EventCallback.Factory.Create<IExplorable>(ctx, n => ctx.PushAsync(n, EdgeKind.MentionedIn)));
             builder.CloseComponent();
         };
         return new PopoverSection("event-mentions", body);
@@ -1257,7 +1263,7 @@ public sealed class EventAnaloguesSection : IPopoverSectionProvider
             builder.OpenComponent<Components.RefsList>(seq++);
             builder.AddAttribute(seq++, "Refs", (IReadOnlyList<Components.RefsList.RefDescriptor>)refs);
             builder.AddAttribute(seq++, "TestIdPrefix", "event-analogues");
-            builder.AddAttribute(seq++, "OnExplore", EventCallback.Factory.Create<IExplorable>(ctx, n => ctx.PushAsync(n)));
+            builder.AddAttribute(seq++, "OnExplore", EventCallback.Factory.Create<IExplorable>(ctx, n => ctx.PushAsync(n, EdgeKind.AnalogousTo)));
             builder.CloseComponent();
         };
         return new PopoverSection("event-analogues", body);
@@ -1342,7 +1348,7 @@ public sealed class VerseParallelsSection : IPopoverSectionProvider
                 builder.AddAttribute(seq++, "Units", (IReadOnlyList<PassageSourceUnit>)units);
                 builder.AddAttribute(seq++, "RefTestIdPrefix", multiEvent ? $"verse-parallel-{Slugify(label)}" : "verse-parallel");
                 builder.AddAttribute(seq++, "ClampVerses", Components.PassageList.StandardVerseClamp);
-                builder.AddAttribute(seq++, "OnExplore", EventCallback.Factory.Create<IExplorable>(ctx, n => ctx.PushAsync(n)));
+                builder.AddAttribute(seq++, "OnExplore", EventCallback.Factory.Create<IExplorable>(ctx, n => ctx.PushAsync(n, EdgeKind.Parallel)));
                 builder.CloseComponent();
             }
         };
@@ -1411,8 +1417,8 @@ public sealed class EventChronologySection : IPopoverSectionProvider
 
             builder.OpenElement(seq++, "div");
             builder.AddAttribute(seq++, "class", "popover-event-nav-arrows");
-            EventDateAndPlacesSection.RenderArrowNav(builder, ref seq, ctx, "prior", "event-chrono-prior-event", "event-chrono-prior-label", "global", timeline.Prior, "◂");
-            EventDateAndPlacesSection.RenderArrowNav(builder, ref seq, ctx, "following", "event-chrono-following-event", "event-chrono-following-label", "global", timeline.Following, "▸");
+            EventDateAndPlacesSection.RenderArrowNav(builder, ref seq, ctx, ArrowDirection.Prior, "event-chrono-prior-event", "event-chrono-prior-label", "global", timeline.Prior, "◂");
+            EventDateAndPlacesSection.RenderArrowNav(builder, ref seq, ctx, ArrowDirection.Following, "event-chrono-following-event", "event-chrono-following-label", "global", timeline.Following, "▸");
             builder.CloseElement();
 
             builder.CloseElement();
@@ -1435,7 +1441,7 @@ public sealed class EventChronologySection : IPopoverSectionProvider
 
                     if (priorDiverges)
                     {
-                        EventDateAndPlacesSection.RenderArrowNav(builder, ref seq, ctx, "prior", "event-story-thread-prior-event", "event-story-thread-prior-label", row.NarrativeId, row.Prior, "←", inline: true);
+                        EventDateAndPlacesSection.RenderArrowNav(builder, ref seq, ctx, ArrowDirection.Prior, "event-story-thread-prior-event", "event-story-thread-prior-label", row.NarrativeId, row.Prior, "←", inline: true);
                     }
                     if (priorDiverges && followingDiverges)
                     {
@@ -1443,7 +1449,7 @@ public sealed class EventChronologySection : IPopoverSectionProvider
                     }
                     if (followingDiverges)
                     {
-                        EventDateAndPlacesSection.RenderArrowNav(builder, ref seq, ctx, "following", "event-story-thread-following-event", "event-story-thread-following-label", row.NarrativeId, row.Following, "→", inline: true, inlinePrefixText: "next ");
+                        EventDateAndPlacesSection.RenderArrowNav(builder, ref seq, ctx, ArrowDirection.Following, "event-story-thread-following-event", "event-story-thread-following-label", row.NarrativeId, row.Following, "→", inline: true, inlinePrefixText: "next ");
                     }
 
                     builder.CloseElement();
@@ -1520,7 +1526,7 @@ public sealed class PolityDeltaScripturesSection : IPopoverSectionProvider
             builder.OpenComponent<Components.PassageList>(seq++);
             builder.AddAttribute(seq++, "Units", (IReadOnlyList<PassageSourceUnit>)units);
             builder.AddAttribute(seq++, "RefTestIdPrefix", "polity-delta-verse");
-            builder.AddAttribute(seq++, "OnExplore", EventCallback.Factory.Create<IExplorable>(ctx, n => ctx.PushAsync(n)));
+            builder.AddAttribute(seq++, "OnExplore", EventCallback.Factory.Create<IExplorable>(ctx, n => ctx.PushAsync(n, EdgeKind.JustifiedBy)));
             builder.CloseComponent();
         };
         return new PopoverSection("polity-delta-scriptures", body);
@@ -1573,7 +1579,7 @@ public sealed class VersePersonsSection : IPopoverSectionProvider
         EdgePage page;
         try
         {
-            page = await ctx.Graph.Edges(wireId, EdgeSectionRegistry.Mentions.EdgeKind, cursor: null, limit: EdgeSectionRegistry.Mentions.InitialClamp);
+            page = await ctx.Graph.Edges(wireId, EdgeKind.Mentions, cursor: null, limit: Affordances.Mentions.InitialClamp);
         }
         catch (Exception)
         {
@@ -1604,7 +1610,7 @@ public sealed class VersePersonsSection : IPopoverSectionProvider
                 builder.AddAttribute(seq++, "type", "button");
                 builder.AddAttribute(seq++, "class", "popover-event-row popover-event-row-button explorable");
                 builder.AddAttribute(seq++, "data-testid", $"verse-person-{Slug(label)}");
-                builder.AddAttribute(seq++, "onclick", EventCallback.Factory.Create(ctx, () => ctx.PushAsync(new PersonNode(id, label))));
+                builder.AddAttribute(seq++, "onclick", EventCallback.Factory.Create(ctx, () => ctx.PushAsync(new PersonNode(id, label), EdgeKind.Mentions)));
                 builder.AddContent(seq++, label);
                 builder.CloseElement();
             }
@@ -1644,13 +1650,12 @@ public sealed class PersonCardAndMentionsSection : IPopoverSectionProvider
             return null;
         }
 
-        var spec = EdgeSectionRegistry.MentionedIn;
         NodeCard card;
         EdgePage page;
         try
         {
             var cardTask = person.CardAsync(() => ctx.Graph.Card(person.PersonId));
-            var pageTask = ctx.Graph.Edges(person.PersonId, spec.EdgeKind, cursor: null, limit: spec.InitialClamp);
+            var pageTask = ctx.Graph.Edges(person.PersonId, EdgeKind.MentionedIn, cursor: null, limit: Affordances.MentionedIn.InitialClamp);
             await Task.WhenAll(cardTask, pageTask);
             card = cardTask.Result;
             page = pageTask.Result;
@@ -1660,7 +1665,7 @@ public sealed class PersonCardAndMentionsSection : IPopoverSectionProvider
             return null;
         }
 
-        var total = card.EdgeSummary.FirstOrDefault(s => s.Kind == spec.EdgeKind)?.Count ?? page.Entries.Count;
+        var total = card.EdgeSummary.FirstOrDefault(s => s.Kind == EdgeKind.MentionedIn)?.Count ?? page.Entries.Count;
 
         RenderFragment body = builder =>
         {
@@ -1680,7 +1685,7 @@ public sealed class PersonCardAndMentionsSection : IPopoverSectionProvider
             builder.AddAttribute(seq++, "InitialNext", page.Next);
             builder.AddAttribute(seq++, "TotalCount", total);
             builder.AddAttribute(seq++, "ShowHeading", false);
-            builder.AddAttribute(seq++, "OnExplore", EventCallback.Factory.Create<IExplorable>(ctx, n => ctx.PushAsync(n)));
+            builder.AddAttribute(seq++, "OnExplore", EventCallback.Factory.Create<IExplorable>(ctx, n => ctx.PushAsync(n, EdgeKind.MentionedIn)));
             builder.CloseComponent();
             builder.CloseElement();
         };
@@ -1767,7 +1772,7 @@ public sealed class CatechismInConcordSection : IPopoverSectionProvider
 
             builder.OpenComponent<Components.ConcordUnitList>(seq++);
             builder.AddAttribute(seq++, "Items", (IReadOnlyList<NodeRef>)units);
-            builder.AddAttribute(seq++, "OnExplore", EventCallback.Factory.Create<IExplorable>(ctx, n => ctx.PushAsync(n)));
+            builder.AddAttribute(seq++, "OnExplore", EventCallback.Factory.Create<IExplorable>(ctx, n => ctx.PushAsync(n, EdgeKind.CatechismLink)));
             builder.CloseComponent();
         };
         return new PopoverSection("catechism-in-concord", body);
@@ -1814,7 +1819,7 @@ public sealed class ConcordSmallCatechismSection : IPopoverSectionProvider
 
             builder.OpenComponent<Components.CatechismList>(seq++);
             builder.AddAttribute(seq++, "Items", (IReadOnlyList<CatechismRef>)items);
-            builder.AddAttribute(seq++, "OnExplore", EventCallback.Factory.Create<IExplorable>(ctx, n => ctx.PushAsync(n)));
+            builder.AddAttribute(seq++, "OnExplore", EventCallback.Factory.Create<IExplorable>(ctx, n => ctx.PushAsync(n, EdgeKind.CatechismLink)));
             builder.CloseComponent();
         };
         return new PopoverSection("concord-small-catechism", body);
@@ -1893,7 +1898,7 @@ file static class PersonSectionRendering
         return seq;
     }
 
-    public static int Chips(RenderTreeBuilder builder, int seq, string testidPrefix, IEnumerable<(string Id, string Label, IExplorable Node)> chips, IPopoverSectionContext ctx)
+    public static int Chips(RenderTreeBuilder builder, int seq, string testidPrefix, IEnumerable<(string Id, string Label, IExplorable Node)> chips, IPopoverSectionContext ctx, EdgeKind via)
     {
         builder.OpenElement(seq++, "div");
         builder.AddAttribute(seq++, "class", "popover-catechism-list person-chips");
@@ -1904,7 +1909,7 @@ file static class PersonSectionRendering
             builder.AddAttribute(seq++, "type", "button");
             builder.AddAttribute(seq++, "class", "popover-catechism-item explorable");
             builder.AddAttribute(seq++, "data-testid", $"{testidPrefix}-{id.Replace(':', '-').Replace('.', '-')}");
-            builder.AddAttribute(seq++, "onclick", EventCallback.Factory.Create<MouseEventArgs>(ctx, () => ctx.PushAsync(target)));
+            builder.AddAttribute(seq++, "onclick", EventCallback.Factory.Create<MouseEventArgs>(ctx, () => ctx.PushAsync(target, via)));
             builder.AddContent(seq++, label);
             builder.CloseElement();
         }
@@ -1954,7 +1959,7 @@ public sealed class PersonLifeSection : IPopoverSectionProvider
             builder.CloseElement();
             if (life.Eternal && life.EternalGrounds.Count > 0)
             {
-                seq = PersonSectionRendering.Chips(builder, seq, "person-eternal-ground", life.EternalGrounds.Select(g => (g, g, (IExplorable)new VerseNode(g))), ctx);
+                seq = PersonSectionRendering.Chips(builder, seq, "person-eternal-ground", life.EternalGrounds.Select(g => (g, g, (IExplorable)new VerseNode(g))), ctx, EdgeKind.MentionedIn);
             }
         };
         return new PopoverSection("person-life", body);
@@ -2010,7 +2015,7 @@ public sealed class PersonEventsSection : IPopoverSectionProvider
         RenderFragment body = builder =>
         {
             var seq = PersonSectionRendering.Heading(builder, 0, $"EVENTS ({events.Count})", "person-events-heading");
-            PersonSectionRendering.Chips(builder, seq, "person-event", events.Select(e => (NodeIds.LocalPart(e), e.Label, (IExplorable)new EventNode(NodeIds.LocalPart(e), e.Label))), ctx);
+            PersonSectionRendering.Chips(builder, seq, "person-event", events.Select(e => (NodeIds.LocalPart(e), e.Label, (IExplorable)new EventNode(NodeIds.LocalPart(e), e.Label))), ctx, EdgeKind.ParticipatesIn);
         };
         return new PopoverSection("person-events", body);
     }
@@ -2069,7 +2074,7 @@ public sealed class PersonFamilySection : IPopoverSectionProvider
                 builder.AddAttribute(seq++, "data-testid", $"person-family-{group.TestId}");
                 builder.AddContent(seq++, group.Heading);
                 builder.CloseElement();
-                seq = PersonSectionRendering.Chips(builder, seq, $"person-{group.TestId}", group.People.Select(p => (NodeIds.LocalPart(p), p.Label, (IExplorable)new PersonNode(p.Id, p.Label))), ctx);
+                seq = PersonSectionRendering.Chips(builder, seq, $"person-{group.TestId}", group.People.Select(p => (NodeIds.LocalPart(p), p.Label, (IExplorable)new PersonNode(p.Id, p.Label))), ctx, group.Via);
             }
         };
         return new PopoverSection("person-family", body);

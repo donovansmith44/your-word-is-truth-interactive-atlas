@@ -76,7 +76,7 @@
         _loading = true;
         try
         {
-            var page = await Explorable.Edges(PersonId, EdgeSectionRegistry.MentionedIn.EdgeKind, cursor, limit: RevealPageSize);
+            var page = await Explorable.Edges(PersonId, EdgeKind.MentionedIn, cursor, limit: RevealPageSize);
             _entries = _entries.Concat(page.Entries).ToList();
             _next = page.Next;
         }
