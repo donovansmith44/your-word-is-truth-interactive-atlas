@@ -28,7 +28,7 @@ internal sealed class RootedMentions(int size) : IExplorableClient
             elements: [new NodeElement(ServedGraph.Card(NodeKind.Person, Positions.Of(Person).Id, Positions.Of(Person).Label, new FrontierGroup(EdgeKind.MentionedIn, size)) with { Version = Root })],
             next: null, previous: null, version: Root));
 
-    public Task<EdgePage> Edges(string positionId, EdgeKind kind, int? cursor = null, int limit = IExplorableClient.DefaultPageSize)
+    public Task<EdgePage> Edges(string positionId, EdgeKind kind, int? cursor = null, int limit = BibleAtlas.Client.Exploring.Affordances.PageSize)
     {
         Asked++;
         if (_failing > 0)

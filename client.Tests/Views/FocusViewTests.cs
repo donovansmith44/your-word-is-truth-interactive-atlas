@@ -827,7 +827,7 @@ public sealed class FocusViewTests : BunitContext
 
         public Task<ElementPage> Elements(IReadOnlyList<string> ids) => served.Elements(ids);
 
-        public Task<EdgePage> Edges(string positionId, EdgeKind kind, int? cursor = null, int limit = IExplorableClient.DefaultPageSize) =>
+        public Task<EdgePage> Edges(string positionId, EdgeKind kind, int? cursor = null, int limit = BibleAtlas.Client.Exploring.Affordances.PageSize) =>
             _failed++ < failures ? Task.FromException<EdgePage>(new HttpRequestException(Offline)) : served.Edges(positionId, kind, cursor, limit);
 
         public Task<TextWindow> Reading(string fromRef, int n, WindowDir dir = WindowDir.Onward, Corpus corpus = Corpus.Bible) =>
@@ -863,7 +863,7 @@ public sealed class FocusViewTests : BunitContext
 
         public Task<ElementPage> Elements(IReadOnlyList<string> ids) => _cards.Elements(ids);
 
-        public Task<EdgePage> Edges(string positionId, EdgeKind kind, int? cursor = null, int limit = IExplorableClient.DefaultPageSize)
+        public Task<EdgePage> Edges(string positionId, EdgeKind kind, int? cursor = null, int limit = BibleAtlas.Client.Exploring.Affordances.PageSize)
         {
             var from = cursor ?? 0;
             var to = Math.Min(from + limit, size);
@@ -900,7 +900,7 @@ public sealed class FocusViewTests : BunitContext
 
         public Task<ElementPage> Elements(IReadOnlyList<string> ids) => served.Elements(ids);
 
-        public async Task<EdgePage> Edges(string positionId, EdgeKind kind, int? cursor = null, int limit = IExplorableClient.DefaultPageSize)
+        public async Task<EdgePage> Edges(string positionId, EdgeKind kind, int? cursor = null, int limit = BibleAtlas.Client.Exploring.Affordances.PageSize)
         {
             if (kind == heldKind && cursor == heldCursor)
             {

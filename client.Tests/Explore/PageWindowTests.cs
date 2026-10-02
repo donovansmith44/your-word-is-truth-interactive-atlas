@@ -503,7 +503,7 @@ public sealed class PageWindowTests
                 elements: [new NodeElement(ServedGraph.Card(NodeKind.Person, Positions.Of(Subject).Id, Positions.Of(Subject).Label, new FrontierGroup(EdgeKind.MentionedIn, size)))],
                 next: null, previous: null, version: ServedGraph.Version));
 
-        public Task<EdgePage> Edges(string positionId, EdgeKind kind, int? cursor = null, int limit = IExplorableClient.DefaultPageSize)
+        public Task<EdgePage> Edges(string positionId, EdgeKind kind, int? cursor = null, int limit = BibleAtlas.Client.Exploring.Affordances.PageSize)
         {
             Asked++;
             var from = cursor ?? 0;

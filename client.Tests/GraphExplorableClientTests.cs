@@ -108,7 +108,7 @@ public class GraphExplorableClientTests
         await client.Edges("text-unit:JHN.3.16", EdgeKind.Cites);
 
         // Assert
-        Assert.Equal($"?kind=cites&limit={IExplorableClient.DefaultPageSize}", handler.LastRequestUri!.Query);
+        Assert.Equal($"?kind=cites&limit={BibleAtlas.Client.Exploring.Affordances.PageSize}", handler.LastRequestUri!.Query);
     }
 
     [Fact]

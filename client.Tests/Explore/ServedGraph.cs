@@ -58,7 +58,7 @@ internal sealed class ServedGraph : IExplorableClient
         return Task.FromResult(new ElementPage(elements: ids.Select(Element).ToList(), next: null, previous: null, version: _root));
     }
 
-    public Task<EdgePage> Edges(string positionId, EdgeKind kind, int? cursor = null, int limit = IExplorableClient.DefaultPageSize)
+    public Task<EdgePage> Edges(string positionId, EdgeKind kind, int? cursor = null, int limit = BibleAtlas.Client.Exploring.Affordances.PageSize)
     {
         LimitAsked = limit;
         NeighbourReads++;
