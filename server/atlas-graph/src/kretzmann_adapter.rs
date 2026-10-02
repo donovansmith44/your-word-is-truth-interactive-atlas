@@ -6,7 +6,7 @@ use std::collections::BTreeSet;
 
 use atlas_etl::kretzmann::{KretzmannCorpus, KretzUnit, BOOKS};
 use atlas_graph_types::edge::{CommentsOn, Direction, EdgeKind, Ground, Justification, RelationId};
-use atlas_graph_types::explore::EdgeQuery;
+use atlas_graph_types::adjacency::EdgeQuery;
 use atlas_graph_types::id::{AnyNodeId, CommentaryItemId, NodeKind, Position, SourceId};
 use atlas_graph_types::node::{Node, NodePayload};
 use atlas_graph_types::store::GraphQuery;

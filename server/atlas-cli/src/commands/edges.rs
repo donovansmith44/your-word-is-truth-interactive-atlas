@@ -2,7 +2,7 @@
 
 use atlas_graph::GraphService;
 use atlas_graph_types::edge::EdgeKind;
-use atlas_graph_types::explore::EdgeQuery;
+use atlas_graph_types::adjacency::EdgeQuery;
 use atlas_graph_types::id::{NodeKind, Position};
 use atlas_graph_types::store::GraphQuery;
 use atlas_contract::graph_wire::{decode_node_id, describe_position};

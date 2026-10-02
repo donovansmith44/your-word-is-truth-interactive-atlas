@@ -3,7 +3,7 @@ use std::sync::Arc;
 use atlas_graph::corpus_root::corpus_root_id;
 use atlas_graph::GraphService;
 use atlas_graph_types::edge::{Direction, EdgeKind, RelationId};
-use atlas_graph_types::explore::EdgeQuery;
+use atlas_graph_types::adjacency::EdgeQuery;
 use atlas_graph_types::id::{AnyNodeId, Position};
 use atlas_graph_types::node::NodePayload;
 use atlas_graph_types::store::GraphQuery;

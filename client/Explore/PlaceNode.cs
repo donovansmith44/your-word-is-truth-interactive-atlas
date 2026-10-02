@@ -10,7 +10,7 @@ public sealed class PlaceNode : IExplorable
     private readonly int? _windowFrom;
     private readonly int? _windowTo;
     private readonly AsyncMemo<PlacePage> _detail = new();
-    private readonly AsyncMemo<NodeCard> _card = new();
+    private readonly AsyncMemo<NodeRecord> _card = new();
 
     // A null window here only costs the blurb section; established/destroyed dates
     // are window-independent and are returned regardless.
@@ -99,7 +99,7 @@ public sealed class PlaceNode : IExplorable
     public async Task<IReadOnlyList<PlaceDate>> DatesAsync(AtlasClient api) =>
         PlaceDates.Of((await CardAsync(api)).Place);
 
-    private Task<NodeCard> CardAsync(AtlasClient api) => _card.Get(() => api.NodeCard(Identity.Id));
+    private Task<NodeRecord> CardAsync(AtlasClient api) => _card.Get(() => api.NodeRecord(Identity.Id));
 
     private Task<PlacePage> Load(AtlasClient api) => DetailAsync(api);
 }

@@ -125,9 +125,6 @@ fn choose_placement(
         };
     }
 
-    // The degenerate fallback, with no anchor table at all, reachable only by a minimal fixture. The
-    // resolved TimePoint is computed from the event's own year whatever placement is chosen here, so this
-    // one's unresolvability never touches ordering: only its "why this date?" explorability degrades.
     PlacedChronology {
         placement: DatePlacement::EraOnly { era: atlas_graph_types::id::EraId::new(format!("undetermined-basis-{}", e.id)) },
         basis,
@@ -318,8 +315,6 @@ fn narrative_node(n: &atlas_core::data::Narrative) -> Node {
     }
 }
 
-/// The Anchor's card label: `card()` uses this string VERBATIM, so opening an anchor's card IS reading its
-/// citation.
 fn format_anchor_citation(a: &ChronologyAnchor) -> String {
     let year = if a.year < 0 { format!("{} BC", -a.year) } else { format!("AD {}", a.year) };
     match &a.note {
@@ -515,7 +510,7 @@ fn bible_locus_node_id(v: &VerseRef) -> atlas_graph_types::id::AnyNodeId {
 pub fn add_justified_by(graph: &mut Graph) -> usize {
     use atlas_graph_types::canon::RowFamily;
     use atlas_graph_types::edge::{at, BiIndex, EdgeId, RelationId};
-    use atlas_graph_types::explore::EdgeMeta;
+    use atlas_graph_types::adjacency::EdgeMeta;
     use atlas_graph_types::id::Position;
 
     // A `justified-by` entry carries no per-entry metadata of its own, so every triple supplies
@@ -743,13 +738,13 @@ mod tests {
         assert_eq!(n, 1, "the one anchor-bound event's own DatedBy row carries exactly one ground (its anchor)");
 
         use atlas_graph_types::edge::{entry_id, at, RelationId, Direction};
-        use atlas_graph_types::explore::{Explorable, PositionRef};
+        use atlas_graph_types::adjacency::{Adjacent, PositionRef};
         use atlas_graph_types::id::Position;
 
         let dated_by_edge_id = entry_id(RelationId::DatedBy, &at(&EventId::new("e1").erase()), &at(&AnchorId::new("a").erase()));
         let page = PositionRef(Position::Edge(dated_by_edge_id.clone())).edges(
             &graph,
-            &atlas_graph_types::explore::EdgeQuery { kind: atlas_graph_types::edge::EdgeKind::Directed(RelationId::JustifiedBy, Direction::Forward), cursor: None, limit: 10 },
+            &atlas_graph_types::adjacency::EdgeQuery { kind: atlas_graph_types::edge::EdgeKind::Directed(RelationId::JustifiedBy, Direction::Forward), cursor: None, limit: 10 },
         );
         assert_eq!(page.entries.len(), 1);
         assert_eq!(page.entries[0].node, Position::Node(AnchorId::new("a").erase()), "the dated-by edge's own justified-by target must be the anchor it names as ground");
@@ -774,7 +769,7 @@ mod tests {
     #[test]
     fn justified_by_wires_fulfills_typology_and_named_after_rows_own_grounds() {
         use atlas_graph_types::edge::{at, entry_id, Direction, EdgeKind, Fulfills, Namesake, NamedAfter, RelationId, Typology};
-        use atlas_graph_types::explore::{EdgeQuery, Explorable, PositionRef};
+        use atlas_graph_types::adjacency::{EdgeQuery, Adjacent, PositionRef};
         use atlas_graph_types::id::{PeopleGroupId, Position};
         use std::collections::BTreeSet;
 

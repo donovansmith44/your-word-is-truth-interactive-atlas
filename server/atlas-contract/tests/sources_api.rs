@@ -86,7 +86,7 @@ async fn api_sources_defaults_to_empty_when_build_called_without_sources() {
 }
 
 #[tokio::test]
-async fn get_api_sources_serves_the_provenance_join_table_the_frontier_resolves_against() {
+async fn get_api_sources_serves_the_provenance_join_table_the_adjacency_resolves_against() {
     let data = demo_fixture();
     let graph = minimal_graph(&data);
     let sources = Arc::new(real_sources_document());

@@ -1648,7 +1648,7 @@ public sealed class PersonCardAndMentionsSection : IPopoverSectionProvider
             return null;
         }
 
-        NodeCard card;
+        NodeRecord card;
         EdgePage page;
         try
         {
@@ -1702,7 +1702,7 @@ public sealed class CommentaryItemProseSection : IPopoverSectionProvider
             return null;
         }
 
-        NodeCard card;
+        NodeRecord card;
         try
         {
             card = await ctx.Graph.Card(item.Identity.Id);

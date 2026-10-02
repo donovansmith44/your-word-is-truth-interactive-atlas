@@ -7,7 +7,7 @@ use std::collections::BTreeMap;
 use atlas_graph_types::canon::ids::{any_node_id_str, position_str};
 use atlas_graph_types::canon::RowFamily;
 use atlas_graph_types::edge::{EdgeId, RelationId, SymRelationId};
-use atlas_graph_types::explore::EdgeMeta;
+use atlas_graph_types::adjacency::EdgeMeta;
 use atlas_graph_types::graph::{EdgeRel, Graph};
 use atlas_graph_types::id::{AnyNodeId, NodeKind, Position};
 use atlas_graph_types::node::Node;
@@ -224,8 +224,8 @@ pub fn partition(g: &Graph) -> Result<Vec<SectionPartition<'_>>, SqliteError> {
     if let Some(ix) = g.indexes.get(&RelationId::JustifiedBy) {
         let code = directed_rel_code(RelationId::JustifiedBy);
         for (dir, held) in [(DIR_FORWARD, &ix.fwd), (DIR_INVERSE, &ix.inv)] {
-            for (subject, frontier) in held {
-                for entry in frontier.edges() {
+            for (subject, adjacency) in held {
+                for entry in adjacency.edges() {
                     let source = if dir == DIR_FORWARD { subject } else { &entry.node };
                     let row = match source {
                         Position::Edge(source) => rows_of(source)?[0],

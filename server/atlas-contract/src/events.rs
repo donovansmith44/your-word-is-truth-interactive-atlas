@@ -26,7 +26,7 @@ pub async fn narrative_event_positions(
     Path(id): Path<String>,
 ) -> Result<Json<wire::NarrativeEventPositions>, ApiError> {
     use atlas_graph_types::edge::{Direction, EdgeKind, RelationId};
-    use atlas_graph_types::explore::EdgeMeta;
+    use atlas_graph_types::adjacency::EdgeMeta;
     use atlas_graph_types::id::{NarrativeId, Position};
     use atlas_graph_types::node::NodePayload;
     use std::collections::BTreeSet;
@@ -67,7 +67,7 @@ pub async fn narrative_event_positions(
         }
     }
 
-    let leg_event_id = |entries: &[atlas_graph_types::explore::EdgeEntry], nid: &NarrativeId| -> Option<String> {
+    let leg_event_id = |entries: &[atlas_graph_types::adjacency::EdgeEntry], nid: &NarrativeId| -> Option<String> {
         entries.iter().find(|e| matches!(&e.meta, EdgeMeta::Narrative(n) if n == nid)).and_then(|e| match &e.node {
             Position::Node(id) => Some(id.raw.clone()),
             Position::Edge(_) => None,
@@ -129,8 +129,6 @@ pub async fn event(State(data): State<Arc<AtlasData>>, State(graph): State<Arc<G
     let when = window;
 
     let event_pos = Position::Node(atlas_graph::event_world::event_node_id(&e.id));
-    // The frontier answers in curated-file order, so a stable reading order needs
-    // this sort.
     let mut mentioned_in: Vec<String> = drain_edges(&snap, &event_pos, EdgeKind::Directed(RelationId::Mentions, Direction::Inverse))
         .into_iter()
         .filter_map(|entry| match entry.node {

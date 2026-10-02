@@ -350,7 +350,7 @@
             }
 
             _history = detail.History;
-            if (await request.Fetch(() => Atlas.NodeCard(NodeIds.Of(NodeKind.Place, Place.Id))) is not { } card)
+            if (await request.Fetch(() => Atlas.NodeRecord(NodeIds.Of(NodeKind.Place, Place.Id))) is not { } card)
             {
                 return;
             }

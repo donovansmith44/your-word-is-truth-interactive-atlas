@@ -168,7 +168,7 @@ async fn a_conditional_request_whose_query_cannot_be_read_is_refused_rather_than
 }
 
 #[tokio::test]
-async fn a_frontier_asked_for_at_a_node_that_is_not_there_is_refused_for_the_frontier_first() {
+async fn a_adjacency_asked_for_at_a_node_that_is_not_there_is_refused_for_the_adjacency_first() {
     // Arrange
     let app = compiled_app();
     let absent_node = "/api/node/Person:nonexistent-xyz/edges?kind=not-a-real-kind";
@@ -271,8 +271,8 @@ async fn text_window_units_carry_their_edge_summary() {
     let kinds: Vec<&str> = jhn["units"][0]["edge_summary"].as_array().unwrap().iter().map(|e| e["kind"].as_str().unwrap()).collect();
     assert!(kinds.contains(&"cites"), "JHN.3.16 cites others: {kinds:?}");
     assert!(kinds.contains(&"catechism-link"), "JHN.3.16 is catechism-linked: {kinds:?}");
-    let (_, card, _) = get(&app, "/api/node/text-unit:JHN.3.16").await;
-    assert_eq!(jhn["units"][0]["edge_summary"], card["edge_summary"]);
+    let (_, record, _) = get(&app, "/api/node/text-unit:JHN.3.16").await;
+    assert_eq!(jhn["units"][0]["edge_summary"], record["edge_summary"]);
 }
 
 #[tokio::test]
@@ -330,7 +330,7 @@ async fn text_window_bible_default_corpus_is_unchanged_by_the_new_param() {
 }
 
 #[tokio::test]
-async fn node_card_returns_id_kind_label_edge_summary_and_version() {
+async fn node_record_returns_id_kind_label_edge_summary_and_version() {
     let app = artifact_app();
     let (st, body, _) = get(&app, "/api/node/text-unit:JHN.3.16").await;
     assert_eq!(st, 200);
@@ -344,7 +344,7 @@ async fn node_card_returns_id_kind_label_edge_summary_and_version() {
 }
 
 #[tokio::test]
-async fn node_card_unknown_id_is_404_malformed_id_is_400() {
+async fn node_record_unknown_id_is_404_malformed_id_is_400() {
     let app = artifact_app();
     let (st, body, _) = get(&app, "/api/node/text-unit:GEN.999.999").await;
     assert_eq!(st, 404);
@@ -356,7 +356,7 @@ async fn node_card_unknown_id_is_404_malformed_id_is_400() {
 }
 
 #[tokio::test]
-async fn event_card_and_frontiers_are_served_by_the_generic_endpoints() {
+async fn event_record_and_adjacencies_are_served_by_the_generic_endpoints() {
     let app = artifact_app();
 
     let (st, body, _) = get(&app, "/api/node/Event:ab_ur").await;
@@ -385,7 +385,7 @@ async fn event_card_and_frontiers_are_served_by_the_generic_endpoints() {
 }
 
 #[tokio::test]
-async fn narrative_card_and_place_stub_card_are_served_generically() {
+async fn narrative_record_and_place_stub_record_are_served_generically() {
     let app = artifact_app();
 
     let (st, body, _) = get(&app, "/api/node/Narrative:abraham-migration").await;
@@ -401,7 +401,7 @@ async fn narrative_card_and_place_stub_card_are_served_generically() {
 }
 
 #[tokio::test]
-async fn anchor_card_carries_its_citation_and_dates_frontier() {
+async fn anchor_record_carries_its_citation_and_dates_adjacency() {
     let app = artifact_app();
 
     let (st, body, _) = get(&app, "/api/node/Anchor:solomon-crowned").await;
@@ -421,7 +421,7 @@ async fn anchor_card_carries_its_citation_and_dates_frontier() {
 }
 
 #[tokio::test]
-async fn person_card_and_mentioned_in_frontier_are_served_by_the_generic_endpoints() {
+async fn person_record_and_mentioned_in_adjacency_are_served_by_the_generic_endpoints() {
     let app = artifact_app();
 
     let (st, body, _) = get(&app, "/api/node/Person:aaron_1").await;
@@ -552,7 +552,7 @@ async fn a_persons_mentioned_in_page_lists_a_verse_once_and_continues_from_the_n
 }
 
 #[tokio::test]
-async fn a_persons_card_counts_the_verses_that_mention_him_not_the_times_they_name_him() {
+async fn a_persons_record_counts_the_verses_that_mention_him_not_the_times_they_name_him() {
     // Arrange
     let app = artifact_app();
     let mut rows_of_entity: std::collections::BTreeMap<atlas_graph_types::id::AnyNodeId, Vec<atlas_graph_types::text::VerseRef>> = std::collections::BTreeMap::new();
@@ -563,8 +563,8 @@ async fn a_persons_card_counts_the_verses_that_mention_him_not_the_times_they_na
     let distinct: std::collections::BTreeSet<&atlas_graph_types::text::VerseRef> = verses.iter().collect();
 
     // Act
-    let (status, card, _) = get(&app, &format!("/api/node/{}", wire_id_of(&entity))).await;
-    let mentioned_in = card["edge_summary"].as_array().unwrap().iter().find(|e| e["kind"] == "mentioned-in").cloned();
+    let (status, record, _) = get(&app, &format!("/api/node/{}", wire_id_of(&entity))).await;
+    let mentioned_in = record["edge_summary"].as_array().unwrap().iter().find(|e| e["kind"] == "mentioned-in").cloned();
 
     // Assert
     assert_eq!(
@@ -576,7 +576,7 @@ async fn a_persons_card_counts_the_verses_that_mention_him_not_the_times_they_na
 }
 
 #[tokio::test]
-async fn person_card_carries_a_real_easton_description_when_a_match_exists() {
+async fn person_record_carries_a_real_easton_description_when_a_match_exists() {
     let app = artifact_app();
     let (st, body, _) = get(&app, "/api/node/Person:aaron_1").await;
     assert_eq!(st, 200, "{body}");
@@ -595,7 +595,7 @@ async fn place_detail_carries_a_real_easton_description_when_a_match_exists() {
 }
 
 #[tokio::test]
-async fn commentary_item_card_carries_its_own_real_kretzmann_prose_via_description() {
+async fn commentary_item_record_carries_its_own_real_kretzmann_prose_via_description() {
     let app = artifact_app();
     let (st, body, _) = get(&app, "/api/node/CommentaryItem:kretzmann%2F0.1.0").await;
     assert_eq!(st, 200, "{body}");
@@ -606,7 +606,7 @@ async fn commentary_item_card_carries_its_own_real_kretzmann_prose_via_descripti
 }
 
 #[tokio::test]
-async fn node_card_omits_description_for_a_kind_that_never_carries_one() {
+async fn node_record_omits_description_for_a_kind_that_never_carries_one() {
     let app = artifact_app();
     let (st, body, _) = get(&app, "/api/node/Era:primeval").await;
     assert_eq!(st, 200, "{body}");
@@ -645,7 +645,7 @@ async fn chapter_endpoint_serves_the_same_real_words_of_christ_span_for_mat_4_19
 }
 
 #[tokio::test]
-async fn a_verses_mentions_frontier_carries_person_entities_alongside_place() {
+async fn a_verses_mentions_adjacency_carries_person_entities_alongside_place() {
     let app = compiled_app();
 
     let (st, page, _) = get(&app, "/api/node/text-unit:EXO.4.14/edges?kind=mentions").await;
@@ -660,9 +660,9 @@ async fn a_verses_mentions_frontier_carries_person_entities_alongside_place() {
 async fn peoplegroup_mentions_are_real_in_the_graph_but_filtered_from_the_generic_edges_page() {
     let app = compiled_app();
 
-    let (st, card, _) = get(&app, "/api/node/text-unit:GEN.10.16").await;
-    assert_eq!(st, 200, "{card}");
-    let summary = card["edge_summary"].as_array().unwrap();
+    let (st, record, _) = get(&app, "/api/node/text-unit:GEN.10.16").await;
+    assert_eq!(st, 200, "{record}");
+    let summary = record["edge_summary"].as_array().unwrap();
     let mentions_count = summary.iter().find(|e| e["kind"] == "mentions").and_then(|e| e["count"].as_u64()).unwrap_or(0);
     assert!(mentions_count >= 3, "GEN.10.16 must carry >=3 real mentions (Jebusite/Amorite/Girgasite) in the built graph, unfiltered: {summary:?}");
 
@@ -694,7 +694,7 @@ async fn chapter_response_for_a_gentilic_locus_carries_no_peoplegroup_kind_span(
 }
 
 #[tokio::test]
-async fn chapter_verse_persons_is_always_present_and_matches_the_generic_mentions_frontier() {
+async fn chapter_verse_persons_is_always_present_and_matches_the_generic_mentions_adjacency() {
     let app = compiled_app();
 
     let (st, chapter, _) = get(&app, "/api/chapter/EXO.4").await;
@@ -706,21 +706,21 @@ async fn chapter_verse_persons_is_always_present_and_matches_the_generic_mention
 
     let (st2, edges, _) = get(&app, "/api/node/text-unit:EXO.4.14/edges?kind=mentions").await;
     assert_eq!(st2, 200);
-    let frontier_names: std::collections::BTreeSet<String> = edges["entries"]
+    let adjacency_names: std::collections::BTreeSet<String> = edges["entries"]
         .as_array()
         .unwrap()
         .iter()
         .filter(|e| e["neighbour"]["node"]["kind"] == "Person")
         .map(|e| e["neighbour"]["node"]["label"].as_str().unwrap().to_string())
         .collect();
-    assert_eq!(chapter_names, frontier_names, "the chapter view's own persons list must equal the generic mentions frontier's own Person entries for the SAME verse");
+    assert_eq!(chapter_names, adjacency_names, "the chapter view's own persons list must equal the generic mentions frontier's own Person entries for the SAME verse");
 
     let v7 = chapter["verses"].as_array().unwrap().iter().find(|v| v["verse"] == 7).expect("EXO.4.7 must be in the chapter");
     assert_eq!(v7["persons"], serde_json::json!([]), "{v7:?}");
 }
 
 #[tokio::test]
-async fn person_card_unknown_id_is_404() {
+async fn person_record_unknown_id_is_404() {
     let app = artifact_app();
     let (st, body, _) = get(&app, "/api/node/Person:nonexistent-xyz").await;
     assert_eq!(st, 404, "{body}");
@@ -823,9 +823,9 @@ async fn chapter_verse_xref_count_is_always_present_and_matches_the_generic_edge
     assert!(entries.len() < 200, "limit=200 must exceed JHN.3.16's own real total, or this test's own page needs widening");
     assert_eq!(chapter_count, entries.len(), "the chapter view's own xref_count must equal the generic edges page's own true count for the SAME verse");
 
-    let (st3, card, _) = get(&app, "/api/node/text-unit:JHN.3.16").await;
+    let (st3, record, _) = get(&app, "/api/node/text-unit:JHN.3.16").await;
     assert_eq!(st3, 200);
-    let cites_summary = card["edge_summary"].as_array().unwrap().iter().find(|e| e["kind"] == "cites").expect("JHN.3.16 must summarize a real cites frontier");
+    let cites_summary = record["edge_summary"].as_array().unwrap().iter().find(|e| e["kind"] == "cites").expect("JHN.3.16 must summarize a real cites frontier");
     assert_eq!(chapter_count, cites_summary["count"].as_u64().unwrap() as usize, "the chapter view's own xref_count must equal the node card's own edge_summary count");
 }
 
@@ -860,8 +860,8 @@ async fn chapter_verse_xref_count_is_zero_not_omitted_for_a_real_verse_with_no_c
                 zero_count_found = true;
                 let verse_num = v["verse"].as_u64().unwrap();
                 let (book, chnum) = cref.split_once('.').unwrap();
-                let (_, card, _) = get(&app, &format!("/api/node/text-unit:{book}.{chnum}.{verse_num}")).await;
-                let has_cites = card["edge_summary"].as_array().unwrap().iter().any(|e| e["kind"] == "cites");
+                let (_, record, _) = get(&app, &format!("/api/node/text-unit:{book}.{chnum}.{verse_num}")).await;
+                let has_cites = record["edge_summary"].as_array().unwrap().iter().any(|e| e["kind"] == "cites");
                 assert!(!has_cites, "a zero xref_count verse must have NO cites entry in its own node card's edge_summary");
                 break 'outer;
             }
@@ -890,7 +890,7 @@ async fn generic_cites_edges_are_already_votes_descending_matching_the_bespoke_v
 }
 
 #[tokio::test]
-async fn a_fulfillment_edge_is_reachable_via_the_generic_frontier_for_mat_1_22() {
+async fn a_fulfillment_edge_is_reachable_via_the_generic_adjacency_for_mat_1_22() {
     let app = compiled_app();
 
     let (st, body, _) = get(&app, "/api/node/text-unit:MAT.1.22").await;
@@ -915,7 +915,7 @@ async fn a_fulfillment_edge_is_reachable_via_the_generic_frontier_for_mat_1_22()
 }
 
 #[tokio::test]
-async fn a_typology_edge_is_reachable_via_the_generic_frontier_for_the_melchizedek_case() {
+async fn a_typology_edge_is_reachable_via_the_generic_adjacency_for_the_melchizedek_case() {
     let app = compiled_app();
 
     let (st, body, _) = get(&app, "/api/node/text-unit:HEB.7.1").await;
@@ -940,7 +940,7 @@ async fn a_typology_edge_is_reachable_via_the_generic_frontier_for_the_melchized
 }
 
 #[tokio::test]
-async fn a_fulfillment_and_a_typology_rows_own_ground_carries_a_real_justifies_frontier() {
+async fn a_fulfillment_and_a_typology_rows_own_ground_carries_a_real_justifies_adjacency() {
     let app = compiled_app();
 
     let (st, justifies, _) = get(&app, "/api/node/text-unit:MAT.1.22/edges?kind=justifies").await;
@@ -964,7 +964,7 @@ async fn nodes_uninvolved_in_fulfillment_or_typology_carry_no_such_edge_summary_
 }
 
 #[tokio::test]
-async fn chapter_container_card_and_frontiers_are_served_by_the_generic_endpoints() {
+async fn chapter_container_record_and_adjacencies_are_served_by_the_generic_endpoints() {
     let app = artifact_app();
 
     let (st, body, _) = get(&app, "/api/node/Container:bible-chapter-JHN-3").await;
@@ -995,7 +995,7 @@ async fn chapter_container_card_and_frontiers_are_served_by_the_generic_endpoint
 }
 
 #[tokio::test]
-async fn book_container_card_is_served_and_a_verse_reaches_its_chapter_back() {
+async fn book_container_record_is_served_and_a_verse_reaches_its_chapter_back() {
     let app = artifact_app();
 
     let (st, body, _) = get(&app, "/api/node/Container:bible-book-GEN").await;
@@ -1349,7 +1349,7 @@ async fn narrative_event_positions_has_adjacency_on_the_real_artifact_path() {
 }
 
 #[tokio::test]
-async fn person_card_carries_life_years_kin_and_events() {
+async fn person_record_carries_life_years_kin_and_events() {
     let app = artifact_app();
 
     let (st, body, _) = get(&app, "/api/node/Person:aaron_1").await;
@@ -1388,7 +1388,7 @@ async fn person_card_carries_life_years_kin_and_events() {
 }
 
 #[tokio::test]
-async fn god_is_eternal_and_the_card_says_why() {
+async fn god_is_eternal_and_the_record_says_why() {
     let app = artifact_app();
     let (st, body, _) = get(&app, "/api/node/Person:god_1324").await;
     assert_eq!(st, 200, "{body}");
@@ -1404,7 +1404,7 @@ const GENESIS_1: &str = "Container:bible-chapter-GEN-1";
 const VERSES_IN_GENESIS_1: usize = 31;
 
 #[tokio::test]
-async fn the_card_for_genesis_1_names_its_kind_and_its_three_frontier_groups() {
+async fn the_record_for_genesis_1_names_its_kind_and_its_three_adjacency_groups() {
     // Arrange
     let app = compiled_app();
 
@@ -1533,16 +1533,16 @@ async fn the_map_for_the_first_era_shows_its_events_places_and_polities_and_is_f
     let (_, eras, _) = get(&app, "/api/eras").await;
 
     // Act
-    let (status, card, _) = get(&app, &format!("/api/node/{FIRST_ERA_MAP}")).await;
+    let (status, record, _) = get(&app, &format!("/api/node/{FIRST_ERA_MAP}")).await;
     let shown = every_edge_of(&app, FIRST_ERA_MAP, "shows").await;
 
     // Assert
     assert_eq!(eras[0]["id"], FIRST_ERA);
-    assert_eq!(status, StatusCode::OK, "{card}");
-    let version = card["version"].clone();
+    assert_eq!(status, StatusCode::OK, "{record}");
+    let version = record["version"].clone();
     let shows: usize = FIRST_ERA_SHOWN_BY_KIND.iter().map(|(_, n)| n).sum();
     assert_eq!(
-        card,
+        record,
         serde_json::json!({
             "id": FIRST_ERA_MAP,
             "kind": "Map",
@@ -1683,17 +1683,17 @@ async fn the_small_catechism_is_followed_by_the_large_and_the_commandments_by_th
 const MOSES: &str = "Person:moses_2108";
 
 #[tokio::test]
-async fn a_person_card_carries_labelled_years() {
+async fn a_person_record_carries_labelled_years() {
     // Arrange
     let app = compiled_app();
 
     // Act
-    let (status, card, _) = get(&app, &format!("/api/node/{MOSES}")).await;
+    let (status, record, _) = get(&app, &format!("/api/node/{MOSES}")).await;
 
     // Assert
-    assert_eq!(status, StatusCode::OK, "{card}");
+    assert_eq!(status, StatusCode::OK, "{record}");
     assert_eq!(
-        card["person"],
+        record["person"],
         serde_json::json!({
             "gender": "Male",
             "birth": { "value": -1572, "label": "1572 BC" },
@@ -1964,15 +1964,15 @@ async fn an_attested_in_entry_runs_its_account_on_across_every_chapter_read_to_i
 }
 
 #[tokio::test]
-async fn an_event_card_carries_the_details_the_legacy_route_served() {
+async fn an_event_record_carries_the_details_the_legacy_route_served() {
     // Arrange
     let app = compiled_app();
     let (_, legacy, _) = get(&app, "/api/event/rob_sermon_on_the_mount").await;
     // Act
-    let (status, card, _) = get(&app, "/api/node/Event:rob_sermon_on_the_mount").await;
+    let (status, record, _) = get(&app, "/api/node/Event:rob_sermon_on_the_mount").await;
     // Assert
     assert_eq!(
-        (status, card["event"].clone()),
+        (status, record["event"].clone()),
         (
             StatusCode::OK,
             serde_json::json!({
@@ -1986,29 +1986,29 @@ async fn an_event_card_carries_the_details_the_legacy_route_served() {
 }
 
 #[tokio::test]
-async fn a_titled_passages_card_carries_its_kind_and_no_date() {
+async fn a_titled_passages_record_carries_its_kind_and_no_date() {
     // Arrange
     let app = compiled_app();
     let (_, legacy, _) = get(&app, "/api/event/gen_line_of_cain").await;
     // Act
-    let (status, card, _) = get(&app, "/api/node/Event:gen_line_of_cain").await;
+    let (status, record, _) = get(&app, "/api/node/Event:gen_line_of_cain").await;
     // Assert
     assert_eq!(
-        (status, card["event"].clone()),
+        (status, record["event"].clone()),
         (StatusCode::OK, serde_json::json!({ "kind": "general", "atlas_section": legacy["atlas_section"], "ref_note": legacy["ref_note"] }))
     );
 }
 
 #[tokio::test]
-async fn a_place_card_carries_its_coordinates_its_name_and_its_dated_founding_and_fall() {
+async fn a_place_record_carries_its_coordinates_its_name_and_its_dated_founding_and_fall() {
     // Arrange
     let app = compiled_app();
     let (_, legacy, _) = get(&app, "/api/place/jerusalem").await;
     // Act
-    let (status, card, _) = get(&app, "/api/node/Place:jerusalem").await;
+    let (status, record, _) = get(&app, "/api/node/Place:jerusalem").await;
     // Assert
     assert_eq!(
-        (status, card["place"].clone()),
+        (status, record["place"].clone()),
         (
             StatusCode::OK,
             serde_json::json!({
@@ -2034,15 +2034,15 @@ async fn a_place_card_carries_its_coordinates_its_name_and_its_dated_founding_an
 }
 
 #[tokio::test]
-async fn a_catechism_card_carries_its_prose() {
+async fn a_catechism_record_carries_its_prose() {
     // Arrange
     let app = compiled_app();
     let (_, legacy, _) = get(&app, "/api/catechism/item/commandment-1").await;
     // Act
-    let (status, card, _) = get(&app, "/api/node/CatechismItem:commandment-1").await;
+    let (status, record, _) = get(&app, "/api/node/CatechismItem:commandment-1").await;
     // Assert
     assert_eq!(
-        (status, card["catechism"].clone()),
+        (status, record["catechism"].clone()),
         (
             StatusCode::OK,
             serde_json::json!({
@@ -2061,10 +2061,10 @@ async fn a_place_the_kjv_names_otherwise_carries_that_name_beside_its_canonical_
     let app = compiled_app();
     let (_, legacy, _) = get(&app, "/api/place/tigris").await;
     // Act
-    let (status, card, _) = get(&app, "/api/node/Place:tigris").await;
+    let (status, record, _) = get(&app, "/api/node/Place:tigris").await;
     // Assert
     assert_eq!(
-        (status, card["place"].clone()),
+        (status, record["place"].clone()),
         (StatusCode::OK, serde_json::json!({ "lat": legacy["lat"], "lon": legacy["lon"], "display_name": "Hiddekel", "canonical_name": "Tigris" }))
     );
 }
@@ -2075,10 +2075,10 @@ async fn a_catechism_item_that_quotes_scripture_says_where_it_is_written() {
     let app = compiled_app();
     let (_, legacy, _) = get(&app, "/api/catechism/item/baptism-1").await;
     // Act
-    let (status, card, _) = get(&app, "/api/node/CatechismItem:baptism-1").await;
+    let (status, record, _) = get(&app, "/api/node/CatechismItem:baptism-1").await;
     // Assert
     assert_eq!(
-        (status, card["catechism"].clone()),
+        (status, record["catechism"].clone()),
         (
             StatusCode::OK,
             serde_json::json!({
@@ -2092,15 +2092,15 @@ async fn a_catechism_item_that_quotes_scripture_says_where_it_is_written() {
 }
 
 #[tokio::test]
-async fn a_book_card_carries_its_authorship_and_its_writing() {
+async fn a_book_record_carries_its_authorship_and_its_writing() {
     // Arrange
     let app = compiled_app();
     let (_, legacy, _) = get(&app, "/api/verse/NEH.1.1").await;
     // Act
-    let (status, card, _) = get(&app, "/api/node/Container:bible-book-NEH").await;
+    let (status, record, _) = get(&app, "/api/node/Container:bible-book-NEH").await;
     // Assert
     assert_eq!(
-        (status, card["book"].clone()),
+        (status, record["book"].clone()),
         (
             StatusCode::OK,
             serde_json::json!({

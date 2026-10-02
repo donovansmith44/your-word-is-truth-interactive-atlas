@@ -166,9 +166,6 @@ impl SceneSource for GraphSceneSource {
         self.events.iter().filter(|e| e.when.intersects(w)).collect()
     }
 
-    /// An event matches when any of its OWN `verses` falls inside the ref, never its witnesses'. That
-    /// widening belongs to `events_for_verse`, which the composer does not read: keeping the two apart
-    /// is what lets a scripture scene and a verse popover legitimately differ.
     fn events_matching_ref(&self, r: &ScriptureRef) -> Vec<&Event> {
         self.events
             .iter()

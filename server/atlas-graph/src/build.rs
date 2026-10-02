@@ -168,7 +168,7 @@ mod tests {
     use super::*;
     use crate::kjv_adapter;
     use atlas_graph_types::edge::{Direction, EdgeKind, RelationId};
-    use atlas_graph_types::explore::{Explorable, PositionRef};
+    use atlas_graph_types::adjacency::{Adjacent, PositionRef};
     use atlas_graph_types::id::Position;
 
     const KJV_FIXTURE: &str = r#"{
@@ -201,14 +201,14 @@ mod tests {
     }
 
     #[test]
-    fn cites_row_is_queryable_through_the_generic_explorable_machinery() {
+    fn cites_row_is_queryable_through_the_generic_adjacency_machinery() {
         let (graph, stats, ..) = build_graph_from_sources(KJV_FIXTURE, XREFS_FIXTURE, &crate::event_world::empty_atlas()).unwrap();
         assert_eq!(stats.cites_rows, 1);
 
         let gen11 = kjv_adapter::verse_node_id(0, 1, 1);
         let cites = EdgeKind::Directed(RelationId::Cites, Direction::Forward);
         let page = PositionRef(Position::Node(gen11))
-            .edges(&graph, &atlas_graph_types::explore::EdgeQuery { kind: cites, cursor: None, limit: 10 });
+            .edges(&graph, &atlas_graph_types::adjacency::EdgeQuery { kind: cites, cursor: None, limit: 10 });
         assert_eq!(page.entries.len(), 1);
         let target = kjv_adapter::verse_node_id(8, 1, 1);
         assert_eq!(page.entries[0].node, Position::Node(target));

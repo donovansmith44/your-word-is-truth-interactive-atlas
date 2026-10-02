@@ -8,8 +8,8 @@ namespace BibleAtlas.Client.ContractTests;
 public sealed class WireFixtureTests
 {
     [Theory]
-    [InlineData(GraphContract, "node-place-hazor-1.json", typeof(NodeCard))]
-    [InlineData(GraphContract, "node-event-ab-ur.json", typeof(NodeCard))]
+    [InlineData(GraphContract, "node-place-hazor-1.json", typeof(NodeRecord))]
+    [InlineData(GraphContract, "node-event-ab-ur.json", typeof(NodeRecord))]
     [InlineData(GraphContract, "edges-hazor-1-site-of.json", typeof(EdgePage))]
     [InlineData(QueryContract, "scene-time.json", typeof(Scene))]
     [InlineData(QueryContract, "scene-scripture.json", typeof(Scene))]

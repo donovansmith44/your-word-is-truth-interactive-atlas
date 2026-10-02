@@ -1428,7 +1428,47 @@
       ],
       "type": "object"
     },
-    "NodeCard": {
+    "NodeKind": {
+      "enum": [
+        "TextUnit",
+        "Container",
+        "Event",
+        "Narrative",
+        "Place",
+        "Person",
+        "Anchor",
+        "Era",
+        "Polity",
+        "CatechismItem",
+        "Source",
+        "Translation",
+        "PeopleGroup",
+        "CommentaryItem",
+        "LexiconEntry",
+        "Map"
+      ],
+      "type": "string"
+    },
+    "NodePosition": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/PositionRef"
+        },
+        {
+          "properties": {
+            "node": {
+              "$ref": "#/$defs/NodeRef"
+            }
+          },
+          "required": [
+            "node"
+          ],
+          "type": "object"
+        }
+      ],
+      "unevaluatedProperties": false
+    },
+    "NodeRecord": {
       "additionalProperties": false,
       "properties": {
         "book": {
@@ -1518,46 +1558,6 @@
         "version"
       ],
       "type": "object"
-    },
-    "NodeKind": {
-      "enum": [
-        "TextUnit",
-        "Container",
-        "Event",
-        "Narrative",
-        "Place",
-        "Person",
-        "Anchor",
-        "Era",
-        "Polity",
-        "CatechismItem",
-        "Source",
-        "Translation",
-        "PeopleGroup",
-        "CommentaryItem",
-        "LexiconEntry",
-        "Map"
-      ],
-      "type": "string"
-    },
-    "NodePosition": {
-      "allOf": [
-        {
-          "$ref": "#/$defs/PositionRef"
-        },
-        {
-          "properties": {
-            "node": {
-              "$ref": "#/$defs/NodeRef"
-            }
-          },
-          "required": [
-            "node"
-          ],
-          "type": "object"
-        }
-      ],
-      "unevaluatedProperties": false
     },
     "NodeRef": {
       "additionalProperties": false,
@@ -2842,5 +2842,5 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "description": "Derived from contracts/openapi.yaml by export_contract; do not edit.",
   "title": "Atlas Query Contract -- shapes",
-  "version": "0.12.0"
+  "version": "0.13.0"
 }

@@ -181,7 +181,7 @@ mod tests {
     use super::*;
     use atlas_core::data::{Canon, CanonBook};
     use atlas_graph_types::edge::{Direction, EdgeKind, RelationId};
-    use atlas_graph_types::explore::{EdgeQuery, Explorable, PositionRef};
+    use atlas_graph_types::adjacency::{EdgeQuery, Adjacent, PositionRef};
     use atlas_graph_types::id::{PersonId, Position};
     use std::collections::HashMap;
 

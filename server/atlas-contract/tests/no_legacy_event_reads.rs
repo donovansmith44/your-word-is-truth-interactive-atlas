@@ -108,7 +108,7 @@ fn serving_sources() -> Vec<PathBuf> {
 }
 
 #[test]
-fn no_serving_source_reads_event_presentation_data_through_atlas_data() {
+fn no_serving_source_reads_event_display_data_through_atlas_data() {
     assert!(ALLOWLIST.is_empty(), "the allowlist must stay EMPTY -- see this file's own header: {ALLOWLIST:?}");
 
     let files = serving_sources();

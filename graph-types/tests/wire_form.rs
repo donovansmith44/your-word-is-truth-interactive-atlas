@@ -8,7 +8,7 @@ mod common;
 use common::{DECLARED_EDGE_KINDS, DECLARED_NODE_KINDS};
 
 const NODE_KIND_DESCRIPTION: &str = "What kind of thing one node of this atlas stands for.";
-const EDGE_KIND_DESCRIPTION: &str = "A relation between two nodes, named in the direction it is travelled: the label one frontier of a node is asked for by.";
+const EDGE_KIND_DESCRIPTION: &str = "A relation between two nodes, named in the direction it is travelled: the label one page of a node's neighbours is asked for by.";
 const EVENT_ID_DESCRIPTION: &str = "The id of one Event node.";
 
 #[test]

@@ -58,12 +58,12 @@ exactly what an incomplete glossary hides.
   captured id up in the identity index ONLY (no error-case fallback — a
   captured reference is never one of the two deliberately-invalid
   inputs); a captured id with no index entry throws immediately.
-- **"I run TraversalQuery for `<id>` frontier `<kind>`"** — `GET
+- **"I run TraversalQuery for `<id>` adjacency `<kind>`"** — `GET
   /api/node/{id}/edges?kind=<kind>`. Also records `<id>`/`<kind>` as "the
   last traversal this scenario ran" (read by the bijection-witness and
   pagination assertions below), and clears the FocusQuery-only
   "originally requested id" tracking (this step is not a FocusQuery).
-- **"I run TraversalQuery for `<id>` frontier `<kind>` with limit
+- **"I run TraversalQuery for `<id>` adjacency `<kind>` with limit
   `<n>`"** — the same request with `&limit=<n>` appended.
 - **"I run TextWindowQuery for `<ref>` radius `<n>`"** — `GET
   /api/text?ref=<ref>&n=<n>`.
@@ -94,7 +94,7 @@ exactly what an incomplete glossary hides.
 - **"the request fails with status `<n>` and code `<code>`"** — the last
   response's own HTTP status equals `<n>` and its `error.code` field
   equals `<code>` (`ApiError`'s own `{"error":{"code","message"}}` shape).
-- **"every frontier group is a relations! family"** — **DEPTH DIFFERENCE,
+- **"every adjacency group is a relations! family"** — **DEPTH DIFFERENCE,
   disclosed (spec §2's own "hand-written duplicates of contract shapes
   are forbidden" forces this):** Rust checks every `edge_summary[].kind`
   (FocusQuery) or `kind` (TraversalQuery response) string against

@@ -6,7 +6,7 @@ public sealed class Explorable
 {
     private readonly IExplorableClient _graph;
 
-    internal Explorable(NodeCard card, IExplorableClient graph)
+    internal Explorable(NodeRecord card, IExplorableClient graph)
     {
         Card = card;
         _graph = graph;
@@ -23,7 +23,7 @@ public sealed class Explorable
 
     public IReadOnlyList<FrontierGroup> Groups { get; }
 
-    internal NodeCard Card { get; }
+    internal NodeRecord Card { get; }
 
     public async Task<Page<Link>> Links(EdgeKind kind, int? cursor = null)
     {

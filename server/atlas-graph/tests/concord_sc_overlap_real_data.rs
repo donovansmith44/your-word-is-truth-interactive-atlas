@@ -3,7 +3,7 @@ mod common;
 use common::OptionalCorpora;
 
 use atlas_graph_types::edge::{Direction, EdgeKind, RelationId, SymRelationId};
-use atlas_graph_types::explore::{EdgeQuery, Explorable, PositionRef};
+use atlas_graph_types::adjacency::{EdgeQuery, Adjacent, PositionRef};
 use atlas_graph_types::id::Position;
 use atlas_graph_types::text::TextRef;
 

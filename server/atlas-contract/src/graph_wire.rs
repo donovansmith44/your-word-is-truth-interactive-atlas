@@ -92,7 +92,7 @@ fn text_unit_label(id: &AnyNodeId) -> Option<String> {
 }
 
 fn node_label(id: &AnyNodeId, node: Option<Node>) -> String {
-    node.map(|n| atlas_graph_types::node::card(&n).label).unwrap_or_else(|| id.kind.name().to_string())
+    node.map(|n| atlas_graph_types::node::label(&n)).unwrap_or_else(|| id.kind.name().to_string())
 }
 
 pub fn describe_position(pos: &Position, query: &dyn GraphQuery) -> PositionRef {

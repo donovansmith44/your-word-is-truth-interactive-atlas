@@ -391,7 +391,7 @@ pub fn indexes_derive_exactly_from_rows(graph: &Graph) -> Result<(), String> {
     fresh.build_indexes();
     crate::event_world::add_justified_by(&mut fresh);
 
-    let compare = |name: &str, served: &BTreeMap<atlas_graph_types::id::Position, atlas_graph_types::explore::Frontier>, rebuilt: &BTreeMap<atlas_graph_types::id::Position, atlas_graph_types::explore::Frontier>| -> Result<(), String> {
+    let compare = |name: &str, served: &BTreeMap<atlas_graph_types::id::Position, atlas_graph_types::adjacency::Adjacency>, rebuilt: &BTreeMap<atlas_graph_types::id::Position, atlas_graph_types::adjacency::Adjacency>| -> Result<(), String> {
         if served != rebuilt {
             return Err(format!("{name}: the served index diverges from a pure rebuild from rows -- something wrote into the indexes outside build_indexes/add_justified_by"));
         }
@@ -961,7 +961,7 @@ mod tests {
             .fwd
             .entry(s)
             .or_default()
-            .append(atlas_graph_types::explore::Frontier::of_rows(vec![atlas_graph_types::explore::EdgeEntry { edge: eid, node: o, meta: atlas_graph_types::explore::EdgeMeta::None }]));
+            .append(atlas_graph_types::adjacency::Adjacency::of_rows(vec![atlas_graph_types::adjacency::EdgeEntry { edge: eid, node: o, meta: atlas_graph_types::adjacency::EdgeMeta::None }]));
         assert!(indexes_derive_exactly_from_rows(&graph).is_err(), "a post-build index write must be caught");
     }
 }

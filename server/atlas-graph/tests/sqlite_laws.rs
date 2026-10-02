@@ -650,7 +650,7 @@ fn every_index_entry_of_the_specimen_lands_in_exactly_one_section_and_names_its_
     let justified = g
         .indexes
         .get(&atlas_graph_types::edge::RelationId::JustifiedBy)
-        .map_or(0, |ix| ix.fwd.values().chain(ix.inv.values()).map(atlas_graph_types::explore::Frontier::edge_count).sum::<usize>());
+        .map_or(0, |ix| ix.fwd.values().chain(ix.inv.values()).map(atlas_graph_types::adjacency::Adjacency::edge_count).sum::<usize>());
     let placed_rows = 2 * g.row_edges().len() + justified;
     assert_eq!(total, placed_rows, "every row placed under both of its ends, every synthesised ground once; none lost, none duplicated");
     assert!(total > 0, "the specimen graph indexes something");
@@ -821,7 +821,7 @@ fn the_sqlite_snapshot_answers_every_port_question_exactly_as_the_specimen_graph
     assert_answers_match(&snap, &g);
     {
         use atlas_graph_types::edge::{at, Direction, EdgeKind, RelationId};
-        use atlas_graph_types::explore::EdgeQuery;
+        use atlas_graph_types::adjacency::EdgeQuery;
         use atlas_graph_types::id::{AnyNodeId, NodeKind};
         let entry = at(&AnyNodeId { kind: NodeKind::LexiconEntry, raw: "G3056".into() });
         let verse = at(&AnyNodeId { kind: NodeKind::TextUnit, raw: "bible/1.1.1".into() });
@@ -914,7 +914,7 @@ fn an_absent_optional_section_is_recorded_and_its_kinds_are_simply_uninhabited()
 fn a_verse_naming_one_entity_twice_is_one_mention_edge_on_both_arms_with_two_rows_behind_it() {
     // Arrange
     use atlas_graph_types::edge::{at, Direction, EdgeKind, RelationId};
-    use atlas_graph_types::explore::EdgeQuery;
+    use atlas_graph_types::adjacency::EdgeQuery;
     use atlas_graph_types::store::GraphQuery;
     let mut g = specimen_graph();
     g.mentions.push(Mentions {
@@ -945,7 +945,7 @@ fn a_verse_naming_one_entity_twice_is_one_mention_edge_on_both_arms_with_two_row
 }
 
 #[test]
-fn paging_semantics_match_explore_rs_at_every_cursor_and_limit() {
+fn paging_semantics_match_adjacency_rs_at_every_cursor_and_limit() {
     let mut g = specimen_graph();
     g.build_indexes();
     atlas_graph::event_world::add_justified_by(&mut g);
@@ -968,7 +968,7 @@ fn paging_semantics_match_explore_rs_at_every_cursor_and_limit() {
     assert_eq!(g.edge_summary(&container)[&kind], 2);
     for cursor in [None, Some(0), Some(1), Some(2), Some(3)] {
         for limit in 0..=3 {
-            let q = atlas_graph_types::explore::EdgeQuery { kind, cursor, limit };
+            let q = atlas_graph_types::adjacency::EdgeQuery { kind, cursor, limit };
             assert_eq!(snap.edges(&container, &q), g.edges(&container, &q), "cursor {cursor:?} limit {limit}");
         }
     }
@@ -977,7 +977,7 @@ fn paging_semantics_match_explore_rs_at_every_cursor_and_limit() {
 #[test]
 fn the_sqlite_overrides_answer_the_widened_port_exactly_as_the_specimen_graph() {
     use atlas_graph_types::edge::{at, Direction, EdgeId, EdgeKind, RelationId, SymRelationId};
-    use atlas_graph_types::explore::EdgeQuery;
+    use atlas_graph_types::adjacency::EdgeQuery;
     use atlas_graph_types::id::{NodeKind, Position};
     let mut g = specimen_graph();
     g.build_indexes();

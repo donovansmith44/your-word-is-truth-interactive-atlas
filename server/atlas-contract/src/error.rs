@@ -157,8 +157,7 @@ refusals! {
     ReferenceRefusals { BadRef }
     /// A route that reads a span of years.
     WindowRefusals { BadWindow }
-    /// A route that reads a reference and which of a node's frontiers to answer.
-    FrontierRefusals { BadRef, BadKind }
+    NeighbourRefusals { BadRef, BadKind }
     /// A route that reads a reference and every word a reading window is asked with.
     ReadingWindowRefusals { BadRef, BadDir, BadScope, BadCorpus }
 }

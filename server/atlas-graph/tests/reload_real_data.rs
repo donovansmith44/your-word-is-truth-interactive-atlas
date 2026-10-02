@@ -25,11 +25,11 @@ fn the_sections_read_back_into_the_graph_that_wrote_them() {
 }
 
 #[test]
-fn every_row_familys_frontier_is_read_by_the_edge_with_its_rows_behind_it() {
+fn every_row_familys_adjacency_is_read_by_the_edge_with_its_rows_behind_it() {
     // Arrange
     use atlas_graph_types::canon::RowFamily;
     use atlas_graph_types::edge::{Direction, EdgeKind};
-    use atlas_graph_types::explore::{EdgeQuery, Frontier};
+    use atlas_graph_types::adjacency::{EdgeQuery, Adjacency};
     use atlas_graph_types::graph::EdgeRel;
     use atlas_graph_types::id::Position;
     use atlas_graph_types::store::GraphQuery;
@@ -47,7 +47,7 @@ fn every_row_familys_frontier_is_read_by_the_edge_with_its_rows_behind_it() {
             }
         }
     };
-    let widest = |held: &std::collections::BTreeMap<Position, Frontier>| held.iter().max_by_key(|(_, f)| f.edge_count()).map(|(p, f)| (f.edge_count(), p.clone()));
+    let widest = |held: &std::collections::BTreeMap<Position, Adjacency>| held.iter().max_by_key(|(_, f)| f.edge_count()).map(|(p, f)| (f.edge_count(), p.clone()));
 
     // Act
     let walked: Vec<(RowFamily, Option<(bool, bool, bool, bool, bool)>)> = RowFamily::ALL

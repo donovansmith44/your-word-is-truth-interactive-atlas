@@ -5,7 +5,7 @@ use crate::id::{
     EventId, Interned, LexiconEntryId, MapId,
     NarrativeId, PeopleGroupId, PersonId, PlaceId, PolityId, Position, PositionKind, SourceId,
 };
-use crate::explore::{EdgeEntry, EdgeMeta, Frontier};
+use crate::adjacency::{EdgeEntry, EdgeMeta, Adjacency};
 use crate::ingest::ProvenanceId;
 use crate::text::{BibleLocusRange, ConcordLocus, Corpus, LocusSet, TextLocus};
 
@@ -467,8 +467,8 @@ pub struct EdgeRecord {
 
 #[derive(Debug, Default)]
 pub struct BiIndex {
-    pub fwd: BTreeMap<Position, Frontier>,
-    pub inv: BTreeMap<Position, Frontier>,
+    pub fwd: BTreeMap<Position, Adjacency>,
+    pub inv: BTreeMap<Position, Adjacency>,
 }
 
 impl BiIndex {
@@ -483,7 +483,7 @@ impl BiIndex {
             fwd.entry(s.clone()).or_default().push(EdgeEntry { edge: eid.clone(), node: o.clone(), meta: m.clone() });
             inv.entry(o.clone()).or_default().push(EdgeEntry { edge: eid, node: s.clone(), meta: m.clone() });
         }
-        BiIndex { fwd: frontiers(fwd), inv: frontiers(inv) }
+        BiIndex { fwd: adjacencies(fwd), inv: adjacencies(inv) }
     }
 
     pub fn build_symmetric(
@@ -496,12 +496,12 @@ impl BiIndex {
             fwd.entry(a.clone()).or_default().push(EdgeEntry { edge: eid.clone(), node: b.clone(), meta: m.clone() });
             fwd.entry(b.clone()).or_default().push(EdgeEntry { edge: eid, node: a.clone(), meta: m.clone() });
         }
-        BiIndex { fwd: frontiers(fwd), inv: BTreeMap::new() }
+        BiIndex { fwd: adjacencies(fwd), inv: BTreeMap::new() }
     }
 }
 
-fn frontiers(rows: BTreeMap<Position, Vec<EdgeEntry>>) -> BTreeMap<Position, Frontier> {
-    rows.into_iter().map(|(position, rows)| (position, Frontier::of_rows(rows))).collect()
+fn adjacencies(rows: BTreeMap<Position, Vec<EdgeEntry>>) -> BTreeMap<Position, Adjacency> {
+    rows.into_iter().map(|(position, rows)| (position, Adjacency::of_rows(rows))).collect()
 }
 
 pub fn entry_id(rel: RelationId, s: &Position, o: &Position) -> EdgeId {

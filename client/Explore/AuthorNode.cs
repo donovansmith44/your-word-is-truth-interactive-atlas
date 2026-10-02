@@ -6,7 +6,7 @@ namespace BibleAtlas.Client.Explore;
 public sealed class AuthorNode : IExplorable
 {
     private readonly string _bookCode;
-    private readonly AsyncMemo<NodeCard> _card = new();
+    private readonly AsyncMemo<NodeRecord> _card = new();
 
     public AuthorNode(string bookCode) => _bookCode = bookCode;
 
@@ -63,6 +63,6 @@ public sealed class AuthorNode : IExplorable
         (null, null) => null,
     };
 
-    private Task<NodeCard> Load(AtlasClient api) =>
-        _card.Get(() => api.NodeCard(Identity.Id));
+    private Task<NodeRecord> Load(AtlasClient api) =>
+        _card.Get(() => api.NodeRecord(Identity.Id));
 }
