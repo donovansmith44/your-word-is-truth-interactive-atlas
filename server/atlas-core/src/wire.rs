@@ -2,32 +2,22 @@ use serde::{Deserialize, Serialize};
 
 use crate::label::{TimeRange, Year};
 
-/// The map at one moment of enquiry: which places are lit, which are only
-/// present, and which arrows run between them.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, utoipa::ToSchema)]
 #[serde(deny_unknown_fields)]
+#[schema(description = "The map at one moment of enquiry: which places are lit, which are only present, and which arrows run between them.")]
 pub struct Scene {
     pub mode: SceneMode,
-    /// The span of years asked about; absent when a passage was asked about instead.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub window: Option<TimeRange>,
-    /// The passage asked about; absent when a span of years was asked about instead.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub r#ref: Option<String>,
-    /// The places something in view happens at.
     pub places: Vec<ScenePlace>,
-    /// Every other place this atlas knows an event at: present on the map but not
-    /// lit. Always sent, and always empty for a passage.
     pub quiet_places: Vec<QuietPlace>,
-    /// The movements narratives draw between the places in view.
     pub arrows: Vec<SceneArrow>,
-    /// The narratives with at least one leg in view.
     pub narratives: Vec<SceneNarrative>,
 }
 
 atlas_graph_types::vocabulary! {
-    /// Which question a scene answers: what was happening in a span of years,
-    /// or where a passage happens.
     SceneMode {
         Time => "time",
         Scripture => "scripture",
@@ -43,121 +33,85 @@ pub struct NodeRef {
     pub label: String,
 }
 
-/// One lit place on the map, with the events that light it.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, utoipa::ToSchema)]
 #[serde(deny_unknown_fields)]
+#[schema(description = "One lit place on the map, with the events that light it.")]
 pub struct ScenePlace {
     pub id: String,
     pub node: NodeRef,
-    /// The place's default name.
     pub name: String,
-    /// The name to show: the one this place bore in the span asked about, or its
-    /// default name when no period name applies.
     pub display_name: String,
-    /// Latitude in degrees, north positive.
     pub lat: f64,
-    /// Longitude in degrees, east positive.
     pub lon: f64,
-    /// How brightly to draw this place, from how much of what is in view happens
-    /// here.
     #[schema(maximum = 255)]
     pub brightness: u8,
     pub events: Vec<SceneEvent>,
-    /// The year this place was founded, where that is recorded; absent otherwise.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub existence_from: Option<Year>,
-    /// The year it ceased to exist, where that is recorded; absent otherwise.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub existence_to: Option<Year>,
-    /// The ids of other records for this same place, folded into this one. Omitted
-    /// when there are none.
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
     pub merged_ids: Vec<String>,
 }
 
-/// A place this atlas knows an event at, drawn on the map but not lit for the
-/// span asked about.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, utoipa::ToSchema)]
 #[serde(deny_unknown_fields)]
+#[schema(description = "A place this atlas knows an event at, drawn on the map but not lit for the span asked about.")]
 pub struct QuietPlace {
     pub id: String,
     pub node: NodeRef,
-    /// The name to show, resolved for the same span the lit places use.
     pub display_name: String,
-    /// Latitude in degrees, north positive.
     pub lat: f64,
-    /// Longitude in degrees, east positive.
     pub lon: f64,
-    /// How many events touch this place in any year. A count for the span asked
-    /// about would always be zero, which is what makes the place quiet.
     pub total_events: u32,
-    /// The year this place was founded, where that is recorded; absent otherwise.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub existence_from: Option<Year>,
-    /// The year it ceased to exist, where that is recorded; absent otherwise.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub existence_to: Option<Year>,
-    /// The ids of other records for this same place, folded into this one. Omitted
-    /// when there are none.
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
     pub merged_ids: Vec<String>,
 }
 
-/// One event at a place: when it happened, and where it is narrated.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, utoipa::ToSchema)]
 #[serde(deny_unknown_fields)]
+#[schema(description = "One event at a place: when it happened, and where it is narrated.")]
 pub struct SceneEvent {
     pub id: String,
     pub label: String,
-    /// The years the event spans.
     pub when: TimeRange,
-    /// The passages narrating it, grouped by book and chapter.
     pub verse_groups: Vec<VerseGroup>,
 }
 
-/// A run of verses from one chapter of one book.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, utoipa::ToSchema)]
 #[serde(deny_unknown_fields)]
+#[schema(description = "A run of verses from one chapter of one book.")]
 pub struct VerseGroup {
-    /// The book's three-letter code, such as `GEN`.
     pub book: String,
     pub chapter: u16,
-    /// The verse numbers and ranges covered, such as `3` or `3-5`.
     pub verses: Vec<String>,
-    /// How many verses the group covers in all.
     pub count: u32,
 }
 
-/// One leg of a narrative drawn on the map: a movement from one place to the
-/// next.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, utoipa::ToSchema)]
 #[serde(deny_unknown_fields)]
+#[schema(description = "One leg of a narrative drawn on the map: a movement from one place to the next.")]
 pub struct SceneArrow {
-    /// The id of the narrative this leg belongs to.
     pub narrative: String,
-    /// The colour that narrative is drawn in.
     pub color: String,
-    /// The id of the place the movement starts from.
     pub from_place: String,
-    /// The id of the place it arrives at.
     pub to_place: String,
-    /// The id of the event at the starting place.
     pub from_event: String,
-    /// The id of the event at the arriving place.
     pub to_event: String,
-    /// This leg's position along the narrative, counting from its first.
     pub order: u32,
 }
 
-/// One narrative with at least one leg in view.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, utoipa::ToSchema)]
 #[serde(deny_unknown_fields)]
+#[schema(description = "One narrative with at least one leg in view.")]
 pub struct SceneNarrative {
     pub id: String,
     pub name: String,
-    /// The colour its arrows are drawn in.
     pub color: String,
-    /// How many of its legs are in view.
     pub legs_in_scene: u32,
 }
 

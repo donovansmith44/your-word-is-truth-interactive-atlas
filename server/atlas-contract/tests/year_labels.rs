@@ -179,7 +179,7 @@ fn the_document_publishes_the_labelled_span_as_time_range_and_the_computed_one_a
             }),
             &serde_json::json!({
                 "type": "object",
-                "description": "A span of years on this atlas's scale: negative for BC, positive for AD, with\nno year zero. A single year is a span whose ends are equal.",
+                "description": "A span of years on this atlas's scale: negative for BC, positive for AD, with no year zero. A single year is a span whose ends are equal.",
                 "required": ["from_year", "to_year"],
                 "properties": { "from_year": integer, "to_year": integer },
                 "additionalProperties": false,

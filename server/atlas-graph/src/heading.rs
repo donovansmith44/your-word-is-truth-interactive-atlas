@@ -1,6 +1,3 @@
-//! The decisive-title law as a graph query, computed once at assemble time because a per-verse
-//! heading lookup needs O(1) access. Precedence carries the event id as a final, always-distinct
-//! tier, so the winner is a pure function of content rather than of node iteration order.
 
 use std::cmp::Reverse;
 use std::collections::{BTreeMap, BTreeSet, HashMap};
@@ -13,27 +10,18 @@ use atlas_graph_types::node::{EventWitnessPayload, NodePayload};
 
 use crate::kjv_adapter::KJV_TRANSLATION;
 
-/// The pericope heading that belongs above one verse: the container it names,
-/// its title, that container's kind, and whether this verse merely continues
-/// coverage that began in an earlier chapter rather than opening it.
 #[derive(Clone, Debug, PartialEq, Eq, serde::Serialize, utoipa::ToSchema)]
 #[serde(deny_unknown_fields)]
+#[schema(description = "The pericope heading that belongs above one verse: the container it names, its title, that container's kind, and whether this verse merely continues coverage that began in an earlier chapter rather than opening it.")]
 pub struct Heading {
-    /// The id of the event or titled passage that covers this verse and gives the
-    /// heading its words; `/api/event/{id}` fetches it.
     pub event_id: String,
-    /// The heading as a reader sees it.
     pub title: String,
     pub kind: EventKind,
-    /// True when this verse carries on coverage that began in an earlier chapter
-    /// rather than opening it, so a reader can render it as a continued heading.
     pub is_continuation: bool,
 }
 
 type Precedence = (u8, u8, Reverse<i32>, Reverse<i32>, Reverse<String>);
 
-/// The CANONICALLY FIRST verse -- the minimum by (book, chapter, verse) -- never the first one the
-/// curated or imported array happens to list. `VerseId` has no `Ord`, so the key is built by hand.
 fn canonically_first(verses: &[String]) -> Option<String> {
     verses
         .iter()
@@ -42,9 +30,6 @@ fn canonically_first(verses: &[String]) -> Option<String> {
         .map(|(_, v)| v.clone())
 }
 
-/// One anchor per witness where explicit witnesses exist, else one per book the container's own
-/// `verses` touch. Each anchor is that book's canonically first covered verse: anchoring at the
-/// first verse a container's data happened to list leaves the verses before it read unlabeled.
 fn heading_anchors_for(verses: &[String], witnesses: &[EventWitnessPayload]) -> Vec<String> {
     if !witnesses.is_empty() {
         return witnesses
@@ -76,9 +61,6 @@ fn heading_anchors_for(verses: &[String], witnesses: &[EventWitnessPayload]) -> 
     seen_books.into_iter().filter_map(|b| best.remove(&b).map(|(_, _, v)| v)).collect()
 }
 
-/// A chapter strictly after a group's own anchor chapter that the group covers AT its opening verse continues
-/// this container's heading there. Verse 1 is always the chapter boundary in KJV versification, so no canon
-/// lookup is needed, and a chapter covered only mid-way belongs to whichever container truly opens it.
 fn continuation_candidates_for(verses: &[String], witnesses: &[EventWitnessPayload]) -> Vec<String> {
     let groups: Vec<Vec<atlas_core::refs::VerseId>> = if !witnesses.is_empty() {
         witnesses
@@ -117,17 +99,11 @@ fn continuation_candidates_for(verses: &[String], witnesses: &[EventWitnessPaylo
     out
 }
 
-/// `seq` -- the event's position in the reconstructed global timeline -- is a stricter substitute
-/// for the curated `order_key` here: that timeline is already sorted by `(from_year, order_key,
-/// array position)`, so comparing `seq` alone never ties two distinct dated events.
 fn precedence(layer: u8, kind: EventKind, year: i32, seq: i32, event_id: &str) -> Precedence {
     let kind_bit: u8 = if kind == EventKind::Event { 1 } else { 0 };
     (layer, kind_bit, Reverse(year), Reverse(seq), Reverse(event_id.to_string()))
 }
 
-/// The sentinel `(year, seq)` for a heading-worthy node with no resolved placement, which is only
-/// ever a general-kind event. The value mirrors the whole-atlas undated span and is functionally
-/// inert: the kind tier ahead of it already outranks chronology for every such node.
 const UNDATED_SENTINEL: (i32, i32) = (-4004, 0);
 
 fn resolved_year_seq(id: &str, resolved: &HashMap<String, ResolvedPlacement>) -> (i32, i32) {
@@ -137,16 +113,10 @@ fn resolved_year_seq(id: &str, resolved: &HashMap<String, ResolvedPlacement>) ->
     }
 }
 
-/// `event_id -> true` iff it is a leg of ANY narrative. Built from `succession` row chains rather
-/// than from succession EDGES, because a solo-leg narrative is a real shape that produces a row and
-/// zero edge pairs.
 pub fn narrative_leg_event_ids(graph: &Graph) -> BTreeSet<String> {
     graph.succession.iter().flat_map(|row| row.chain.iter().map(|e| e.0.clone())).collect()
 }
 
-/// The full verse -> heading map. The winner at each anchor is the objective MAXIMUM precedence
-/// among every heading-worthy event claiming it, never a first-wins accident of scan order, and the
-/// two passes are sequential: a primary anchor always beats a continuation, which only fills gaps.
 pub fn build_heading_index(graph: &Graph, resolved: &HashMap<String, ResolvedPlacement>) -> BTreeMap<String, Heading> {
     let narrative_legs = narrative_leg_event_ids(graph);
     let mut winners: BTreeMap<String, (Precedence, Heading)> = BTreeMap::new();
@@ -211,8 +181,6 @@ pub fn build_heading_index(graph: &Graph, resolved: &HashMap<String, ResolvedPla
     winners.into_iter().map(|(verse, (_, entry))| (verse, entry)).collect()
 }
 
-/// A continuation never displaces a heading that OPENS at its verse, however it is placed;
-/// between two continuations the same precedence tuple the primary pass uses decides.
 fn continuation_displaces(incumbent: Option<&(Precedence, Heading)>, candidate: &Precedence) -> bool {
     match incumbent {
         None => true,

@@ -1,7 +1,3 @@
-/// `EdgeKind` is a relation paired with a direction rather than a flat list of
-/// members, so it carries the wire form a closed vocabulary would have generated.
-/// A typed node id travels as its raw id alone: the kind is the field's own type,
-/// so writing it beside the id would say twice what the document already says.
 #[cfg(feature = "serde")]
 mod serialize {
     use crate::id::{KindTag, NodeId};
