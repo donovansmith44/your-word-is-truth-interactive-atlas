@@ -6609,3 +6609,9 @@ input:focus-visible,
     font-size: .95rem;
     color: var(--ink);
 }
+
+.focus-entry {
+    display: inline-flex;
+    align-items: baseline;
+    max-width: 100%;
+}
