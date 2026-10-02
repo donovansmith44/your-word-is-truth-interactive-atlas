@@ -116,10 +116,10 @@ public sealed class ExplorerPopoverTests : BunitContext
     }
 
     [Fact]
-    public void Opening_on_a_save_reads_its_start_and_then_every_step_in_one_more_read()
+    public void Opening_on_a_save_reads_its_start_and_every_step_in_one_read()
     {
         // Arrange
-        const int StartThenSteps = 2;
+        const int StartAndSteps = 1;
         var graph = Narratives();
         var atom = Hosting(graph);
         var saved = AtExodus with { Steps = [new Link(EdgeKind.FollowsIn, ServedGraph.At(Wilderness)), new Link(EdgeKind.PrecedesIn, ServedGraph.At(Exodus))] };
@@ -128,7 +128,7 @@ public sealed class ExplorerPopoverTests : BunitContext
         var popover = Render<ExplorerPopover>(p => p.Add(v => v.Opening, new PopoverOpening.Resume(saved)));
 
         // Assert
-        popover.WaitForAssertion(() => Assert.Equal(StartThenSteps, graph.ElementReads));
+        popover.WaitForAssertion(() => Assert.Equal(StartAndSteps, graph.ElementReads));
     }
 
     [Fact]

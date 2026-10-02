@@ -578,8 +578,9 @@ Nothing open remains; the spec awaits the plans.
       public static Explore<Page<Link>> Links(EdgeKind kind, int? cursor = null);   // through the one Paging door (F-59)
       public static Explore<Explorable> Follow(Link link);                           // records one Step
       public static Explore<Explorable> Back { get; }                                // R17, moved here
-      public static Explore<Unit> Replay(IReadOnlyList<Link> links);                 // signed as IReadOnlyList<Step>; see below
+      public static Explore<Unit> Replay(IReadOnlyList<Link> links);                 // owner-approved 2026-10-01 over links (no longer pending)
       public static Task<Outcome<Exploration>> Begin(IExplorer explorer, PositionRef start);
+      public static Task<Outcome<Exploration>> Resume(IExplorer explorer, PositionRef start, IReadOnlyList<Link> trail);   // one batched read
       public static Explore<U> Select<T, U>(this Explore<T> m, Func<T, U> f);
       public static Explore<U> SelectMany<T, U>(this Explore<T> m, Func<T, Explore<U>> f);
       public static Explore<V> SelectMany<T, U, V>(this Explore<T> m, Func<T, Explore<U>> f, Func<T, U, V> project);
@@ -590,7 +591,11 @@ Nothing open remains; the spec awaits the plans.
     continuous (R15: a reference is resolved, never promoted). The one
     exception is `Replay`: it resolves every target in one batched element
     read, then records the steps locally (PRINCIPLES 27c: a screen is a few
-    round trips). Replaying no links asks the graph nothing.
+    round trips). Replaying no links asks the graph nothing. `Resume`
+    (owner-approved 2026-10-01, no longer pending) is the same for a saved
+    exploration: one batched element read for the start and every trail
+    target together, then the steps recorded locally; `Begin` + `Replay`
+    stays for walks that are not resumes.
   - Back is a monad primitive. It is the dual of the last un-returned hop
     (R17), it asks the graph nothing, and Back after Back never goes forward.
   - Failure is the existing `Outcome` (F-58). A failed request ends the walk:
@@ -607,7 +612,7 @@ Nothing open remains; the spec awaits the plans.
     walk's trail is its breadcrumb; Replay of a trail reproduces it; Back
     after Follow returns to the prior Here.
   - Migrated onto the monad and deleted: the popover's Follow and Back, the
-    saved-exploration resume (`Begin` then `Replay`: two element reads
+    saved-exploration resume (`Resume`: one element read
     whatever the trail's length), the World view's era crossing
     (`Crossing.Walk`, a query walk over `Here`, `Links` and `Follow`; an
     `Explorable` reads each page of its neighbours, per kind, cursor and
