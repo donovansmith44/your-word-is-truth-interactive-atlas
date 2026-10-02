@@ -51,7 +51,15 @@
     </div>
 
     <div class="popover-body" data-testid="popover-body" @key="@($"body:{Exploration?.Current.Id}")">
-        @if (_usingSectionRegistry)
+        @if (_couldNotLoad)
+        {
+            <p class="popover-meta">Couldn't load this — check your connection and try again.</p>
+        }
+        else if (_legacy is null && Exploration is { } exploration)
+        {
+            <FocusView Node="exploration.Current" Surface="Surface.Popover" OnFollow="FollowAsync" />
+        }
+        else if (_usingSectionRegistry)
         {
             @foreach (var section in _sections)
             {
@@ -103,8 +111,14 @@
     {
         if (_claim?.IsCurrent == true)
         {
-            _frozenSnapshot = _projection.Value;
+            Focus(_projection.Value);
         }
+    }
+
+    private void Focus(ExplorationState state)
+    {
+        _frozenSnapshot = state;
+        _legacy = Exploration is { } exploration ? _rendered.For(exploration.Current) : null;
     }
 
     private void ApplyLocally(ExplorationIntent intent)
@@ -121,7 +135,7 @@
         }
         else
         {
-            _frozenSnapshot = intent.Apply(_frozenSnapshot);
+            Focus(intent.Apply(_frozenSnapshot));
         }
     }
 
@@ -157,6 +171,7 @@
 
     private IReadOnlyList<Chip> _chips = [];
     private RenderFragment _body = _ => { };
+    private bool _couldNotLoad;
     private bool _usingSectionRegistry;
     private IReadOnlyList<PopoverSection> _sections = [];
     private ElementReference _panelRef;
@@ -314,10 +329,10 @@
         }
 
         var request = _requests.Next();
-        _legacy = _rendered.For(exploration.Current);
         _sections = [];
         _chips = [];
         _body = _ => { };
+        _couldNotLoad = false;
         _usingSectionRegistry = false;
 
         if (_legacy is { } legacy && !await LoadLegacy(legacy, request))
@@ -390,15 +405,7 @@
     private void ShowCouldNotLoad()
     {
         _chips = [];
-        _sections = [];
-        _usingSectionRegistry = false;
-        _body = builder =>
-        {
-            builder.OpenElement(0, "p");
-            builder.AddAttribute(1, "class", "popover-meta");
-            builder.AddContent(2, "Couldn't load this — check your connection and try again.");
-            builder.CloseElement();
-        };
+        _couldNotLoad = true;
     }
 
     private async Task SyncNarrativeFocusAsync()
@@ -424,13 +431,29 @@
 
     public async Task PushAsync(IExplorable node, EdgeKind via)
     {
-        var request = _requests.Next();
-        if (await Arriving(request, request.Fetch(() => Explorer.Follow(new Link(via, node.Identity)))) is not { } target)
+        if (await Followed(new Link(via, node.Identity)) is { } target)
         {
-            return;
+            _rendered.Remember(target, node);
+            await ArriveAt(via, target);
         }
+    }
 
-        _rendered.Remember(target, node);
+    private async Task FollowAsync(Link link)
+    {
+        if (await Followed(link) is { } target)
+        {
+            await ArriveAt(link.Kind, target);
+        }
+    }
+
+    private async Task<Explorable?> Followed(Link link)
+    {
+        var request = _requests.Next();
+        return await Arriving(request, request.Fetch(() => Explorer.Follow(link)));
+    }
+
+    private async Task ArriveAt(EdgeKind via, Explorable target)
+    {
         ApplyLocally(new ExplorationIntent.Follow(new Step(via, target)));
         await LoadCurrent();
         StateHasChanged();
