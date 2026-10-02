@@ -465,7 +465,7 @@ mod tests {
         // Arrange
         let mut shapes = json!({
             "NodeCard": { "properties": { "kind": { "$ref": "#/components/schemas/NodeKind" } } },
-            "Position": { "oneOf": [{ "$ref": "#/components/schemas/PositionKind" }] },
+            "Position": { "oneOf": [{ "$ref": "#/components/schemas/PositionRef" }] },
         });
         // Act
         point_references_at_shapes(&mut shapes);
@@ -474,7 +474,7 @@ mod tests {
             shapes,
             json!({
                 "NodeCard": { "properties": { "kind": { "$ref": "#/$defs/NodeKind" } } },
-                "Position": { "oneOf": [{ "$ref": "#/$defs/PositionKind" }] },
+                "Position": { "oneOf": [{ "$ref": "#/$defs/PositionRef" }] },
             })
         );
     }

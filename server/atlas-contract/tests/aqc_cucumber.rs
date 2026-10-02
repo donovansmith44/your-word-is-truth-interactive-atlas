@@ -158,7 +158,8 @@ fn when_capture_focus_ref(world: &mut AqcWorld) {
             .get("entries")
             .and_then(|e| e.as_array())
             .and_then(|arr| arr.first())
-            .and_then(|entry| entry.get("node"))
+            .and_then(|entry| entry.get("neighbour"))
+            .and_then(|neighbour| neighbour.get("node"))
             .and_then(|node| node.get("id"))
             .and_then(|v| v.as_str())
             .expect("no capturable focus reference on the last response (expected a top-level 'id' or a non-empty 'entries' array)")
@@ -227,7 +228,7 @@ async fn then_every_target_resolves(world: &mut AqcWorld) {
     let entries = world.body["entries"].as_array().expect("EdgePage.entries must be an array");
     assert!(!entries.is_empty(), "test needs at least one real entry to prove resolution over -- pick a richer seed if this fires");
     for entry in entries {
-        let id = entry["node"]["id"].as_str().unwrap();
+        let id = entry["neighbour"]["node"]["id"].as_str().unwrap();
         let (status, _) = get(&format!("/api/node/{}", path_encode(id))).await;
         assert_eq!(status, StatusCode::OK.as_u16(), "traversal target '{id}' must resolve via FocusQuery");
     }
@@ -241,7 +242,7 @@ async fn then_bijection_witness(world: &mut AqcWorld, field: String) {
     let entries = world.body["entries"].as_array().expect("EdgePage.entries must be an array").clone();
     assert!(!entries.is_empty(), "test needs at least one real entry to prove the bijection over");
     for entry in &entries {
-        let target_id = entry["node"]["id"].as_str().unwrap();
+        let target_id = entry["neighbour"]["node"]["id"].as_str().unwrap();
         let this_edge = entry["edge"].as_str().unwrap();
         let (status, inverse_page) = get(&format!("/api/node/{}/edges?kind={inverse_label}&limit=200", path_encode(target_id))).await;
         assert_eq!(status, StatusCode::OK.as_u16(), "the target's own inverse-kind page must resolve");

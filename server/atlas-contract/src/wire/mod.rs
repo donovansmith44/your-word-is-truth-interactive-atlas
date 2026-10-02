@@ -8,6 +8,7 @@ pub mod meta;
 pub mod places;
 pub mod reading;
 pub mod time;
+mod union;
 
 pub use catechism::*;
 pub use contents::*;

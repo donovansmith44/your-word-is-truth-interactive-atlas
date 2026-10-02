@@ -17,7 +17,7 @@ public static class KretzmannCitationScan
         new(
             end: AnchoredText.ScalarOffsetOf(prose, citation.Index + citation.Length),
             kind: EdgeKind.Cites,
-            node: new NodeRef(id: NodeIds.Of(NodeKind.TextUnit, verse), kind: PositionKind.TextUnit, label: verse),
+            node: new NodeRef(id: NodeIds.Of(NodeKind.TextUnit, verse), kind: NodeKind.TextUnit, label: verse),
             start: AnchoredText.ScalarOffsetOf(prose, citation.Index));
 
     private static readonly (string Alias, string Code)[] CitationAliases =

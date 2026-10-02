@@ -41,7 +41,7 @@ public static class Kinship
     private static IEnumerable<KinGroup> ByParentage(IReadOnlyList<EdgeEntry> entries, string testId, Func<Parentage, string> label, EdgeKind via) =>
         Enum.GetValues<Parentage>().Select(parentage =>
         {
-            var people = entries.Where(e => Of(e) == parentage).Select(e => e.Node).ToList();
+            var people = entries.Where(e => Of(e) == parentage).Nodes().ToList();
             return parentage == Parentage.Natural
                 ? Counted(label(parentage), testId, people, via)
                 : new KinGroup(label(parentage), $"{testId}-{parentage.ToString().ToLowerInvariant()}", people, via);

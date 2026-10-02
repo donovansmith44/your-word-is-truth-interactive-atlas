@@ -24,7 +24,7 @@ public sealed class PlaceNode : IExplorable
 
     public string Title => _placeName;
     public string Kind => "Place";
-    public NodeRef Identity => new(id: NodeIds.Of(NodeKind.Place, _placeId), kind: PositionKind.Place, label: _placeName);
+    public NodeRef Identity => new(id: NodeIds.Of(NodeKind.Place, _placeId), kind: NodeKind.Place, label: _placeName);
 
     public string PlaceId => _placeId;
 

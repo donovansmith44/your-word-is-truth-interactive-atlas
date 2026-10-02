@@ -23,6 +23,7 @@ public sealed class ExplorableTests
     private static readonly Explorable Genesis1 = Resolved.Node(NodeKind.Container, Genesis1Id, Genesis1Label, Genesis1Groups);
     private static readonly NodeRef Genesis2Ref = ServedGraph.Ref(NodeKind.Container, Genesis2Id, Genesis2Label);
     private static readonly NodeRef LegacyGenesis2Ref = ServedGraph.Ref(NodeKind.Container, Genesis2Id, "GEN.2");
+    private static readonly EdgeRef ADating = new(id: "DatedBy:00ff");
 
     [Fact]
     public void A_resolved_node_carries_the_served_kind_id_and_label()
@@ -56,7 +57,7 @@ public sealed class ExplorableTests
         // Arrange
         var graph = new ServedGraph()
             .Serving(ServedGraph.Card(NodeKind.Container, Genesis1Id, Genesis1Label, Genesis1Groups))
-            .Serving(Genesis1Id, EdgeKind.FollowsIn, null, ServedGraph.Page(EdgeKind.FollowsIn, SecondPageCursor, Genesis2Ref));
+            .Serving(Genesis1Id, EdgeKind.FollowsIn, null, ServedGraph.Page(EdgeKind.FollowsIn, SecondPageCursor, new NodePosition(Genesis2Ref)));
         var genesis1 = Resolved.Node(graph, ServedGraph.Ref(NodeKind.Container, Genesis1Id, Genesis1Label));
 
         // Act
@@ -64,6 +65,22 @@ public sealed class ExplorableTests
 
         // Assert
         Assert.Equal(new Page<Link>([new Link(EdgeKind.FollowsIn, Genesis2Ref)], SecondPageCursor), page);
+    }
+
+    [Fact]
+    public async Task An_edge_position_on_a_frontier_page_is_not_a_link()
+    {
+        // Arrange
+        var graph = new ServedGraph()
+            .Serving(ServedGraph.Card(NodeKind.Container, Genesis1Id, Genesis1Label, Genesis1Groups))
+            .Serving(Genesis1Id, EdgeKind.FollowsIn, null, ServedGraph.Page(EdgeKind.FollowsIn, null, new EdgePosition(ADating), new NodePosition(Genesis2Ref)));
+        var genesis1 = Resolved.Node(graph, ServedGraph.Ref(NodeKind.Container, Genesis1Id, Genesis1Label));
+
+        // Act
+        var page = await genesis1.Links(EdgeKind.FollowsIn);
+
+        // Assert
+        Assert.Equal(new Page<Link>([new Link(EdgeKind.FollowsIn, Genesis2Ref)], null), page);
     }
 
     [Fact]
@@ -85,7 +102,7 @@ public sealed class ExplorableTests
         // Arrange
         var graph = new ServedGraph()
             .Serving(ServedGraph.Card(NodeKind.Container, Genesis1Id, Genesis1Label, Genesis1Groups))
-            .Serving(Genesis1Id, EdgeKind.FollowsIn, null, ServedGraph.Page(EdgeKind.FollowsIn, null, Genesis2Ref));
+            .Serving(Genesis1Id, EdgeKind.FollowsIn, null, ServedGraph.Page(EdgeKind.FollowsIn, null, new NodePosition(Genesis2Ref)));
         var genesis1 = Resolved.Node(graph, ServedGraph.Ref(NodeKind.Container, Genesis1Id, Genesis1Label));
 
         // Act

@@ -20,9 +20,9 @@ public sealed class NodeIdsTests
     }
 
     [Theory]
-    [InlineData("CatechismItem:commandment-1", PositionKind.CatechismItem, "commandment-1")]
-    [InlineData("text-unit:BoC 7.2.1", PositionKind.TextUnit, "BoC 7.2.1")]
-    public void LocalPart_is_the_id_after_its_kind(string id, PositionKind kind, string expected)
+    [InlineData("CatechismItem:commandment-1", NodeKind.CatechismItem, "commandment-1")]
+    [InlineData("text-unit:BoC 7.2.1", NodeKind.TextUnit, "BoC 7.2.1")]
+    public void LocalPart_is_the_id_after_its_kind(string id, NodeKind kind, string expected)
     {
         // Arrange
         var node = new NodeRef(id: id, kind: kind, label: id);
@@ -36,7 +36,7 @@ public sealed class NodeIdsTests
     public void LocalPart_of_an_id_whose_kind_prefix_is_empty_is_the_text_after_the_colon()
     {
         // Arrange
-        var node = new NodeRef(id: ":foo", kind: PositionKind.TextUnit, label: ":foo");
+        var node = new NodeRef(id: ":foo", kind: NodeKind.TextUnit, label: ":foo");
         // Act
         var local = NodeIds.LocalPart(node);
         // Assert
@@ -47,7 +47,7 @@ public sealed class NodeIdsTests
     public void LocalPart_of_an_id_with_no_kind_fails_naming_the_id()
     {
         // Arrange
-        var node = new NodeRef(id: "commandment-1", kind: PositionKind.CatechismItem, label: "commandment-1");
+        var node = new NodeRef(id: "commandment-1", kind: NodeKind.CatechismItem, label: "commandment-1");
         // Act
         Action act = () => NodeIds.LocalPart(node);
         // Assert

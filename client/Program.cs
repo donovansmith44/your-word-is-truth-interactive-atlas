@@ -36,6 +36,8 @@ public static class Program
             return new GraphExplorableClient(new HttpClient { BaseAddress = baseAddress });
         });
 
+        builder.Services.AddSingleton<IExplorer>(sp => new GraphExplorer(sp.GetRequiredService<IExplorableClient>()));
+
         builder.Services.AddSingleton<ViewStateService>();
 
         AppServices.AddStateAtoms(builder.Services);

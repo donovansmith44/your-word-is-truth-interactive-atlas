@@ -5,7 +5,7 @@ namespace BibleAtlas.Client.Tests;
 
 public class FetchLayerConformanceTests
 {
-    private static readonly Regex FetchCall = new(@"\b(Atlas|Graph|atlas)\.[A-Z]\w*\(", RegexOptions.Compiled);
+    private static readonly Regex FetchCall = new(@"\b(Atlas|Graph|atlas|Explorer)\.[A-Z]\w*\(|\.Links\(", RegexOptions.Compiled);
     private static readonly Regex ThroughARequest = new(@"\.Fetch\(\(\) =>", RegexOptions.Compiled);
     private static readonly Regex TypedInput = new(@"<input[^>]*@oninput", RegexOptions.Compiled | RegexOptions.Singleline);
     private static readonly Regex DraftBound = new(@"value=""@\w+\.Text""", RegexOptions.Compiled);
@@ -26,6 +26,25 @@ public class FetchLayerConformanceTests
 
         // Assert
         Assert.Equal((true, ""), (fetches.Any(), outsideTheRequest));
+    }
+
+    [Fact]
+    public void Resolving_following_presenting_and_paging_a_frontier_are_fetches_the_law_sees()
+    {
+        // Arrange
+        var planted = new[]
+        {
+            "var node = await Explorer.Resolve(target);",
+            "var next = await Explorer.Follow(link);",
+            "var card = await Explorer.Present(node, Surface.Popover);",
+            "var page = await node.Links(kind, cursor);",
+        };
+
+        // Act
+        var seen = planted.Select(line => FetchCall.IsMatch(line)).ToList();
+
+        // Assert
+        Assert.Equal([true, true, true, true], seen);
     }
 
     [Fact]

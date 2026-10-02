@@ -583,6 +583,17 @@ fn kinds_takes_no_arguments() {
 }
 
 #[test]
+fn edges_lists_an_edge_neighbour_under_its_own_kind_known_by_its_id() {
+    let (_, dates) = run_json(&["edges", "Anchor:solomon-crowned", "--kind", "dates"]);
+    let dating = dates.unwrap()["entries"][0]["edge"].as_str().unwrap().to_string();
+    let (_, justifies) = run_json(&["edges", "Anchor:solomon-crowned", "--kind", "justifies"]);
+    let justification = justifies.unwrap()["entries"][0]["edge"].as_str().unwrap().to_string();
+    let o = run_with_data_dir(&["edges", "Anchor:solomon-crowned", "--kind", "justifies"]);
+    assert!(o.status.success(), "stderr: {}", stderr(&o));
+    assert_eq!(stdout(&o), format!("{justification:<24} Edge         {dating:<28} {dating}\n(end of list)\n"));
+}
+
+#[test]
 fn edges_never_surfaces_an_unresolvable_peoplegroup_neighbor() {
     let o = run_with_data_dir(&["edges", "Event:ab_ur", "--kind", "located-at"]);
     assert!(o.status.success(), "stderr: {}", stderr(&o));

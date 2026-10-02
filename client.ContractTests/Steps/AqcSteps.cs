@@ -223,7 +223,7 @@ public class AqcSteps
         _capturedRef = _query switch
         {
             Query.Focus => Body<NodeCard>().Id,
-            Query.Traversal => Body<EdgePage>().Entries.First().Node.Id,
+            Query.Traversal => Body<EdgePage>().Entries.Nodes().First().Id,
             _ => throw new InvalidOperationException($"a {_query} answer carries no focus reference"),
         };
     }
@@ -314,8 +314,9 @@ public class AqcSteps
     {
         var entries = Body<EdgePage>().Entries;
         Assert.NotEmpty(entries);
-        Assert.All(entries, e => Assert.False(string.IsNullOrEmpty(e.Node.Id) || string.IsNullOrEmpty(e.Node.Label)));
-        var first = entries[0].Node.Id;
+        var targets = entries.Select(e => Assert.IsType<NodePosition>(e.Neighbour).Node).ToList();
+        Assert.All(targets, t => Assert.False(string.IsNullOrEmpty(t.Id) || string.IsNullOrEmpty(t.Label)));
+        var first = targets[0].Id;
         var (status, focusBody) = LoadFixture(FocusFixtureNameForCapturedIdentity(first));
         Assert.Equal((200, first), (status, focusBody.Deserialize<NodeCard>()!.Id));
     }
