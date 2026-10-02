@@ -1,5 +1,3 @@
-//! Scene composition: turns a `&dyn SceneSource` plus a time window or
-//! scripture reference into the wire-level `Scene` the client renders.
 
 use std::collections::{HashMap, HashSet};
 
@@ -20,9 +18,6 @@ pub fn compose_time_scene(d: &dyn SceneSource, w: TimeRange) -> Scene {
     Scene { mode: SceneMode::Time, window: Some(label::TimeRange::of(w)), r#ref: None, places, quiet_places: quiet, arrows, narratives }
 }
 
-/// Lit places are the union of those touched by an event with a verse inside `r` and those
-/// whose geocoding links alone match it. A place lit both ways keeps only its real
-/// events; the synthetic mention event never stands beside one.
 pub fn compose_scripture_scene(d: &dyn SceneSource, r: &ScriptureRef) -> Scene {
     let kept: Vec<&Event> = d.events_matching_ref(r);
     // No window here: a place is lit by its geocoded verse links, whose text already names
@@ -78,8 +73,6 @@ pub fn compose_scripture_scene(d: &dyn SceneSource, r: &ScriptureRef) -> Scene {
     Scene { mode: SceneMode::Scripture, window: None, r#ref: Some(r.to_string()), places, quiet_places: vec![], arrows, narratives }
 }
 
-/// Book matches book; Chapter matches book+chapter; Passage matches
-/// book+chapter and `from_verse <= v.verse <= to_verse`; Verse matches exactly.
 pub fn ref_contains(r: &ScriptureRef, v: &VerseId) -> bool {
     match r {
         ScriptureRef::Book(b) => *b == v.book,
@@ -91,9 +84,6 @@ pub fn ref_contains(r: &ScriptureRef, v: &VerseId) -> bool {
     }
 }
 
-/// `r == None` filters a narrative's legs by the window; `Some` filters by verse match and
-/// `w` is then unused. Consecutive kept legs at one place are skipped, but `order` still
-/// increments per consecutive pair so orders stay stable across a skip.
 fn build_arrows(d: &dyn SceneSource, w: &TimeRange, r: Option<&ScriptureRef>) -> Vec<SceneArrow> {
     let mut out = Vec::new();
     for n in d.narratives() {
@@ -127,9 +117,6 @@ fn build_arrows(d: &dyn SceneSource, w: &TimeRange, r: Option<&ScriptureRef>) ->
     out
 }
 
-/// Groups by every place an event touches, not just its anchor. `r` is threaded through to
-/// the verse cap so it can never drop the very verse that earned the place its spot.
-/// `name_window` is a separate concept: the window the display name resolves against.
 fn lit_places(d: &dyn SceneSource, kept: &[&Event], r: Option<&ScriptureRef>, name_window: Option<TimeRange>) -> Vec<ScenePlace> {
     let mut by_place: HashMap<&str, Vec<&Event>> = HashMap::new();
     for e in kept {
@@ -169,9 +156,6 @@ fn lit_places(d: &dyn SceneSource, kept: &[&Event], r: Option<&ScriptureRef>, na
     places
 }
 
-/// The `!lit` filter makes lit and quiet disjoint by construction, so together they are
-/// exactly the event-bearing set. The display name resolves against the same window the
-/// lit side used, so one place cannot show two names in one scene.
 fn quiet_places(d: &dyn SceneSource, lit: &[ScenePlace], window: TimeRange) -> Vec<QuietPlace> {
     let lit_ids: HashSet<&str> = lit.iter().map(|p| p.id.as_str()).collect();
     let mut out: Vec<QuietPlace> = d
@@ -203,27 +187,18 @@ fn labelled_existence(history: Option<&PlaceHistory>) -> (Option<label::Year>, O
     (from.map(label::Year::labelled), to.map(label::Year::labelled))
 }
 
-/// Public so the verse and place endpoints build this shape from here instead of
-/// duplicating the grouping. Passes no ref: neither is scoped to one, so nothing to rank.
 pub fn to_scene_event(e: &Event) -> SceneEvent {
     SceneEvent { id: e.id.clone(), label: e.label.clone(), when: label::TimeRange::of(e.when), verse_groups: verse_groups_for(&e.verses, None) }
 }
 
-/// One book's account of an event: the passage it narrates the event in, and any
-/// note on the citation.
 #[derive(Debug, Clone, PartialEq, serde::Serialize, utoipa::ToSchema)]
 #[serde(deny_unknown_fields)]
+#[schema(description = "One book's account of an event: the passage it narrates the event in, and any note on the citation.")]
 pub struct EventWitness {
-    /// The book's three-letter code, such as `MAT`.
     pub book: String,
-    /// The verses of this account, grouped by chapter.
     pub verse_groups: Vec<VerseGroup>,
-    /// A note on how THIS account is cited -- not the event's own note about how its
-    /// date and grouping were arrived at. Absent when the account needed none.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ref_note: Option<String>,
-    /// The section of Robertson's Harmony of the Gospels this account falls in, sent
-    /// only where it differs from the event's own. Absent otherwise.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub robertson_section: Option<String>,
 }
@@ -270,9 +245,6 @@ pub fn accounts_of(e: &Event) -> Vec<Account> {
     by_book.into_iter().map(|(book, verses)| Account { book, verses, ref_note: None, robertson_section: None }).collect()
 }
 
-/// Ascending within a group, capped at 20 ids, with `count` the true total before the cap.
-/// Given `r`, the verses satisfying it take the front of the cap, so a place lit by a ref
-/// always shows the verse that put it in the scene; the wire shape is unchanged.
 fn verse_groups_for(verses: &[String], r: Option<&ScriptureRef>) -> Vec<VerseGroup> {
     let mut groups: HashMap<(String, u16), Vec<(u16, String)>> = HashMap::new();
     for v in verses {
@@ -309,9 +281,6 @@ fn verse_groups_for(verses: &[String], r: Option<&ScriptureRef>) -> Vec<VerseGro
     out
 }
 
-/// `legs_in_scene` counts kept events, not arrows: a same-place skip can leave an event
-/// with no arrow endpoint, so counting arrows would undercount. Hence the same `(w, r)`
-/// filter `build_arrows` was given.
 fn legend(d: &dyn SceneSource, w: &TimeRange, r: Option<&ScriptureRef>, arrows: &[SceneArrow]) -> Vec<SceneNarrative> {
     let active: HashSet<&str> = arrows.iter().map(|a| a.narrative.as_str()).collect();
     let mut out: Vec<SceneNarrative> = d

@@ -13,8 +13,6 @@ use crate::query;
 use crate::wire::{Corpus, TextScope};
 
 atlas_graph_types::vocabulary! {
-    /// Why this API refused a request: the one word a consumer branches on, beside
-    /// which the message is prose for a reader.
     ErrorCode {
         BadRef => "bad_ref",
         BadKind => "bad_kind",
@@ -55,15 +53,10 @@ impl ApiError {
         Self { status: StatusCode::BAD_REQUEST, code: ErrorCode::BadKind, message: format!("unknown or missing edge kind: '{raw}'") }
     }
 
-    /// A refusal that is not about one word but about a combination of them, whose
-    /// code is the parameter the caller must change: a direction a scope leaves
-    /// nothing to walk.
     pub fn bad_dir(message: impl Into<String>) -> Self {
         Self { status: StatusCode::BAD_REQUEST, code: ErrorCode::BadDir, message: message.into() }
     }
 
-    /// The same, where the scope is what the caller must change: a span this atlas
-    /// reads over Scripture and over no other corpus.
     pub fn bad_scope(message: impl Into<String>) -> Self {
         Self { status: StatusCode::BAD_REQUEST, code: ErrorCode::BadScope, message: message.into() }
     }
@@ -83,17 +76,11 @@ impl ApiError {
         unknown_word(ErrorCode::BadCorpus, query::CORPUS, raw, &leading, last)
     }
 
-    /// A server-side invariant this API cannot serve around. Distinct from
-    /// `not_found`: the resource exists, and this project's own data about it is
-    /// incomplete, which must never reach a reader as a blank or a guess.
     pub fn internal(message: &str) -> Self {
         Self { status: StatusCode::INTERNAL_SERVER_ERROR, code: ErrorCode::Internal, message: message.to_string() }
     }
 }
 
-/// A query parameter whose word names no member of its own closed vocabulary. The
-/// words it could have been are read off that vocabulary, so a member added to one
-/// can never be missing from the refusal that lists it.
 fn unknown_word(code: ErrorCode, parameter: &str, raw: &str, leading: &[&str], last: &str) -> ApiError {
     ApiError {
         status: StatusCode::BAD_REQUEST,
@@ -102,9 +89,6 @@ fn unknown_word(code: ErrorCode, parameter: &str, raw: &str, leading: &[&str], l
     }
 }
 
-/// A list of accepted words as this API's own refusals read it: `'a'`, `'a' or 'b'`,
-/// `'a', 'b' or 'c'`. It is given the last word apart from the words before it,
-/// which is a list no vocabulary can hand it empty.
 fn one_of(leading: &[&str], last: &str) -> String {
     let quoted = |word: &str| format!("'{word}'");
     match leading {
@@ -133,9 +117,6 @@ impl IntoResponse for ApiError {
     }
 }
 
-/// Declares one route's refusals: the 400 codes its own parameters can produce, and
-/// the 404 and 500 every route shares. Written as a macro so the five sets read as
-/// one table, and placed above them because that is where a macro must be declared.
 macro_rules! refusals {
     ($( $(#[doc = $doc:expr])* $name:ident { $($code:ident),* } )+) => {$(
         $(#[doc = $doc])*
@@ -150,21 +131,14 @@ macro_rules! refusals {
 }
 
 refusals! {
-    /// A route that refuses nothing it is asked with: every parameter it takes is a
-    /// path segment, and one that names nothing is `not_found` rather than unreadable.
     NoRefusals {}
-    /// A route that reads a reference.
     ReferenceRefusals { BadRef }
-    /// A route that reads a span of years.
     WindowRefusals { BadWindow }
     NeighbourRefusals { BadRef, BadKind }
     ElementRefusals { BadRef }
-    /// A route that reads a reference and every word a reading window is asked with.
     ReadingWindowRefusals { BadRef, BadDir, BadScope, BadCorpus }
 }
 
-/// A route that can refuse no word publishes no 400 at all, so the document never
-/// advertises a refusal a route cannot make.
 fn refusal_responses(codes: &[ErrorCode]) -> BTreeMap<String, RefOr<utoipa::openapi::Response>> {
     let json = || ContentBuilder::new().schema(Some(Ref::from_schema_name(ErrorBody::name()))).build();
     let mut responses = ResponsesBuilder::new();
@@ -182,8 +156,6 @@ const UNREADABLE: &str = "The reference, window or query could not be read; the 
 const NOTHING_THERE: &str = "Nothing in this atlas answers to that reference.";
 const INCOMPLETE: &str = "The request was well formed but this atlas's own data for it is incomplete.";
 
-/// One route's 400 sentence. A route with a single code names it outright; a route
-/// with several says which of them the body carries.
 fn unreadable(codes: &[ErrorCode]) -> String {
     let quoted: Vec<String> = codes.iter().map(|code| format!("`{}`", code.name())).collect();
     match quoted.as_slice() {

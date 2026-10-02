@@ -1,4 +1,3 @@
-//! The compiled-file schema the ETL writes and the server reads.
 
 use std::collections::{HashMap, HashSet};
 
@@ -8,15 +7,11 @@ use crate::time::{TimeRange, Year};
 
 pub use atlas_graph_types::id::{EventId, PersonId};
 
-/// One book of the canon: its code, its name, and how many verses each of its
-/// chapters holds.
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize, utoipa::ToSchema)]
+#[schema(description = "One book of the canon: its code, its name, and how many verses each of its chapters holds.")]
 pub struct CanonBook {
-    /// The three-letter code, such as `GEN`.
     pub code: String,
-    /// The book's full name.
     pub name: String,
-    /// The verse count of each chapter, in order.
     pub chapters: Vec<u16>,
 }
 
@@ -32,8 +27,6 @@ impl Canon {
     }
 }
 
-/// `verse_links` are attached by geocoding, not by event participation, and are what
-/// light a place for a scripture reference.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Place {
     pub id: String,
@@ -169,9 +162,6 @@ pub struct EventAnalogueSeed {
     pub note: String,
 }
 
-/// `places[0]` is the anchor used for arrow endpoints; every listed place lights up.
-/// `verses` is a container's verse set, never written onto a verse: the empty set is
-/// lawful, and two containers covering one verse is expected, not an error.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Event {
     pub id: String,
@@ -179,38 +169,20 @@ pub struct Event {
     pub when: TimeRange,
     pub places: Vec<String>,
     pub verses: Vec<String>,
-    /// A general container has no date and no place: it carries the undated sentinel
-    /// and an empty `places`, both supplied by the compiler and never curator-typed, so
-    /// "do not fabricate a date" is structural.
     #[serde(default = "default_event_kind")]
     pub kind: EventKind,
-    /// Empty means one IMPLICIT witness, synthesized from `verses` grouped by book -- never
-    /// zero witnesses, and never a reason to withhold this container's heading.
     #[serde(default)]
     pub witnesses: Vec<EventWitness>,
-    /// Which section of Robertson's Harmony of the Gospels grounds this title, date and
-    /// grouping. `None` where none was consulted, rather than an invented section number.
     #[serde(default)]
     pub robertson_section: Option<String>,
-    /// The Acts sibling of `robertson_section`, kept a separate field so an Acts section
-    /// can never be mistaken for a Robertson-verified one.
     #[serde(default)]
     pub acts_section: Option<String>,
-    /// The same provenance field for a book outside the Gospels and Acts: this atlas's own
-    /// sectioning.
     #[serde(default)]
     pub atlas_section: Option<String>,
-    /// The same provenance field where the title IS literal KJV text -- a psalm's own
-    /// superscription, quoted verbatim -- never this atlas's phrasing.
     #[serde(default)]
     pub kjv_superscription: Option<String>,
-    /// Names only sources actually consulted for this container's date and grouping.
-    /// `None` is honest, not a gap.
     #[serde(default)]
     pub ref_note: Option<String>,
-    /// The sub-year tiebreak: the year model is year-granular, so two events days apart in
-    /// one year need this to order them, and a narrative's legs must be non-decreasing by it
-    /// within a year. Defaults to 0, which is never read for an event alone in its year.
     #[serde(default)]
     pub order_key: i32,
 }
@@ -225,8 +197,6 @@ impl Event {
 }
 
 atlas_graph_types::vocabulary! {
-    /// Which kind of container this is: an `event`, something that happened at a
-    /// date, or a `general` titled passage, which has none.
     EventKind {
         Event => "event",
         General => "general",
@@ -237,8 +207,6 @@ fn default_event_kind() -> EventKind {
     EventKind::Event
 }
 
-/// Hand-written because `TimeRange` has no `Default` -- it validates through a fallible
-/// constructor. The placeholder `when` is never read: every user states its own.
 impl Default for Event {
     fn default() -> Self {
         Event {
@@ -259,58 +227,41 @@ impl Default for Event {
     }
 }
 
-/// `book` is carried rather than derived from the verse ids, so a witness whose translation
-/// entry is empty still says which book it is.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct EventWitness {
     pub book: String,
-    /// Lowercase translation code -> flat, individually canonical verse ids.
     pub translations: HashMap<String, Vec<String>>,
-    /// This account's own citation note, not the container's note about its date and
-    /// grouping as a whole.
     #[serde(default)]
     pub ref_note: Option<String>,
-    /// `None` where this account shares its container's section rather than repeating it.
     #[serde(default)]
     pub robertson_section: Option<String>,
 }
 
-/// A journey or storyline through the atlas: an ordered chain of events the map
-/// draws as a run of arrows.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, utoipa::ToSchema)]
+#[schema(description = "A journey or storyline through the atlas: an ordered chain of events the map draws as a run of arrows.")]
 pub struct Narrative {
     pub id: String,
     pub name: String,
-    /// The colour its arrows are drawn in.
     pub color: String,
-    /// The ids of its events, in order, never running backwards in time.
     pub legs: Vec<String>,
 }
 
-/// A named stretch of this atlas's timeline.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Era {
     pub id: String,
     pub name: String,
-    /// The first year of the era, negative for BC.
     pub from_year: Year,
-    /// The last year of the era.
     pub to_year: Year,
 }
 
-/// Who wrote one book of the Bible, where, and when.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, utoipa::ToSchema)]
+#[schema(description = "Who wrote one book of the Bible, where, and when.")]
 pub struct BookMeta {
-    /// Not on the wire: a caller already knows which book it asked about.
     #[serde(skip_serializing)]
     pub book: String,
-    /// The book's author, as this atlas records him.
     pub author: String,
-    /// Where it was written, absent when that is not recorded.
     pub write_place: Option<String>,
-    /// The earliest year it is dated to, negative for BC; absent when undated.
     pub write_from: Option<i32>,
-    /// The latest year it is dated to; absent when undated.
     pub write_to: Option<i32>,
 }
 
@@ -324,9 +275,6 @@ impl BookMeta {
     }
 }
 
-/// Who wrote one book, as curated Person ids. A compile-time input only: the graph lowers it into
-/// `authored` rows, which is why it is not a `BookMeta` field -- that struct is persisted by the
-/// sidecar and served, and a fact the graph carries is not stored a second time.
 #[derive(Debug, Clone, PartialEq)]
 pub struct BookAuthorship {
     pub book: String,
@@ -339,24 +287,18 @@ pub struct CrossRef {
     pub votes: i32,
 }
 
-/// An always-on map label: a water, a mountain or a region, drawn at one point
-/// and never interactive.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, utoipa::ToSchema)]
+#[schema(description = "An always-on map label: a water, a mountain or a region, drawn at one point and never interactive.")]
 pub struct Landmark {
     pub name: String,
     pub kind: LandmarkKind,
-    /// Latitude in degrees, north positive.
     pub lat: f64,
-    /// Longitude in degrees, east positive.
     pub lon: f64,
-    /// A size hint for a label meant to stay readable when zoomed out; absent for
-    /// most landmarks.
     #[serde(default)]
     pub size: Option<LandmarkSize>,
 }
 
 atlas_graph_types::vocabulary! {
-    /// Which sort of always-on map label this is.
     LandmarkKind {
         Water => "water",
         Mountain => "mountain",
@@ -365,7 +307,6 @@ atlas_graph_types::vocabulary! {
 }
 
 atlas_graph_types::vocabulary! {
-    /// How large a landmark's label is drawn, smallest first.
     LandmarkSize {
         Small => "sm",
         Medium => "md",
@@ -375,16 +316,11 @@ atlas_graph_types::vocabulary! {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ChronologyAnchor {
-    /// Never renumbered or repositioned: other tables reference this row by it.
     pub id: String,
     pub label: String,
     pub year: Year,
-    /// `None` where no single compiled event corresponds, or where binding one would
-    /// misrepresent an already-disclosed adjacency. An honest gap, not a shortcut.
     #[serde(default)]
     pub event_id: Option<String>,
-    /// Always carries an `event_id` when true: an era boundary needs a real timeline
-    /// position to gate on.
     #[serde(default)]
     pub era_boundary: bool,
     pub source: String,
@@ -392,10 +328,8 @@ pub struct ChronologyAnchor {
     pub note: Option<String>,
 }
 
-/// The widest span a book's narrative NARRATES -- never the span it was written in.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct BookNarrationWindow {
-    /// Canonical three-letter code, e.g. `"GEN"`.
     pub book: String,
     pub from_year: Year,
     pub to_year: Year,
@@ -403,7 +337,6 @@ pub struct BookNarrationWindow {
     pub note: Option<String>,
 }
 
-/// `when` is the window this name applies over; `verses` are the refs supporting the claim.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct PlaceNameEntry {
     pub name: String,
@@ -411,9 +344,6 @@ pub struct PlaceNameEntry {
     pub verses: Vec<String>,
 }
 
-/// `breadth` is `"era"` (period-specific) or `"broad"` (a whole-sweep summary, shown when
-/// the window spans more than one of this place's era ranges). No verses: blurb text is
-/// prose, not a claim keyed to a verse the way a name or a date is.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct PlaceBlurbEntry {
     pub text: String,
@@ -421,23 +351,16 @@ pub struct PlaceBlurbEntry {
     pub breadth: String,
 }
 
-/// A date this atlas claims for a place, with the verses it rests on.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, utoipa::ToSchema)]
+#[schema(description = "A date this atlas claims for a place, with the verses it rests on.")]
 pub struct PlaceDateClaim {
-    /// The year claimed, or the range; a single year is a span whose ends are equal.
     pub when: TimeRange,
-    /// The verses supporting the claim.
     pub verses: Vec<String>,
-    /// A qualifier such as `traditional`, shown as a leading "c." on the date;
-    /// absent when the date needs none.
     pub note: Option<String>,
-    /// The event this founding or fall is, when the verses attest one; absent for a
-    /// claim inferred from later references rather than narrated.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub event: Option<EventId>,
 }
 
-/// `id` matches a real compiled place id; most places have no record at all.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct PlaceHistory {
     pub id: String,
@@ -449,9 +372,6 @@ pub struct PlaceHistory {
     pub destroyed: Option<PlaceDateClaim>,
 }
 
-/// A flat, translation-keyed display name for a place whose default name is not the one
-/// the text uses. Independent of any calendar window, and only ever the fallback when no
-/// curated period name is active -- never a competitor to one.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct PlaceNameAlias {
     pub id: String,
@@ -459,9 +379,6 @@ pub struct PlaceNameAlias {
     pub verses: Vec<String>,
 }
 
-/// `from`/`to` are validated non-overlapping within one polity. `rings` are one or more
-/// CLOSED simple polygons of `(lat, lon)` pairs -- deliberately not GeoJSON's `[lon, lat]`,
-/// matching every other coordinate pair here and the map library's own point order.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct PolityEra {
     pub name: String,
@@ -469,38 +386,24 @@ pub struct PolityEra {
     pub to: Year,
     pub ref_note: String,
     pub rings: Vec<Vec<(f64, f64)>>,
-    /// The delta at this era's start -- for a polity's first era, its rise. `None` is a
-    /// deliberate "uneventful boundary", not a gap to paper over.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub transition: Option<PolityDelta>,
-    /// Only ever curated on a polity's final era. Absence where this atlas's span simply
-    /// outlives the polity is not an authoring gap.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub fall: Option<PolityDelta>,
 }
 
-/// The event at one boundary of a polity's era: its rise, a change of its
-/// borders, or its fall.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, utoipa::ToSchema)]
+#[schema(description = "The event at one boundary of a polity's era: its rise, a change of its borders, or its fall.")]
 pub struct PolityDelta {
-    /// A short description of what happened.
     pub event: String,
-    /// The verses grounding it. May be empty for an event history records but no
-    /// single verse pinpoints; never a fabricated reference.
     #[serde(default)]
     #[schema(required = true)]
     pub verses: Vec<String>,
-    /// The sources actually consulted for this event.
     pub ref_note: String,
-    /// A curator-authored echo of the hosting era's `from`, cross-checked by the
-    /// ETL: TOML attaches a nested table to the most recently opened `[[era]]`, not
-    /// to whichever era the surrounding prose describes.
     #[serde(skip_serializing)]
     pub for_era_from: Year,
 }
 
-/// Geometry only, used solely to clip polity washes so they never spill into open sea;
-/// never drawn as a layer of its own. `rings` follow `PolityEra::rings`' convention.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct LandMaskRegion {
     pub name: String,
@@ -508,9 +411,6 @@ pub struct LandMaskRegion {
     pub rings: Vec<Vec<(f64, f64)>>,
 }
 
-/// `text` is `None` for an item that poses its own bespoke question with no separate
-/// prompt to quote first. `explanation_heading` is verbatim, defaulting to the common
-/// phrase so the curated file spells out only the items that really differ.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct CatechismItem {
     pub id: String,
@@ -526,8 +426,6 @@ pub struct CatechismItem {
     pub verses: Vec<String>,
     #[serde(default)]
     pub ref_note: Option<String>,
-    /// Question-level citations, kept separate from the item-level `verses` above: two
-    /// granularities of citation, not a second copy of one.
     #[serde(default)]
     pub questions: Vec<CatechismQuestion>,
 }
@@ -536,7 +434,6 @@ fn default_explanation_heading() -> String {
     "What does this mean?".to_string()
 }
 
-/// `verses` is a flat list of individually canonical refs, never a range string.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct CatechismQuestion {
     pub title: String,
@@ -551,9 +448,6 @@ pub struct CatechismPart {
     pub items: Vec<CatechismItem>,
 }
 
-/// `color_key` is derived from `id` alone, never an era name, so a polity keeps one tint
-/// across a rename; it is assigned in one pass over the whole roster so the values cannot
-/// collide, and stored rather than recomputed per request.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Polity {
     pub id: String,
@@ -561,9 +455,6 @@ pub struct Polity {
     pub eras: Vec<PolityEra>,
 }
 
-/// The derived indexes are `#[serde(skip)]`, so `finish()` must be called again after
-/// deserializing. `places`/`events`/`narratives`/`verses` are compile-time inputs only:
-/// they are empty on every serving path, which composes from the graph instead.
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct AtlasData {
     pub canon: Canon,
@@ -582,7 +473,6 @@ pub struct AtlasData {
     #[serde(skip)]
     pub place_history: HashMap<String, PlaceHistory>,
 
-    /// In curated-file order; the first row for an id is the one single-name callers show.
     #[serde(skip)]
     pub place_name_aliases: HashMap<String, Vec<PlaceNameAlias>>,
 
@@ -633,15 +523,11 @@ pub struct AtlasData {
     place_index: HashMap<String, usize>,
     #[serde(skip)]
     event_index: HashMap<String, usize>,
-    /// Every place touched by at least one event, in any window.
     #[serde(skip)]
     event_bearing_place_ids: HashSet<String>,
-    /// All-time, in any window -- not the count for a scene's own window.
     #[serde(skip)]
     event_counts_by_place: HashMap<String, u32>,
 
-    /// The title is `None` for a citation embedded in the item itself and `Some` for one
-    /// carried by a question.
     #[serde(skip)]
     verse_to_catechism: HashMap<String, Vec<(String, Option<String>)>>,
     #[serde(skip)]
@@ -649,20 +535,12 @@ pub struct AtlasData {
     #[serde(skip)]
     catechism_item_index: HashMap<String, (usize, usize)>,
 
-    /// One entry per WITNESS, so a multi-witness container heads each book it appears in at
-    /// that account's own first verse -- never just one book.
     #[serde(skip)]
     verse_heading: HashMap<String, HeadingEntry>,
 
-    /// Two independently curated containers should never claim one anchor verse: curated
-    /// sectioning partitions, it does not overlap. Separate from the display resolution,
-    /// which legitimately picks a winner; the ETL fails loud on every entry here.
     #[serde(skip)]
     heading_anchor_collisions: Vec<(String, String, String)>,
 
-    /// A STABLE sort by `(from_year, order_key)`, so a tie keeps the original compiled
-    /// order. Undated containers are excluded -- there is no date to sort them by. Built
-    /// after the identity merges, so one occurrence never appears twice on two scales.
     #[serde(skip)]
     timeline_order: Vec<String>,
     #[serde(skip)]
@@ -673,14 +551,9 @@ pub struct AtlasData {
 pub struct HeadingEntry {
     pub event_id: String,
     pub title: String,
-    /// Carried so a reader can tell whether this heading leads to a dated, traversable
-    /// container or an undated one, without a second fetch to find out.
     pub kind: EventKind,
 }
 
-/// Each anchor is the CANONICALLY FIRST covered verse, not whichever the data happened to
-/// list first. An unparseable verse is skipped rather than panicking: this runs before
-/// validation, whose job is to report a bad ref as an aggregated, curator-facing error.
 fn heading_anchors_for(e: &Event) -> Vec<String> {
     if !e.witnesses.is_empty() {
         return e
@@ -716,9 +589,6 @@ fn heading_anchors_for(e: &Event) -> Vec<String> {
     seen_books.into_iter().filter_map(|b| best.remove(&b).map(|(_, _, v)| v)).collect()
 }
 
-/// Compared lexicographically: a strictly greater tuple wins a collision, an equal one
-/// keeps first-wins. Tiers are curated container over label-only, dated over undated, then
-/// earlier chronology -- via `Reverse`, because `i32::MAX - year` overflows on a BC year.
 fn heading_precedence(e: &Event) -> (u8, u8, std::cmp::Reverse<i32>, std::cmp::Reverse<i32>) {
     let layer: u8 = if !e.witnesses.is_empty()
         || e.robertson_section.is_some()
@@ -735,7 +605,6 @@ fn heading_precedence(e: &Event) -> (u8, u8, std::cmp::Reverse<i32>, std::cmp::R
 }
 
 impl AtlasData {
-    /// Leaves the derived indexes empty; call `finish()` to populate them.
     #[allow(clippy::too_many_arguments)]
     pub fn new(
         canon: Canon,
@@ -760,8 +629,6 @@ impl AtlasData {
         }
     }
 
-    /// Idempotent: safe to call more than once -- the ETL calls it before writing and the
-    /// server again after reading.
     pub fn finish(mut self) -> Self {
         // Both merges run before any derived index below is built, so every index comes
         // out already reflecting the merged graph, with no fixup pass.
@@ -884,7 +751,6 @@ impl AtlasData {
         self.place_history.get(id)
     }
 
-    /// See `place_name_aliases_for` for the full list.
     pub fn place_name_alias_for(&self, id: &str) -> Option<&PlaceNameAlias> {
         self.place_name_aliases.get(id).and_then(|v| v.first())
     }
@@ -905,14 +771,10 @@ impl AtlasData {
         &self.heading_anchor_collisions
     }
 
-    /// A verse is an anchor exactly when it is the first verse of a heading-worthy
-    /// container's account: a narrative leg, or one carrying curated witnesses or a
-    /// provenance section. A multi-witness container anchors one heading per account.
     pub fn heading_for_verse(&self, verse: &str) -> Option<&HeadingEntry> {
         self.verse_heading.get(verse)
     }
 
-    /// `None` for an undated or unknown id, by absence from the index rather than a branch.
     pub fn timeline_position(&self, id: &str) -> Option<usize> {
         self.timeline_index.get(id).copied()
     }
@@ -921,7 +783,6 @@ impl AtlasData {
         self.timeline_order.get(index).and_then(|id| self.event_by_id(id))
     }
 
-    /// First-seen order, no duplicates.
     pub fn catechism_items_for_span(&self, span: &crate::refs::ScriptureRef) -> Vec<crate::catechism::CatechismRef> {
         crate::catechism::items_for_span(span, &self.verse_to_catechism, &self.catechism_item_names)
     }
@@ -987,8 +848,6 @@ impl crate::scene_source::SceneSource for AtlasData {
     }
 }
 
-/// Removes the zero-year gap: `..., -2, -1, 1, 2, ...` becomes `..., -2, -1, 0, 1, ...`, so
-/// midpoint arithmetic across the BC/AD boundary is off by nothing.
 pub(crate) fn year_index(y: Year) -> i64 {
     if y > 0 {
         (y - 1) as i64
@@ -997,9 +856,6 @@ pub(crate) fn year_index(y: Year) -> i64 {
     }
 }
 
-/// A hand-built demo world, `pub` rather than `#[cfg(test)]` because another crate's
-/// integration tests need it at ordinary compile time. Tests assert specific ids and links
-/// from this exact shape, so changing it changes them.
 #[doc(hidden)]
 pub fn demo_fixture() -> AtlasData {
     let places = vec![

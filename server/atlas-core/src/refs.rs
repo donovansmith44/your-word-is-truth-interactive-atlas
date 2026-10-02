@@ -1,7 +1,6 @@
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::fmt;
 
-/// Index into `canon::BOOKS`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct BookId(pub u8);
 
@@ -32,7 +31,6 @@ pub struct VerseId {
 }
 
 impl VerseId {
-    /// Strict canonical single-verse grammar: `BOOK.CH.V`, e.g. `GEN.1.1`.
     pub fn parse_canonical(s: &str) -> Result<Self, crate::CoreError> {
         match ScriptureRef::parse(s)? {
             ScriptureRef::Verse(v) => Ok(v),
@@ -75,8 +73,6 @@ fn parse_positive(s: &str, whole: &str) -> Result<u16, crate::CoreError> {
 }
 
 impl ScriptureRef {
-    /// Strict canonical grammar: `BOOK` | `BOOK.CH` | `BOOK.CH.V` | `BOOK.CH.V1-V2`;
-    /// book codes match case-insensitively, the `Display` form is always uppercase.
     pub fn parse(s: &str) -> Result<Self, crate::CoreError> {
         let parts: Vec<&str> = s.split('.').collect();
         let book_code = parts[0];
