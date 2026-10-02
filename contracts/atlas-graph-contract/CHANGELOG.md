@@ -34,6 +34,12 @@ hatch — and adding one to a previously-green scenario is classified
 
 ---
 
+- **0.24.0** (FOCUS-2 Task 6, `/api/verse` is gone) — **MINOR under the 0.x policy (MAJOR class: a scenario removed).**
+  The `detail-routes` scenario "a verse" (`GET /api/verse/JHN.3.16`) and its fixture `verse-jhn-3-16`
+  are removed with the route: a verse is read as an element (`/api/node/{id}` carries its text) and its
+  edge pages, which `identity` and `edges` already pin. The http pact drops the interaction. The
+  `verse` projection stays in the vendored runner's universe. No other scenario or fixture changed.
+
 - **0.23.0** (FOCUS-2 Task 2, a citation of a span is labelled by the span) — **MINOR under the 0.x policy (MAJOR class: blessed fixtures moved).**
   A `cites` edge whose row records a span is labelled by the passage it cites, read from the
   row's `target_display` (`JHN.3.16 · Cites · JHN.11.25-26`); every other label is unchanged.

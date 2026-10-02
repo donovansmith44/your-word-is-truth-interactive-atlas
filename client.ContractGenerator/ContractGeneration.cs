@@ -55,7 +55,7 @@ public static class ContractGeneration
                 $"every paged read must publish one cursor default, and the document publishes {string.Join(", ", defaults.Select(cursor => $"{cursor.Operation}: {cursor.Default ?? "none"}"))}");
     }
 
-    public static readonly IReadOnlySet<string> Unread = new HashSet<string> { "BookMeta", "VerseDetail", "VerseEvent" };
+    public static readonly IReadOnlySet<string> Unread = new HashSet<string>();
 
     public static void CloseDiscriminatedUnions(OpenApiDocument document)
     {
