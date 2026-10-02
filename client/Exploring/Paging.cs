@@ -40,7 +40,7 @@ public static class Paging
         PageWindow<Entry>.Opened((cursor, limit) => request.Element.Entries(group.Kind, cursor, limit), entry => request.Offers(entry.Neighbour), Affordances.Of(group.Kind).InitialClamp);
 
     public static Task<PageWindow<EdgeEntry>> Window(IExplorableClient graph, string positionId, EdgeKind kind) =>
-        PageWindow<EdgeEntry>.Opened(Neighbours(graph, positionId, kind), Everything, Affordances.Of(kind).InitialClamp);
+        PageWindow<EdgeEntry>.Opened(Remembered(Neighbours(graph, positionId, kind)), Everything, Affordances.Of(kind).InitialClamp);
 
     public static async Task<Page<EdgeEntry>> First(IExplorableClient graph, string positionId, EdgeKind kind)
     {
@@ -63,6 +63,12 @@ public static class Paging
         Unread<T>(start).Reading(read, wanted, keep);
 
     private static Paging<T> Unread<T>(int? start) => new([], 0, start, false);
+
+    private static PageRead<T> Remembered<T>(PageRead<T> read)
+    {
+        var pages = new PageStore<(int? Cursor, int Limit), Page<T>>(ServedPages.Resident);
+        return (cursor, limit) => pages.Read((cursor, limit), () => read(cursor, limit));
+    }
 
     private static PageRead<EdgeEntry> Neighbours(IExplorableClient graph, string positionId, EdgeKind kind) =>
         async (cursor, limit) =>

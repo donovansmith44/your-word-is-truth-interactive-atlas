@@ -1,0 +1,30 @@
+@if (Position.Paged)
+{
+    <div class="popover-reveal-controls">
+        <span class="popover-page-position" data-testid="@PositionTestId">@Position.From–@Position.To of @Position.Total</span>
+        @if (Position.Less)
+        {
+            <button type="button" class="popover-reveal-link explorable-quiet" data-testid="@LessTestId"
+                    @onclick="OnLess" @onclick:stopPropagation="true">Less</button>
+        }
+        @if (Position.More)
+        {
+            <button type="button" class="popover-reveal-link explorable-quiet" data-testid="@MoreTestId"
+                    @onclick="OnMore" @onclick:stopPropagation="true">More</button>
+        }
+    </div>
+}
+
+@code {
+    [Parameter, EditorRequired] public PagePosition Position { get; set; } = default!;
+
+    [Parameter, EditorRequired] public EventCallback OnMore { get; set; }
+
+    [Parameter, EditorRequired] public EventCallback OnLess { get; set; }
+
+    [Parameter, EditorRequired] public string MoreTestId { get; set; } = default!;
+
+    [Parameter, EditorRequired] public string LessTestId { get; set; } = default!;
+
+    [Parameter, EditorRequired] public string PositionTestId { get; set; } = default!;
+}

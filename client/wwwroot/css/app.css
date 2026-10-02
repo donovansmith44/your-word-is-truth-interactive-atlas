@@ -4768,6 +4768,12 @@ input:focus-visible,
     color: var(--lapis);
 }
 
+.popover-page-position {
+    font-family: var(--font-serif);
+    font-size: .82rem;
+    color: var(--bronze-ink);
+}
+
 /* A quiet Unicode instrument glyph (this file's own established register --
    ChipGlyph's own comment names the precedent), never a plain hyphen --
    separates more/all/less within the SAME row without implying any of the

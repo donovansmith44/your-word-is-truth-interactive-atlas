@@ -67,8 +67,8 @@
 
     private void Retire() => _outcome?.Match(arrived: presented => presented.Stop(), failed: () => { }, superseded: () => { });
 
-    private async Task Reveal(PresentationRequest request, PageWindow<Entry> window, FrontierGroup group, int shown) =>
-        await (await (shown > Shown(window, group) ? window.More() : window.Fewer())).Match(
+    private async Task Turned(PresentationRequest request, Task<Outcome<Unit>> turning) =>
+        await (await turning).Match(
             arrived: _ => Task.CompletedTask,
             failed: () =>
             {
@@ -77,9 +77,6 @@
                 return Renewing(request);
             },
             superseded: () => Task.CompletedTask);
-
-    private static int Shown(PageWindow<Entry> window, FrontierGroup group) =>
-        Math.Min(window.Wanted * Affordances.Of(group.Kind).InitialClamp, group.Count);
 
     private RenderFragment Failure(PresentationRequest request) => __builder =>
     {
@@ -174,11 +171,10 @@
 
     private RenderFragment Reveal(Presented presented, FrontierGroup group, string handle) => __builder =>
     {
-        var clamp = Affordances.Of(group.Kind).InitialClamp;
         var window = presented.Windows[group.Kind];
-        <RevealControls OffersAll="false" Total="group.Count" Default="clamp" Step="clamp" Shown="Shown(window, group)"
-                        ShownChanged="shown => Reveal(presented.Request, window, group, shown)"
-                        MoreTestId="@($"{handle}-more")" CollapseTestId="@($"{handle}-collapse")" />
+        <PageControls Position="window.Position(group.Count)"
+                      OnMore="() => Turned(presented.Request, window.More())" OnLess="() => Turned(presented.Request, window.Fewer())"
+                      MoreTestId="@($"{handle}-more")" LessTestId="@($"{handle}-collapse")" PositionTestId="@($"{handle}-position")" />
     };
 
     private static string Id(Link link) => Positions.Of(link.Target).Id;

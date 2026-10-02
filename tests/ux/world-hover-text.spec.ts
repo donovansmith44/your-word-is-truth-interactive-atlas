@@ -4,11 +4,16 @@ import { neighbourNode } from './lib/edges';
 import { zoomInOnMarker } from './lib/zoom';
 
 const SITE_OF_CLAMP = 20;
+const SITE_OF_WINDOW = 40;
 const EXODUS = { from: -1446, to: -1406 };
 const EXILE = { from: -590, to: -580 };
 
 type Window = { from: number; to: number };
 type ScenePlace = { id: string; node: { id: string; label: string } };
+
+function firstShown(to: number): number {
+  return Math.max(0, Math.ceil(to / SITE_OF_CLAMP) - SITE_OF_WINDOW / SITE_OF_CLAMP) * SITE_OF_CLAMP + 1;
+}
 
 function siteOfCount(record: any): number {
   return record.edge_summary.find((s: { kind: string }) => s.kind === 'site-of')?.count ?? 0;
@@ -88,22 +93,26 @@ test('hover place card: the site-of section lists the place\'s served site-of ne
   }
 });
 
-test('hover place card: popover-section-site-of-more reveals the next site-of neighbours each click until all are shown, then disappears', async ({ page }) => {
+test('hover place card: popover-section-site-of-more pages onward 20 at a time within a 40-row window, stating the rows shown, until the end', async ({ page }) => {
   // Arrange
   const { place, record } = await placeWithSiteOf(EXILE, count => count > SITE_OF_CLAMP);
   const total = siteOfCount(record);
   await openPlace(page, EXILE, place.id);
   const more = page.getByTestId('popover-section-site-of-more');
+  const position = page.getByTestId('popover-section-site-of-position');
 
   // Act
-  for (let shown = SITE_OF_CLAMP; shown < total; shown = Math.min(shown + SITE_OF_CLAMP, total)) {
-    await expect(siteOfLinks(page)).toHaveCount(shown);
+  for (let to = SITE_OF_CLAMP; to < total; to = Math.min(to + SITE_OF_CLAMP, total)) {
+    await expect(position).toHaveText(`${firstShown(to)}–${to} of ${total}`);
+    await expect(siteOfLinks(page)).toHaveCount(to - firstShown(to) + 1);
     await more.click();
   }
 
   // Assert
-  await expect(siteOfLinks(page)).toHaveCount(total);
+  await expect(position).toHaveText(`${firstShown(total)}–${total} of ${total}`);
+  await expect(siteOfLinks(page)).toHaveCount(total - firstShown(total) + 1);
   await expect(more).toHaveCount(0);
+  await expect(page.getByTestId('popover-section-site-of-collapse')).toBeVisible();
 });
 
 test('hover place card: popover-section-site-of-collapse snaps back to the first site-of neighbours after expanding', async ({ page }) => {

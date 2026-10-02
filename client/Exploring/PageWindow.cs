@@ -1,8 +1,13 @@
 namespace BibleAtlas.Client.Exploring;
 
+public sealed record PagePosition(int From, int To, int Total, bool Less, bool More)
+{
+    public bool Paged => Less || More;
+}
+
 public static class PageWindow
 {
-    public const int ShownEntries = 60;
+    public const int ShownEntries = 40;
 
     public static int BlocksShown(int step) => Math.Max(1, ShownEntries / step);
 }
@@ -31,7 +36,11 @@ public sealed class PageWindow<T>
 
     public IEnumerable<T> Shown => _blocks.SelectMany(block => block.Read.Kept);
 
-    public bool AtEnd => Revealed == Wanted && _blocks[^1].Read.Ended;
+    public PagePosition Position(int total)
+    {
+        var from = _earlier.Count * _step;
+        return new PagePosition(from + 1, from + _blocks.Sum(block => block.Read.Read), total, Revealed > 1, !_blocks[^1].Read.Ended);
+    }
 
     private int Revealed => _earlier.Count + _blocks.Count;
 

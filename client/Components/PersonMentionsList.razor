@@ -35,24 +35,15 @@
     }
     else
     {
-        @if (Mentions.Wanted > 1)
-        {
-            <button type="button" class="popover-passage-reveal" data-testid="person-mentions-less" aria-label="Show earlier mentions"
-                    @onclick="() => Settled(Mentions.Fewer())">▴</button>
-        }
-
-        @if (!Mentions.AtEnd)
-        {
-            <button type="button" class="popover-passage-reveal" data-testid="person-mentions-more" aria-label="Show more mentions"
-                    @onclick="() => Settled(Mentions.More())">▾</button>
-        }
+        <PageControls Position="Mentions.Position(TotalCount)" OnMore="() => Settled(Mentions.More())" OnLess="() => Settled(Mentions.Fewer())"
+                      MoreTestId="person-mentions-more" LessTestId="person-mentions-less" PositionTestId="person-mentions-position" />
     }
 </div>
 
 @code {
     [Parameter] public string? Provenance { get; set; }
     [Parameter, EditorRequired] public PageWindow<EdgeEntry> Mentions { get; set; } = default!;
-    [Parameter] public int TotalCount { get; set; }
+    [Parameter, EditorRequired] public int TotalCount { get; set; }
     [Parameter] public bool ShowHeading { get; set; } = true;
     [Parameter, EditorRequired] public EventCallback<PopoverOpening> OnExplore { get; set; }
 
