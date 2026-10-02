@@ -21,7 +21,7 @@ public sealed class SliderWindowTests
         var served = await SliderWindow.ServedFor(new RequestSeries().Next(), atlas.Client(), known: null, from: -5, to: 33);
 
         // Assert
-        Assert.Equal((GospelsToAd33, "/api/scene?from=-5&to=33"), (served, string.Join(" ", atlas.Asked)));
+        Assert.Equal(((Outcome<TimeRange?>)new Outcome<TimeRange?>.Arrived(GospelsToAd33), "/api/scene?from=-5&to=33"), (served, string.Join(" ", atlas.Asked)));
     }
 
     [Fact]
@@ -34,7 +34,7 @@ public sealed class SliderWindowTests
         var served = await SliderWindow.ServedFor(new RequestSeries().Next(), atlas.Client(), known: GospelsToAd33, from: -5, to: 33);
 
         // Assert
-        Assert.Equal((GospelsToAd33, 0), (served, atlas.Asked.Count));
+        Assert.Equal(((Outcome<TimeRange?>)new Outcome<TimeRange?>.Arrived(GospelsToAd33), 0), (served, atlas.Asked.Count));
     }
 
     [Fact]
@@ -53,7 +53,7 @@ public sealed class SliderWindowTests
         };
 
         // Assert
-        Assert.Equal((GospelsToAd33, GospelsToAd33, "/api/scene?from=-5&to=33 /api/scene?from=-5&to=33"), (served[0], served[1], string.Join(" ", atlas.Asked)));
+        Assert.Equal(((Outcome<TimeRange?>)new Outcome<TimeRange?>.Arrived(GospelsToAd33), (Outcome<TimeRange?>)new Outcome<TimeRange?>.Arrived(GospelsToAd33), "/api/scene?from=-5&to=33 /api/scene?from=-5&to=33"), (served[0], served[1], string.Join(" ", atlas.Asked)));
     }
 
     [Fact]
@@ -69,6 +69,6 @@ public sealed class SliderWindowTests
         var served = await SliderWindow.ServedFor(request, atlas.Client(), known: null, from: -5, to: 33);
 
         // Assert
-        Assert.Equal((null, "/api/scene?from=-5&to=33"), (served, string.Join(" ", atlas.Asked)));
+        Assert.Equal(((Outcome<TimeRange?>)new Outcome<TimeRange?>.Superseded(), "/api/scene?from=-5&to=33"), (served, string.Join(" ", atlas.Asked)));
     }
 }

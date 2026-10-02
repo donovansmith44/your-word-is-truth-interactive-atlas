@@ -1,6 +1,7 @@
 @using BibleAtlas.Client.Contract
 @using BibleAtlas.Client.Explore
-@inject IExplorableClient Explorable
+@inject IExplorableClient Graph
+@implements IDisposable
 
 <div class="popover-person-mentions">
     @if (!string.IsNullOrEmpty(Provenance))
@@ -13,13 +14,13 @@
         <p class="catechism-section-heading" data-testid="person-mentions-heading">MENTIONED IN SCRIPTURE (@TotalCount)</p>
     }
 
-    @if (_entries.Count == 0)
+    @if (_paging.Kept.Count == 0)
     {
         <p class="popover-meta">No recorded mentions.</p>
     }
     else
     {
-        @foreach (var verse in _entries.Nodes())
+        @foreach (var verse in _paging.Kept.Nodes())
         {
             var vref = verse.Label;
             <button type="button" class="popover-event-row popover-event-row-button explorable" data-testid="@($"person-mention-{vref}")"
@@ -29,7 +30,11 @@
         }
     }
 
-    @if (_next is not null)
+    @if (_failed)
+    {
+        <CouldNotLoad OnRetry="RevealMore" />
+    }
+    else if (!_paging.Ended)
     {
         <button type="button" class="popover-passage-reveal" data-testid="person-mentions-more" aria-label="Show more mentions"
                 disabled="@_loading" @onclick="RevealMore">
@@ -41,52 +46,43 @@
 @code {
     [Parameter, EditorRequired] public string PersonId { get; set; } = default!;
     [Parameter] public string? Provenance { get; set; }
-    [Parameter, EditorRequired] public IReadOnlyList<EdgeEntry> InitialEntries { get; set; } = Array.Empty<EdgeEntry>();
-    [Parameter] public int? InitialNext { get; set; }
+    [Parameter, EditorRequired] public Paging<EdgeEntry> Initial { get; set; } = default!;
     [Parameter] public int TotalCount { get; set; }
     [Parameter] public bool ShowHeading { get; set; } = true;
     [Parameter, EditorRequired] public EventCallback<PopoverOpening> OnExplore { get; set; }
 
-    private IReadOnlyList<EdgeEntry> _entries = Array.Empty<EdgeEntry>();
-    private int? _next;
-    private bool _loading;
+    private readonly RequestSeries _reveals = new();
+    private Paging<EdgeEntry> _paging = Paging.Unread<EdgeEntry>();
     private bool _initialized;
+    private bool _loading;
+    private bool _failed;
 
-    // Guards against re-running this on an ordinary re-render of the same instance;
-    // a different person always arrives via a fresh instance (parent @key), never this one.
     protected override void OnParametersSet()
     {
         if (_initialized)
         {
             return;
         }
+
         _initialized = true;
-        _entries = InitialEntries;
-        _next = InitialNext;
+        _paging = Initial;
     }
 
-    private const int RevealPageSize = 50;
+    public void Dispose() => _reveals.Stop();
 
     private async Task RevealMore()
     {
-        if (_next is not int cursor || _loading)
+        if (_loading)
         {
             return;
         }
+
         _loading = true;
-        try
-        {
-            var page = await Explorable.Edges(PersonId, EdgeKind.MentionedIn, cursor, limit: RevealPageSize);
-            _entries = _entries.Concat(page.Entries).ToList();
-            _next = page.Next;
-        }
-        catch (Exception)
-        {
-            // Leave _next as-is so Reveal stays offered and the click can simply be retried.
-        }
-        finally
-        {
-            _loading = false;
-        }
+        _failed = false;
+        (await _reveals.Next().Fetch(() => _paging.Next(Graph, PersonId, EdgeKind.MentionedIn))).Match(
+            arrived: paging => _paging = paging,
+            failed: () => _failed = true,
+            superseded: () => { });
+        _loading = false;
     }
 }

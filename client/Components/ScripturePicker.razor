@@ -67,7 +67,7 @@
     // await) keeps the unconditional _toc[0] fallback below from clobbering that sync once this resolves.
     protected override async Task OnInitializedAsync()
     {
-        _toc = await _startup.Next().Fetch(() => Atlas.Books());
+        _toc = (await _startup.Next().Fetch(() => Atlas.Books())).Match<List<CanonBook>?>(arrived: toc => toc, failed: () => null, superseded: () => null);
         if (_toc is null || _toc.Count == 0)
         {
             return;

@@ -22,15 +22,7 @@ public sealed class ChapterCardSection : IPopoverSectionProvider
             return null;
         }
 
-        Chapter chapter;
-        try
-        {
-            chapter = await chapterNode.Load(api);
-        }
-        catch (Exception)
-        {
-            return null;
-        }
+        var chapter = await chapterNode.Load(api);
 
         var headings = chapter.Verses
             .Where(v => v.Heading is not null)
@@ -173,16 +165,9 @@ public sealed class VerseTextSectionProvider : IPopoverSectionProvider
                 book = vBook;
                 chapter = vChapter;
                 focalFrom = focalTo = vVerse;
-                try
-                {
-                    var vDetail = await v.DetailAsync(api);
-                    compactText = vDetail.Text;
-                    textProvenance = new[] { ProvenanceResolver.NormalizeId(vDetail.Provenance) };
-                }
-                catch (Exception)
-                {
-                    compactText = "";
-                }
+                var vDetail = await v.DetailAsync(api);
+                compactText = vDetail.Text;
+                textProvenance = new[] { ProvenanceResolver.NormalizeId(vDetail.Provenance) };
                 break;
 
             case PassageNode p:
@@ -199,17 +184,9 @@ public sealed class VerseTextSectionProvider : IPopoverSectionProvider
                 return null;
         }
 
-        IReadOnlyList<TextUnit> focalVerses;
-        try
-        {
-            focalVerses = (await api.ChapterText(book, chapter)).Between(focalFrom, focalTo);
-        }
-        catch (Exception)
-        {
-            focalVerses = [];
-        }
+        var focalVerses = (await api.ChapterText(book, chapter)).Between(focalFrom, focalTo);
 
-        var registry = await FrontierProvenance.RegistryOrNull(api);
+        var registry = await FrontierProvenance.Registry(api);
 
         RenderFragment fragment = builder =>
         {
@@ -234,22 +211,8 @@ public sealed class VerseTextSectionProvider : IPopoverSectionProvider
 
 internal static class FrontierProvenance
 {
-    // Fail-soft on the fetch, fail-loud on the resolution: a registry that could not be
-    // fetched must not take a whole frontier section down with it, so this returns null
-    // and callers render their content anyway. An id the registry does NOT contain is a
-    // different fact (a piece of data with no source) and ProvenanceAffordance says so
-    // out loud rather than treating it the same as a fetch failure.
-    internal static async Task<SourcesDocument?> RegistryOrNull(AtlasClient api)
-    {
-        try
-        {
-            return await api.Sources();
-        }
-        catch (Exception)
-        {
-            return null;
-        }
-    }
+    internal static async Task<SourcesDocument?> Registry(AtlasClient api) =>
+        (await default(Request).Fetch(() => api.Sources())).Match<SourcesDocument?>(arrived: registry => registry, failed: () => null, superseded: () => null);
 
     // The affordance is a sibling of the heading element, not a child of it: nesting the "?"
     // inside the heading <p> makes its text node part of the heading's accessible/text content
@@ -312,29 +275,22 @@ public sealed class CrossRefsSection : IPopoverSectionProvider
     {
         IReadOnlyList<CrossRef> xrefs;
         IReadOnlyList<string> xrefProvenance = Array.Empty<string>();
-        try
+        switch (node)
         {
-            switch (node)
+            case VerseNode v:
             {
-                case VerseNode v:
-                {
-                    var detail = await v.DetailAsync(api);
-                    xrefs = detail.CrossRefs;
-                    xrefProvenance = detail.CrossRefsProvenance;
-                    break;
-                }
-                case PassageNode p:
-                    xrefs = await p.XrefsAsync(api);
-                    xrefProvenance = FrontierProvenance.Distinct(xrefs.SelectMany(x => x.Provenance));
-                    break;
-                default:
-                    xrefs = new List<CrossRef>();
-                    break;
+                var detail = await v.DetailAsync(api);
+                xrefs = detail.CrossRefs;
+                xrefProvenance = detail.CrossRefsProvenance;
+                break;
             }
-        }
-        catch (Exception)
-        {
-            return null;
+            case PassageNode p:
+                xrefs = await p.XrefsAsync(api);
+                xrefProvenance = FrontierProvenance.Distinct(xrefs.SelectMany(x => x.Provenance));
+                break;
+            default:
+                xrefs = new List<CrossRef>();
+                break;
         }
 
         if (xrefs.Count == 0)
@@ -350,7 +306,7 @@ public sealed class CrossRefsSection : IPopoverSectionProvider
         var eagerSpans = spans.Take(Affordances.Cites.InitialClamp).ToList();
         var lazySpans = spans.Skip(Affordances.Cites.InitialClamp).ToList();
         var units = await ResolveUnits(api, eagerSpans);
-        var registry = await FrontierProvenance.RegistryOrNull(api);
+        var registry = await FrontierProvenance.Registry(api);
 
         RenderFragment body = builder =>
         {
@@ -382,16 +338,10 @@ public sealed class CrossRefsSection : IPopoverSectionProvider
     {
         var chapterKeys = targets.Where(t => t.Span is not null).Select(t => (t.Span!.Value.Book, t.Span.Value.Chapter)).Distinct().ToList();
         var chapters = new Dictionary<(string, int), ChapterText>();
-        try
+        var fetched = await Task.WhenAll(chapterKeys.Select(k => api.ChapterText(k.Item1, k.Item2)));
+        foreach (var (key, chapter) in chapterKeys.Zip(fetched))
         {
-            var fetched = await Task.WhenAll(chapterKeys.Select(k => api.ChapterText(k.Item1, k.Item2)));
-            foreach (var (key, chapter) in chapterKeys.Zip(fetched))
-            {
-                chapters[key] = chapter;
-            }
-        }
-        catch (Exception)
-        {
+            chapters[key] = chapter;
         }
 
         var units = new List<PassageSourceUnit>();
@@ -420,29 +370,22 @@ public sealed class CatechismSeamSection : IPopoverSectionProvider
     {
         IReadOnlyList<CatechismRef> items;
         IReadOnlyList<string> catechismProvenance = Array.Empty<string>();
-        try
+        switch (node)
         {
-            switch (node)
+            case VerseNode v:
             {
-                case VerseNode v:
-                {
-                    var detail = await v.DetailAsync(api);
-                    items = detail.Catechism;
-                    catechismProvenance = detail.CatechismProvenance;
-                    break;
-                }
-                case PassageNode p:
-                    items = await p.CatechismAsync(api);
-                    catechismProvenance = FrontierProvenance.Distinct(items.SelectMany(i => i.Provenance));
-                    break;
-                default:
-                    items = new List<CatechismRef>();
-                    break;
+                var detail = await v.DetailAsync(api);
+                items = detail.Catechism;
+                catechismProvenance = detail.CatechismProvenance;
+                break;
             }
-        }
-        catch (Exception)
-        {
-            return null;
+            case PassageNode p:
+                items = await p.CatechismAsync(api);
+                catechismProvenance = FrontierProvenance.Distinct(items.SelectMany(i => i.Provenance));
+                break;
+            default:
+                items = new List<CatechismRef>();
+                break;
         }
 
         if (items.Count == 0)
@@ -450,7 +393,7 @@ public sealed class CatechismSeamSection : IPopoverSectionProvider
             return null;
         }
 
-        var registry = await FrontierProvenance.RegistryOrNull(api);
+        var registry = await FrontierProvenance.Registry(api);
 
         RenderFragment body = builder =>
         {
@@ -505,15 +448,7 @@ public sealed class CatechismTextSection : IPopoverSectionProvider
             return null;
         }
 
-        CatechismItem detail;
-        try
-        {
-            detail = await item.DetailAsync(api);
-        }
-        catch (Exception)
-        {
-            return null;
-        }
+        var detail = await item.DetailAsync(api);
 
         if (detail.Text is not { } text)
         {
@@ -542,15 +477,7 @@ public sealed class CatechismExplanationSection : IPopoverSectionProvider
             return null;
         }
 
-        CatechismItem detail;
-        try
-        {
-            detail = await item.DetailAsync(api);
-        }
-        catch (Exception)
-        {
-            return null;
-        }
+        var detail = await item.DetailAsync(api);
 
         RenderFragment body = builder =>
         {
@@ -572,15 +499,7 @@ public sealed class CatechismWhereWrittenSection : IPopoverSectionProvider
             return null;
         }
 
-        CatechismItem detail;
-        try
-        {
-            detail = await item.DetailAsync(api);
-        }
-        catch (Exception)
-        {
-            return null;
-        }
+        var detail = await item.DetailAsync(api);
 
         if (detail.WhereWritten is not { } whereWritten)
         {
@@ -607,15 +526,7 @@ public sealed class CatechismScripturesSection : IPopoverSectionProvider
             return null;
         }
 
-        CatechismItem detail;
-        try
-        {
-            detail = await item.DetailAsync(api);
-        }
-        catch (Exception)
-        {
-            return null;
-        }
+        var detail = await item.DetailAsync(api);
 
         if (detail.Verses.Count == 0)
         {
@@ -623,17 +534,11 @@ public sealed class CatechismScripturesSection : IPopoverSectionProvider
         }
 
         var servedText = new Dictionary<string, TextUnit>();
-        try
+        var chapterKeys = detail.Verses.Select(v => CanonRef.ParseVerse(v.Vref)).Select(p => (p.Book, p.Chapter)).Distinct().ToList();
+        var fetched = await Task.WhenAll(chapterKeys.Select(k => api.ChapterText(k.Book, k.Chapter)));
+        foreach (var unit in fetched.SelectMany(chapterText => chapterText.Units))
         {
-            var chapterKeys = detail.Verses.Select(v => CanonRef.ParseVerse(v.Vref)).Select(p => (p.Book, p.Chapter)).Distinct().ToList();
-            var fetched = await Task.WhenAll(chapterKeys.Select(k => api.ChapterText(k.Book, k.Chapter)));
-            foreach (var unit in fetched.SelectMany(chapterText => chapterText.Units))
-            {
-                servedText[unit.Ref] = unit;
-            }
-        }
-        catch (Exception)
-        {
+            servedText[unit.Ref] = unit;
         }
 
         var units = new List<PassageSourceUnit>();
@@ -697,15 +602,7 @@ public sealed class VerseEventMembershipSection : IPopoverSectionProvider
             return null;
         }
 
-        IReadOnlyList<VerseEvent> events;
-        try
-        {
-            events = (await v.DetailAsync(api)).Events;
-        }
-        catch (Exception)
-        {
-            return null;
-        }
+        var events = (await v.DetailAsync(api)).Events;
 
         var dated = events.Where(e => e.Kind == EventKind.Event).ToList();
         if (dated.Count == 0)
@@ -713,7 +610,7 @@ public sealed class VerseEventMembershipSection : IPopoverSectionProvider
             return null;
         }
 
-        return new PopoverSection("event-membership", RenderRows(EventKind.Event, dated, ctx, await FrontierProvenance.RegistryOrNull(api)));
+        return new PopoverSection("event-membership", RenderRows(EventKind.Event, dated, ctx, await FrontierProvenance.Registry(api)));
     }
 
     internal static RenderFragment RenderRows(EventKind kind, IReadOnlyList<VerseEvent> events, IPopoverSectionContext ctx, SourcesDocument? registry) => builder =>
@@ -757,15 +654,7 @@ public sealed class VersePassageMembershipSection : IPopoverSectionProvider
             return null;
         }
 
-        IReadOnlyList<VerseEvent> events;
-        try
-        {
-            events = (await v.DetailAsync(api)).Events;
-        }
-        catch (Exception)
-        {
-            return null;
-        }
+        var events = (await v.DetailAsync(api)).Events;
 
         var general = events.Where(e => e.Kind == EventKind.General).ToList();
         if (general.Count == 0)
@@ -773,7 +662,7 @@ public sealed class VersePassageMembershipSection : IPopoverSectionProvider
             return null;
         }
 
-        return new PopoverSection("passage-membership", VerseEventMembershipSection.RenderRows(EventKind.General, general, ctx, await FrontierProvenance.RegistryOrNull(api)));
+        return new PopoverSection("passage-membership", VerseEventMembershipSection.RenderRows(EventKind.General, general, ctx, await FrontierProvenance.Registry(api)));
     }
 }
 
@@ -788,17 +677,9 @@ public sealed class EventProvenanceSection : IPopoverSectionProvider
             return null;
         }
 
-        EventPage detail;
-        try
-        {
-            detail = await ev.DetailAsync(api);
-        }
-        catch (Exception)
-        {
-            return null;
-        }
+        var detail = await ev.DetailAsync(api);
 
-        var registry = await FrontierProvenance.RegistryOrNull(api);
+        var registry = await FrontierProvenance.Registry(api);
         RenderFragment body = builder =>
         {
             FrontierProvenance.Affordance(
@@ -822,15 +703,8 @@ public sealed class EventDateAndPlacesSection : IPopoverSectionProvider
 
         EventPage detail;
         TimeRange? when;
-        try
-        {
-            detail = await ev.DetailAsync(api);
-            when = (await ev.CardAsync(api)).Event?.When;
-        }
-        catch (Exception)
-        {
-            return null;
-        }
+        detail = await ev.DetailAsync(api);
+        when = (await ev.CardAsync(api)).Event?.When;
 
         if (when is null && detail.Places.Count == 0)
         {
@@ -924,15 +798,8 @@ public sealed class EventWitnessesSection : IPopoverSectionProvider
 
         EventPage detail;
         IReadOnlyList<EventAccount> accounts;
-        try
-        {
-            detail = await ev.DetailAsync(api);
-            accounts = await EventAccounts.ReadAsync(ctx.Graph, ev.EventId);
-        }
-        catch (Exception)
-        {
-            return null;
-        }
+        detail = await ev.DetailAsync(api);
+        accounts = await EventAccounts.ReadAsync(ctx.Graph, ev.EventId);
 
         if (accounts.Count == 0)
         {
@@ -942,7 +809,7 @@ public sealed class EventWitnessesSection : IPopoverSectionProvider
         var units = await WitnessUnitsResolver.ResolveAsync(api, accounts);
 
         var multi = units.Count > 1;
-        var registry = await FrontierProvenance.RegistryOrNull(api);
+        var registry = await FrontierProvenance.Registry(api);
 
         RenderFragment body = builder =>
         {
@@ -980,15 +847,7 @@ public sealed class EventMentionsSection : IPopoverSectionProvider
             return null;
         }
 
-        EventPage detail;
-        try
-        {
-            detail = await ev.DetailAsync(api);
-        }
-        catch (Exception)
-        {
-            return null;
-        }
+        var detail = await ev.DetailAsync(api);
 
         var mentions = detail.MentionedIn ?? [];
         if (mentions.Count == 0)
@@ -998,7 +857,7 @@ public sealed class EventMentionsSection : IPopoverSectionProvider
 
         var refs = mentions.Select(v => new Components.RefsList.RefDescriptor(v, new PopoverOpening.Legacy(new VerseNode(v)))).ToList();
 
-        var registry = await FrontierProvenance.RegistryOrNull(api);
+        var registry = await FrontierProvenance.Registry(api);
 
         RenderFragment body = builder =>
         {
@@ -1029,15 +888,7 @@ public sealed class EventAnaloguesSection : IPopoverSectionProvider
             return null;
         }
 
-        EventPage detail;
-        try
-        {
-            detail = await ev.DetailAsync(api);
-        }
-        catch (Exception)
-        {
-            return null;
-        }
+        var detail = await ev.DetailAsync(api);
 
         var analogues = detail.Analogues ?? [];
         if (analogues.Count == 0)
@@ -1049,7 +900,7 @@ public sealed class EventAnaloguesSection : IPopoverSectionProvider
             .Select(a => new Components.RefsList.RefDescriptor(a.Title, new PopoverOpening.Legacy(new EventNode(a.Id, a.Title)), a.Id))
             .ToList();
 
-        var registry = await FrontierProvenance.RegistryOrNull(api);
+        var registry = await FrontierProvenance.Registry(api);
         var analogueProvenance = FrontierProvenance.Distinct(analogues.Select(a => a.Provenance));
 
         RenderFragment body = builder =>
@@ -1086,14 +937,7 @@ public sealed class VerseParallelsSection : IPopoverSectionProvider
                 break;
             case PassageNode p:
                 ownVref = CanonRef.FirstVerseOf(p.Title);
-                try
-                {
-                    events = (await api.Verse(ownVref)).Events;
-                }
-                catch (Exception)
-                {
-                    return null;
-                }
+                events = (await api.Verse(ownVref)).Events;
                 break;
             default:
                 return null;
@@ -1107,14 +951,7 @@ public sealed class VerseParallelsSection : IPopoverSectionProvider
         var own = CanonRef.BibleRefOf(ownVref);
         var accountsOfEach = await Task.WhenAll(events.Select(async e =>
         {
-            try
-            {
-                return await EventAccounts.ReadAsync(ctx.Graph, e.Id);
-            }
-            catch (Exception)
-            {
-                return [];
-            }
+            return await EventAccounts.ReadAsync(ctx.Graph, e.Id);
         }));
         var qualifying = events.Zip(accountsOfEach)
             .Select(pair => (pair.First.Label, OtherAccounts: pair.Second.Where(account => !account.Reads(own)).ToList()))
@@ -1178,15 +1015,7 @@ public sealed class EventChronologySection : IPopoverSectionProvider
             return null;
         }
 
-        NarrativeEventPositions positions;
-        try
-        {
-            positions = await aware.NarrativePositionsAsync(api);
-        }
-        catch (Exception)
-        {
-            return null;
-        }
+        var positions = await aware.NarrativePositionsAsync(api);
 
         var timeline = positions.Timeline;
         if (timeline is null)
@@ -1299,15 +1128,7 @@ public sealed class PolityDeltaScripturesSection : IPopoverSectionProvider
             return null;
         }
 
-        List<PassageListVerse> verses;
-        try
-        {
-            verses = await VerseTextResolver.ResolveAsync(api, delta.Verses);
-        }
-        catch (Exception)
-        {
-            verses = new List<PassageListVerse>();
-        }
+        var verses = await VerseTextResolver.ResolveAsync(api, delta.Verses);
         if (verses.Count == 0)
         {
             return null;
@@ -1376,23 +1197,14 @@ public sealed class VersePersonsSection : IPopoverSectionProvider
                 return null;
         }
 
-        EdgePage page;
-        try
-        {
-            page = await ctx.Graph.Edges(wireId, EdgeKind.Mentions, cursor: null, limit: Affordances.Mentions.InitialClamp);
-        }
-        catch (Exception)
-        {
-            return null;
-        }
-
-        var persons = page.Entries.Nodes().Where(n => n.Kind == NodeKind.Person).ToList();
+        var mentions = await Paging.First(ctx.Graph, wireId, EdgeKind.Mentions);
+        var persons = mentions.Kept.Nodes().Where(n => n.Kind == NodeKind.Person).ToList();
         if (persons.Count == 0)
         {
             return null;
         }
 
-        var mayHaveMore = page.Next is not null;
+        var mayHaveMore = !mentions.Ended;
         RenderFragment body = builder =>
         {
             var seq = 0;
@@ -1450,22 +1262,10 @@ public sealed class PersonCardAndMentionsSection : IPopoverSectionProvider
             return null;
         }
 
-        NodeRecord card;
-        EdgePage page;
-        try
-        {
-            var cardTask = person.CardAsync(() => ctx.Graph.Card(person.PersonId));
-            var pageTask = ctx.Graph.Edges(person.PersonId, EdgeKind.MentionedIn, cursor: null, limit: Affordances.MentionedIn.InitialClamp);
-            await Task.WhenAll(cardTask, pageTask);
-            card = cardTask.Result;
-            page = pageTask.Result;
-        }
-        catch (Exception)
-        {
-            return null;
-        }
-
-        var total = card.EdgeSummary.FirstOrDefault(s => s.Kind == EdgeKind.MentionedIn)?.Count ?? page.Entries.Count;
+        var cardTask = person.CardAsync(() => ctx.Graph.Card(person.PersonId));
+        var mentionsTask = Paging.First(ctx.Graph, person.PersonId, EdgeKind.MentionedIn);
+        var (card, mentions) = (await cardTask, await mentionsTask);
+        var total = card.EdgeSummary.FirstOrDefault(s => s.Kind == EdgeKind.MentionedIn)?.Count ?? mentions.Kept.Count;
 
         RenderFragment body = builder =>
         {
@@ -1481,8 +1281,7 @@ public sealed class PersonCardAndMentionsSection : IPopoverSectionProvider
             builder.OpenComponent<Components.PersonMentionsList>(seq++);
             builder.AddAttribute(seq++, "PersonId", person.PersonId);
             builder.AddAttribute(seq++, "Provenance", card.Provenance);
-            builder.AddAttribute(seq++, "InitialEntries", page.Entries);
-            builder.AddAttribute(seq++, "InitialNext", page.Next);
+            builder.AddAttribute(seq++, "Initial", mentions);
             builder.AddAttribute(seq++, "TotalCount", total);
             builder.AddAttribute(seq++, "ShowHeading", false);
             builder.AddAttribute(seq++, "OnExplore", EventCallback.Factory.Create<PopoverOpening>(ctx, opening => ctx.PushAsync(opening, EdgeKind.MentionedIn)));
@@ -1504,15 +1303,7 @@ public sealed class CommentaryItemProseSection : IPopoverSectionProvider
             return null;
         }
 
-        NodeRecord card;
-        try
-        {
-            card = await ctx.Graph.Card(item.Identity.Id);
-        }
-        catch (Exception)
-        {
-            return null;
-        }
+        var card = await ctx.Graph.Card(item.Identity.Id);
 
         if (string.IsNullOrWhiteSpace(card.Description))
         {
@@ -1542,19 +1333,9 @@ public sealed class CatechismInConcordSection : IPopoverSectionProvider
         }
 
         List<NodeRef> units;
-        try
-        {
-            // The whole frontier, not the first page: an item's catechism-link edges are
-            // mostly its proof verses (the First Commandment alone has 200+), and the
-            // Concord paragraphs sit after them.
-            units = (await CatechismLinks.AllTargetsAsync(ctx.Graph, NodeIds.Of(NodeKind.CatechismItem, item.Id)))
-                .Where(n => n.Kind == NodeKind.TextUnit && NodeIds.LocalPart(n).StartsWith("BoC ", StringComparison.Ordinal))
-                .ToList();
-        }
-        catch (Exception)
-        {
-            return null;
-        }
+        units = (await CatechismLinks.AllTargetsAsync(ctx.Graph, NodeIds.Of(NodeKind.CatechismItem, item.Id)))
+            .Where(n => n.Kind == NodeKind.TextUnit && NodeIds.LocalPart(n).StartsWith("BoC ", StringComparison.Ordinal))
+            .ToList();
 
         if (units.Count == 0)
         {
@@ -1591,17 +1372,10 @@ public sealed class ConcordSmallCatechismSection : IPopoverSectionProvider
         }
 
         IReadOnlyList<CatechismRef> items;
-        try
-        {
-            items = (await CatechismLinks.AllTargetsAsync(ctx.Graph, unit.NodeId))
-                .Where(n => n.Kind == NodeKind.CatechismItem)
-                .Select(n => new CatechismRef(id: NodeIds.LocalPart(n), name: n.Label, provenance: [], question: null))
-                .ToList();
-        }
-        catch (Exception)
-        {
-            return null;
-        }
+        items = (await CatechismLinks.AllTargetsAsync(ctx.Graph, unit.NodeId))
+            .Where(n => n.Kind == NodeKind.CatechismItem)
+            .Select(n => new CatechismRef(id: NodeIds.LocalPart(n), name: n.Label, provenance: [], question: null))
+            .ToList();
 
         if (items.Count == 0)
         {
@@ -1640,15 +1414,7 @@ public sealed class ConcordUnitTextSection : IPopoverSectionProvider
             return null;
         }
 
-        string text;
-        try
-        {
-            text = await unit.TextAsync(ctx.Graph);
-        }
-        catch (Exception)
-        {
-            return null;
-        }
+        var text = await unit.TextAsync(ctx.Graph);
 
         if (string.IsNullOrWhiteSpace(text))
         {
@@ -1669,21 +1435,8 @@ public sealed class ConcordUnitTextSection : IPopoverSectionProvider
 
 internal static class CatechismLinks
 {
-    private const int PageSize = 200;
-
-    public static async Task<List<NodeRef>> AllTargetsAsync(IExplorableClient graph, string nodeId)
-    {
-        var targets = new List<NodeRef>();
-        int? cursor = null;
-        do
-        {
-            var page = await graph.Edges(nodeId, EdgeKind.CatechismLink, cursor: cursor, limit: PageSize);
-            targets.AddRange(page.Entries.Nodes());
-            cursor = page.Next;
-        }
-        while (cursor is not null);
-        return targets;
-    }
+    public static async Task<List<NodeRef>> AllTargetsAsync(IExplorableClient graph, string nodeId) =>
+        (await Paging.Whole(graph, nodeId, EdgeKind.CatechismLink)).Nodes().ToList();
 }
 
 file static class PersonSectionRendering
@@ -1729,15 +1482,7 @@ public sealed class PersonLifeSection : IPopoverSectionProvider
             return null;
         }
 
-        PersonLife? life;
-        try
-        {
-            life = (await person.CardAsync(() => ctx.Graph.Card(person.PersonId))).Person;
-        }
-        catch (Exception)
-        {
-            return null;
-        }
+        PersonLife? life = (await person.CardAsync(() => ctx.Graph.Card(person.PersonId))).Person;
 
         if (life is null)
         {
@@ -1797,15 +1542,7 @@ public sealed class PersonEventsSection : IPopoverSectionProvider
             return null;
         }
 
-        List<NodeRef> events;
-        try
-        {
-            events = (await ctx.Graph.Edges(person.PersonId, EdgeKind.ParticipatesIn, cursor: null, limit: 200)).Entries.Nodes().ToList();
-        }
-        catch (Exception)
-        {
-            return null;
-        }
+        var events = (await Paging.Whole(ctx.Graph, person.PersonId, EdgeKind.ParticipatesIn)).Nodes().ToList();
 
         if (events.Count == 0)
         {
@@ -1835,27 +1572,20 @@ public sealed class PersonFamilySection : IPopoverSectionProvider
         List<EdgeEntry> parents, children;
         List<NodeRef> spouses, brethren;
         var siblings = new List<NodeRef>();
-        try
+        parents = (await Paging.Whole(ctx.Graph, person.PersonId, EdgeKind.ChildOf)).ToList();
+        spouses = (await Paging.Whole(ctx.Graph, person.PersonId, EdgeKind.SpouseOf)).Nodes().ToList();
+        children = (await Paging.Whole(ctx.Graph, person.PersonId, EdgeKind.ParentOf)).ToList();
+        brethren = (await Paging.Whole(ctx.Graph, person.PersonId, EdgeKind.BrethrenOf)).Nodes().ToList();
+        foreach (var parent in parents.Where(p => Kinship.MakesSiblings(Kinship.Of(p))).Nodes())
         {
-            parents = (await ctx.Graph.Edges(person.PersonId, EdgeKind.ChildOf, cursor: null, limit: 200)).Entries.ToList();
-            spouses = (await ctx.Graph.Edges(person.PersonId, EdgeKind.SpouseOf, cursor: null, limit: 200)).Entries.Nodes().ToList();
-            children = (await ctx.Graph.Edges(person.PersonId, EdgeKind.ParentOf, cursor: null, limit: 200)).Entries.ToList();
-            brethren = (await ctx.Graph.Edges(person.PersonId, EdgeKind.BrethrenOf, cursor: null, limit: 200)).Entries.Nodes().ToList();
-            foreach (var parent in parents.Where(p => Kinship.MakesSiblings(Kinship.Of(p))).Nodes())
+            var theirs = (await Paging.Whole(ctx.Graph, parent.Id, EdgeKind.ParentOf)).Where(e => Kinship.MakesSiblings(Kinship.Of(e))).Nodes();
+            foreach (var s in theirs)
             {
-                var theirs = (await ctx.Graph.Edges(parent.Id, EdgeKind.ParentOf, cursor: null, limit: 200)).Entries.Where(e => Kinship.MakesSiblings(Kinship.Of(e))).Nodes();
-                foreach (var s in theirs)
+                if (!PositionIdentity.Comparer.Equals(s, person.Identity) && !siblings.Contains(s, PositionIdentity.Comparer))
                 {
-                    if (s.Id != person.PersonId && siblings.All(x => x.Id != s.Id))
-                    {
-                        siblings.Add(s);
-                    }
+                    siblings.Add(s);
                 }
             }
-        }
-        catch (Exception)
-        {
-            return null;
         }
 
         var groups = Kinship.Groups(parents, spouses, children, siblings, brethren);

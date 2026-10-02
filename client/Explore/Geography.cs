@@ -36,11 +36,19 @@ public abstract record Emphasis
 
     public sealed record Site(NodeRef Place, double Lat, double Lon) : Emphasis
     {
+        public bool Equals(Site? other) => other is not null && PositionIdentity.Comparer.Equals(Place, other.Place) && (Lat, Lon) == (other.Lat, other.Lon);
+
+        public override int GetHashCode() => HashCode.Combine(PositionIdentity.Comparer.GetHashCode(Place), Lat, Lon);
+
         public override T Match<T>(Func<T> none, Func<NodeRef, double, double, T> site, Func<NodeRef, TimeRange, T> territory) => site(Place, Lat, Lon);
     }
 
     public sealed record Territory(NodeRef Polity, TimeRange Reign) : Emphasis
     {
+        public bool Equals(Territory? other) => other is not null && PositionIdentity.Comparer.Equals(Polity, other.Polity) && Reign == other.Reign;
+
+        public override int GetHashCode() => HashCode.Combine(PositionIdentity.Comparer.GetHashCode(Polity), Reign);
+
         public override T Match<T>(Func<T> none, Func<NodeRef, double, double, T> site, Func<NodeRef, TimeRange, T> territory) => territory(Polity, Reign);
     }
 }

@@ -27,15 +27,7 @@ public sealed class EventNode : IExplorable, INarrativeAware
 
     public async Task<IReadOnlyList<Chip>> ExploreAsync(AtlasClient api)
     {
-        EventPage detail;
-        try
-        {
-            detail = await DetailAsync(api);
-        }
-        catch (Exception)
-        {
-            return Array.Empty<Chip>();
-        }
+        var detail = await DetailAsync(api);
 
         if (detail.When is not { } when || detail.Places.Count == 0)
         {

@@ -40,6 +40,10 @@ else
     <p class="popover-event-nav-role" data-testid="@($"{RoleTestIdPrefix}-{IdSuffix}")">@RoleText</p>
 
     <RefsList Refs="@RefDescriptors" TestIdPrefix="@($"{EventTestIdPrefix}-{IdSuffix}-refs")" OnExplore="OnExplore" />
+    @if (_refsFailed)
+    {
+        <CouldNotLoad OnRetry="LoadRefs" />
+    }
 }
 
 @if (_showPeek && Adjacent is not null)
@@ -52,7 +56,11 @@ else
                     aria-label="Close preview" title="Close preview"
                     @onclick="ClosePeek" @onclick:stopPropagation="true">&times;</button>
         </div>
-        @if (_peekVerses.Count > 0)
+        @if (_peekFailed)
+        {
+            <CouldNotLoad OnRetry="ResolvePeek" />
+        }
+        else if (_peekVerses.Count > 0)
         {
             @foreach (var v in _peekVerses.Take(_peekShown))
             {
@@ -61,7 +69,7 @@ else
                         Verse="@CanonRef.ParseVerse(v.Vref).Verse" ClassPrefix="popover-arrow-peek-mention" TestIdSuffix="@($"-{EventTestIdPrefix}-{IdSuffix}-peek")" OnExplore="OnExplore" />
                 </p>
             }
-            <RevealControls Total="@_peekVerses.Count" Default="1" Shown="@_peekShown" ShownChanged="OnPeekShownChanged"
+            <RevealControls OffersAll="true" Total="@_peekVerses.Count" Default="1" Shown="@_peekShown" ShownChanged="OnPeekShownChanged"
                              MoreTestId="@($"{EventTestIdPrefix}-{IdSuffix}-peek-more")" CollapseTestId="@($"{EventTestIdPrefix}-{IdSuffix}-peek-collapse")"
                              RevealNoun="verses" />
             @if (_peekTruncatedBy > 0)
@@ -100,26 +108,28 @@ else
         {
             return;
         }
-        var capturedId = Adjacent?.Id;
-        _lastAdjacentId = capturedId;
+        _lastAdjacentId = Adjacent?.Id;
+        await LoadRefs();
+    }
+
+    private readonly RequestSeries _refs = new();
+    private bool _refsFailed;
+
+    private async Task LoadRefs()
+    {
         _fetchedRefs = null;
-        if (capturedId is null)
+        _refsFailed = false;
+        if (_lastAdjacentId is not { } adjacentId)
         {
+            _refs.Stop();
             return;
         }
-        try
-        {
-            var accounts = await EventAccounts.ReadAsync(Graph, capturedId);
-            if (_lastAdjacentId != capturedId)
-            {
-                return;
-            }
-            _fetchedRefs = SelectRefs(accounts);
-            StateHasChanged();
-        }
-        catch (Exception)
-        {
-        }
+
+        (await _refs.Next().Fetch(() => EventAccounts.ReadAsync(Graph, adjacentId))).Match(
+            arrived: accounts => _fetchedRefs = SelectRefs(accounts),
+            failed: () => _refsFailed = true,
+            superseded: () => { });
+        StateHasChanged();
     }
 
     private List<RefsList.RefDescriptor> RefDescriptors => _fetchedRefs ?? [];
@@ -263,15 +273,7 @@ else
             return;
         }
 
-        try
-        {
-            _peekVerses = await VerseTextResolver.ResolveGroupsAsync(Atlas, Adjacent.VerseGroups);
-        }
-        catch (Exception)
-        {
-            _peekVerses = new List<PassageListVerse>();
-        }
-
+        await ResolvePeek();
         if (cts.IsCancellationRequested)
         {
             return;
@@ -282,6 +284,26 @@ else
         _peekMeasured = false;
         _showPeek = true;
         StateHasChanged();
+    }
+
+    private readonly RequestSeries _peeks = new();
+    private bool _peekFailed;
+
+    private async Task ResolvePeek()
+    {
+        if (Adjacent is not { } adjacent)
+        {
+            return;
+        }
+
+        (await _peeks.Next().Fetch(() => VerseTextResolver.ResolveGroupsAsync(Atlas, adjacent.VerseGroups))).Match(
+            arrived: verses =>
+            {
+                _peekVerses = verses;
+                _peekFailed = false;
+            },
+            failed: () => _peekFailed = true,
+            superseded: () => { });
     }
 
     private void ScheduleDismiss()
@@ -397,6 +419,8 @@ else
 
     public void Dispose()
     {
+        _refs.Stop();
+        _peeks.Stop();
         CancelDwell();
         CancelDismiss();
         HidePeekState();

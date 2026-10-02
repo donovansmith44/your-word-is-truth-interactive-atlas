@@ -24,15 +24,7 @@ public sealed class PersonNode : IExplorable
 
     public async Task<IReadOnlyList<Chip>> ExploreAsync(AtlasClient api)
     {
-        PersonLife? life;
-        try
-        {
-            life = (await CardAsync(() => api.NodeRecord(_personId))).Person;
-        }
-        catch (Exception)
-        {
-            return Array.Empty<Chip>();
-        }
+        PersonLife? life = (await CardAsync(() => api.NodeRecord(_personId))).Person;
 
         if (life is null || life.Eternal)
         {

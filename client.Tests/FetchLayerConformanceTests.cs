@@ -51,7 +51,7 @@ public class FetchLayerConformanceTests
         {
             "var node = await Explorer.Resolve(target);",
             "var next = await Explorer.Follow(link);",
-            "var card = await Explorer.Present(node, Surface.Popover);",
+            "var card = await Explorer.Present(request);",
             "var page = await node.Entries(kind, cursor);",
         };
 

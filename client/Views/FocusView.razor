@@ -1,80 +1,9 @@
 @inject IExplorer Explorer
+@implements IDisposable
 
-@if (_presented is { } presented)
+@if (_request is { } request)
 {
-    @if (OnShowOnWorld.HasDelegate && HomeSurfaces.Of(Node.Kind) == Surface.World)
-    {
-        <button type="button" class="popover-head-action" data-testid="@($"{Handle}-chip-map")" aria-label="Show on the map" title="Show on the map"
-                @onclick="() => OnShowOnWorld.InvokeAsync()">&#8982;</button>
-    }
-
-    @foreach (var end in Node.Ends.Where(end => Presentation.Offers(end, Surface)))
-    {
-        <button type="button" class="focus-up explorable" data-testid="@($"{Handle}-end-{Id(end)}")"
-                @onclick="() => OnFollow.InvokeAsync(end)">@Label(end)</button>
-    }
-
-    @foreach (var (group, _) in Offered<Affordance.UpCrumb>())
-    {
-        @foreach (var entry in presented.Pages[group.Kind].Items)
-        {
-            <button type="button" class="focus-up explorable" data-testid="@($"{Handle}-up-{group.Kind.WireName()}-{Id(entry.Neighbour)}")"
-                    @onclick="() => OnFollow.InvokeAsync(entry.Neighbour)">@Label(entry.Neighbour)</button>
-            @EdgeStep(entry)
-        }
-    }
-
-    @if (presented.Presentation is Presentation.Card card)
-    {
-        <div class="popover-section" data-testid="@($"{Handle}-section-card")">
-            <p class="focus-title" data-testid="@($"{Handle}-card-title")">@card.Title</p>
-            <dl class="focus-fields">
-                @foreach (var field in card.Fields)
-                {
-                    <div class="focus-field" data-testid="@($"{Handle}-field-{field.Name}")"><dt>@field.Name</dt><dd>@field.Value</dd></div>
-                }
-            </dl>
-        </div>
-    }
-
-    @foreach (var (group, arrows) in Offered<Affordance.Arrows>())
-    {
-        @foreach (var entry in presented.Pages[group.Kind].Items)
-        {
-            <button type="button" class="focus-arrow explorable" data-testid="@($"{Handle}-{ArrowHandle(arrows.Direction)}")"
-                    @onclick="() => OnFollow.InvokeAsync(entry.Neighbour)">@Arrowed(arrows.Direction, Label(entry.Neighbour))</button>
-            @EdgeStep(entry)
-        }
-    }
-
-    @foreach (var (group, _) in Offered<Affordance.InlineChildren>())
-    {
-        <div class="popover-section" data-testid="@($"{Handle}-children-{group.Kind.WireName()}")">
-            @foreach (var entry in presented.Pages[group.Kind].Items)
-            {
-                <button type="button" class="focus-child explorable" data-testid="@($"{Handle}-child-{group.Kind.WireName()}-{Id(entry.Neighbour)}")"
-                        @onclick="() => OnFollow.InvokeAsync(entry.Neighbour)">@Label(entry.Neighbour)</button>
-                @EdgeStep(entry)
-            }
-        </div>
-    }
-
-    @foreach (var (group, list) in Offered<Affordance.SectionList>())
-    {
-        var section = $"{Handle}-section-{group.Kind.WireName()}";
-        <div class="popover-section" data-testid="@section">
-            <p class="catechism-section-heading" data-testid="@($"{section}-heading")">@Heading(group)</p>
-            @foreach (var entry in presented.Pages[group.Kind].Items.Take(presented.Shown[group.Kind]))
-            {
-                <button type="button" class="focus-link @Register(list.Style)" data-testid="@($"{Handle}-link-{group.Kind.WireName()}-{Id(entry.Neighbour)}")"
-                        @onclick="() => OnFollow.InvokeAsync(entry.Neighbour)">@Label(entry.Neighbour)</button>
-                @EdgeStep(entry)
-            }
-            <RevealControls Total="group.Count" Default="list.InitialClamp" Step="list.InitialClamp" Shown="presented.Shown[group.Kind]"
-                            ShownChanged="shown => Reveal(presented, group.Kind, shown)"
-                            MoreTestId="@($"{section}-more")" CollapseTestId="@($"{section}-collapse")" />
-        </div>
-    }
+    @_outcome?.Match(arrived: Body, failed: () => Failure(request), superseded: () => Nothing)
 }
 
 @code {
@@ -87,66 +16,153 @@
     [Parameter] public EventCallback OnShowOnWorld { get; set; }
 
     private readonly RequestSeries _series = new();
-    private Explorable? _node;
-    private Presented? _presented;
+    private PresentationRequest? _request;
+    private Outcome<Presented>? _outcome;
 
-    private sealed record Presented(Presentation? Presentation, Dictionary<EdgeKind, Page<Entry>> Pages, Dictionary<EdgeKind, int> Shown);
+    private sealed record Presented(PresentationRequest Request, Presentation? Presentation, Dictionary<EdgeKind, Paging<Entry>> Pages, Dictionary<EdgeKind, int> Shown);
 
     protected override async Task OnParametersSetAsync()
     {
-        if (_node == Node)
+        var request = new PresentationRequest(Node, Surface);
+        if (request == _request)
         {
             return;
         }
 
-        _node = Node;
-        _presented = null;
-        var request = _series.Next();
-        if (await request.Fetch(() => Explorer.Present(Node, Surface), () => Task.WhenAll(Node.Groups.Select(group => Node.Entries(group.Kind)))) is not var (presentation, firstPages))
-        {
-            return;
-        }
-
-        var pages = await Task.WhenAll(Node.Groups.Zip(firstPages, (group, first) => Filled(request, group.Kind, Offered(first), InitiallyShown(group))));
-        if (request.Superseded)
-        {
-            return;
-        }
-
-        _presented = new Presented(
-            presentation,
-            Node.Groups.Zip(pages).ToDictionary(pair => pair.First.Kind, pair => pair.Second),
-            Node.Groups.ToDictionary(group => group.Kind, InitiallyShown));
+        _request = request;
+        await Load(request);
     }
 
-    private static int InitiallyShown(FrontierGroup group) =>
-        Affordances.Of(group.Kind) is Affordance.SectionList list ? list.InitialClamp : group.Count;
+    public void Dispose() => _series.Stop();
+
+    private async Task Load(PresentationRequest request)
+    {
+        _outcome = null;
+        var groups = request.Element.Groups;
+        var outcome = await _series.Next().Fetch(() => Explorer.Present(request), () => Task.WhenAll(groups.Select(group => Paging.Opened(request, group))));
+        var presented = outcome.Select(loaded => new Presented(
+            request,
+            loaded.Item1,
+            groups.Zip(loaded.Item2).ToDictionary(pair => pair.First.Kind, pair => pair.Second),
+            groups.ToDictionary(group => group.Kind, group => Affordances.Of(group.Kind).InitialClamp)));
+        _outcome = presented.Match(arrived: _ => presented, failed: () => presented, superseded: () => _outcome);
+    }
 
     private async Task Reveal(Presented presented, EdgeKind kind, int shown)
     {
         presented.Shown[kind] = shown;
-        presented.Pages[kind] = await Filled(_series.Current, kind, presented.Pages[kind], shown);
+        (await _series.Current.Fetch(() => presented.Pages[kind].Revealed(presented.Request, kind, shown))).Match(
+            arrived: paging => presented.Pages[kind] = paging,
+            failed: () => _outcome = new Outcome<Presented>.Failed(),
+            superseded: () => { });
     }
 
-    private async Task<Page<Entry>> Filled(Request request, EdgeKind kind, Page<Entry> loaded, int wanted)
+    private RenderFragment Failure(PresentationRequest request) => __builder =>
     {
-        while (loaded.Items.Count < wanted && loaded.Next is int cursor && await request.Fetch(() => Node.Entries(kind, cursor)) is { } page)
+        <CouldNotLoad OnRetry="() => Load(request)" />
+    };
+
+    private static RenderFragment Nothing => _ => { };
+
+    private RenderFragment Body(Presented presented) => __builder =>
+    {
+        var request = presented.Request;
+        var handle = Handle(request.Surface);
+
+        @if (OnShowOnWorld.HasDelegate && HomeSurfaces.Of(request.Element.Kind) == Surface.World)
         {
-            loaded = new Page<Entry>([.. loaded.Items, .. Offered(page).Items], page.Next);
+            <button type="button" class="popover-head-action" data-testid="@($"{handle}-chip-map")" aria-label="Show on the map" title="Show on the map"
+                    @onclick="() => OnShowOnWorld.InvokeAsync()">&#8982;</button>
         }
 
-        return loaded;
-    }
+        @foreach (var end in request.Element.Ends.Where(request.Offers))
+        {
+            <button type="button" class="focus-up explorable" data-testid="@($"{handle}-end-{Id(end)}")"
+                    @onclick="() => OnFollow.InvokeAsync(end)">@Label(end)</button>
+        }
 
-    private Page<Entry> Offered(Page<Entry> page) =>
-        new(page.Items.Where(entry => Presentation.Offers(entry.Neighbour, Surface)).ToList(), page.Next);
+        @foreach (var (group, _) in Offered<Affordance.UpCrumb>(request))
+        {
+            @foreach (var entry in Shown(presented, group))
+            {
+                <button type="button" class="focus-up explorable" data-testid="@($"{handle}-up-{group.Kind.WireName()}-{Id(entry.Neighbour)}")"
+                        @onclick="() => OnFollow.InvokeAsync(entry.Neighbour)">@Label(entry.Neighbour)</button>
+                @EdgeStep(request, entry)
+            }
+            @Reveal(presented, group, $"{handle}-up-{group.Kind.WireName()}")
+        }
+
+        @if (presented.Presentation is Presentation.Card card)
+        {
+            <div class="popover-section" data-testid="@($"{handle}-section-card")">
+                <p class="focus-title" data-testid="@($"{handle}-card-title")">@card.Title</p>
+                <dl class="focus-fields">
+                    @foreach (var field in card.Fields)
+                    {
+                        <div class="focus-field" data-testid="@($"{handle}-field-{field.Name}")"><dt>@field.Name</dt><dd>@field.Value</dd></div>
+                    }
+                </dl>
+            </div>
+        }
+
+        @foreach (var (group, arrows) in Offered<Affordance.Arrows>(request))
+        {
+            @foreach (var entry in Shown(presented, group))
+            {
+                <button type="button" class="focus-arrow explorable" data-testid="@($"{handle}-{ArrowHandle(arrows.Direction)}")"
+                        @onclick="() => OnFollow.InvokeAsync(entry.Neighbour)">@Arrowed(arrows.Direction, Label(entry.Neighbour))</button>
+                @EdgeStep(request, entry)
+            }
+            @Reveal(presented, group, $"{handle}-{ArrowHandle(arrows.Direction)}")
+        }
+
+        @foreach (var (group, _) in Offered<Affordance.InlineChildren>(request))
+        {
+            var section = $"{handle}-children-{group.Kind.WireName()}";
+            <div class="popover-section" data-testid="@section">
+                @foreach (var entry in Shown(presented, group))
+                {
+                    <button type="button" class="focus-child explorable" data-testid="@($"{handle}-child-{group.Kind.WireName()}-{Id(entry.Neighbour)}")"
+                            @onclick="() => OnFollow.InvokeAsync(entry.Neighbour)">@Label(entry.Neighbour)</button>
+                    @EdgeStep(request, entry)
+                }
+                @Reveal(presented, group, section)
+            </div>
+        }
+
+        @foreach (var (group, list) in Offered<Affordance.SectionList>(request))
+        {
+            var section = $"{handle}-section-{group.Kind.WireName()}";
+            <div class="popover-section" data-testid="@section">
+                <p class="catechism-section-heading" data-testid="@($"{section}-heading")">@Heading(request.Surface, group)</p>
+                @foreach (var entry in Shown(presented, group))
+                {
+                    <button type="button" class="focus-link @Register(list.Style)" data-testid="@($"{handle}-link-{group.Kind.WireName()}-{Id(entry.Neighbour)}")"
+                            @onclick="() => OnFollow.InvokeAsync(entry.Neighbour)">@Label(entry.Neighbour)</button>
+                    @EdgeStep(request, entry)
+                }
+                @Reveal(presented, group, section)
+            </div>
+        }
+    };
+
+    private static IEnumerable<Entry> Shown(Presented presented, FrontierGroup group) =>
+        presented.Pages[group.Kind].Kept.Take(presented.Shown[group.Kind]);
+
+    private RenderFragment Reveal(Presented presented, FrontierGroup group, string handle) => __builder =>
+    {
+        var clamp = Affordances.Of(group.Kind).InitialClamp;
+        <RevealControls OffersAll="false" Total="group.Count" Default="clamp" Step="clamp" Shown="presented.Shown[group.Kind]"
+                        ShownChanged="shown => Reveal(presented, group.Kind, shown)"
+                        MoreTestId="@($"{handle}-more")" CollapseTestId="@($"{handle}-collapse")" />
+    };
 
     private static string Id(Link link) => Positions.Of(link.Target).Id;
 
     private static string Label(Link link) => Positions.Of(link.Target).Label;
 
-    private string Heading(FrontierGroup group) =>
-        Surface == Surface.Popover ? $"{group.Kind.DisplayLabel()} ({group.Count})" : group.Kind.DisplayLabel();
+    private static string Heading(Surface surface, FrontierGroup group) =>
+        surface == Surface.Popover ? $"{group.Kind.DisplayLabel()} ({group.Count})" : group.Kind.DisplayLabel();
 
     private static string ArrowHandle(ArrowDirection direction) => direction switch
     {
@@ -156,22 +172,23 @@
 
     private static string Arrowed(ArrowDirection direction, string label) => direction switch
     {
-        ArrowDirection.Previous => $"\u2039 {label}",
-        ArrowDirection.Next => $"{label} \u203A",
+        ArrowDirection.Previous => $"‹ {label}",
+        ArrowDirection.Next => $"{label} ›",
     };
 
-    private RenderFragment EdgeStep(Entry entry) => __builder =>
+    private RenderFragment EdgeStep(PresentationRequest request, Entry entry) => __builder =>
     {
-        @if (Presentation.Offers(entry.Edge, Surface))
+        @if (request.Offers(entry.Edge))
         {
-            <button type="button" class="focus-entry-edge explorable-quiet" data-testid="@($"{Handle}-entry-edge-{entry.Edge.Kind.WireName()}-{Id(entry.Edge)}")"
+            var handle = Handle(request.Surface);
+            <button type="button" class="focus-entry-edge explorable-quiet" data-testid="@($"{handle}-entry-edge-{entry.Edge.Kind.WireName()}-{Id(entry.Edge)}")"
                     aria-label="@Label(entry.Edge)" title="@Label(entry.Edge)" @onclick="() => OnFollow.InvokeAsync(entry.Edge)">&#8942;</button>
         }
     };
 
-    private IEnumerable<(FrontierGroup Group, T Affordance)> Offered<T>() where T : Affordance
+    private static IEnumerable<(FrontierGroup Group, T Affordance)> Offered<T>(PresentationRequest request) where T : Affordance
     {
-        foreach (var group in Node.Groups)
+        foreach (var group in request.Element.Groups)
         {
             if (Affordances.Of(group.Kind) is T affordance)
             {
@@ -180,7 +197,7 @@
         }
     }
 
-    private string Handle => Surface switch
+    private static string Handle(Surface surface) => surface switch
     {
         Surface.World => "world",
         Surface.Reader => "reader",

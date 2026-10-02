@@ -191,7 +191,7 @@ public sealed class GraphExplorerTests
         var edge = await explorer.Resolve(ServedGraph.AtEdge(AttestedIn));
 
         // Act
-        var presented = await Task.WhenAll(Enum.GetValues<Surface>().Select(surface => explorer.Present(edge, surface)));
+        var presented = await Task.WhenAll(Enum.GetValues<Surface>().Select(surface => explorer.Present(new PresentationRequest(edge, surface))));
 
         // Assert
         Assert.Equal(new Presentation?[] { null, null, new Presentation.Card(AttestedIn.Label, [new Presentation.Field("Provenance", ServedGraph.Provenance)]) }, presented);
@@ -205,7 +205,7 @@ public sealed class GraphExplorerTests
         var edge = await explorer.Resolve(ServedGraph.AtEdge(Justification));
 
         // Act
-        var presented = await explorer.Present(edge, Surface.Popover);
+        var presented = await explorer.Present(new PresentationRequest(edge, Surface.Popover));
 
         // Assert
         Assert.Equal(new Presentation.Card(Justification.Label, []), presented);
@@ -220,7 +220,7 @@ public sealed class GraphExplorerTests
         var moses = await explorer.Resolve(ServedGraph.At(NodeKind.Person, MosesId, MosesLabel));
 
         // Act
-        var presentation = await explorer.Present(moses, Surface.Popover);
+        var presentation = await explorer.Present(new PresentationRequest(moses, Surface.Popover));
 
         // Assert
         Assert.Equal(new Presentation.Card(MosesLabel, [new Presentation.Field("Provenance", ServedGraph.Provenance)]), presentation);
@@ -235,7 +235,7 @@ public sealed class GraphExplorerTests
         var genesis1 = await explorer.Resolve(ServedGraph.At(NodeKind.Container, Genesis1Id, Genesis1Label));
 
         // Act
-        var presentation = await explorer.Present(genesis1, Surface.Reader);
+        var presentation = await explorer.Present(new PresentationRequest(genesis1, Surface.Reader));
 
         // Assert
         Assert.Equal(new Presentation.Card(Genesis1Label, [new Presentation.Field("Provenance", ServedGraph.Provenance)]), presentation);
@@ -250,7 +250,7 @@ public sealed class GraphExplorerTests
         var moses = await explorer.Resolve(ServedGraph.At(NodeKind.Person, MosesId, MosesLabel));
 
         // Act
-        var presentation = await explorer.Present(moses, Surface.World);
+        var presentation = await explorer.Present(new PresentationRequest(moses, Surface.World));
 
         // Assert
         Assert.Null(presentation);

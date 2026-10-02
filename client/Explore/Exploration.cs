@@ -10,6 +10,8 @@ public sealed record Exploration(Explorable Start, IReadOnlyList<Step> Steps)
 
     public IReadOnlyList<Step> Breadcrumb => Steps.Aggregate(new List<Step>(), Collapse);
 
+    public IReadOnlyList<Explorable> Path => [Start, .. Breadcrumb.Select(step => step.Target)];
+
     public Exploration Follow(Step step) => this with { Steps = [.. Steps, step] };
 
     public Exploration Back()

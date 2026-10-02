@@ -163,13 +163,106 @@ public sealed class ExplorerPopoverTests : BunitContext
         Assert.Empty(popover.FindAll("[data-testid='popover-chip-map']"));
     }
 
+    [Fact]
+    public void An_arrival_that_fails_offers_to_try_again_and_trying_again_arrives()
+    {
+        // Arrange
+        var graph = Narratives();
+        var atom = Hosting(new FlakyGraph(graph, failedReads: 1));
+        var popover = Render<ExplorerPopover>(p => p.Add(v => v.Opening, new PopoverOpening.Explore(ServedGraph.At(Exodus))));
+
+        // Act
+        popover.WaitForElement("[data-testid='could-not-load-retry']").Click();
+
+        // Assert
+        popover.WaitForAssertion(() => popover.Find("[data-testid='popover-body']").MarkupMatches(ExodusPresented));
+        Assert.Equal(new ExplorationState.Open(new Exploration(Resolved.Node(graph, Exodus), [])), atom.Value);
+    }
+
+    [Fact]
+    public void A_legacy_body_that_fails_to_load_offers_to_try_again_and_trying_again_loads_it()
+    {
+        // Arrange
+        var graph = Narratives();
+        Hosting(graph);
+        var legacy = new FlakyLegacy(Exodus, failures: 1);
+        var popover = Render<ExplorerPopover>(p => p.Add(v => v.Opening, new PopoverOpening.Legacy(legacy)));
+
+        // Act
+        popover.WaitForElement("[data-testid='could-not-load-retry']").Click();
+
+        // Assert
+        popover.WaitForAssertion(() => popover.Find("[data-testid='popover-body']").MarkupMatches($"""<div class="popover-body" data-testid="popover-body"><p>{FlakyLegacy.Loaded}</p></div>"""));
+    }
+
+    [Fact]
+    public void A_legacy_section_whose_read_fails_offers_to_try_again_and_trying_again_loads_it()
+    {
+        // Arrange
+        const string prose = "In the beginning, cp. John 1, 1, that is, when time first began.";
+        var legacy = new CommentaryItemNode("kretzmann/0.1.0", "The Creation of Chaos and Light");
+        Hosting(new FlakyGraph(new ServedGraph().Serving(ServedGraph.Card(NodeKind.CommentaryItem, legacy.Identity.Id, legacy.Identity.Label) with { Description = prose }), failedReads: 0, failedCards: 1));
+        var popover = Render<ExplorerPopover>(p => p.Add(v => v.Opening, new PopoverOpening.Legacy(legacy)));
+
+        // Act
+        popover.WaitForElement("[data-testid='could-not-load-retry']").Click();
+
+        // Assert
+        popover.WaitForAssertion(() => Assert.Equal(prose, popover.Find(".popover-commentary-text").TextContent));
+    }
+
+    private sealed class FlakyLegacy(NodeRef identity, int failures) : IExplorable
+    {
+        public const string Loaded = "loaded at last";
+
+        private int _failed;
+
+        public string Title => identity.Label;
+
+        public string Kind => nameof(FlakyLegacy);
+
+        public NodeRef Identity => identity;
+
+        public Task<IReadOnlyList<Chip>> ExploreAsync(AtlasClient api) => Task.FromResult<IReadOnlyList<Chip>>([]);
+
+        public Task<RenderFragment> BodyAsync(AtlasClient api) =>
+            _failed++ < failures
+                ? Task.FromException<RenderFragment>(new HttpRequestException(Offline))
+                : Task.FromResult<RenderFragment>(builder =>
+                {
+                    builder.OpenElement(0, "p");
+                    builder.AddContent(1, Loaded);
+                    builder.CloseElement();
+                });
+    }
+
+    private sealed class FlakyGraph(ServedGraph served, int failedReads, int failedCards = 0) : IExplorableClient
+    {
+        private int _reads;
+        private int _cards;
+
+        public Task<NodeRecord> Card(string id) =>
+            _cards++ < failedCards ? Task.FromException<NodeRecord>(new HttpRequestException(Offline)) : served.Card(id);
+
+        public Task<IReadOnlyList<Element>> Elements(IReadOnlyList<string> ids) =>
+            _reads++ < failedReads ? Task.FromException<IReadOnlyList<Element>>(new HttpRequestException(Offline)) : served.Elements(ids);
+
+        public Task<EdgePage> Edges(string positionId, EdgeKind kind, int? cursor = null, int limit = IExplorableClient.DefaultPageSize) =>
+            served.Edges(positionId, kind, cursor, limit);
+
+        public Task<TextWindow> Reading(string fromRef, int n, WindowDir dir = WindowDir.Onward, Corpus corpus = Corpus.Bible) =>
+            served.Reading(fromRef, n, dir, corpus);
+    }
+
+    private const string Offline = "offline";
+
     private static ServedGraph Narratives() =>
         new ServedGraph()
             .Serving(ServedGraph.Card(NodeKind.Narrative, Exodus.Id, Exodus.Label, new FrontierGroup(EdgeKind.FollowsIn, 1)))
             .Serving(Exodus.Id, EdgeKind.FollowsIn, null, ServedGraph.Page(EdgeKind.FollowsIn, null, Wilderness))
             .Serving(ServedGraph.Card(NodeKind.Narrative, Wilderness.Id, Wilderness.Label));
 
-    private StateAtom<ExplorationState> Hosting(ServedGraph graph)
+    private StateAtom<ExplorationState> Hosting(IExplorableClient graph)
     {
         JSInterop.Mode = JSRuntimeMode.Loose;
         Services.AddSingleton(new AtlasClient(new HttpClient { BaseAddress = new Uri("http://unserved.invalid") }));

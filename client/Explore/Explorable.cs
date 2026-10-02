@@ -49,22 +49,22 @@ public sealed class Explorable
 
     internal NodeRecord? Record { get; }
 
-    public async Task<Page<Entry>> Entries(EdgeKind kind, int? cursor = null)
+    public async Task<Page<Entry>> Entries(EdgeKind kind, int? cursor = null, int limit = IExplorableClient.DefaultPageSize)
     {
         if (Groups.All(group => group.Kind != kind))
         {
             return new Page<Entry>([], null);
         }
 
-        var page = await _graph.Edges(Id, kind, cursor);
+        var page = await _graph.Edges(Id, kind, cursor, limit);
         return new Page<Entry>(
             page.Entries.Select(entry => new Entry(new Link(kind, entry.Neighbour), new Link(kind, new EdgePosition(entry.Edge)))).ToList(),
             page.Next);
     }
 
-    public override bool Equals(object? obj) => obj is Explorable other && Kind == other.Kind && Id == other.Id;
+    public override bool Equals(object? obj) => obj is Explorable other && PositionIdentity.Comparer.Equals(Identity, other.Identity);
 
-    public override int GetHashCode() => HashCode.Combine(Kind, Id);
+    public override int GetHashCode() => PositionIdentity.Comparer.GetHashCode(Identity);
 
     public static bool operator ==(Explorable? left, Explorable? right) => left is null ? right is null : left.Equals(right);
 

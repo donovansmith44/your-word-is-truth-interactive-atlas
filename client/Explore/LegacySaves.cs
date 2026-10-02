@@ -6,9 +6,20 @@ public sealed record V1Node(string Kind, string Key, string Title);
 
 public sealed record V1Exploration(string Id, string Name, DateTimeOffset CreatedUtc, List<V1Node> Nodes);
 
-public sealed record V2Link(EdgeKind Kind, NodeRef Target);
+public sealed record V2Link(EdgeKind Kind, NodeRef Target)
+{
+    public bool Equals(V2Link? other) => other is not null && Kind == other.Kind && PositionIdentity.Comparer.Equals(Target, other.Target);
 
-public sealed record V2Exploration(string Id, string Name, DateTimeOffset CreatedUtc, NodeRef Start, List<V2Link> Steps);
+    public override int GetHashCode() => HashCode.Combine(Kind, PositionIdentity.Comparer.GetHashCode(Target));
+}
+
+public sealed record V2Exploration(string Id, string Name, DateTimeOffset CreatedUtc, NodeRef Start, List<V2Link> Steps)
+{
+    public bool Equals(V2Exploration? other) =>
+        other is not null && (Id, Name, CreatedUtc) == (other.Id, other.Name, other.CreatedUtc) && PositionIdentity.Comparer.Equals(Start, other.Start) && Steps.SequenceEqual(other.Steps);
+
+    public override int GetHashCode() => Steps.Aggregate(HashCode.Combine(Id, Name, CreatedUtc, PositionIdentity.Comparer.GetHashCode(Start)), HashCode.Combine);
+}
 
 public sealed record Translated<T>(IReadOnlyList<T> Kept, int Dropped);
 

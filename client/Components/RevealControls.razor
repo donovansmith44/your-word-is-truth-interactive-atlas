@@ -38,6 +38,8 @@
     [Parameter] public int Step { get; set; } = 2;
 
     [Parameter, EditorRequired] public int Shown { get; set; }
+
+    [Parameter, EditorRequired] public bool OffersAll { get; set; }
     [Parameter, EditorRequired] public EventCallback<int> ShownChanged { get; set; }
 
     [Parameter] public string MoreTestId { get; set; } = "reveal-more";
@@ -52,7 +54,7 @@
     private int MoreCount => Math.Min(Step, Total - Shown);
 
     // "all" only differs from "more" when a single more click wouldn't already reach Total.
-    private bool ShowAll => Total - Shown > Step;
+    private bool ShowAll => OffersAll && Total - Shown > Step;
 
     // One-deep undo memory: after ALL, LESS returns to the exact pre-ALL Shown; otherwise
     // LESS just steps back by Step.

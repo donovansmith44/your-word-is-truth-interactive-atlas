@@ -7,7 +7,7 @@ internal sealed class ServedGraph : IExplorableClient
 {
     public const string Provenance = "kjv";
     private const string Version = "v";
-    private const string EdgeId = "e";
+    public const string EdgeId = "e";
 
     private readonly Dictionary<string, NodeRecord> _cards = [];
     private readonly Dictionary<string, EdgeRecord> _edges = [];

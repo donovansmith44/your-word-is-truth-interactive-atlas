@@ -43,7 +43,7 @@ else
 
 @if (!AlreadyInCurrentReaderChapter)
 {
-    <RevealControls Total="1" Default="0" Step="1" Shown="@(_expanded ? 1 : 0)" ShownChanged="OnShownChanged"
+    <RevealControls OffersAll="false" Total="1" Default="0" Step="1" Shown="@(_expanded ? 1 : 0)" ShownChanged="OnShownChanged"
                      MoreTestId="@($"popover-verse-expand{TestIdSuffix}")" CollapseTestId="@($"popover-verse-collapse{TestIdSuffix}")"
                      RevealNoun="verses"
                      MoreLabel="Read the whole chapter"
@@ -78,17 +78,10 @@ else
         if (_expanded && _chapter is null)
         {
             _error = null;
-            try
-            {
-                if (await _chapters.Next().Fetch(() => Atlas.Chapter(Book, Chapter), () => Atlas.ChapterText(Book, Chapter)) is { } loaded)
-                {
-                    (_chapter, _text) = loaded;
-                }
-            }
-            catch (Exception)
-            {
-                _error = "Couldn't load the chapter — check your connection and try again.";
-            }
+            (await _chapters.Next().Fetch(() => Atlas.Chapter(Book, Chapter), () => Atlas.ChapterText(Book, Chapter))).Match(
+                arrived: loaded => (_chapter, _text) = loaded,
+                failed: () => _error = "Couldn't load the chapter — check your connection and try again.",
+                superseded: () => { });
         }
 
         if (_expanded)

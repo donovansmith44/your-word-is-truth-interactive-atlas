@@ -2,15 +2,15 @@ using BibleAtlas.Client.Contract;
 
 namespace BibleAtlas.Client.Explore;
 
-public abstract record Affordance
+public abstract record Affordance(int InitialClamp)
 {
-    public sealed record Arrows(ArrowDirection Direction) : Affordance;
+    public sealed record Arrows(ArrowDirection Direction) : Affordance(Affordances.ArrowsShown);
 
-    public sealed record InlineChildren : Affordance;
+    public sealed record InlineChildren() : Affordance(Affordances.ChildrenShown);
 
-    public sealed record UpCrumb : Affordance;
+    public sealed record UpCrumb() : Affordance(Affordances.CrumbsShown);
 
-    public sealed record SectionList(SectionStyle Style, int InitialClamp, SectionOrder Order) : Affordance;
+    public sealed record SectionList(SectionStyle Style, int InitialClamp, SectionOrder Order) : Affordance(InitialClamp);
 }
 
 public enum ArrowDirection
@@ -33,6 +33,12 @@ public enum SectionOrder
 
 public static class Affordances
 {
+    public const int ArrowsShown = 1;
+
+    public const int CrumbsShown = 3;
+
+    public const int ChildrenShown = 20;
+
     public static readonly Affordance.SectionList Cites = new(SectionStyle.Quiet, InitialClamp: 3, SectionOrder.VotesRanked);
 
     public static readonly Affordance.SectionList Mentions = new(SectionStyle.Standard, InitialClamp: 50, SectionOrder.Canonical);
