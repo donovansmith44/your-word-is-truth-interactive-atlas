@@ -7,12 +7,11 @@ Protocol: `AGENTS.md`. Plan: `docs/superpowers/plans/2026-09-30-v1-roadmap.md`.
 - **Repos:** `atlas` = this repo · `mapgen` = `map-generator`. On the owner's machine they are siblings: `~/src/bible-atlas` and `~/src/map-generator`.
 
 ## STATUS (the controller rewrites this at every landing)
-- **As of** 2026-09-30 afternoon. **CONTRACT-2 is CLOSED** at `678a0d2` (report: `docs/superpowers/reports/2026-09-30-contract-2-close.md`): 1,574 tests / 98 sections / 0 failures; timing gates 10/10 (gate 1 37 s → 1.0 s after an O(n²) paging fix); contract gate PASSED; semver ok; Playwright 453/2/4 (the known `world-quiet-places:211` + one load flake); AQC 0.11.0, AGC 0.15.0, graph-types 0.7.0, section schema 18, root `3e91f83b…`.
-- **The base for every new item is `678a0d2`.**
-- **Mutation:** owed (base `13111dd`; `.superpowers/MUTATION-GATE-DEBT.md`), deferred to after Nov 4 by the roadmap.
-- **Next for Claude:** land A-F1 (FOCUS-1) after Codex's review, then A-F6 (FOCUS-6, in review); then FOCUS-2. A-NAMES waits on O-NAMES.
-- **Next for Codex:** CX-M0 (claimed) → CX-M1, CX-M2 · CX-R1 · CX-R2 · CX-R3 · CX-I1 (to the B2 step).
-- **Before "go":** O-CODEX (`codex login`) if not done.
+- **As of** 2026-10-02. **FOCUS-1 and FOCUS-6 LANDED** on `worktree-bible-atlas-m1` at `b3d7cfa` (28 squashed task commits `0887c03..b3d7cfa`; Codex approved the reviewed tree at `ea0ba5d`, report 78cb9f6; the landed tree equals `ea0ba5d` plus trunk's docs). Gates at the reviewed head: workspace 1,489/0, client 733, contract 55, graph-types 133, contract gate PASSED, timing 11/11, Playwright 456 pass / 3 skip / 5 fail (3 carried: density smoke, C3-M1, VIEWSTATE-1; 2 F-55 hover flakes). AQC 0.21.0.
+- **The base for every new item is `b3d7cfa`.**
+- **Mutation:** owed, deferred to the owner's window after Nov 4.
+- **Next for Claude:** FOCUS-2 (claimed; the plan re-anchored on `b3d7cfa`), then FOCUS-3 when the owner answers its OPEN. Plans being written: FOCUS-5, FOCUS-7.
+- **Next for Codex:** CX-M0 (O-M0-LIMB approved) · FOCUS-4 when the owner answers its OPEN · CX-R* analyses.
 
 ## OWNER QUESTIONS (answer in one line each; agents append)
 1. **O-PUSH:** resolved 2026-09-30: `gh auth login` + `gh auth setup-git` in WSL; a push and a lock take/release from WSL both succeeded.
@@ -142,6 +141,7 @@ Protocol: `AGENTS.md`. Plan: `docs/superpowers/plans/2026-09-30-v1-roadmap.md`.
 - **Closed by** Task 11 plus a fix wave under rules 24/24a/24b/25/26 (every fix names its category, its failed abstraction, its side and the closure; see the close report §6a).
 
 ### A-F1: FOCUS-1
+- **LANDED 2026-10-02** at `b3d7cfa` (with A-F6 and the fix waves through FIX6). Status: done.
 - **Latest Codex review (2026-10-02): APPROVED through ea0ba5d**, `320afac..ea0ba5d` on `lane/claude/FIX6`, cumulative stack `678a0d2..ea0ba5d`. Report `docs/superpowers/reports/2026-10-02-focus-default-closure-codex-review.md`, review lane **78cb9f6**. F-18 first-cursor site closed: generated from OpenAPI, no handwritten constant/path list; unfamiliar operation with missing/conflicting default refuses generation. Independent client **733**, contract **55**, prior client probes **10**, generator probes **4** all pass. No new findings; server/Rust/contracts/data unchanged from reviewed 320afac. Existing browser/default/debt findings not waived; full workspace/export/browser gates not rerun.
 - **handoff (Codex, 2026-10-02, current):** review passes at exact ea0ba5d. Claude can integrate FIX6 and land the reviewed A-F1/A-F6 tree under the established lock/squash protocol; changes after this head need review. Report/verdict pushed, no review locks or servers held.
 - **Latest Codex re-review (2026-10-02): F-74 BEHAVIOR CLOSED; CHANGES REQUESTED for the new F-18 site at 320afac**, reviewed `eea9023..320afac` on `lane/claude/FIX6` (integration still eea9023). Report `docs/superpowers/reports/2026-10-02-focus-first-page-codex-review.md`, review lane **e2c052d**. Independent client **730**, contract **55**, graph-types **133**, original/resource/root probes **10**, actual-artifact HTTP predecessor probes/walks **4**, both-store previous **1**, every-cursor/limit parity **1** all pass. F-74's two prior HTTP reds now return explicit predecessor zero and reproduce the complete first response. No runtime regression; F-18 is the required D.R.Y. default-restatement finding. Full workspace/export/browser gates read from author evidence, not rerun. Added-comment scan clean.
@@ -209,6 +209,7 @@ Protocol: `AGENTS.md`. Plan: `docs/superpowers/plans/2026-09-30-v1-roadmap.md`.
 - **Assignment:** each plan names its agent, its base commit and its files. Codex takes the ones that pair against Claude's (server-heavy beside client-heavy).
 
 ### A-F6: FOCUS-6 (Geography + explorable edges, re-planned under rule 27)
+- **LANDED 2026-10-02** at `b3d7cfa`. Status: done.
 - **Latest Codex review (2026-10-02): APPROVED through ea0ba5d** with A-F1/FIX6; report **78cb9f6**. Newly introduced F-18 default-restatement site closed; original paging/root/predecessor closures intact. Claude lands the reviewed tree; no review lock held.
 - **Latest Codex re-review (2026-10-02):** stack extension FIX6 at **320afac** has F-74 behavior closed, original/root/resource probes green, and a new F-18 contract-default restatement site needing resolution. Report **e2c052d**; see A-F1. No review lock held.
 - **Latest Codex re-review (2026-10-02):** included at `eea9023` with A-F1; report **8cdebd2**. F-68/F-70 residuals pass, F-74 predecessor contract needs closure. Keep in review; no review lock held.
@@ -218,7 +219,7 @@ Protocol: `AGENTS.md`. Plan: `docs/superpowers/plans/2026-09-30-v1-roadmap.md`.
 - **Review scope for Codex:** the close report's task table; rule 27 (nothing derived per request that the data alone determines; no client construct in the graph); 24a/24b per category listed in the report.
 
 ### A-F2: FOCUS-2 (TextUnit: Verse, ConcordUnit)
-- **Status:** planned — `docs/superpowers/plans/2026-10-02-focus2-textunit.md` on `lane/claude/F2-plan` (3f73383 + answers). Owner answered OPEN 1–9 on 2026-10-02 (recorded in the plan). Starts when A-F1/A-F6 land (base: the landed stack).
+- **Status:** claimed:claude:2026-10-02T15:31:37+00:00 (base `b3d7cfa`; Claude runs it so Codex stays on maps; was: planned — `docs/superpowers/plans/2026-10-02-focus2-textunit.md` on `lane/claude/F2-plan` (3f73383 + answers). Owner answered OPEN 1–9 on 2026-10-02 (recorded in the plan). Starts when A-F1/A-F6 land (base: the landed stack).
 
 ### A-F3, A-F9: FOCUS-3, FOCUS-9
 - **FOCUS-3 / FOCUS-4 plans (2026-10-02): written.** FOCUS-3 `lane/claude/F3-plan` 64eebcf (13 OPEN, sent to the owner); FOCUS-4 `lane/claude/F4-plan` da92793 (7 OPEN, sent to the owner). FOCUS-3 shares most client files with FOCUS-2: FOCUS-2 goes first per file (table in the plan). Were: being written on `lane/claude/F3-plan` and `lane/claude/F4-plan` against eea9023 (owner: "write plans for the next two things we can do in parallel"). Pairing: FOCUS-2 (Codex) beside FOCUS-3 (Claude), FOCUS-4 (Codex) next.
