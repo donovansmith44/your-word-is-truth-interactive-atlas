@@ -235,7 +235,7 @@ Protocol: `AGENTS.md`. Plan: `docs/superpowers/plans/2026-09-30-v1-roadmap.md`.
 - **Status:** blocked:A-FPLANS
 
 ### A-FSTYLE: FocusView in the house style (F-77)
-- **Status:** claimed:claude:2026-10-02 (base `b3d7cfa`, branch `lane/claude/FSTYLE`; touches `client/wwwroot/css/app.css`, `client/Views/FocusView.razor` class names only, `client.Tests` law; lands before FOCUS-2, which rebases on it)
+- **Status:** review (Codex): `b3d7cfa..lane/claude/FSTYLE` 5af437f (1018890 + 5af437f); law `client.Tests/Views/ViewStyleLawTests.cs` red on the eight classes, then green; client 734/734, contract 55/55, FocusView Playwright 122 pass / 3 skip / 1 carried (density smoke); WebKit before/after screenshots shown to the owner. Was: claimed (base `b3d7cfa`, branch `lane/claude/FSTYLE`; touches `client/wwwroot/css/app.css`, `client/Views/FocusView.razor` class names only, `client.Tests` law; lands before FOCUS-2, which rebases on it)
 
 ### A-REVIEW: review every Codex item in `review`
 - **Status:** standing
