@@ -3,6 +3,7 @@ import { openVerse } from './lib/verse';
 import fc from 'fast-check';
 import { api } from './lib/api';
 import { loadToc, arbVerseRef } from './lib/canon';
+import { neighbourNode } from './lib/edges';
 
 // Batch R requirement 3 ("the popover becomes a content-first section
 // platform") + requirement 4 (expandable popover / in-context chapter
@@ -367,144 +368,78 @@ test('READER-1: expanding a verse popover fetches the whole chapter and highligh
   await expect(page.getByTestId('popover-verse-collapse')).toHaveCount(0);
 });
 
-// A passage's own focal range highlights EVERY member verse, not just the
-// first -- and the compact/aggregated text still matches READ-5/READ-6's
-// own established "aggregate as today" behavior (requirement 3's own
-// closing line). M-D3/U6: relocated to a PLACE popover's own destroyed-date
-// supporting verses (/world, real curated data -- Jerusalem's own
-// destruction, 2KI.25.9-10, two CONSECUTIVE curated verses that group into
-// one real passage block) -- a shift-click passage-chip in the reader hits
-// the SAME chapter-aware-suppression READER-1 immediately above now hits
-// (always the chapter on screen, structurally); /world carries no "current
-// reader chapter" concept at all, so this multi-verse focal-range case
-// stays fully exercisable there, unaffected.
 test('READER-1: a passage\'s whole focal range is highlighted when expanded', async ({ page }) => {
-  await page.goto('/world?from=-1000&to=-900');
-  const marker = page.getByTestId('marker-jerusalem').or(page.getByTestId('quiet-marker-jerusalem'));
-  await expect(marker).toBeAttached();
-  await marker.hover({ force: true });
-  await page.getByTestId('place-card-title').click();
-  await expect(page.getByTestId('popover-place-date-destroyed')).toBeVisible();
+  // Arrange
+  await page.goto('/read/JER/39');
+  await openVerse(page, 1);
+  await page.getByTestId('verse-event-exl_jerusalem').click();
+  const account = page.getByTestId('event-witness-2KI.25.1-10');
+  await expect(account).toBeVisible();
+  await account.locator('.popover-passage-ref-label').click();
+  await expect(page.getByTestId('popover-title')).toHaveText('2KI.25.1-10');
 
-  const entry = page.getByTestId('popover-place-date-destroyed-verse-2KI.25.9-10');
-  await expect(entry).toBeVisible();
-  await entry.click();
-  await expect(page.getByTestId('popover-title')).toHaveText('2KI.25.9-10');
-
+  // Act
   await page.getByTestId('popover-verse-expand').click();
-  await expect(page.getByTestId('popover-verse-reader')).toBeVisible();
 
-  for (const n of [9, 10]) {
+  // Assert
+  await expect(page.getByTestId('popover-verse-reader')).toBeVisible();
+  for (const n of [1, 9, 10]) {
     await expect(page.getByTestId(`popover-reader-verse-${n}`)).toHaveAttribute('data-focal', 'true');
   }
-  await expect(page.getByTestId('popover-reader-verse-8')).toHaveAttribute('data-focal', 'false');
   await expect(page.getByTestId('popover-reader-verse-11')).toHaveAttribute('data-focal', 'false');
 });
 
-// ---------------------------------------------------------------------
-// REGISTRY-1: PLACE node sections -- description seam, dates, blurb,
-// events, in order, conditional presence. Jerusalem is heavily curated
-// (established AND destroyed, event-bearing at every historical window).
-// ---------------------------------------------------------------------
-
-test('REGISTRY-1: a PLACE popover shows dates and events, in order, no thin event-only shell', async ({ page }) => {
+async function openJerusalem(page: Page): Promise<any> {
+  const record = await api.node('Place:jerusalem');
   await page.goto('/world?from=-1000&to=-900');
   const marker = page.getByTestId('marker-jerusalem').or(page.getByTestId('quiet-marker-jerusalem'));
   await expect(marker).toBeAttached();
-  await marker.hover({ force: true });
-  await page.getByTestId('place-card-title').click();
-  await expect(page.getByTestId('popover')).toBeVisible();
-  // Sections resolve asynchronously after the popover mounts (each provider's
-  // own fetch); wait for the first expected one before reading the ORDER
-  // (a debug-build API made the bare read race, 2026-09-19).
-  await expect(page.getByTestId('popover-section-place-dates')).toBeVisible();
+  await marker.dispatchEvent('click');
+  await expect(page.getByTestId('popover-title')).toHaveText(record.label);
+  return record;
+}
 
-  const sectionIds = await page.getByTestId(/^popover-section-/).evaluateAll(els => els.map(el => el.getAttribute('data-testid')));
-  // description seam (Batch P, not yet registered) never contributes a
-  // section; dates then events is the observable order for a place with no
-  // window-scoped blurb curated for THIS particular window.
-  expect(sectionIds[0]).toBe('popover-section-place-dates');
-  expect(sectionIds).toContain('popover-section-place-events');
-  expect(sectionIds.indexOf('popover-section-place-dates')).toBeLessThan(sectionIds.indexOf('popover-section-place-events'));
+test('REGISTRY-1: a PLACE popover shows its window-free record, then its site-of neighbours, capped and revealable', async ({ page }) => {
+  // Arrange
+  const record = await openJerusalem(page);
+  const siteOf = record.edge_summary.find((s: any) => s.kind === 'site-of').count;
+  const firstPage = await api.nodeEdges(record.id, 'site-of', { limit: 20 });
+  const cap = 20;
 
-  await expect(page.getByTestId('popover-place-date-established')).toBeVisible();
-  await expect(page.getByTestId('popover-place-date-destroyed')).toBeVisible();
+  // Act
+  await expect(page.getByTestId('popover-section-site-of')).toBeVisible();
+  const sectionIds = await page.getByTestId(/^popover-section-(card|site-of|mentioned-in)$/).evaluateAll(els => els.map(el => el.getAttribute('data-testid')));
 
-  // M-D1 requirement 4 (TRUNCATION AUDIT): this list is capped now
-  // (PlaceEventsList.razor, cap 10) -- Jerusalem alone real-carries 236
-  // located-at events across the whole atlas, previously rendered with NO
-  // cap at all. Capped count visible by default; the down-arrow reveals
-  // every remaining row, honest disclosure per the standard pattern.
-  const detail = await api.place('jerusalem');
-  const cap = 10;
-  expect(detail.events.length, 'jerusalem must still real-carry MORE than the cap for this assertion to exercise it').toBeGreaterThan(cap);
-  await expect(page.locator('[data-testid^="place-event-"]')).toHaveCount(cap);
-  await expect(page.getByTestId('place-events-more')).toBeVisible();
-  await page.getByTestId('place-events-more').click();
-  await expect(page.locator('[data-testid^="place-event-"]')).toHaveCount(detail.events.length);
-  await expect(page.getByTestId('place-events-collapse')).toBeVisible();
+  // Assert
+  expect(siteOf).toBeGreaterThan(cap);
+  expect(sectionIds.indexOf('popover-section-card')).toBeLessThan(sectionIds.indexOf('popover-section-site-of'));
+  await expect(page.getByTestId('popover-card-title')).toHaveText(record.label);
+  const fields = await page.getByTestId(/^popover-field-/).evaluateAll(els => els.map(el => el.getAttribute('data-testid')));
+  expect(fields).toEqual(['popover-field-Established', 'popover-field-Destroyed', 'popover-field-Blurb', 'popover-field-Provenance']);
+  await expect(page.getByTestId('popover-section-site-of-heading')).toHaveText(`Site of (${siteOf})`);
+  const links = page.getByTestId('popover-section-site-of').locator('[data-testid^="popover-link-site-of-"]');
+  await expect(links).toHaveCount(cap);
+  await expect(links.first()).toHaveText(neighbourNode(firstPage.entries[0]).label);
+  await page.getByTestId('popover-section-site-of-more').click();
+  await expect.poll(() => links.count()).toBeGreaterThan(cap);
+  await expect(page.getByTestId('popover-section-site-of-collapse')).toBeVisible();
 });
 
-// Batch F2 requirement 6b (user direction 2026-08-20, verbatim: "on the
-// established/destroyed buttons just display verses/passages how we do on
-// every other hover menu... rather than the stupid buttons i have to click
-// to see"): the established/destroyed date's own supporting verses render
-// INLINE, immediately -- no click needed at all. The date row itself is no
-// longer a button (the "click to reveal" gate is retired); it stays a
-// plain, non-interactive instrument-face label.
-test('REGISTRY-1/XREF-1: a PLACE popover\'s established/destroyed verses render inline with no click, capped at 2', async ({ page }) => {
-  await page.goto('/world?from=-1000&to=-900');
-  const marker = page.getByTestId('marker-jerusalem').or(page.getByTestId('quiet-marker-jerusalem'));
-  await marker.hover({ force: true });
-  await page.getByTestId('place-card-title').click();
-  await expect(page.getByTestId('popover-section-place-dates')).toBeVisible();
+test('REGISTRY-1/XREF-1: a PLACE popover\'s established/destroyed dates are plain record fields carrying the served labels', async ({ page }) => {
+  // Arrange
+  const record = await openJerusalem(page);
 
-  // The date row itself is a plain label now, not a button -- no onclick,
-  // no explorable affordance.
-  const establishedRow = page.getByTestId('popover-place-date-established');
-  await expect(establishedRow).toBeVisible();
-  await expect(establishedRow).not.toHaveJSProperty('tagName', 'BUTTON');
-  await expect(establishedRow).toContainText('Established');
+  // Act
+  const established = page.getByTestId('popover-field-Established');
+  const destroyed = page.getByTestId('popover-field-Destroyed');
 
-  const detail = await api.placeHistory('jerusalem', -1000, -900);
-  const establishedVerseCount = detail.history.established.verses.length;
-  const cap = 2;
-
-  // Full verse TEXT is already visible -- no extra click needed at all.
-  // Note: the cap counts PASSAGE ENTRIES (blocks), not raw verses (XREF-1)
-  // -- consecutive curated verses group into one block, so the rendered
-  // entry count can be LESS than min(rawVerseCount, cap) whenever grouping
-  // applies (Jerusalem's own established claim, 2SA.5.6/5.7/5.9, groups
-  // into exactly 2 blocks: 5.6-7 together, 5.9 alone). This test reads the
-  // ACTUAL rendered state rather than predicting the block count
-  // independently (that would just re-implement PassageGrouping.Groups a
-  // second time here).
-  const estEntries = page.locator('[data-testid^="popover-place-date-established-verse-"]');
-  const initialCount = await estEntries.count();
-  expect(initialCount).toBeGreaterThan(0);
-  expect(initialCount).toBeLessThanOrEqual(cap);
-  const firstEntryText = await estEntries.first().textContent();
-  expect((firstEntryText ?? '').trim().length).toBeGreaterThan(15);
-
-  const moreButton = page.getByTestId('popover-place-date-established-more');
-  const hasMore = await moreButton.count() > 0;
-  if (hasMore) {
-    // Only reachable if the real curated data ever grows past 2 blocks for
-    // this place/window -- exercised for real whenever it does; asserted
-    // either way so this test stays meaningful if the data changes.
-    expect(initialCount).toBe(cap);
-    await moreButton.click();
-    const revealedCount = await estEntries.count();
-    expect(revealedCount).toBeGreaterThan(cap);
-    await expect(page.getByTestId('popover-place-date-established-collapse')).toBeVisible();
-    await page.getByTestId('popover-place-date-established-collapse').click();
-    await expect(estEntries).toHaveCount(initialCount);
-  } else {
-    // Fewer entries than the cap (or exactly at it) -- no arrow at all,
-    // per XREF-1's own "conditional presence" rule. Jerusalem's real
-    // curated data (2 blocks, at the cap) exercises this branch today.
-    expect(initialCount).toBeLessThanOrEqual(cap);
-  }
+  // Assert
+  await expect(established).toBeVisible();
+  await expect(established).not.toHaveJSProperty('tagName', 'BUTTON');
+  await expect(established.locator('dd')).toHaveText(record.place.established.label);
+  await expect(destroyed.locator('dd')).toHaveText(record.place.destroyed.label);
+  await expect(page.getByTestId('popover-field-Blurb').locator('dd')).toHaveText(record.place.blurb);
+  await expect(page.getByTestId('popover').locator('button', { hasText: record.place.established.label })).toHaveCount(0);
 });
 
 // ---------------------------------------------------------------------

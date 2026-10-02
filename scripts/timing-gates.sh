@@ -54,9 +54,9 @@ GATES=(
   # AtlasData::finish + scene priming, cache warm -- under the same 4 s the
   # artifact load (gate 1, kept: the compile's own admission) has always had.
   "atlas-graph|sections_startup|the_served_path_starts_under_the_ceiling"
-  # DB-4c (gate 11): spec 12's frontier p50/p99 stand-in -- the first edge page
+  # DB-4c (gate 11): spec 12's adjacency p50/p99 stand-in -- the first edge page
   # of every inhabited kind at 736 fixed positions, both arms; served p99 < 100 ms.
-  "atlas-contract|perf_smoke|frontier_page_latency_corpus_over_both_arms"
+  "atlas-contract|perf_smoke|adjacency_page_latency_corpus_over_both_arms"
   # FOCUS-6 Task 2: the element read at its cap (100 verses + 100 of their
   # edges) answers inside the same 100 ms per-read budget.
   "atlas-contract|perf_smoke|an_element_read_at_the_cap_answers_inside_the_read_budget"
@@ -128,6 +128,9 @@ run() {
     IFS='|' read -r pkg bin name <<<"$g"
     local log="$LOG_DIR/$stamp-$i-$bin-$name.log"
     echo "== gate $i/${#GATES[@]}: $pkg::$bin::$name"
+    if ! ( cd "$ROOT/server" && bash "$ROOT/scripts/named-test.sh" require exact "$pkg" "$bin" "$name" ) >"$log" 2>&1; then
+      failed=$((failed+1)); echo "   FAILED -- the named test does not exist; see $log"; continue
+    fi
     # One process per gate. --exact so a name is a name, not a prefix.
     # --nocapture (added so a passing perf_smoke gate's PERF SMOKE line lands
     # in the log) means the harness's own "test NAME ... " prefix is no

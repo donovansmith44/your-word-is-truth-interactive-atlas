@@ -127,12 +127,9 @@ to read EVENT):
 
 Surfaces AUDITED and EXCLUDED (verified structurally impossible or
 out-of-vocabulary, not assumed):
-- Place card event lists (`PlaceEventsSection`, `SceneEvent`): a
-  general-kind passage has no `Places` by construction (EVENT-1's own
-  model note — "places stays empty by construction" for `kind ==
-  "general"`) and `SceneEvent.When` is non-nullable on the wire — a
-  general-kind entry can never appear in a place's own event list at all,
-  so there is no EVENT heading here for one to be misfiled under.
+- Place event lists: Removed in FOCUS-6 (OPEN 3): `PlaceEventsSection` is
+  deleted; a place's events are its `site-of` neighbours in the popover
+  (`popover-section-site-of`), graph links with no EVENT heading to misfile.
 - World/chronology traversal, incl. the EV-1 verse-text rows
   (`EventChronologySection`): already excludes `kind == "general"` before
   this batch — "general-kind or unknown event -- NOT part of time
@@ -153,9 +150,9 @@ out-of-vocabulary, not assumed):
   No general-kind entry can EVER reach the selection tray at all — grep-
   verified this batch: zero call sites wire `OnToggleSelect`/
   `ToggleSelectAsync` for an `EventNode` row anywhere in
-  PopoverSectionProviders.cs (`PlaceEventsSection`'s own toggle wires a
-  `TimeAndPlaceNode`, not an `EventNode`; `CrossRefsSection`'s own toggle
-  wires Verse/Passage targets) — so `SelectionTray.razor` is EXCLUDED
+  PopoverSectionProviders.cs (`CrossRefsSection`'s own toggle wires
+  Verse/Passage targets; `PlaceEventsSection` and `TimeAndPlaceNode` were
+  deleted in FOCUS-6) — so `SelectionTray.razor` is EXCLUDED
   outright, not merely relabeled. The hamburger trail CAN hold a
   general-kind `EventNode` (any node visited this popover session lands
   in `FocusStack.Trail`, saved verbatim by `SaveExploration`) — RELABELED
@@ -517,11 +514,10 @@ CHROME-UNIFORMITY-1 (the structural answer to the owner's "we're not
   | Chapter | `popover-chip-map`, `popover-chip-context`, `popover-chip-book` |
   | Book | `popover-chip-map`, `popover-chip-context`, `popover-chip-book` |
   | Author | `popover-chip-map` (conditional — needs `WritePlace`+`WriteFrom`/`To`) |
-  | Place | `popover-chip-map` |
-  | TimeAndPlace | `popover-chip-map` |
+  | Place | `popover-chip-map` (FOCUS-6: rendered by `FocusView` for every World-home kind -- Map, Place, Polity, Era -- outside the World view) |
   | Event | `popover-chip-map` (conditional — needs `When`) |
   | PolityDelta | `popover-chip-map` |
-  | Year | `popover-chip-verse-{VREF}` (one per curated supporting verse, PREFIX declaration) + `popover-chip-map` |
+  | Year | `popover-chip-map` (FOCUS-6: the place-date-claim mode and its `popover-chip-verse-{VREF}` prefix are removed, OPEN 3) |
   | Catechism | *(none)* |
   | Person | *(none)* |
   | CommentaryItem | *(none)* |
@@ -617,10 +613,10 @@ EVENT-TIMEPLACE-1 (owner verbatim: "At the top, right below the header of
     the event header" means FIRST among Event sections, superseding
     CHRONO-MERGE-1's own "Chronology, always on top" ruling.
   - Time: click pushes `new YearNode(when)` -- YearNode's own NEW
-    event-time constructor (additive; the pre-EVT-3 place-date-claim
-    constructor is UNCHANGED, both coexist on the same `Kind == "Year"`).
+    event-time constructor (the pre-EVT-3 place-date-claim constructor was
+    deleted in FOCUS-6 with the place card; this is YearNode's only mode).
     `YearFrontierSection` (a new registry provider, `Kind == "Year"`) is
-    what gives EITHER YearNode mode a real `IPopoverSectionContext` to push
+    what gives YearNode a real `IPopoverSectionContext` to push
     explorable rows through -- Chapter and Year are now the ONLY two kinds
     that moved OFF the BodyAsync fallback path since Batch R (Book/Author/
     TimeAndPlace remain BodyAsync-only). The event-time body
@@ -1260,51 +1256,23 @@ World: `world-map`, `marker-{placeId}`, `quiet-marker-{placeId}` (batch-e2-brief
   `n` = member count, literally -- present only at FAR/MID label tier, only for lit
   markers whose TRUE positions collapse within `CLUSTER_D_PX`; replaces those markers'
   own `marker-{placeId}` elements on the plate for as long as they're clustered, though
-  those elements stay attached to the DOM, just hidden -- never removed), `place-card` (attr `data-pinned` = "true"|"false" --
-  batch-g1-brief.md requirement 3, PIN-1 below; attr `data-flip` = "true"|"false" --
-  batch-hotfix-brief.md requirement 1, CARD-FLIP-1 below), `place-card-title`,
-  `place-card-close` (batch-g1-brief.md; button; present ONLY while `data-pinned="true"`;
-  closes the pinned card -- see PIN-1), `place-card-narratives` (batch-g1-brief.md; present
-  ONLY when the pinned place has >=1 narrative leg in the current scene; wraps one row per
-  such narrative -- swatch + name + `card-prev-event-{narrativeId}` / `card-next-event-
-  {narrativeId}`, see TRAVERSAL-1 below), `card-prev-event-{narrativeId}` (batch-g1-brief.md;
-  button; present only when that narrative has an adjacent PREVIOUS place for this one, per
-  TRAVERSAL-1), `card-next-event-{narrativeId}` (batch-g1-brief.md; button; present only when
-  that narrative has an adjacent NEXT place),
-  `hover-verse-{VREF}` (one element per currently shown verse, VREF = canonical id e.g.
-  `EXO.14.21`, whether it renders as its own lone-verse row or as one verse inside a
-  passage block; element text contains that verse's own KJV text verbatim -- never
-  trimmed, never paraphrased; batch-g1-brief.md requirement 1b -- explorable under
-  ONE-RULE below, opens a VerseNode), `hover-passage-{SPAN}` (one per currently shown passage
-  block -- a maximal run of >=2 consecutive same-book/chapter verses; SPAN = canonical
-  span text of that run's CURRENTLY SHOWN extent, e.g. `GEN.12.1-4`; contains that
-  block's own `hover-verse-{VREF}` elements; batch-g1-brief.md requirement 1b -- ALSO
-  explorable, opens a PassageNode for the whole span -- clicking a specific nested
-  `hover-verse-{VREF}` inside it opens that verse's own node instead, per ONE-RULE),
-  `place-card-more` (button; present only
-  while unshown verses remain for this place), `place-card-collapse` (button; present
-  only while more than the initial content is shown),
-  `place-card-blurb` (batch-e-brief.md; present only when the API's `history.blurb`
-  is non-null for the card's place under the scene's own window -- text is that
-  blurb's text verbatim), `place-card-dates` (present only when the place has a
-  curated `established` and/or `destroyed` date; wraps one or both of
-  `place-card-date-established` / `place-card-date-destroyed`, each a button whose
-  text contains that date's own formatted year/range and which opens the
-  ExplorerPopover, listing the curated supporting verses first, on click),
-  `place-card-quiet` (batch-e2-brief.md; present ONLY when the card's place has no
-  events in the scene's own window -- i.e. it was opened from a `quiet-marker-{id}`,
-  never from a lit `marker-{id}` -- text is exactly "No recorded events in this window
-  — drag the timeline."; mutually exclusive with every `hover-verse-{VREF}`/
-  `hover-passage-{SPAN}`/`place-card-more`/`place-card-collapse` on the same card, which
-  never appear together with it),
-  `place-chooser` (batch-c3-brief.md decision 2, CHOOSER-1 below; the hover flyout that
+  those elements stay attached to the DOM, just hidden -- never removed),
+  `world-emphasis-site` (FOCUS-6; a ring inside the focused place's own `marker-{placeId}`;
+  present only while the exploration's current focus is a Place), `world-emphasis-territory`
+  (FOCUS-6; one per drawn ring of the focused polity at the slider's year; present only
+  while the current focus is a Polity),
+  `place-chooser` (batch-c3-brief.md decision 2, CHOOSER-1 below; the flyout that
   replaces a guess whenever 2+ candidates are genuinely coincident at the current zoom,
-  or whenever a `marker-cluster-{n}` glyph is hovered; wraps one `place-chooser-{placeId}`
-  row per tied candidate, ascending-sorted by place id; mutually exclusive with
-  `place-card` -- at most one of the two is ever shown, same hover-grace/pointer-enter/
-  leave discipline as `place-card` itself), `place-chooser-{placeId}` (button; text
-  contains that candidate's own display name; click pins the SAME `place-card` clicking
-  that place's own marker directly would, per PIN-1, closing the chooser),
+  or whenever a `marker-cluster-{n}` glyph is hovered or clicked; wraps one
+  `place-chooser-{placeId}` row per tied candidate, ascending-sorted by place id),
+  `place-chooser-{placeId}` (button; text contains that candidate's own display name;
+  click opens that place's served node in the popover exactly as clicking its own marker
+  would, per PIN-1, closing the chooser).
+  Removed in FOCUS-6 (OPEN 2, OPEN 3): `place-card` and every testid inside it
+  (`place-card-title`, `-close`, `-narratives`, `-more`, `-collapse`, `-blurb`, `-dates`,
+  `-date-established`/`-destroyed`, `-quiet`, `card-prev-event-{n}`/`card-next-event-{n}`,
+  `hover-verse-{VREF}`, `hover-passage-{SPAN}`) -- a place opens in the popover instead
+  (PIN-1 below),
   `arrows-svg`, `arrow-{narrativeId}-{order}` (SVG path; attr `stroke` = narrative color;
   attr `data-faded` = "true"|"false"; `marker-end` set),
   `legend`, `legend-item-{narrativeId}` (button; `aria-pressed` = isolated),
@@ -1314,6 +1282,13 @@ World: `world-map`, `marker-{placeId}`, `quiet-marker-{placeId}` (batch-e2-brief
   otherwise -- clicking an era band applies that era's own exact range, which, because
   era ranges are contiguous and non-overlapping by construction, always leaves exactly
   that one era's `data-active` "true" and every other era's "false"),
+  `world-slider-bounds` (FOCUS-6; present only while the current focus is a Map or an Era:
+  the slider is bounded to that element's served window, and the URL's `from`/`to` equal
+  it), `world-cross-previous` / `world-cross-next` (FOCUS-6; buttons at the bounds, present
+  only when the bounded focus has a `precedes-in` / `follows-in` neighbour; click follows
+  that edge and re-bounds to the neighbour's window), `world-slider-band` (FOCUS-6; the
+  focused polity's served reign, drawn on the slider; present only while the current
+  focus is a Polity; the window itself is unchanged),
   `mode-chip` (text contains active ref),
   `mode-chip-return`,
   `arrow-tip` (visible while an arrow is hovered; text contains the narrative name),
@@ -1514,7 +1489,7 @@ Popover (shared): `popover`, `popover-title`, `popover-breadcrumb-back`,
   -- see REGISTRY-1 below),
   `popover-section-{id}` (batch-r-brief.md; one wrapper per RESOLVED section
   the registry rendered for the current node, `id` one of `verse-text`,
-  `xrefs`, `catechism`, `place-dates`, `place-blurb`, `place-events`,
+  `xrefs`, `catechism`, `card`, an edge kind (FOCUS-6, e.g. `site-of`),
   `catechism-text`, `catechism-explanation`, `catechism-where-written`,
   `catechism-scriptures`, `event-membership`, `event-date-places`,
   `event-witnesses` (or `event-witness`, singular, for a single-witness
@@ -1689,50 +1664,30 @@ Popover (shared): `popover`, `popover-title`, `popover-breadcrumb-back`,
   see BLINK-1/MENTION-1 below; hovering or keyboard-focusing a PLACE one
   blinks `placeId`'s own map marker; either kind opens that entity's own
   node on click/Enter),
-  `popover-place-date-established` / `popover-place-date-destroyed`
-  (batch-r-brief.md requirement 3, REBUILT batch-f2-brief.md requirement 6b;
-  no longer a button -- the "click to reveal supporting verses" gate is
-  RETIRED; a plain instrument-face label+value row (e.g. "Established c.
-  1003 BC"), non-interactive, immediately followed by that date's own
-  supporting verses/passages rendered INLINE via the shared passage-list
-  component -- see PASSAGE-1/XREF-1 below and this file's own est/dest note
-  further down; conditional presence, one or both present exactly when
-  PlaceCard's own `place-card-date-established`/`-destroyed` equivalents
-  would be),
-  `popover-place-date-established-verse-{SPAN}` / `popover-place-date-destroyed-verse-{SPAN}`
-  (batch-f2-brief.md requirement 6b; button; one per passage entry among a
-  date claim's own supporting verses, capped at 2 -- see this file's own
-  est/dest note below; opens a `VerseNode`/`PassageNode`, same as every
-  other passage-list entry),
-  `popover-place-date-established-more` / `-collapse`,
-  `popover-place-date-destroyed-more` / `-collapse` (batch-f2-brief.md
-  requirement 6b; the shared RevealControls "more"/"less" text links for
-  each date's own supporting-verse list -- present only when that date has
-  more than 2 passage entries; M-D4 fix round 1/P2 rewrote what these
-  render, see the XREF-1 note's own P2 paragraph), and each's own
-  conditionally-present `-more-all` sibling (P2; `-collapse-all` is
-  RETIRED, its job folded into the single `-collapse` link's own one-op
-  undo),
-  `popover-place-blurb` (batch-r-brief.md requirement 3; the popover-native
-  rendering of the SAME BLURB-1-resolved text `place-card-blurb` already
-  shows; conditional presence, same BLURB-1 rule),
-  `popover-place-canonical-name` (batch-e3-brief.md requirement 2; a plain,
-  non-interactive quiet line reading "Known in modern atlases as {name}." --
-  present only when this place's displayed name differs from its own bare
-  canonical name (a curated KJV alias resolved to something else); see
-  ALIAS-1 below for the full precedence and conditional-presence rule),
-  `place-event-{id}` (button; one per this place's own recorded event, up
-  to M-D1's own truncation-audit cap of 10 (`place-events-more`/`-collapse`
-  reveal the rest -- see the M-D1 TRUNCATION AUDIT note), pushes a
-  `TimeAndPlaceNode`; PRE-EXISTING since Task 15, undocumented before
-  Batch R -- see REGISTRY-1),
+  `popover-section-card` / `popover-card-title` / `popover-field-{Name}` (FOCUS-6;
+  the served element's record as a card, rendered by `FocusView`: the title is the
+  record's label, window-free; one field per present value, `Name` one of `Window`,
+  `Canonical name`, `Established`, `Destroyed`, `Blurb`, `Reign`, `Provenance`, the
+  value text being the served label verbatim; a place's period name, blurb and date
+  claims are these fields -- see ALIAS-1 / BLURB-1 below),
+  `popover-up-{edgeKind}-{nodeId}` (FOCUS-6; an up-crumb button per `member-of` /
+  `shown-on` neighbour, e.g. a place's `popover-up-shown-on-Map:era-gospels`; follows it),
+  `popover-child-{edgeKind}-{nodeId}` (FOCUS-6; inline `contains` / `shows` children),
+  `popover-section-{edgeKind}` / `-heading` / `popover-link-{edgeKind}-{nodeId}` /
+  `-more` / `-collapse` (FOCUS-6; a section list per remaining edge kind, e.g. a
+  place's `popover-section-site-of` (its events, initial clamp 20) and
+  `popover-section-mentioned-in` (initial clamp 12); the heading reads
+  "{Kind label} ({count})"; each link follows to that neighbour),
+  `popover-entry-edge-{edgeKind}-{edgeId}` (FOCUS-6; the quiet edge step beside an entry;
+  follows to the edge itself),
+  Removed in FOCUS-6 (OPEN 3): `popover-place-date-established`/`-destroyed`
+  and their `-verse-{SPAN}`/`-more`/`-collapse`/`-more-all` siblings,
+  `popover-place-blurb`, `popover-place-canonical-name`, `place-event-{id}` and
+  `place-events-more`/`-collapse` -- the place's record fields and `site-of`
+  neighbours replace them,
   `popover-chip-map`, `popover-chip-book`, `popover-chip-context`,
-  `popover-chip-verse-{VREF}` (batch-e-brief.md; one per a `YearNode`'s own curated
-  supporting verses, in curated order, ALWAYS rendered before that same node's
-  `popover-chip-map` chip -- DATE-1: opening a date's popover lists its supporting
-  verses first -- reached today only via `PlaceCard`'s own hover-card
-  established/destroyed line, unaffected by batch-f2-brief.md requirement
-  6b, which is scoped to the POPOVER's own est/dest section only),
+  (`popover-chip-verse-{VREF}`: removed in FOCUS-6 (OPEN 3) with the place
+  card's date-claim popover, DATE-1),
   `xref-item-{SPAN}` (`SPAN` = a cross-reference target's own ref-range or
   bare vref; batch-r-brief.md: rendered INLINE, unconditionally offered
   where present -- see REGISTRY-1; the retired `popover-chip-xrefs` toggle
@@ -1786,8 +1741,8 @@ Popover (shared): `popover`, `popover-title`, `popover-breadcrumb-back`,
   passage HAS a date, i.e. `kind == "event"` -- absent for a general-kind
   passage, never a fabricated line), `event-places` (wraps one or more `event-place-{placeId}`
   rows, present only when the event has >=1 resolved place), `event-place-{placeId}`
-  (button; opens a `PlaceNode` for that place -- "place opens the place
-  node," requirement 4 verbatim), `event-witness-{SPAN}` (one per passage
+  (button; opens that place's served node -- "place opens the place
+  node," requirement 4 verbatim; FOCUS-6: the window-free record, PIN-1), `event-witness-{SPAN}` (one per passage
   entry among an EVENT node's own PARALLEL ACCOUNTS/single-passage list, via
   the shared passage-list component, clamped per PASSAGE-1's own
   `ClampVerses` extension -- see EVENT-1),
@@ -1907,7 +1862,7 @@ Popover (shared): `popover`, `popover-title`, `popover-breadcrumb-back`,
   "PLACES MENTIONED", present only when >=1 place is mentioned somewhere
   in this chapter), `chapter-card-places` (wraps one `chapter-card-place-
   {placeId}` button per distinct place mentioned in this chapter,
-  deduplicated by place id; opens a fresh `PlaceNode`; same 8-row cap,
+  deduplicated by place id; opens that place's served node (FOCUS-6); same 8-row cap,
   `chapter-card-places-more` its own "+N more places..." sibling),
   `chapter-card-xref-total` (plain "N cross-references in this chapter."
   line, present only when the chapter's own verses carry at least one
@@ -1979,16 +1934,12 @@ Notes:
   framing when n=1" -- see EVENT-1) -- recursion falls out
   of an EventNode's own narrative-nav arrow pushing ANOTHER EventNode, the
   SAME `AppliesTo` clause matching it too, not a second mechanism. PLACE node
-  sections, in this order:
-  an empty seam reserved for a future place-description provider (renders
-  nothing today), established/destroyed dates (`popover-section-place-dates`,
-  conditional -- batch-f2-brief.md requirement 6b: each date's own
-  supporting verses now render INLINE within this section, truncated per
-  the same XREF-1-family rule, see this file's own est/dest note below),
-  period blurb (`popover-section-place-blurb`, conditional, BLURB-1), events
-  (`popover-section-place-events`, one `place-event-{id}` row per event,
-  pushes a `TimeAndPlaceNode` -- the thin, events-only PlaceNode popover
-  this batch's own brief calls out is retired). CATECHISM node sections
+  sections: removed in FOCUS-6 (OPEN 3) -- a place is its served record
+  (`popover-section-card`, fields per PIN-1 below) and its neighbour
+  sections (`popover-section-site-of`, `popover-section-mentioned-in`,
+  `popover-up-shown-on-*`), rendered by `FocusView`, not the registry
+  (`place-dates`/`place-blurb`/`place-events` and `TimeAndPlaceNode` are
+  deleted). CATECHISM node sections
   (batch-f-brief.md; a `CatechismNode`, reached by pushing a
   `catechism-item-{ID}` row above), in this order: the item's own primary-
   source text (`popover-section-catechism-text`, conditional -- absent for
@@ -2036,7 +1987,7 @@ Notes:
   claim's own verses) group into ONE passage entry (ref-range + contiguous
   text, per-verse sup numbers) via the SAME grouping algorithm the map hover
   card introduced (Batch D, `client/Explore/PassageGrouping.cs`, shared --
-  `PlaceCard.razor` itself now calls it too, rather than a second copy) --
+  its map-card caller was deleted in FOCUS-6) --
   never N separate verse rows for what's really one contiguous citation, and
   never merged ACROSS two different sources even if numerically adjacent (a
   question caption, or a distinct xref target, must never silently blur
@@ -2784,7 +2735,7 @@ Notes:
   long as the hover/focus holds; `prefers-reduced-motion: reduce` skips the
   pulse and shows the steady amplified glow immediately instead, never a
   moving animation. M-D3/U5: the SAME mention span is now ALSO explorable
-  (click/Enter opens `PlaceNode`) -- see MENTION-1 -- alongside this
+  (click/Enter opens the place's served node) -- see MENTION-1 -- alongside this
   pre-existing hover-blink, not instead of it.
 - MENTION-1 (M-D3/U5, "in-text mentions-attested links"): `Explore/
   PlaceMentions.cs`'s `PlaceMentions.Scan(text, places, persons)` -- ONE
@@ -2850,15 +2801,14 @@ Notes:
   disclosed in the fix round 2 report rather than silently corrected).
   Every mention span (both surfaces, both kinds) is now explorable: click,
   or Enter while keyboard-focused, opens that entity's own node
-  (`PlaceNode`/`PersonNode`) via `@onclick:stopPropagation`/
+  (the place's served node via `PopoverOpening.Explore`, FOCUS-6 / `PersonNode`) via `@onclick:stopPropagation`/
   `@onkeydown:stopPropagation` -- the same "more specific target always
   wins" rule `.verse-num`/the xref superscript already establish, so a
   mention click never ALSO opens the verse/passage popover underneath it.
   `PersonNode`'s id carries the graph's wire prefix (`"Person:{id}"`,
   added at the mention-click site -- `VerseOut.Persons`' own id is bare,
-  unlike the generic edges page's own already-prefixed ids); `PlaceNode`'s
-  stays bare, matching every other `PlaceNode` construction site in this
-  app. Place mentions keep BLINK-1's own hover/focus blink alongside the
+  unlike the generic edges page's own already-prefixed ids); a place
+  mention opens the served `NodeRef` the anchor already carries (FOCUS-6). Place mentions keep BLINK-1's own hover/focus blink alongside the
   new click (independent, both always available); Person mentions have no
   map affordance to blink (`PersonNode` carries no lat/lon) -- click/Enter
   only.
@@ -2916,8 +2866,7 @@ Notes:
   background/weight/decoration -- verified to clear the established 7:1
   contrast floor on BOTH real backgrounds verse text ever renders against
   in this app (`--parchment`, the reader column itself, 7.47:1; and
-  `--parchment-raised`, every popover AND the World map's own hover
-  place-card, 8.07:1; WCAG relative-luminance method, this file's own
+  `--parchment-raised`, every popover, 8.07:1; WCAG relative-luminance method, this file's own
   established method) -- DISCLOSED: this app carries no dark/night theme
   anywhere for verse text (grep-confirmed zero matches for
   `prefers-color-scheme`/`data-theme` across the whole client), so "the
@@ -3251,8 +3200,8 @@ Notes:
   batch's own "client stays thin, existing wire shapes" scope); the
   concretely-named acceptance (single-witness -> span; multi-witness ->
   unchanged) is what red-then-greens (`tests/ux/popover-sections.spec.ts`'s
-  own two M-D1 req 3 tests). `PlaceCard.razor`'s own map-hover MergedVerses
-  preview is DELIBERATELY untouched -- a materially different, pre-
+  own two M-D1 req 3 tests). The map-hover MergedVerses preview (removed in
+  FOCUS-6, OPEN 2/3) was DELIBERATELY untouched -- a materially different, pre-
   existing, already-disclosed "different truncation model" (PassageList's
   own header comment), not a container node's own popover at all; map-side
   users reach a container's own span (and its inline expand) the identical
@@ -3267,23 +3216,22 @@ Notes:
   |---|---|---|
   | Cross-references (`CrossRefsSection`) | `PassageList.Cap` = 3 (xrefs-only) / 2 (mixed context), F2 req 6 | YES, pre-existing |
   | THE SCRIPTURES (`CatechismScripturesSection`) | uncapped (`Cap=null`), DELIBERATE -- the whole small catechism's own proof-text set per item is small and bounded by curation, "no cap asked for" | YES, disclosed exemption |
-  | Place est/dest supporting verses (`PlaceDatesSection`) | `PassageList.Cap` = `SupportingVersesCap` (2) | YES, pre-existing |
+  | Place est/dest supporting verses (`PlaceDatesSection`) | removed in FOCUS-6 (OPEN 3): the dates are `popover-field-Established`/`-Destroyed` record fields | n/a |
   | PARALLEL ACCOUNTS, per-witness text (`EventWitnessesSection`) | `PassageList.ClampVerses` = 2 per entry | YES, pre-existing |
   | PARALLEL ACCOUNTS, witness COUNT | uncapped, DELIBERATE -- bounded by construction (how many KJV books narrate one event; realistically <=4-6, the four Gospels' own ceiling) | YES, disclosed exemption |
   | Container's own span (`EventWitnessesSection`, n=1) | span-only, no text by default (M-D1 req 3, above) | YES, this batch |
   | THE SMALL CATECHISM seam, citing items (`CatechismSeamSection`) | uncapped, DELIBERATE -- the whole catechism is 33 items; a single verse citing all of them is the real ceiling, never large | YES, disclosed exemption |
   | Verse's own EVENT membership (`VerseEventMembershipSection`) | uncapped, DELIBERATE -- bounded by construction (overlapping containers per verse is a small integer; W5's own coverage is largely partition-like, never approaching a wall of text) | YES, disclosed exemption |
-  | A place's own EVENTS list (`PlaceEventsSection`) | **was uncapped -- a REAL, live-verified gap** (Jerusalem: 236 located-at events across the whole atlas, unbounded by any time window, zero disclosure) | **FIXED this batch** -- `PlaceEventsList.razor` (new component, mirrors `PassageList`'s own down-arrow reveal exactly), cap 10, `place-events-more`/`-collapse` |
+  | A place's own EVENTS list (`PlaceEventsSection`) | FOCUS-6: replaced by the place's `site-of` neighbour section (`popover-section-site-of`), clamped at 20 with `-more`/`-collapse` and a "({count})" heading | YES, FOCUS-6 |
   | Reader chapter fetch, per-verse-group truncation (`scene::verse_groups_for`) | server `take(20)`, `GroupCount`/`TruncatedBy` disclosed to `MiniReaderExpand`'s own "+N more" label | YES, pre-existing (HOTFIX-4 req 7) |
-  | Map hover preview (`PlaceCard.razor` `MergedVerses`) | Batch D's own reveal-by-5/2-at-a-time mechanism, pre-existing, deliberately untouched (a different truncation model -- see SPAN-NOT-ECHO above) | YES, pre-existing, out of scope |
+  | Map hover preview (`PlaceCard.razor` `MergedVerses`) | removed in FOCUS-6 (OPEN 2, OPEN 3): no hover preview | n/a |
 
   Only ONE real gap found: the place-events list, fixed. Every other
   section either already had a real cap with honest "+N more" disclosure,
   or is correctly EXEMPT because its own real-world ceiling is small and
   bounded by construction (never by hope) -- disclosed here rather than
-  silently assumed. `tests/ux/popover-sections.spec.ts`'s own
-  `REGISTRY-1` test is the live, real-data red-then-green for the one fix
-  (Jerusalem's own 236-event list, capped + revealed).
+  silently assumed. FOCUS-6: the place-events fix is superseded by the
+  `site-of` section's clamp (REGISTRY-1 in `popover-sections.spec.ts`).
 
   HEADING-WORTHY RULE (server: `atlas_graph::heading::build_heading_index`,
   the live production path as of M-C2's decisive-title-law migration --
@@ -3791,7 +3739,8 @@ Notes:
   `kind == "event"` -- never the server's own internal undated
   placeholder, see the data-model paragraph above); `event-places`, one
   `event-place-{placeId}` row per resolved place, each explorable, opening
-  a `PlaceNode` -- "place opens the place node," requirement 4 verbatim;
+  the place's served node (FOCUS-6, PIN-1) -- "place opens the place node,"
+  requirement 4 verbatim;
   the date line carries the event's own curated `ref_note`, when present,
   as a plain hover tooltip -- "ref_note provenance on hover or a quiet
   note"), PARALLEL ACCOUNTS (`EventWitnessesSection` -- one passage-list
@@ -3948,15 +3897,9 @@ Notes:
   data-grounded case of "the FOLLOWING event is not the next pericope in
   {book}," not merely a hypothetical the acceptance test asserts against.
 
-  CONSISTENCY WITH G1 (requirement 3's own "reuse, don't fork," carried
-  forward unchanged from Batch N): `PlaceCard.razor`'s own narrative
-  traversal (TRAVERSAL-1) is UNCHANGED by this batch and remains
-  client-side, resolved via the SAME event-id-keyed
-  `GET /api/narrative/event/{id}` this note's own EVENT popover traversal
-  uses (unified onto that one full-chain resolver by Batch N's own
-  fix-round-1, see TRAVERSAL-3) -- so a place card's "next event" and a
-  popover's "FOLLOWING EVENT" can never disagree about which event, or
-  which verses, come next.
+  CONSISTENCY WITH G1: removed in FOCUS-6 (OPEN 3) -- the place card's own
+  narrative traversal (TRAVERSAL-1) is deleted; a place reaches its events
+  through `site-of`, and the EVENT popover's traversal is the one surface.
 
   GLOBAL TIMELINE (batch-hotfix4-brief.md requirement 1, owner's own live
   report 2026-08-21: "previous/next event traversal doesn't work. adjacent
@@ -3993,8 +3936,7 @@ Notes:
   pre-HOTFIX-4 array, unchanged shape/rows/order (every consumer of the
   OLD bare-array shape migrated to read `.narrative` in the SAME commit:
   `AtlasClient.NarrativeEventPositions`, `EventNode`/`INarrativeAware`,
-  `PlaceCard.LoadNarrativePositions` -- TRAVERSAL-1 logic itself
-  unchanged, `ExplorerPopover.SyncNarrativeFocusAsync` -- MAP FOCUS SYNC
+  `PlaceCard.LoadNarrativePositions` (deleted in FOCUS-6), `ExplorerPopover.SyncNarrativeFocusAsync` -- MAP FOCUS SYNC
   logic itself unchanged, and the Playwright helper call sites in
   `world-pin.spec.ts`/`popover-sections.spec.ts`); `timeline` is `{prior,
   following}` (each independently OMITTED, not null, at the atlas's own
@@ -4741,22 +4683,14 @@ Notes:
   in app.css, ~120ms ease, `prefers-reduced-motion: reduce` covered) with
   `cursor:pointer`; a click, or Enter while keyboard-focused, opens the
   ExplorerPopover on that element's own node. This currently covers: `chapter-head`
-  (ChapterNode), `verse-line-{n}` (VerseNode), `hover-verse-{VREF}`/`hover-passage-
-  {SPAN}` in the world place card (VerseNode/PassageNode -- requirement 1b), and
-  `place-card-title`/`place-card-date-established`/`place-card-date-destroyed`
-  (PlaceNode/YearNode, pre-existing testids, RESTYLED onto this same rule -- their own
-  prior per-element hover color is gone). Batch R adds, all opening a real
-  ExplorerPopover node exactly like every element above: `xref-item-{SPAN}`
-  (inline cross-reference rows, REGISTRY-1/XREF-1), and `place-event-{id}`
-  (REGISTRY-1) -- `.atlas-label`/`.quiet-label` (LABEL-1) are DELIBERATELY NOT
-  added to this list; a label is equivalent to its own dot (hover/click ->
-  place-card, per PIN-1), never a popover-opening target itself.
-  batch-f2-brief.md requirement 6b RETIRES `popover-place-date-established`/
-  `popover-place-date-destroyed` FROM this list -- they are no longer
-  buttons at all (a plain instrument-face label row now, see this file's
-  own testid-inventory note); the explorable entries in that section are
-  now `popover-place-date-established-verse-{SPAN}`/`-destroyed-verse-{SPAN}`
-  instead (PASSAGE-1/XREF-1), same as every other passage-list entry.
+  (ChapterNode), `verse-line-{n}` (VerseNode), and `xref-item-{SPAN}` (inline
+  cross-reference rows, REGISTRY-1/XREF-1); FOCUS-6 adds every `FocusView` link
+  (`popover-up-*`, `popover-child-*`, `popover-link-*`, `popover-entry-edge-*`).
+  `.atlas-label`/`.quiet-label` (LABEL-1) are DELIBERATELY NOT added to this list;
+  a label is equivalent to its own dot (click opens the place, per PIN-1).
+  Removed in FOCUS-6 (OPEN 3): `hover-verse-{VREF}`/`hover-passage-{SPAN}`,
+  `place-card-title`, `place-card-date-*`, `place-event-{id}` and
+  `popover-place-date-*-verse-{SPAN}` -- their elements no longer exist.
   Batch F adds
   `catechism-item-{ID}` (the "THE SMALL CATECHISM" section's own citing-item
   rows) and `catechism-verse-{SPAN}` ("THE SCRIPTURES" section's own
@@ -4806,16 +4740,13 @@ Notes:
   mechanic, shift-click still forms `passage-chip`; a plain click on it no longer opens
   a popover at all, which it did, redundantly with the ∴ button, before this batch --
   selection and exploration are fully independent gestures on independent targets now)
-  and PAGING controls (`place-card-more`/`place-card-collapse` -- "controls, not
-  nodes"). A passage block's own per-verse `hover-verse-{VREF}` spans nest inside its
-  `hover-passage-{SPAN}` row; clicking a specific verse span opens just that verse and
-  never also bubbles into the passage's own click (stopPropagation on the inner
-  element) -- the more specific target always wins.
+  and PAGING controls (`popover-section-{kind}-more`/`-collapse` -- "controls, not
+  nodes").
   batch-g2-brief.md decision 6 layers a FOURTH gesture onto the SAME
   targets `verse-line-{n}` and `marker-{placeId}`/`quiet-marker-{placeId}`/
   their own labels already cover, WITHOUT touching this rule's own
   click-opens-a-popover meaning: Ctrl/Cmd-click never opens a popover and
-  never pins/moves a marker -- see SELECTION-1 below. This is a
+  never opens the place -- see SELECTION-1 below. This is a
   gesture-level split, not a target-level exclusion (unlike `verse-num-{n}`
   above, which is a wholly separate ELEMENT) -- plain click on
   `verse-line-{n}`/a marker/label keeps opening a popover exactly as this
@@ -4845,7 +4776,7 @@ Notes:
   already independently carries -- e.g. `.popover-event-row-button`'s own
   hover -- is untouched, so the row stays honestly, visibly clickable,
   just never wash-darkening the way a traversable node does). SWEPT, not
-  assumed: hover cards and the map itself are VERIFIED unreachable for a
+  assumed: the map itself is VERIFIED unreachable for a
   general-kind container (every `kind == "general"` event has an empty
   `places` list BY CONSTRUCTION -- see the data-model paragraph under
   EVENT-1 -- confirmed against the real compiled data, 0 of 82 general-kind
@@ -4864,12 +4795,13 @@ Notes:
   scene's current window when the place has curated history and one of its
   name ranges intersects that window, else the place's own DECISIVE fallback
   name -- see ALIAS-1 below), not always the place's plain default name.
-  `place-card-title` and the `arrow-tip` text (`{narrative}: {fromName} ->
-  {toName}`) use the SAME `display_name`, so a place's name is never shown
-  two different ways at once within one scene.
+  The `arrow-tip` text (`{narrative}: {fromName} -> {toName}`) uses the SAME
+  `display_name`, so a place's name is never shown two different ways at once
+  within one scene. The place's popover title (FOCUS-6, PIN-1) is its served
+  record label, window-free: the ALIAS-1 tiers 2-3 name, never a period name.
 - NAME-1 (batch-e-brief.md): for a time-mode window fully inside one curated
-  name range, `marker-{placeId}`'s label and `place-card-title` both equal
-  that name; a window crossing the boundary between two curated ranges
+  name range, `marker-{placeId}`'s label equals that name (the popover title
+  is window-free -- removed in FOCUS-6 (OPEN 3): the period-true card title); a window crossing the boundary between two curated ranges
   shows whichever one covers the window's own midpoint (or, failing that,
   the later-starting one it still intersects); a window matching no curated
   range falls back to the place's own decisive fallback name (ALIAS-1 below
@@ -4909,8 +4841,8 @@ Notes:
   Every KJV-context surface reads this SAME decisive resolution -- no
   parallel/client-side rename map anywhere (owner decree F2 6-ARCH): map
   labels (`marker-{placeId}`, lit AND quiet -- `quiet-marker-{placeId}`),
-  `place-card-title`, a place popover's own title (`PlaceNode.Title`, set
-  from whichever of the above the caller already resolved), reader place
+  a place popover's own title (FOCUS-6: the served record label, which is the
+  window-free tier 2-3 name -- no window, so never tier 1), reader place
   mentions (`GET /api/chapter/{cref}`'s own per-verse `places` list --
   `PlaceMentions.cs`'s plain-text substring scan against THIS resolved name
   is what makes an aliased place's mention actually findable in its own
@@ -4925,12 +4857,11 @@ Notes:
   `event-places` resolves with NO window, landing on tier 2 or 3 exactly
   like scripture mode).
   QUIET PROVENANCE (requirement 2's own "canonical name at most once,
-  quietly"): the place POPOVER (never the map label, never the hover card)
-  gains one non-interactive line, `popover-place-canonical-name` (class
-  `popover-meta`, same quiet instrument-face treatment `event-date`'s own
-  line already uses), reading "Known in modern atlases as {name}." --
-  present ONLY when this place's displayed name differs from its own bare
-  canonical name (`PlaceDetail.CanonicalName`, server-decided --
+  quietly"): the place POPOVER (never the map label) carries it once, as the
+  record field `popover-field-Canonical name` (FOCUS-6; value = the bare
+  canonical name, e.g. "Cush") -- present ONLY when this place's displayed
+  name differs from its own bare canonical name (`place.canonical_name`,
+  server-decided --
   `Some` only when a KJV ALIAS is the reason the two differ, never for a
   period-history rename, which has nothing to disclose: its own displayed
   name is already the era-accurate KJV wording, not a stand-in for
@@ -4948,12 +4879,15 @@ Notes:
   range whose text names a specific year (e.g. a destruction date) must
   therefore reach that exact year, not stop one short of it (fix round 1,
   M1: Jerusalem's own destruction-year blurb had exactly this off-by-one).
-- BLURB-1 (batch-e-brief.md): `place-card-blurb` shows at most one blurb,
-  never a stack -- a window inside exactly one of a place's own `"era"`-
+- BLURB-1 (batch-e-brief.md): the place POPOVER shows at most one blurb,
+  `popover-field-Blurb`, the place's compiled default (FOCUS-6: window-free;
+  removed in FOCUS-6 (OPEN 3): the per-window choice below survives only in
+  the server's history resolution, no longer on any place surface). The rule
+  as written: never a stack -- a window inside exactly one of a place's own `"era"`-
   breadth ranges shows that blurb; a window spanning more than one of them
   shows a `"broad"`-breadth blurb instead (falling back to an `"era"` pick
   if no `"broad"` blurb is curated); a window inside NEITHER a place's
-  `"era"` ranges NOR any `"broad"` one shows no `place-card-blurb` at all.
+  `"era"` ranges NOR any `"broad"` one shows no blurb at all.
   A window that touches ZERO `"era"` ranges (a gap between two curated
   eras) but that a `"broad"` range still intersects is NOT the "matches
   nothing" case -- it shows the `"broad"` blurb (fix round 1, M1: this
@@ -4982,7 +4916,7 @@ Notes:
   different text-forms -- e.g. JDG.4.6's fully-qualified "Kedeshnaphtali" vs JDG.4.9-11's
   bare "Kedesh") are merged into ONE `marker-{placeId}`/`quiet-marker-{placeId}` before
   any scene is ever built (`atlas_core::merge`, applied once at data-load time, upstream
-  of every consumer -- `/api/place/{id}`, arrow endpoints, and QUIET-1's own event-bearing
+  of every consumer -- the place's node record, arrow endpoints, and QUIET-1's own event-bearing
   set all already agree they are one node, not just the map). The merged place's `events`/
   `verse_groups` are the UNION of both records' own; its display name is the surviving
   (curated/OpenBible) record's. Wire traceability: `ScenePlace`/`QuietPlace` both carry
@@ -5004,78 +4938,38 @@ Notes:
   own root cause: a 0.6-degree/~65km shove, tuned for a wide-zoomed-out scene, crossing
   the coastline at a much closer-zoomed one), recomputed fresh on every zoom change, and
   never moves a marker more than ~20px from its true position.
-- Quiet-place hover card (batch-e2-brief.md): hovering a `quiet-marker-{id}` opens the
-  exact SAME `place-card` a lit marker does -- same title (`place-card-title` = the
-  place's own `display_name`, per NAME-1), same Batch E history content
-  (`place-card-blurb`/`place-card-dates`) when curated for this place, same explorable
-  `PlaceNode` behind the title. The one content difference is conditional presence:
-  `place-card-quiet` replaces the verse content entirely (no `hover-verse-{VREF}`,
-  no `hover-passage-{SPAN}`, no `place-card-more`/`place-card-collapse` -- a quiet
-  place has no events THIS window to show, so there is nothing for those controls to
-  page through). UPDATED, batch-g1-brief.md: clicking a marker -- lit OR quiet, identically
-  -- now PINS this exact same card open (`OnPlaceClick` gained real behavior; WORLD-1/2's
-  original hover-only design is superseded) -- see PIN-1 below, which this quiet-place note
-  no longer needs to duplicate.
-- PIN-1 (batch-g1-brief.md requirement 3): clicking a `marker-{placeId}` or
-  `quiet-marker-{placeId}` pins that place's `place-card` open (`data-pinned="true"`) --
-  the exact same card content hover already renders (title/verse-or-quiet-content/
-  controls/blurb/dates), now surviving a pointer leaving both the marker and the card
-  (hover-persistence's own close-on-leave, batch-c2-brief.md requirement 0c, is
-  suppressed while pinned). Hover on any OTHER marker while pinned does nothing (the
-  pinned card owns the display slot exclusively) until the pin itself changes -- clicking
-  a DIFFERENT marker re-pins to it, same as the first click. A pinned card closes via
-  `place-card-close` (present only while pinned), Escape (page-wide; a no-op while an
-  ExplorerPopover is open, so one Escape press closes exactly the topmost layer -- the
-  popover first, the pin on a second press), or a click on the map BACKGROUND (never a
-  marker/arrow click, which each stop propagation before it could also register as one).
-  Opening a popover from INSIDE a pinned card (the title, a date, a verse/passage) closes
-  the pin the same way it already closed an unpinned hover card -- promoting into a real
-  popover always supersedes the card, pinned or not.
-- TRAVERSAL-1 (batch-g1-brief.md requirement 3; adjacency source REPLACED by
-  Batch N fix-round-1 -- see TRAVERSAL-3): while pinned, `place-card-narratives`
-  shows one row per narrative in which one of this place's own currently-shown
-  events is a leg -- a colored swatch (that narrative's own data color) + its
-  name, small caps. Adjacency comes from the ONE full-chain narrative resolver
-  (`GET /api/narrative/event/{id}`, one call per shown event, `Task.WhenAll`,
-  server-side `positions_for_events` over the FULL unwindowed `Narrative.legs`
-  chain) -- the exact same endpoint and resolver the EVENT node popover's
-  own PRIOR/FOLLOWING sections (EVENT-1, batch-t-brief.md; UNCHANGED
-  endpoint/resolver from Batch N, just retargeted onto EventNode) consume,
-  so both surfaces answer from
-  one computation BY CONSTRUCTION (the previous client-side windowed-arrows
-  derivation, and this note's former claim that the two paths "can never
-  disagree," were WRONG -- they split on real data under a window ending
-  inside a leg-date gap, e.g. Exodus's ex_kadesh -1444 -> ex_moab -1407;
-  TRAVERSAL-3 pins the agreement under exactly that window). `card-prev-event-N`/
-  `card-next-event-N` present only when the chain has an event in that
-  direction (narrative ends: no button -- conditional presence). Clicking pans
-  the map to the adjacent place's own marker (no zoom change) and pins ITS
-  card -- repeated clicks walk the narrative leg by leg, prev always reversing
-  the most recent next back to the previous place. An adjacent place outside
-  the current window resolves via the quiet-places fallback (map pans, the
-  quiet card renders -- a real navigation); only a place absent from the wire
-  entirely no-ops gracefully rather than erroring. A row can therefore exist
-  even when the scene draws NO arrow for that narrative (an isolated
-  in-window leg whose chain neighbors are both out-of-window) -- the row
-  reflects the graph, arrows reflect the window.
-- Hover place card content (batch-d-brief.md): the card is place name + verse
-  content + controls, nothing else -- no per-(book,chapter) count rows, bare
-  canonical-ref rows, or chapter-identifier lines anywhere on it. From the
-  place's merged, deduped activating verse list (event order, then each
-  event's own already book/chapter/verse-ascending groups -- this list's
-  long-standing "canonical order"), maximal runs of consecutive same-book/
-  chapter verses (n, n+1, ...) are passages (`hover-passage-{SPAN}`, rendered
-  as one flowing block); runs of one are lone verses. Initial state shows up
-  to the first 4 verses if the first group is a passage, else the first 2
-  verses (necessarily non-consecutive with each other, since the first group
-  being a lone verse means the very next verse in the list isn't consecutive
-  with it) -- only ever the first group (passage) or the first two lone
-  verses, never more, never a wall. Each `place-card-more` click reveals the
-  next chunk: +5 verses if the next not-yet-shown verse belongs to a
-  passage-sized group, +2 if it belongs to a lone verse's group; repeats
-  until the place's full (already server-capped) verse list is exhausted, at
-  which point `place-card-more` is absent. `place-card-collapse` restores the
-  exact initial state (DOM and card size) in one click.
+- Quiet-place hover card: removed in FOCUS-6 (OPEN 2): no hover preview; a quiet
+  marker opens exactly as a lit one does on click (PIN-1). There is no quiet line --
+  the record is window-free, so lit and quiet places open the same popover.
+- PIN-1 (FOCUS-6, re-expressed under OPEN 3; was batch-g1-brief.md requirement 3):
+  clicking a `marker-{placeId}`, a `quiet-marker-{placeId}`, either one's label
+  (LABEL-1) or a `place-chooser-{placeId}` row opens that place's served node in the
+  ExplorerPopover as its window-free record: `popover-title` and `popover-card-title`
+  = the record label; `popover-field-{Name}` for each present value (`Canonical name`,
+  `Established`, `Destroyed`, `Blurb`, `Provenance`); the `shown-on` Maps as
+  `popover-up-shown-on-{mapId}` crumbs; its events as `popover-section-site-of`
+  (`popover-link-site-of-{eventId}`, initial clamp 20, `-more`/`-collapse`); its
+  verses as `popover-section-mentioned-in`. Nothing in it is scoped to the slider's
+  window. The focus is presented on the map: `world-emphasis-site` rings the place's
+  marker; the slider keeps its window (no `world-slider-bounds`). The popover stays
+  open while the pointer moves anywhere and while other markers are hovered; a
+  click on another marker re-opens on that place. It closes via `popover-close` or
+  Escape. Ctrl/Cmd-click selects instead (SELECTION-1). A click on the map
+  background closes only `place-chooser`. Clicking a polity's territory opens the
+  polity (`world-emphasis-territory`, `world-slider-band`); following a Map or Era
+  bounds the slider to its window (`world-slider-bounds`, `world-cross-previous` /
+  `world-cross-next` follow `precedes-in` / `follows-in`; Back retraces).
+  Removed in FOCUS-6 (OPEN 3): the pinned `place-card`, `data-pinned`,
+  `place-card-close`, PIN-3's background-click close, and the "popover first, pin
+  second" Escape layering (there is one layer).
+- TRAVERSAL-1/2/3: removed in FOCUS-6 (OPEN 3): the place card's narrative rows and
+  `card-prev-event-N`/`card-next-event-N`. A place reaches the next leg of a
+  narrative through its `site-of` event and that EVENT popover's own chronology
+  (`event-story-thread-following-event-{narrativeId}`, CHRONO-MERGE-1) -- one
+  traversal surface, so the two can no longer disagree.
+- Hover place card content (batch-d-brief.md): removed in FOCUS-6 (OPEN 2, OPEN 3):
+  no hover card, no windowed verse list, no 4/2-initial or 5/2-step reveal; the
+  place's `site-of` and `mentioned-in` sections page by their own clamps (PIN-1).
 - Scene pseudo-events with ids beginning `mention-` are text-mention markers
   (scripture mode); arrows never reference them.
 - The slider is `aria-disabled="true"` while scripture mode is active.
@@ -5086,35 +4980,9 @@ Notes:
   Snapping is evaluated only at the release point -- never while the handle is
   still being dragged, so the brush visibly tracks the pointer exactly until the
   pointer is lifted.
-- Place-card hover persistence (batch-c2-brief.md requirement 0c): `place-card`
-  stays open for as long as the pointer is over its own marker OR the card
-  itself -- it never closes merely because the pointer crossed the gap between
-  them. Once the pointer has left BOTH the marker and the card, the card closes
-  within ~1s (an internal ~350ms grace timer started when the pointer leaves the
-  second of the two, plus ordinary event latency); re-entering either one before
-  that grace elapses cancels the pending close. This holds regardless of which
-  order the marker's own leave and the card's own pointer-enter resolve in -- a
-  marker `mouseout` that resolves (its own async map/interop round trip) AFTER
-  the card's pointer-enter already ran never schedules a close out from under a
-  pointer that is legitimately still on the card. This whole mechanism (both the
-  persistence itself and the ~350ms/~1s close) is SUPPRESSED entirely while the card is
-  pinned (batch-g1-brief.md, PIN-1 above) -- a pinned card ignores pointer-leave forever,
-  by design, resuming this exact behavior only once it's unpinned again.
-- Quiet-marker hover-intent debounce (batch-e2-brief.md self-review fix): unlike a lit
-  `marker-{id}`, which opens its `place-card` immediately on `mouseover`, a
-  `quiet-marker-{id}` only opens it once the pointer has DWELLED on that marker for
-  >=150ms. A graze shorter than that -- e.g. a pointer merely transiting toward some
-  OTHER nearby target, such as that very place's own already-open card -- fires neither
-  `OnPlaceHover` nor `OnPlaceLeave`; from the card's own point of view a sub-150ms graze
-  never happened at all. This exists specifically to stop a fast pass-through over an
-  unrelated quiet dot from silently hijacking an already-open card mid-transit (a real,
-  confirmed regression risk once ~200 more small hoverable dots share the plate with
-  every lit marker) -- protection a lit marker, being comparatively sparse, has never
-  needed and does not get: `marker-{id}` hover timing is completely unaffected by this,
-  every existing hover-persistence guarantee above applies to it exactly as before. A
-  genuine, deliberate quiet-marker hover clears 150ms comfortably and opens the SAME
-  place-card any other hover does (see "Quiet-place hover card" above), just ~150ms
-  later than a lit marker's own immediate open.
+- Place-card hover persistence and the quiet-marker hover-intent debounce: removed in
+  FOCUS-6 (OPEN 2): with no hover card there is nothing to persist; hover only
+  highlights the marker map.js already draws.
 - ARBITRATION-1 (batch-c3-brief.md decision 2, AMENDS the note this replaces
   -- see below -- rather than weakening it: the underlying trade-off it
   measured is still real and still cited here, only the CONSEQUENCE changed).
@@ -5152,26 +5020,23 @@ Notes:
   candidates' own TRUE positions sit within map.js's `AMBIGUITY_RADIUS_PX`
   of the winner's (genuinely coincident at the current zoom, not merely
   close -- e.g. the Beersheba/Negeb triple above, or Shittim/the "plains of
-  Moab" camp, curated 0km apart), the hover opens `place-chooser` instead
-  of guessing: one row per tied candidate (`place-chooser-{placeId}`,
+  Moab" camp, curated 0km apart), the pointer opens `place-chooser` instead
+  of guessing (on hover or click): one row per tied candidate (`place-chooser-{placeId}`,
   ascending-sorted by place id -- the same determinism law
   `applyMarkerNudges`' own sorted-by-id order already establishes), each
   showing that place's own display name plus a small lit/quiet dot hint
   (`place-chooser-dot-lit`/`-quiet` -- an era hint would need a per-
   candidate fetch, not cheap, so it's the one hint decision 2's "if cheap"
   qualifier actually admits). Clicking a row does exactly what clicking
-  that place's own marker does today (PIN-1) -- pins the SAME `place-card`
-  a direct hover/click would, closing the chooser. The chooser is
-  hover-chrome: it obeys the EXACT SAME hover-grace/pointer-enter/leave
-  discipline `place-card` already does (World.razor's `_pointerOverCard`/
-  `_closeCts`/`ScheduleCardClose`, literally shared, not a parallel
-  timing implementation -- PlaceChooser.razor's own header comment), and
-  is mutually exclusive with `place-card` by construction (each hover path
-  clears the other's state). A forced-hover test that specifically wants a
-  single, unambiguous card should keep using `independentlyHoverableIds`
+  that place's own marker does (PIN-1) -- opens the place's served node in the
+  popover, closing the chooser. The chooser stays until a row is picked, a
+  single place is hovered, the map background is clicked or Escape is pressed
+  (FOCUS-6: the hover-grace timing it shared with the deleted `place-card` is
+  gone). A forced-hover or click test that specifically wants a single,
+  unambiguous place should keep using `independentlyHoverableIds`
   (lib/hoverSafety.ts) -- still the correct tool for "pick any of these N
-  places and trust the resulting card," just no longer the only way to
-  test a close pair AT ALL, now that world-cluster-chooser.spec.ts covers
+  places and trust the result," just no longer the only way to test a close
+  pair AT ALL, now that world-cluster-chooser.spec.ts covers
   the previously-untestable named stacks directly. Batch C3 DOES extend
   this helper (a correctness fix, not a loosening -- it only ever shrinks
   the "safe" pool further, never grows it): resolveHoverTarget arbitrates
@@ -5216,23 +5081,17 @@ Notes:
   2026-08-19: "i can no longer click on a location's name, where i used to
   be able to and i would get the est/dest dates. we need that functionality
   back"): a place's name -- `.atlas-label` inside `marker-{placeId}`,
-  `.quiet-label` inside `quiet-marker-{placeId}` -- is a full hover/click
-  target EQUIVALENT to its own dot: hovering the label opens the exact SAME
-  `place-card` a dot-hover would (same content, same
-  `QUIET_HOVER_INTENT_MS` debounce on a quiet label), clicking it pins the
-  SAME card a dot-click would (PIN-1) -- both by simple DOM event bubbling
-  (the label is a descendant of the marker's own icon root map.js's
-  `wireEvents`/`wireQuietEvents` already listen on; no map.js change was
-  needed for the wiring itself, only restoring `pointer-events` on the label
-  from the earlier `none`), never a `.explorable`/ExplorerPopover-opening
-  target itself (a label is equivalent to its DOT, not to a verse line --
-  the resulting `place-card` IS the hover feedback, same as a bare dot
-  always had none of its own). `place-card-title`'s own click still promotes
-  the card into a real `PlaceNode` popover (est/dest dates, reachable via
-  `popover-place-date-established`/`-destroyed` inside it -- REGISTRY-1) --
-  so a date is reachable in exactly 2 clicks from a label: the label pins
-  the card, the title opens the popover. Polity-label/landmark-label stay
-  entirely non-interactive, unchanged.
+  `.quiet-label` inside `quiet-marker-{placeId}` -- is a full click target
+  EQUIVALENT to its own dot, by simple DOM event bubbling (the label is a
+  descendant of the marker's own icon root map.js's `wireEvents`/
+  `wireQuietEvents` listen on): clicking it opens the place exactly as a
+  dot-click does (PIN-1), so the established/destroyed dates
+  (`popover-field-Established`/`-Destroyed`) are reachable in ONE click from a
+  label. A real pointer transit from a dot into its own label never switches
+  the target. Never a `.explorable` target itself (a label is equivalent to its
+  DOT, not to a verse line). Polity-label/landmark-label stay entirely
+  non-interactive, unchanged. Removed in FOCUS-6 (OPEN 2): the label hover
+  opening a card.
 - BORDER-1 (batch-b2-brief.md, "borders v2, the cartographer's edition"):
   for every time-mode window, `GET /api/polities?from=&to=` returns one row
   per (polity, era) pair whose era `[from,to]` intersects the window,
@@ -6064,46 +5923,10 @@ Notes:
   widened bounds, so the client's own `existenceGatesLabel` (map.js) needs
   no knowledge of name ranges at all, just the plain inclusive-bounds
   comparison.
-- CARD-FLIP-1 (batch-hotfix-brief.md requirement 1, user report 2026-08-20:
-  "if there are locations at the top of the screen and you hover for your
-  hover menu, the hover menu can be cut off by the top of the screen"):
-  `place-card` renders ABOVE its marker (the pre-existing default, unchanged)
-  UNLESS there is no room above it within the map container it is currently
-  rendered inside (`.world-page` standalone, `.split-pane-atlas` embedded --
-  the SAME box that box's own `overflow:hidden` clips to, in either
-  context), in which case it renders BELOW instead (`data-flip="true"`,
-  mirrored across the marker -- same 18px gap on the opposite side); if
-  NEITHER orientation fully fits (fix round 1, review finding: a card near
-  the vertical middle of a short viewport could previously flip below and
-  still overflow the container's own bottom edge, since the original cut
-  only ever checked "does it fit above" -- live-reproduced, 122px past the
-  bottom at 1280x720, a real marker), whichever orientation shows MORE of
-  the card is chosen and the result is clamped fully inside the container
-  (top and bottom both) rather than left to overflow either edge.
-  Independently, horizontally: the card is clamped the same way so it never
-  crosses either side of that same container, nudged inward from its normal
-  centered-on-the-marker position only exactly as far as needed (most cards
-  need no nudge, on either axis, at all). All of these decisions are made
-  ONCE, the first time this place's own card has fully loaded (verse text
-  AND, if curated, blurb/dates -- measuring any earlier would size against
-  not-yet-loaded content) after opening -- never reconsidered afterward for
-  that same open (not on ShowMore/Collapse growing the card, not on the map
-  panning underneath an already-open card) -- a fresh decision is only ever
-  made on a genuine re-open (hovering/clicking/traversing to a DIFFERENT
-  place, or re-hovering the same one after it fully closed). The
-  pre-existing hover-persistence/grace mechanism ("Place-card hover
-  persistence" above) is completely unaffected by orientation or clamping
-  -- it tracks pointer entry/exit of the marker and the card as plain DOM
-  elements, never their relative screen position, so the pointer can travel
-  from a marker down into a flipped (or clamped) card exactly as reliably
-  as it travels up into a non-flipped one. Applies identically everywhere
-  this card renders (full `/world`, split view's embedded atlas pane) --
-  one shared positioning rule, no per-page fork. (The popover's own mini-map
-  -- `mini-map`, `MiniWorld.razor` -- used to be a THIRD place this note
-  provably did not apply to, since its own marker hover callbacks were
-  deliberate no-ops; retired entirely by O1, 2026-08-23, so there is no
-  longer a third venue to even discuss -- see `ExplorerPopover.razor`'s own
-  header comment.)
+- CARD-FLIP-1: removed in FOCUS-6 (OPEN 2, OPEN 3): the map card and its
+  flip/clamp placement (`CardPlacement`) are deleted; a place opens in the
+  ExplorerPopover, which places itself (viewport-centred standalone, pane-anchored
+  in split view) and stays fully within the viewport wherever the marker sits.
 - NAV-4 (batch-hotfix-brief.md requirement 2, user report 2026-08-20: "the
   buttons to go chapter to chapter on the Bible in split screen are too
   tiny to see" -- measured live before this fix, split view: 14.8x22.8px at
@@ -6229,9 +6052,8 @@ Notes:
   viewport-clamped so a reader pane taller than one screen still centers
   within the currently VISIBLE slice of it, never somewhere off-screen in
   scrolled-past content) -- the SAME "snapshot at open, never re-measure on
-  scroll/pan" discipline `PlaceCard`/`CardPlacement` already established
-  for the map hover card's own flip/clamp decision, not a continuous
-  tracker. This batch keeps the existing ONE-popover-instance rule
+  scroll/pan" discipline, not a continuous tracker (the map hover card's
+  `CardPlacement` was deleted in FOCUS-6). This batch keeps the existing ONE-popover-instance rule
   unchanged (each pane's OWN ExplorerPopover instance -- Reader.razor and
   World.razor each already render their own, per SPLIT-1 -- is what's being
   anchored; this is a POSITION change, not concurrent popovers on both
@@ -6415,8 +6237,9 @@ Notes:
   their own already-existing endpoint(s) to rebuild data their live
   construction site had in hand but never stored on the node itself before
   this batch (`TimeAndPlaceNode`/`YearNode` both gained a small,
-  additive `PlaceId`/`EventId`/`Label` constructor widening for exactly this
-  -- see each class's own doc comment). `PolityDeltaNode`'s own
+  additive `PlaceId`/`EventId`/`Label` constructor widening for exactly this;
+  `TimeAndPlaceNode` and `PlaceNode` were deleted in FOCUS-6 -- a place step
+  is a served `NodeRef` now). `PolityDeltaNode`'s own
   reconstruction degrades GRACEFULLY (never throws) to that node's own
   pre-existing "minimal popover" shape if the exact era can no longer be
   re-located by name+from+to (map.js's own click payload never carried the
@@ -6523,9 +6346,10 @@ Notes:
   v1) -- RULED," accepting batch-r-report.md §7's own proposal verbatim):
   Ctrl/Cmd-click on an explorable element or a map marker/label toggles that
   node's own `ExplorationDescriptor` into a persistent Selection Tray --
-  NEVER opens a popover, NEVER moves/pins a marker. Three gestures, three
+  NEVER opens a popover. Three gestures, three
   meanings, one target set, no overloaded key: plain click keeps its
-  existing meaning everywhere UNCHANGED (ONE-RULE explore/pin); Shift-click
+  existing meaning everywhere UNCHANGED (ONE-RULE explore; a marker opens
+  its place, PIN-1); Shift-click
   on `verse-num-{n}` keeps its existing, unrelated range-extend meaning
   UNCHANGED; Ctrl/Cmd-click is the one new gesture. The hover-revealed "+"
   affordance batch-r-report.md §7 considered and set aside is DEFERRED
@@ -6535,10 +6359,10 @@ Notes:
   app): reader verse lines (`VerseLine.razor`'s own row, `OnRowClick`
   branches on `e.CtrlKey`/`e.MetaKey` before ever calling `OnExplore`) and
   world map markers/labels (map.js's `wireEvents`/`wireQuietEvents`, a new
-  `isToggleSelectClick` check ahead of the existing pin-click branch, fired
+  `isToggleSelectClick` check ahead of the existing open-click branch, fired
   for BOTH marker and label since LABEL-1's own bubbling fix already routes
   a label click into the SAME handler as its dot). Popover-INTERNAL
-  explorable rows (inline cross-references, place-event rows, mentions,
+  explorable rows (inline cross-references, `FocusView` links, mentions,
   etc.) are NOT wired for this gesture in v1 -- a disclosed scope limit, not
   an oversight, matching this proposal's own "prove the gesture first"
   framing; a later batch can extend coverage without changing the mechanism

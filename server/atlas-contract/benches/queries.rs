@@ -111,7 +111,7 @@ fn bench_graph_handlers(c: &mut Criterion) {
     let rt = rt();
     let mut group = c.benchmark_group("graph_handlers");
 
-    group.bench_function("node_card", |b| {
+    group.bench_function("node_record", |b| {
         b.iter(|| rt.block_on(graph::node_record(State(data.clone()), State(graph.clone()), asked_for("text-unit:JHN.3.16"))))
     });
     group.bench_function("node_edges", |b| {
