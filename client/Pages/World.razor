@@ -8,7 +8,7 @@
 @inject NavigationManager Nav
 @inject IJSRuntime JS
 @inject ViewStateService ViewState
-@inject StateAtom<IReadOnlyList<ExplorationDescriptor>> SelectionAtom
+@inject StateAtom<IReadOnlyList<NodeRef>> SelectionAtom
 @inject PaneScopes Panes
 @inject StateAtom<ViewArrangement> ViewArrangementAtom
 @inject EffectRegistry Effects
@@ -1035,7 +1035,7 @@
             return;
         }
 
-        SelectionAtom.Dispatch(new ToggleSelection(new ExplorationDescriptor("Place", id, place.DisplayName)));
+        SelectionAtom.Dispatch(new ToggleSelection(new PlaceNode(id, place.DisplayName).Identity));
     }
 
     public void OnArrowHover(string key, double x, double y)

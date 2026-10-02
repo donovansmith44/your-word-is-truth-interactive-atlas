@@ -18,7 +18,7 @@
 
     [Parameter, EditorRequired] public EventCallback<IExplorable> OnExplore { get; set; }
 
-    private Task Open() => OnExplore.InvokeAsync(new EventNode(Heading.EventId, Heading.Title, Heading.Kind));
+    private Task Open() => OnExplore.InvokeAsync(new EventNode(Heading.EventId, Heading.Title));
 
     private Task OnKeyDown(KeyboardEventArgs e) => e.Key == "Enter" ? Open() : Task.CompletedTask;
 }

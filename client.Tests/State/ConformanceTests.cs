@@ -57,8 +57,8 @@ public class ConformanceTests
     {
         var allowlist = new (string File, string ExpressionSubstring, string Justification)[]
         {
-            ("client\\Components\\ExplorerPopover.razor", "FocusStackAtom.Changed += OnFocusStackChanged",
-                "OnFocusStackChanged => pure re-render PLUS the R4/Adjudication-E ownership hand-off (claim+Reseed when superseded and the atom just Reset) -- claiming/reseeding is the SANCTIONED consumer-side interaction with OwnershipRegistry, mirroring EffectRegistry's own claim/release pattern; it never calls IStateEffect<T>.Materialize (FocusStack ownership is not an effect at all -- see OwnershipRegistry.cs's own header)."),
+            ("client\\Components\\ExplorerPopover.razor", "ExplorationAtom.Changed += OnExplorationChanged",
+                "OnExplorationChanged => pure re-render PLUS the R4/Adjudication-E ownership hand-off (claim+Reseed when superseded and the atom just closed) -- claiming/reseeding is the SANCTIONED consumer-side interaction with OwnershipRegistry, mirroring EffectRegistry's own claim/release pattern; it never calls IStateEffect<T>.Materialize (exploration ownership is not an effect at all -- see OwnershipRegistry.cs's own header)."),
             ("client\\Components\\SelectionTray.razor", "SelectionAtom.Changed += OnChanged",
                 "OnChanged => InvokeAsync(StateHasChanged) -- pure re-render, no Materialize-shaped side effect."),
             ("client\\Layout\\MainLayout.razor", "SavedExplorations.Changed += OnSavedExplorationsChanged",
@@ -129,29 +129,40 @@ public class ConformanceTests
             string.Join(", ", stale.Select(e => $"{e.File}: \"{e.ExpressionSubstring}\"")));
     }
 
-    [Fact]
-    public void AtomRegistrationConformance_EveryMigratedAtomResolvesAsASingletonWithItsOwnName()
+    private static ServiceCollection RegisteredServices()
     {
         var services = new ServiceCollection();
         services.AddSingleton<IJSRuntime>(new ThrowingJsRuntime());
         AppServices.AddStateAtoms(services);
         AppServices.AddSelectionAtom(services);
-        using var provider = services.BuildServiceProvider();
-
-        AssertSingletonWithName<Locus>(provider, AtomNames.Locus);
-        AssertSingletonWithName<TimeWindow>(provider, AtomNames.TimeWindow);
-        AssertSingletonWithName<ViewArrangement>(provider, AtomNames.ViewArrangement);
-        AssertSingletonWithName<FocusStack>(provider, AtomNames.FocusStack);
-        AssertSingletonWithName<Explore.ExplorationState>(provider, AtomNames.Exploration);
-        AssertSingletonWithName<IReadOnlyList<Explore.ExplorationDescriptor>>(provider, AtomNames.Selection);
+        return services;
     }
 
-    private static void AssertSingletonWithName<T>(IServiceProvider provider, string expectedName) where T : notnull
+    private static IReadOnlyList<Type> RegisteredAtomTypes() =>
+        RegisteredServices()
+            .Select(d => d.ServiceType)
+            .Where(t => t.IsGenericType && t.GetGenericTypeDefinition() == typeof(StateAtom<>))
+            .ToList();
+
+    private static IReadOnlyList<string> AtomNamesConstants() =>
+        typeof(AtomNames).GetFields(BindingFlags.Public | BindingFlags.Static)
+            .Where(f => f.FieldType == typeof(string))
+            .Select(f => (string)f.GetValue(null)!)
+            .ToList();
+
+    [Fact]
+    public void AtomRegistrationConformance_TheRegisteredAtomsAreExactlyTheAtomNamesConstants_EachResolvingAsOneSingleton()
     {
-        var first = provider.GetRequiredService<StateAtom<T>>();
-        var second = provider.GetRequiredService<StateAtom<T>>();
-        Assert.Same(first, second);
-        Assert.Equal(expectedName, first.Name);
+        using var provider = RegisteredServices().BuildServiceProvider();
+
+        var resolved = RegisteredAtomTypes()
+            .Select(atomType => (First: provider.GetRequiredService(atomType), Second: provider.GetRequiredService(atomType), Name: atomType.GetProperty(nameof(IStateAtom<int>.Name))))
+            .Select(atom => (Singleton: ReferenceEquals(atom.First, atom.Second), Name: (string)atom.Name!.GetValue(atom.First)!))
+            .ToList();
+
+        Assert.Equal(
+            AtomNamesConstants().Select(name => (true, name)).OrderBy(atom => atom.name),
+            resolved.OrderBy(atom => atom.Name));
     }
 
     [Fact]
@@ -200,7 +211,8 @@ public class ConformanceTests
         }
     }
 
-    private static readonly string[] AtomValueTypeNames = { "Locus", "TimeWindow", "ViewArrangement", "FocusStack" };
+    private static readonly string[] AtomValueTypeNames =
+        RegisteredAtomTypes().Select(t => t.GenericTypeArguments[0]).Where(value => !value.IsGenericType).Select(value => value.Name).ToArray();
     private static readonly string AtomValueTypeAlternation = string.Join("|", AtomValueTypeNames);
 
     private static readonly Regex AtomTypedFieldPattern = new(
@@ -212,16 +224,16 @@ public class ConformanceTests
         RegexOptions.Compiled);
 
     private static readonly Regex SelectionShapedListPattern = new(
-        @"(?:private|public|protected|internal)\s+(?:static\s+)?(?:readonly\s+)?(?:List|IReadOnlyList|ImmutableArray)<ExplorationDescriptor>\s+(_\w+)",
+        @"(?:private|public|protected|internal)\s+(?:static\s+)?(?:readonly\s+)?(?:List|IReadOnlyList|ImmutableArray)<NodeRef>\s+(_\w+)",
         RegexOptions.Compiled);
     private static readonly Regex SelectionShapedArrayPattern = new(
-        @"(?:private|public|protected|internal)\s+(?:static\s+)?(?:readonly\s+)?ExplorationDescriptor\[\]\s+(_\w+)",
+        @"(?:private|public|protected|internal)\s+(?:static\s+)?(?:readonly\s+)?NodeRef\[\]\s+(_\w+)",
         RegexOptions.Compiled);
 
     [Fact]
     public void NoComponentHeldSharedState_PlantedPropertyShapedViolation_IsCaught()
     {
-        const string planted = "private FocusStack Snapshot { get; set; }";
+        const string planted = "private ExplorationState Snapshot { get; set; }";
 
         Assert.Matches(AtomTypedPropertyPattern, planted);
     }
@@ -245,7 +257,7 @@ public class ConformanceTests
     [Fact]
     public void NoComponentHeldSharedState_PlantedImmutableArraySelectionViolation_IsCaught()
     {
-        const string planted = "private readonly ImmutableArray<ExplorationDescriptor> _selectionCopy;";
+        const string planted = "private readonly ImmutableArray<NodeRef> _selectionCopy;";
 
         Assert.Matches(SelectionShapedListPattern, planted);
     }
@@ -253,7 +265,7 @@ public class ConformanceTests
     [Fact]
     public void NoComponentHeldSharedState_PlantedArraySelectionViolation_IsCaught()
     {
-        const string planted = "private ExplorationDescriptor[] _selectionCopy;";
+        const string planted = "private NodeRef[] _selectionCopy;";
 
         Assert.Matches(SelectionShapedArrayPattern, planted);
     }
@@ -265,7 +277,6 @@ public class ConformanceTests
         {
             ("client\\Components\\ExplorerPopover.razor", "_frozenSnapshot"),
             ("client\\Components\\CompositionSplit.razor", "_lastArrangement"),
-            ("client\\Components\\ExplorerPopover.razor", "FocusValue"),
         };
 
         static string Normalize(string path) => path.Replace('\\', '/');
@@ -382,7 +393,8 @@ public class ConformanceTests
         }
     }
 
-    private static readonly string[] OtherAtomNames = { "Locus", "TimeWindow", "Selection", "FocusStack" };
+    private static readonly string[] OtherAtomNames =
+        typeof(AtomNames).GetFields(BindingFlags.Public | BindingFlags.Static).Select(f => f.Name).Where(name => name != nameof(AtomNames.ViewArrangement)).ToArray();
     private static readonly string OtherAtomAlternation = string.Join("|", OtherAtomNames.Select(n => n + "Atom"));
 
     private static readonly Regex OtherAtomStateInitializerPattern = new(
@@ -410,9 +422,9 @@ public class ConformanceTests
     }
 
     [Fact]
-    public void NoComponentHeldOtherAtomState_PlantedFocusStackAssignmentViolation_IsCaught()
+    public void NoComponentHeldOtherAtomState_PlantedExplorationAssignmentViolation_IsCaught()
     {
-        const string planted = "        _cachedFocus = FocusStackAtom.Value;";
+        const string planted = "        _cachedExploration = ExplorationAtom.Value;";
 
         Assert.Matches(OtherAtomStateAssignmentPattern, planted);
     }
@@ -440,7 +452,7 @@ public class ConformanceTests
         }
 
         Assert.True(violations.Count == 0,
-            "Found a component-held field/property reading Locus/TimeWindow/Selection/FocusStack Atom.Value directly, outside a live Projection<T> read -- render a Projection<T> (or read the atom's own .Value fresh, never copy it into a field) instead, or add a reasoned allowlist entry here (none exist yet -- see ConformanceTests.cs's own header comment on this test for why):\n" +
+            "Found a component-held field/property reading Locus/TimeWindow/Selection/Exploration Atom.Value directly, outside a live Projection<T> read -- render a Projection<T> (or read the atom's own .Value fresh, never copy it into a field) instead, or add a reasoned allowlist entry here (none exist yet -- see ConformanceTests.cs's own header comment on this test for why):\n" +
             string.Join("\n", violations));
     }
 

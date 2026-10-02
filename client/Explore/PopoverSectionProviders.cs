@@ -78,12 +78,11 @@ public sealed class ChapterCardSection : IPopoverSectionProvider
                 {
                     var eventId = h.EventId;
                     var title = h.Title;
-                    var headingKind = h.Kind;
                     builder.OpenElement(seq++, "button");
                     builder.AddAttribute(seq++, "type", "button");
                     builder.AddAttribute(seq++, "class", "popover-event-row popover-event-row-button explorable");
                     builder.AddAttribute(seq++, "data-testid", $"chapter-card-heading-{eventId}");
-                    builder.AddAttribute(seq++, "onclick", EventCallback.Factory.Create(ctx, () => ctx.PushAsync(new EventNode(eventId, title, headingKind), EdgeKind.Attests)));
+                    builder.AddAttribute(seq++, "onclick", EventCallback.Factory.Create(ctx, () => ctx.PushAsync(new EventNode(eventId, title), EdgeKind.Attests)));
                     builder.AddContent(seq++, title);
                     builder.CloseElement();
                 }
@@ -931,7 +930,6 @@ public sealed class VerseEventMembershipSection : IPopoverSectionProvider
         {
             var id = e.Id;
             var label = e.Label;
-            var rowKind = e.Kind;
             // .explorable-quiet replaces .explorable (never both): a general-kind event
             // is not part of time traversal, so its row must not look traversable.
             var explorableClass = e.Kind == EventKind.General ? "explorable-quiet" : "explorable";
@@ -939,7 +937,7 @@ public sealed class VerseEventMembershipSection : IPopoverSectionProvider
             builder.AddAttribute(seq++, "type", "button");
             builder.AddAttribute(seq++, "class", $"popover-event-row popover-event-row-button {explorableClass}");
             builder.AddAttribute(seq++, "data-testid", $"verse-event-{id}");
-            builder.AddAttribute(seq++, "onclick", EventCallback.Factory.Create(ctx, () => ctx.PushAsync(new EventNode(id, label, rowKind), EdgeKind.Attests)));
+            builder.AddAttribute(seq++, "onclick", EventCallback.Factory.Create(ctx, () => ctx.PushAsync(new EventNode(id, label), EdgeKind.Attests)));
             builder.AddContent(seq++, label);
             builder.CloseElement();
         }
@@ -1246,7 +1244,7 @@ public sealed class EventAnaloguesSection : IPopoverSectionProvider
         }
 
         var refs = analogues
-            .Select(a => new Components.RefsList.RefDescriptor(a.Title, (IExplorable)new EventNode(a.Id, a.Title, EventKind.Event), a.Id))
+            .Select(a => new Components.RefsList.RefDescriptor(a.Title, (IExplorable)new EventNode(a.Id, a.Title), a.Id))
             .ToList();
 
         var registry = await FrontierProvenance.RegistryOrNull(api);

@@ -124,7 +124,7 @@ public sealed class YearNode : IExplorable
                 builder.AddAttribute(seq++, "type", "button");
                 builder.AddAttribute(seq++, "class", "popover-event-row popover-event-row-button explorable");
                 builder.AddAttribute(seq++, "data-testid", $"year-chronology-event-{id}");
-                builder.AddAttribute(seq++, "onclick", EventCallback.Factory.Create(ctx, () => ctx.PushAsync(new EventNode(id, label, EventKind.Event), EdgeKind.TemporalAdjacency)));
+                builder.AddAttribute(seq++, "onclick", EventCallback.Factory.Create(ctx, () => ctx.PushAsync(new EventNode(id, label), EdgeKind.TemporalAdjacency)));
                 builder.AddContent(seq++, label);
                 builder.CloseElement();
             }

@@ -9,6 +9,12 @@ public interface IView
 
 public interface IViewComponent { }
 
+public interface IEscapeHatch
+{
+    string Kind { get; }
+    Task Invoke();
+}
+
 public interface IViewComposition : IView
 {
     IReadOnlyList<IView> Members { get; }

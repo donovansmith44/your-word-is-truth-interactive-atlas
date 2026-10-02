@@ -1,42 +1,36 @@
+using BibleAtlas.Client.Contract;
 using BibleAtlas.Client.Contracts;
-using BibleAtlas.Client.Explore;
 
 namespace BibleAtlas.Client.State;
 
 public static class Selection
 {
-    public const string StorageKey = "selection-v1";
+    public const string StorageKey = "selection-v2";
 
-    public static readonly IReadOnlyList<ExplorationDescriptor> Empty = Array.Empty<ExplorationDescriptor>();
+    public static readonly IReadOnlyList<NodeRef> Empty = Array.Empty<NodeRef>();
 }
 
-// Deliberately not idempotent: redispatching the same instance twice flips selection state back
-// off. That's correct for Ctrl/Cmd-click toggle UX (clicking the same item again deselects it),
-// not an oversight.
-public sealed record ToggleSelection(ExplorationDescriptor Descriptor, string? Origin = null) : IIntent<IReadOnlyList<ExplorationDescriptor>>
+public sealed record ToggleSelection(NodeRef Node, string? Origin = null) : IIntent<IReadOnlyList<NodeRef>>
 {
     public string Name => "toggle-selection";
 
-    public IReadOnlyList<ExplorationDescriptor> Apply(IReadOnlyList<ExplorationDescriptor> current)
-    {
-        var existing = current.FirstOrDefault(i => i.Kind == Descriptor.Kind && i.Key == Descriptor.Key);
-        return existing is not null
-            ? current.Where(i => i != existing).ToList()
-            : current.Append(Descriptor).ToList();
-    }
+    public IReadOnlyList<NodeRef> Apply(IReadOnlyList<NodeRef> current) =>
+        current.Contains(Node, NodeIdentity.Comparer)
+            ? current.Where(selected => !NodeIdentity.Comparer.Equals(selected, Node)).ToList()
+            : current.Append(Node).ToList();
 }
 
-public sealed record RemoveSelection(ExplorationDescriptor Descriptor, string? Origin = null) : IIntent<IReadOnlyList<ExplorationDescriptor>>
+public sealed record RemoveSelection(NodeRef Node, string? Origin = null) : IIntent<IReadOnlyList<NodeRef>>
 {
     public string Name => "remove-selection";
 
-    public IReadOnlyList<ExplorationDescriptor> Apply(IReadOnlyList<ExplorationDescriptor> current) =>
-        current.Where(i => !(i.Kind == Descriptor.Kind && i.Key == Descriptor.Key)).ToList();
+    public IReadOnlyList<NodeRef> Apply(IReadOnlyList<NodeRef> current) =>
+        current.Where(selected => !NodeIdentity.Comparer.Equals(selected, Node)).ToList();
 }
 
-public sealed record ClearSelection(string? Origin = null) : IIntent<IReadOnlyList<ExplorationDescriptor>>
+public sealed record ClearSelection(string? Origin = null) : IIntent<IReadOnlyList<NodeRef>>
 {
     public string Name => "clear-selection";
 
-    public IReadOnlyList<ExplorationDescriptor> Apply(IReadOnlyList<ExplorationDescriptor> current) => Selection.Empty;
+    public IReadOnlyList<NodeRef> Apply(IReadOnlyList<NodeRef> current) => Selection.Empty;
 }

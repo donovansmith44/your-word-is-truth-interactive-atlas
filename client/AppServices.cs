@@ -1,3 +1,4 @@
+using BibleAtlas.Client.Contract;
 using BibleAtlas.Client.Contracts;
 using BibleAtlas.Client.Explore;
 using BibleAtlas.Client.State;
@@ -13,7 +14,6 @@ public static class AppServices
         services.AddSingleton(_ => new StateAtom<Locus>(AtomNames.Locus, Locus.Default));
         services.AddSingleton(_ => new StateAtom<TimeWindow>(AtomNames.TimeWindow, TimeWindow.Default));
         services.AddSingleton(_ => new StateAtom<ViewArrangement>(AtomNames.ViewArrangement, ViewArrangement.Default));
-        services.AddSingleton(_ => new StateAtom<FocusStack>(AtomNames.FocusStack, FocusStack.Empty));
         services.AddSingleton(_ => new StateAtom<ExplorationState>(AtomNames.Exploration, new ExplorationState.Closed()));
         services.AddSingleton(sp => new PaneScopes(
             sp.GetRequiredService<StateAtom<ViewArrangement>>(),
@@ -27,11 +27,8 @@ public static class AppServices
         {
             var js = (IJSInProcessRuntime)sp.GetRequiredService<IJSRuntime>();
             var available = LocalStore.Probe(js);
-            var initial = available
-                ? (IReadOnlyList<ExplorationDescriptor>)LocalStore.Read(js, Selection.StorageKey, new List<ExplorationDescriptor>())
-                    .DistinctBy(d => (d.Kind, d.Key)).ToList()
-                : Selection.Empty;
-            var atom = new StateAtom<IReadOnlyList<ExplorationDescriptor>>(AtomNames.Selection, initial, SequenceEqualityComparer<ExplorationDescriptor>.Instance);
+            var initial = available ? StoredSelection(js) : Selection.Empty;
+            var atom = new StateAtom<IReadOnlyList<NodeRef>>(AtomNames.Selection, initial, SequenceEqualityComparer<NodeRef>.Instance);
             if (available)
             {
                 atom.Changed += () => LocalStore.Write(js, Selection.StorageKey, atom.Value);
@@ -39,5 +36,17 @@ public static class AppServices
 
             return atom;
         });
+    }
+
+    private static IReadOnlyList<NodeRef> StoredSelection(IJSInProcessRuntime js)
+    {
+        if (LocalStore.Read<List<NodeRef>?>(js, Selection.StorageKey, null) is { } stored)
+        {
+            return stored.Distinct(NodeIdentity.Comparer).ToList();
+        }
+
+        var translated = LegacySaves.Nodes(LocalStore.Read(js, LegacySaves.SelectionKey, new List<V1Node>())).Kept.Distinct(NodeIdentity.Comparer).ToList();
+        LocalStore.Write(js, Selection.StorageKey, translated);
+        return translated;
     }
 }

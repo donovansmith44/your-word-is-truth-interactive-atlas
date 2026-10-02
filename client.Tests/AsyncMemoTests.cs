@@ -94,29 +94,4 @@ public class AsyncMemoTests
         Assert.Equal(7, await memo.Get(Fetch));
         Assert.Equal(1, callCount); // idempotent -- exactly one real fetch across three calls
     }
-
-    [Fact]
-    public async Task CompletedValueOrDefault_NullBeforeResolve_ThenTheRealValueOnceResolved()
-    {
-        var memo = new Explore.AsyncMemo<int>();
-        var gate = new TaskCompletionSource<int>();
-
-        Assert.Equal(0, memo.CompletedValueOrDefault); // int's own default -- never started
-
-        var inFlight = memo.Get(() => gate.Task);
-        Assert.Equal(0, memo.CompletedValueOrDefault); // still in flight, not yet resolved
-
-        gate.SetResult(5);
-        await inFlight;
-        Assert.Equal(5, memo.CompletedValueOrDefault); // resolved -- EventNode.CachedKind's own read shape
-    }
-
-    [Fact]
-    public async Task CompletedValueOrDefault_StaysDefaultAfterAFault_NeverAStaleValue()
-    {
-        var memo = new Explore.AsyncMemo<int>();
-        var refetch = memo.Get(() => Task.FromException<int>(new InvalidOperationException()));
-        await Assert.ThrowsAsync<InvalidOperationException>(() => refetch);
-        Assert.Equal(0, memo.CompletedValueOrDefault); // faulted, never completed successfully -- default, not stale
-    }
 }
