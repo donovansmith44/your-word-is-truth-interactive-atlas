@@ -33,6 +33,8 @@ file is the detailed version of record.
 | KJV red-letter (words-of-Christ) markup, via [seven1m/open-bibles](https://github.com/seven1m/open-bibles) (eBible.org's own KJV OSIS distribution) | Public domain (the file's own embedded OSIS header states it plainly; see "KJV red-letter markup" below for the full CrossWire-substitution reasoning) | Redistributed — the SOURCE FILE itself is not shipped, but the FACT it encodes (which verses/sub-verse spans are Christ's own words) is: compiled into `graph.bin` as `spoken_by`/`spoken_at` edges (verse-granular) and into `data/compiled/red-letter-spans.json` (KJV sub-verse char-offset spans, compiled-data-side); provenance and verification below |
 | STEPBible TAGNT / TAHOT / TBESG ([STEPBible](https://github.com/STEPBible), Tyndale House Cambridge) — per-word lemma, morphology, Strong's numbers and English glosses for the Greek NT and Hebrew OT, via [brain-fuel/bible](https://github.com/brain-fuel/bible)'s `morph/` and `lexicon/` | **CC BY 4.0** (attribution required) | Redistributed with credit — compiled into the `lexicon` section (`data/compiled/sections/`): the `Occurs` rows (every aligned original-language word -> its lexicon entry), the `token` inventory, and the Greek entries' brief glosses. "Credit STEPBible and link to https://github.com/STEPBible" — done here, in `data/raw/README.md`, and on the Sources page. No English word is tagged: the alignment is by original-language word only. See "STEPBible / Strong's — the lexicon section (LEX-1)" below |
 | Strong's Exhaustive Concordance Greek and Hebrew dictionaries (James Strong, 1890; XML encoding by Ulrik Petersen / [openscriptures/strongs](https://github.com/openscriptures/strongs)), via brain-fuel/bible's `lexicon/` | Public domain (1890) | Redistributed — the 13,548 `LexiconEntry` nodes (number, lemma, transliteration, part of speech, the 1890 definition as the first gloss, root link), ingested as upstream publishes them (upstream's own "Yahweh" normalisation of the PD gloss text is upstream's build policy; the KJV column is never edited — the seven "Jehovah" verses stand) |
+| Overpass typeface ([RedHatOfficial/Overpass](https://github.com/RedHatOfficial/Overpass)), Copyright 2021 The Overpass Project Authors, via [@fontsource/overpass](https://www.npmjs.com/package/@fontsource/overpass) 5.3.0 | SIL Open Font License 1.1 | Bundled, unmodified — the Latin-subset woff2 files for weights 400, 600 and 700 at `client/wwwroot/fonts/overpass/`, with the license text as `OFL.txt` beside them. The heading typeface. See "Bundled fonts — owner exception" below |
+| Atkinson Hyperlegible typeface, Copyright 2020 Braille Institute of America, Inc., via [@fontsource/atkinson-hyperlegible](https://www.npmjs.com/package/@fontsource/atkinson-hyperlegible) 5.3.0 | SIL Open Font License 1.1 | Bundled, unmodified — the Latin-subset woff2 files for 400, 700, 400 italic and 700 italic at `client/wwwroot/fonts/atkinson-hyperlegible/`, with the license text as `OFL.txt` beside them. The body typeface. See "Bundled fonts — owner exception" below |
 
 ## Theographic CC BY-SA 4.0 — controller ruling
 
@@ -1152,3 +1154,21 @@ even though the file itself is generated, not hand-authored.
 
 Application code (Rust, C#/Razor, JS/CSS, tests, tooling) is this project's
 own and not covered by this file.
+
+## Bundled fonts — owner exception (2026-10-02)
+
+The owner ruled on 2026-10-02: "Use overpass for all header fonts and
+Atkinson hyperlegible for everything else", and that both fonts are
+bundled with the client. The SIL Open Font License 1.1 is outside this
+project's permissive-only ingestion rule (it carries a share-alike
+condition), so the owner recorded an exception for these two fonts:
+
+- Fonts are presentation, not ingested data. Nothing in the graph or the
+  compiled artifact derives from them.
+- The OFL constrains only modified fonts: an unmodified Font Software may
+  be bundled, embedded and redistributed with any software, provided the
+  copyright notice and license travel with it and the font is not sold by
+  itself.
+- The files are unmodified. They are the upstream Latin-subset woff2
+  builds published by Fontsource 5.3.0, copied byte for byte, each family
+  directory carrying its `OFL.txt` (copyright notice and full license).
