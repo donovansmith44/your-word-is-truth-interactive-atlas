@@ -45,6 +45,8 @@ public sealed class Explorable
 
     public string Root { get; }
 
+    public bool Moved => _pages.Serving is { } serving && serving != Root;
+
     public IReadOnlyList<FrontierGroup> Groups { get; }
 
     public IReadOnlyList<Link> Ends { get; }

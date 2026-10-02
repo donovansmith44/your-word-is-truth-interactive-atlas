@@ -15,6 +15,8 @@
 
     [Parameter] public EventCallback OnShowOnWorld { get; set; }
 
+    [Parameter] public EventCallback OnMoved { get; set; }
+
     private readonly RequestSeries _series = new();
     private PresentationRequest? _request;
     private Outcome<Presented>? _outcome;
@@ -56,26 +58,32 @@
         var outcome = await _series.Next().Fetch(() => Presenter.Present(request), () => Task.WhenAll(groups.Select(group => Paging.Window(request, group))));
         var presented = outcome.Select(loaded => new Presented(request, loaded.Item1, groups.Zip(loaded.Item2).ToDictionary(pair => pair.First.Kind, pair => pair.Second)));
         _outcome = presented.Match(arrived: _ => presented, failed: () => presented, superseded: () => _outcome);
+        await presented.Match(arrived: _ => Task.CompletedTask, failed: () => Renewing(request), superseded: () => Task.CompletedTask);
     }
+
+    private Task Renewing(PresentationRequest request) => request.Element.Moved ? OnMoved.InvokeAsync() : Task.CompletedTask;
+
+    private Task Retry(PresentationRequest request) => request.Element.Moved ? OnMoved.InvokeAsync() : Load(request);
 
     private void Retire() => _outcome?.Match(arrived: presented => presented.Stop(), failed: () => { }, superseded: () => { });
 
-    private async Task Reveal(PageWindow<Entry> window, FrontierGroup group, int shown) =>
-        (await (shown > Shown(window, group) ? window.More() : window.Fewer())).Match(
-            arrived: _ => { },
+    private async Task Reveal(PresentationRequest request, PageWindow<Entry> window, FrontierGroup group, int shown) =>
+        await (await (shown > Shown(window, group) ? window.More() : window.Fewer())).Match(
+            arrived: _ => Task.CompletedTask,
             failed: () =>
             {
                 Retire();
                 _outcome = new Outcome<Presented>.Failed();
+                return Renewing(request);
             },
-            superseded: () => { });
+            superseded: () => Task.CompletedTask);
 
     private static int Shown(PageWindow<Entry> window, FrontierGroup group) =>
         Math.Min(window.Wanted * Affordances.Of(group.Kind).InitialClamp, group.Count);
 
     private RenderFragment Failure(PresentationRequest request) => __builder =>
     {
-        <CouldNotLoad OnRetry="() => Load(request)" />
+        <CouldNotLoad OnRetry="() => Retry(request)" />
     };
 
     private static RenderFragment Nothing => _ => { };
@@ -169,7 +177,7 @@
         var clamp = Affordances.Of(group.Kind).InitialClamp;
         var window = presented.Windows[group.Kind];
         <RevealControls OffersAll="false" Total="group.Count" Default="clamp" Step="clamp" Shown="Shown(window, group)"
-                        ShownChanged="shown => Reveal(window, group, shown)"
+                        ShownChanged="shown => Reveal(presented.Request, window, group, shown)"
                         MoreTestId="@($"{handle}-more")" CollapseTestId="@($"{handle}-collapse")" />
     };
 

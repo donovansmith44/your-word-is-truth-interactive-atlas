@@ -57,7 +57,7 @@
         }
         else if (_legacy is null && Exploration is { } exploration)
         {
-            <FocusView Node="exploration.Current" Surface="Surface.Popover" OnFollow="FollowAsync" OnShowOnWorld="WayToTheWorld" />
+            <FocusView Node="exploration.Current" Surface="Surface.Popover" OnFollow="FollowAsync" OnShowOnWorld="WayToTheWorld" OnMoved="Renew" />
         }
         else if (_usingSectionRegistry)
         {
@@ -547,6 +547,9 @@
                 break;
         }
     }
+
+    private Task Renew() =>
+        Exploration is { } from ? Walk(_requests.Next(), Explore.Renewed, from, trail => new ExplorationIntent.Arrive(from, trail), null, Renew) : Task.CompletedTask;
 
     private Task Back(Exploration from) => Walk(_requests.Next(), Explore.Back, from, trail => new ExplorationIntent.Arrive(from, trail), null, () => Back(from));
 

@@ -11,6 +11,10 @@ public sealed class ServedPages
 
     internal ServedPages(IExplorableClient graph) => _graph = graph;
 
+    internal string? Serving { get; private set; }
+
+    internal void Saw(string root) => Serving = root;
+
     internal Task<EdgePage> Read(string root, string id, EdgeKind kind, int? cursor, int limit)
     {
         var key = (root, id, kind, cursor, limit);
@@ -23,8 +27,11 @@ public sealed class ServedPages
         return memo.Get(async () => Served(root, await _graph.Edges(id, kind, cursor, limit)));
     }
 
-    private static EdgePage Served(string root, EdgePage page) =>
-        page.Version == root ? page : throw new ArtifactMoved(root, page.Version);
+    private EdgePage Served(string root, EdgePage page)
+    {
+        Saw(page.Version);
+        return page.Version == root ? page : throw new ArtifactMoved(root, page.Version);
+    }
 }
 
 public sealed class ArtifactMoved(string resolved, string serving)

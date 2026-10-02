@@ -15,6 +15,7 @@ public sealed class GraphExplorer(IExplorableClient graph) : IExplorer
     async Task<IReadOnlyList<Explorable>> IExplorer.Resolve(IReadOnlyList<PositionRef> targets)
     {
         var served = await graph.Elements(targets.Select(target => Positions.Of(target).Id).ToList());
+        _pages.Saw(served.Version);
         return served.Elements.Select(element => Of(element, served.Version)).ToList();
     }
 
