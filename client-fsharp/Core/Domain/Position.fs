@@ -5,8 +5,8 @@ open BibleAtlas.FSharp.Contract
 module Positions =
     let id position =
         match position with
-        | PositionRef.Node position -> position.Node.Id
-        | PositionRef.Edge position -> position.Edge.Id
+        | PositionRef.Node position -> ElementId.ofNodeId position.Node.Id
+        | PositionRef.Edge position -> ElementId.ofEdgeId position.Edge.Id
 
     let sameIdentity left right =
         match left, right with
@@ -16,8 +16,8 @@ module Positions =
 
 type Explorable =
     private
-    | NodeExplorable of root: string * node: NodeRecord
-    | EdgeExplorable of root: string * edge: EdgeRecord
+    | NodeExplorable of root: ArtifactRoot * node: NodeRecord
+    | EdgeExplorable of root: ArtifactRoot * edge: EdgeRecord
 
 module Explorable =
     let fold node edge resolved =

@@ -24,13 +24,13 @@ let ``reading page constructors are private to the surface transition boundary``
 let ``a text answer from another corpus is refused before entering either reading surface`` (corpus: Corpus) (NonNull text: NonNull<string>) =
     let route, served, read, other =
         match corpus with
-        | Corpus.Bible -> Route.Reader, contents, Reads.textWindow firstChapter.Ref None None (Some TextScope.Chapter) (Some Corpus.Bible), TextRef.Concord { Part = 1; Article = 1; Paragraph = 1 }
-        | Corpus.Concord -> Route.Concord None, concordContents "served", Reads.textWindow "served" (Some concordPageSize) None None (Some Corpus.Concord), firstChapter.Locus
+        | Corpus.Bible -> Route.Reader, contents, Reads.textWindow (TextWindowReference.ofContentsReference firstChapter.Ref) None None (Some TextScope.Chapter) (Some Corpus.Bible), TextRef.Concord { Part = 1; Article = 1; Paragraph = 1 }
+        | Corpus.Concord -> Route.Concord None, concordContents "served", Reads.textWindow (WireFixtures.identity<TextWindowReference> "served") (Some concordPageSize) None None (Some Corpus.Concord), firstChapter.Locus
     let model, _ = Model.init route
     let pending, _ = Model.update (readingMessage corpus (ReadingMessage.ContentsLoaded(model.Serial, Ok served))) model
     let request = pending.Serial
-    let unit: TextUnit = { Ref = "opaque"; Node = { Id = "served"; Kind = NodeKind.TextUnit; Label = "served" }; Heading = None; EdgeSummary = []; Body = { Text = text; Locus = other; Anchors = []; WordsOfChrist = [] } }
-    let window: TextWindow = { Units = [unit]; Next = None; Version = "root" }
+    let unit: TextUnit = { Ref = (WireFixtures.identity<UnitReference> "opaque"); Node = { Id = (WireFixtures.identity<NodeId> "served"); Kind = NodeKind.TextUnit; Label = "served" }; Heading = None; EdgeSummary = []; Body = { Text = text; Locus = other; Anchors = []; WordsOfChrist = [] } }
+    let window: TextWindow = { Units = [unit]; Next = None; Version = (WireFixtures.identity<ArtifactRoot> "root") }
     let failed = ReadSession.beginRead request read Empty |> ReadSession.complete request (Error(Contract "the text answer names a different corpus"))
     let expected = withState (ReadingState.Active(served, failed)) pending
     Assert.Equal((expected, []), Model.update (readingMessage corpus (ReadingMessage.TextLoaded(request, Ok window))) pending)
@@ -58,7 +58,7 @@ let ``reader startup uses the complete served contents to open its selected chap
     let model, effects = Model.init Route.Reader
     Assert.Equal((Surface.Reader(readerPage None (ReadingState.LoadingContents model.Serial)), [ReadContents(Corpus.Bible, model.Serial)]), (model.Surface, effects))
     let request = RequestId.next model.Serial
-    let read = Reads.textWindow firstChapter.Ref None None (Some TextScope.Chapter) (Some Corpus.Bible)
+    let read = Reads.textWindow (TextWindowReference.ofContentsReference firstChapter.Ref) None None (Some TextScope.Chapter) (Some Corpus.Bible)
     let expected = { model with Serial = request; Surface = Surface.Reader(readerPage None (ReadingState.Active(served, ReadSession.beginRead request read Empty))) }
     Assert.Equal((expected, [ReadText(Corpus.Bible, request, read)]), Model.update (Page(SurfaceMessage.Reader(ReadingMessage.ContentsLoaded(model.Serial, Ok served)))) model)
 
@@ -94,7 +94,7 @@ let ``Concord opens its bounded reading from the served corpus beginning`` (NonN
     let served = concordContents reference
     let model, _ = Model.init (Route.Concord None)
     let request = RequestId.next model.Serial
-    let read = Reads.textWindow reference (Some concordPageSize) None None (Some Corpus.Concord)
+    let read = Reads.textWindow (WireFixtures.identity<TextWindowReference> reference) (Some concordPageSize) None None (Some Corpus.Concord)
     let expected = { model with Serial = request; Surface = Surface.Concord(concordPage None (ReadingState.Active(served, ReadSession.beginRead request read Empty))) }
     Assert.Equal((expected, [ReadText(Corpus.Concord, request, read)]), Model.update (Page(SurfaceMessage.Concord(ConcordMessage.Reading(ReadingMessage.ContentsLoaded(model.Serial, Ok served))))) model)
 
@@ -112,11 +112,11 @@ let ``a missing chapter is unavailable without a manufactured request identity o
 let ``Concord Next and failed-page retry preserve exactly the served continuation request`` (suffix: uint16) (NonNull reason: NonNull<string>) =
     let reference = $"route-{suffix}"
     let continuation = $"next-{suffix}"
-    let window: TextWindow = { Units = []; Next = Some continuation; Version = "root" }
+    let window: TextWindow = { Units = []; Next = Some (WireFixtures.identity<UnitReference> continuation); Version = (WireFixtures.identity<ArtifactRoot> "root") }
     let model, _ = Model.init (Route.Concord(Some reference))
     let model = withReading window model
     let request = RequestId.next model.Serial
-    let read = Reads.textWindow continuation (Some concordPageSize) (Some WindowDir.Onward) None (Some Corpus.Concord)
+    let read = Reads.textWindow (WireFixtures.identity<TextWindowReference> continuation) (Some concordPageSize) (Some WindowDir.Onward) None (Some Corpus.Concord)
     let served, session = concordSession model
     let expected = { model with Serial = request; Surface = Surface.Concord(concordPage (Some reference) (ReadingState.Active(served, ReadSession.beginRead request read (Ready window)))); Focus = FocusState.Closed }
     let pending, effects = Model.update (Page(SurfaceMessage.Concord ConcordMessage.Next)) model
@@ -143,7 +143,7 @@ let ``future sized Concord turns retain exactly the final page and current reque
             let pending, _ = Model.update (Page(SurfaceMessage.Concord ConcordMessage.Next)) model
             Model.update (Page(SurfaceMessage.Concord(ConcordMessage.Reading(ReadingMessage.TextLoaded(pending.Serial, Ok(page index)))))) pending |> fst) model
     let request = [1..pageCount] |> List.fold (fun request _ -> RequestId.next request) model.Serial
-    let read = Reads.textWindow $"next-{pageCount - 1}" (Some concordPageSize) (Some WindowDir.Onward) None (Some Corpus.Concord)
+    let read = Reads.textWindow (WireFixtures.identity<TextWindowReference> $"next-{pageCount - 1}") (Some concordPageSize) (Some WindowDir.Onward) None (Some Corpus.Concord)
     let served, _ = concordSession model
     let session = ReadSession.beginRead request read Empty |> ReadSession.complete request (Ok(page pageCount))
     let expected = { model with Serial = request; Surface = Surface.Concord(concordPage None (ReadingState.Active(served, session))) }
@@ -250,12 +250,12 @@ let ``a failed opening retains exactly the position needed by Retry`` (steps: by
 let withReading (window: TextWindow) (model: Model) : Model =
     match model.Surface with
     | Surface.Reader reader ->
-        let read = Reads.textWindow firstChapter.Ref None None (Some TextScope.Chapter) (Some Corpus.Bible)
+        let read = Reads.textWindow (TextWindowReference.ofContentsReference firstChapter.Ref) None None (Some TextScope.Chapter) (Some Corpus.Bible)
         let session = ReadSession.beginRead model.Serial read Empty |> ReadSession.complete model.Serial (Ok window)
         { model with Surface = Surface.Reader(readerPage (ReaderPage.location reader) (ReadingState.Active(contents, session))) }
     | Surface.Concord concord ->
         let reference = ConcordPage.reference concord |> Option.defaultValue "BoC 1.1.1"
-        let read = Reads.textWindow reference (Some concordPageSize) None None (Some Corpus.Concord)
+        let read = Reads.textWindow (WireFixtures.identity<TextWindowReference> reference) (Some concordPageSize) None None (Some Corpus.Concord)
         let session = ReadSession.beginRead model.Serial read Empty |> ReadSession.complete model.Serial (Ok window)
         { model with Surface = Surface.Concord(concordPage (ConcordPage.reference concord) (ReadingState.Active(concordContents reference, session))) }
     | Surface.Sources _ | Surface.World | Surface.Kretzmann | Surface.NotFound -> failwith "the fixture requires a reading surface"
@@ -291,16 +291,16 @@ let private concordSession (model: Model) : Contents * ReadSession<TextWindow> =
     | _ -> failwith "the fixture requires an active Concord reading"
 
 let private concordContents reference : Contents =
-    { contents with Corpus = Corpus.Concord; Roots = [{ contents.Roots.Head with Ref = reference; Locus = TextRef.Concord { Part = 1; Article = 1; Paragraph = 1 }; Children = [] }] }
+    { contents with Corpus = Corpus.Concord; Roots = [{ contents.Roots.Head with Ref = (WireFixtures.identity<ContentsReference> reference); Locus = TextRef.Concord { Part = 1; Article = 1; Paragraph = 1 }; Children = [] }] }
 
 let private page index : TextWindow =
-    { Units = [{ Ref = $"page-{index}"; Node = { Id = $"TextUnit:page-{index}"; Kind = NodeKind.TextUnit; Label = $"Page {index}" }; Heading = None; EdgeSummary = []; Body = { Locus = TextRef.Concord { Part = 1; Article = 1; Paragraph = index }; Text = $"Page {index} body"; Anchors = []; WordsOfChrist = [] } }]
-      Next = Some $"next-{index}"; Version = "root" }
+    { Units = [{ Ref = (WireFixtures.identity<UnitReference> $"page-{index}"); Node = { Id = (WireFixtures.identity<NodeId> $"TextUnit:page-{index}"); Kind = NodeKind.TextUnit; Label = $"Page {index}" }; Heading = None; EdgeSummary = []; Body = { Locus = TextRef.Concord { Part = 1; Article = 1; Paragraph = index }; Text = $"Page {index} body"; Anchors = []; WordsOfChrist = [] } }]
+      Next = Some (WireFixtures.identity<UnitReference> $"next-{index}"); Version = (WireFixtures.identity<ArtifactRoot> "root") }
 
 let private surfaceFixtures request failure : Surface list =
-    let read = Reads.textWindow "served" None None None None
+    let read = Reads.textWindow (WireFixtures.identity<TextWindowReference> "served") None None None None
     let pending = ReadSession.beginRead request read Empty
-    let window: TextWindow = { Units = []; Next = None; Version = "root" }
+    let window: TextWindow = { Units = []; Next = None; Version = (WireFixtures.identity<ArtifactRoot> "root") }
     let ready = ReadSession.complete request (Ok window) pending
     let failed = ReadSession.complete request (Error failure) pending
     let states = [ReadingState.LoadingContents request; ReadingState.CouldNotLoadContents failure; ReadingState.Unavailable failure; ReadingState.Active(contents, pending); ReadingState.Active(contents, ready); ReadingState.Active(contents, failed)]
@@ -311,7 +311,7 @@ let private surfaceFixtures request failure : Surface list =
      yield Surface.World; yield Surface.Kretzmann; yield Surface.NotFound]
 
 let private surfaceMessages request failure : SurfaceMessage list =
-    let window: TextWindow = { Units = []; Next = None; Version = "root" }
+    let window: TextWindow = { Units = []; Next = None; Version = (WireFixtures.identity<ArtifactRoot> "root") }
     let source: SourcesDocument = { Categories = []; Sources = []; Provenances = None }
     let readings = [ReadingMessage.RetryContents; ReadingMessage.RetryText; ReadingMessage.ContentsLoaded(request, Ok contents); ReadingMessage.ContentsLoaded(request, Error failure); ReadingMessage.TextLoaded(request, Ok window); ReadingMessage.TextLoaded(request, Error failure)]
     [yield! readings |> List.map SurfaceMessage.Reader
@@ -336,8 +336,8 @@ let private messageOwner message =
 
 let private requestAfter steps = [1 .. int steps] |> List.fold (fun identity _ -> RequestId.next identity) RequestId.initial
 
-let firstChapter: ContentsChild = { Id = "Container:bible-chapter-GEN-1"; Title = "1"; Kind = ContentsChildKind.Chapter; Ref = "GEN.1"; Locus = TextRef.Bible { Book = BookId.GEN; Chapter = 1; Verse = 1 }; Count = 31 }
-let contents: Contents = { Corpus = Corpus.Bible; Version = "root"; Roots = [{ Id = "Container:bible-book-GEN"; Title = "Genesis"; Kind = ContentsRootKind.Book; Group = Some Testament.OT; Ref = "GEN.1.1"; Locus = firstChapter.Locus; Children = [firstChapter] }] }
+let firstChapter: ContentsChild = { Id = (WireFixtures.identity<NodeId> "Container:bible-chapter-GEN-1"); Title = "1"; Kind = ContentsChildKind.Chapter; Ref = (WireFixtures.identity<ContentsReference> "GEN.1"); Locus = TextRef.Bible { Book = BookId.GEN; Chapter = 1; Verse = 1 }; Count = 31 }
+let contents: Contents = { Corpus = Corpus.Bible; Version = (WireFixtures.identity<ArtifactRoot> "root"); Roots = [{ Id = (WireFixtures.identity<NodeId> "Container:bible-book-GEN"); Title = "Genesis"; Kind = ContentsRootKind.Book; Group = Some Testament.OT; Ref = (WireFixtures.identity<ContentsReference> "GEN.1.1"); Locus = firstChapter.Locus; Children = [firstChapter] }] }
 let private concordPageSize = 20
 let private futureJourneyLength = 10_000
 type private SurfaceOwner = ReaderOwner | ConcordOwner | SourcesOwner | NoOwner

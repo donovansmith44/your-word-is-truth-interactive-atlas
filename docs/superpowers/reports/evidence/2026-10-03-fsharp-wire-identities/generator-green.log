@@ -1,0 +1,9 @@
+  Determining projects to restore...
+  Restored /home/donovan/w/CX-FSHARP-wire/docs/superpowers/reports/evidence/2026-10-03-fsharp-wire-identities/generator/GeneratorLaws.fsproj (in 161 ms).
+  1 of 2 projects are up-to-date for restore.
+  BibleAtlas.FSharp.ContractGenerator -> /home/donovan/w/CX-FSHARP-wire/client-fsharp.ContractGenerator/bin/Debug/net10.0/BibleAtlas.FSharp.ContractGenerator.dll
+  GeneratorLaws -> /home/donovan/w/CX-FSHARP-wire/docs/superpowers/reports/evidence/2026-10-03-fsharp-wire-identities/generator/bin/Debug/net10.0/GeneratorLaws.dll
+Test run for /home/donovan/w/CX-FSHARP-wire/docs/superpowers/reports/evidence/2026-10-03-fsharp-wire-identities/generator/bin/Debug/net10.0/GeneratorLaws.dll (.NETCoreApp,Version=v10.0)
+A total of 1 test files matched the specified pattern.
+
+Passed!  - Failed:     0, Passed:     7, Skipped:     0, Total:     7, Duration: 236 ms - GeneratorLaws.dll (net10.0)

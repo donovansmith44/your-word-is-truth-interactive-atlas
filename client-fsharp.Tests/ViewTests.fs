@@ -10,7 +10,7 @@ open BibleAtlas.FSharp.Contract
 [<Fact>]
 let ``the reader renders the whole served chapter with anchored red letter text`` () =
     let model, _ = Model.init Route.Reader
-    let model = ModelTests.withReading { Units = [readingUnit]; Next = None; Version = "root" } model
+    let model = ModelTests.withReading { Units = [readingUnit]; Next = None; Version = (WireFixtures.identity<ArtifactRoot> "root") } model
     use context = new BunitContext()
     let view = render context model ignore
     let expected = """<article class="reader-column"><h1 class="chapter-head"><span class="chapter-head-book">Genesis</span><span class="chapter-head-num">1</span></h1><div class="verse-line explorable" data-testid="verse-line-1" data-focal="false" id="v1" tabindex="0" role="button" aria-label="Explore Genesis 1:1"><button type="button" class="verse-num" data-testid="verse-num-1">1</button><span class="verse-text">😀 <span class="words-of-christ"><span class="verse-mention" data-testid="verse-mention-1-Place:served-place" tabindex="0" role="button" aria-label="Explore ab">ab</span> cd</span></span></div></article>"""
@@ -21,7 +21,7 @@ let ``the reader renders the whole served chapter with anchored red letter text`
 [<InlineData(" ")>]
 let ``a served reader anchor opens its typed position from the keyboard`` key =
     let model, _ = Model.init Route.Reader
-    let model = ModelTests.withReading { Units = [readingUnit]; Next = None; Version = "root" } model
+    let model = ModelTests.withReading { Units = [readingUnit]; Next = None; Version = (WireFixtures.identity<ArtifactRoot> "root") } model
     let mutable messages = []
     use context = new BunitContext()
     let view = render context model (fun message -> messages <- messages @ [message])
@@ -41,8 +41,8 @@ let ``the reader shows a failed contents read with an explicit Retry`` () =
 [<Fact>]
 let ``the Concord view renders the entire served paragraph and citation`` () =
     let model, _ = Model.init (Route.Concord None)
-    let unit = { readingUnit with Ref = "BoC 1.1.1"; Body = { readingUnit.Body with Locus = TextRef.Concord { Part = 1; Article = 1; Paragraph = 1 }; WordsOfChrist = [] }; Node = { readingUnit.Node with Label = "BoC 1.1.1" }; EdgeSummary = [{ Kind = EdgeKind.Cites; Count = 1 }] }
-    let model = ModelTests.withReading { Units = [unit]; Next = None; Version = "root" } model
+    let unit = { readingUnit with Ref = (WireFixtures.identity<UnitReference> "BoC 1.1.1"); Body = { readingUnit.Body with Locus = TextRef.Concord { Part = 1; Article = 1; Paragraph = 1 }; WordsOfChrist = [] }; Node = { readingUnit.Node with Label = "BoC 1.1.1" }; EdgeSummary = [{ Kind = EdgeKind.Cites; Count = 1 }] }
+    let model = ModelTests.withReading { Units = [unit]; Next = None; Version = (WireFixtures.identity<ArtifactRoot> "root") } model
     use context = new BunitContext()
     let view = render context model ignore
     let expected = """<div class="concord-unit explorable" data-testid="concord-unit-TextUnit:served-verse" tabindex="0" role="button" aria-label="Explore BoC 1.1.1"><span class="concord-unit-ref">BoC 1.1.1</span>😀 <span class="concord-ref" data-testid="concord-ref-TextUnit:served-verse-2" tabindex="0" role="button" aria-label="Explore ab">ab</span> cd</div>"""
@@ -51,7 +51,7 @@ let ``the Concord view renders the entire served paragraph and citation`` () =
 [<Fact>]
 let ``activating a served reader row dispatches exactly its typed position`` () =
     let model, _ = Model.init Route.Reader
-    let model = ModelTests.withReading { Units = [readingUnit]; Next = None; Version = "root" } model
+    let model = ModelTests.withReading { Units = [readingUnit]; Next = None; Version = (WireFixtures.identity<ArtifactRoot> "root") } model
     let mutable messages = []
     use context = new BunitContext()
     let view = render context model (fun message -> messages <- messages @ [message])
@@ -60,10 +60,10 @@ let ``activating a served reader row dispatches exactly its typed position`` () 
 
 [<Fact>]
 let ``the reader retains a continued quiet heading and its served target`` () =
-    let event = { Id = "Event:served-heading"; Kind = NodeKind.Event; Label = "Served heading" }
+    let event = { Id = (WireFixtures.identity<NodeId> "Event:served-heading"); Kind = NodeKind.Event; Label = "Served heading" }
     let unit = { readingUnit with Heading = Some { Event = event; IsContinuation = true; Kind = EventKind.General } }
     let model, _ = Model.init Route.Reader
-    let model = ModelTests.withReading { Units = [unit]; Next = None; Version = "root" } model
+    let model = ModelTests.withReading { Units = [unit]; Next = None; Version = (WireFixtures.identity<ArtifactRoot> "root") } model
     let mutable messages = []
     use context = new BunitContext()
     let view = render context model (fun message -> messages <- messages @ [message])
@@ -74,10 +74,10 @@ let ``the reader retains a continued quiet heading and its served target`` () =
 
 [<Fact>]
 let ``the reader renders an event heading without an invented continuation`` () =
-    let event = { Id = "Event:served-heading"; Kind = NodeKind.Event; Label = "Served heading" }
+    let event = { Id = (WireFixtures.identity<NodeId> "Event:served-heading"); Kind = NodeKind.Event; Label = "Served heading" }
     let unit = { readingUnit with Heading = Some { Event = event; IsContinuation = false; Kind = EventKind.Event } }
     let model, _ = Model.init Route.Reader
-    let model = ModelTests.withReading { Units = [unit]; Next = None; Version = "root" } model
+    let model = ModelTests.withReading { Units = [unit]; Next = None; Version = (WireFixtures.identity<ArtifactRoot> "root") } model
     use context = new BunitContext()
     let view = render context model ignore
     (find view ".pericope-heading").MarkupMatches("""<h2 class="pericope-heading explorable" data-testid="pericope-heading-Event:served-heading" data-continuation="false" tabindex="0" role="button" aria-label="Explore Served heading">Served heading</h2>""")
@@ -85,7 +85,7 @@ let ``the reader renders an event heading without an invented continuation`` () 
 [<Fact>]
 let ``unrelated typing over a reader anchor does not open a focus`` () =
     let model, _ = Model.init Route.Reader
-    let model = ModelTests.withReading { Units = [readingUnit]; Next = None; Version = "root" } model
+    let model = ModelTests.withReading { Units = [readingUnit]; Next = None; Version = (WireFixtures.identity<ArtifactRoot> "root") } model
     let mutable messages = []
     use context = new BunitContext()
     let view = render context model (fun message -> messages <- messages @ [message])
@@ -95,8 +95,8 @@ let ``unrelated typing over a reader anchor does not open a focus`` () =
 [<Fact>]
 let ``the Concord view keeps a paragraph with no served edges as plain text`` () =
     let model, _ = Model.init (Route.Concord None)
-    let unit = { readingUnit with Ref = "BoC 1.1.1"; Body = { readingUnit.Body with Locus = TextRef.Concord { Part = 1; Article = 1; Paragraph = 1 }; Anchors = []; WordsOfChrist = [] } }
-    let model = ModelTests.withReading { Units = [unit]; Next = None; Version = "root" } model
+    let unit = { readingUnit with Ref = (WireFixtures.identity<UnitReference> "BoC 1.1.1"); Body = { readingUnit.Body with Locus = TextRef.Concord { Part = 1; Article = 1; Paragraph = 1 }; Anchors = []; WordsOfChrist = [] } }
+    let model = ModelTests.withReading { Units = [unit]; Next = None; Version = (WireFixtures.identity<ArtifactRoot> "root") } model
     use context = new BunitContext()
     let view = render context model ignore
     (find view ".concord-unit").MarkupMatches("""<div class="concord-unit" data-testid="concord-unit-TextUnit:served-verse"><span class="concord-unit-ref">BoC 1.1.1</span>😀 ab cd</div>""")
@@ -104,7 +104,7 @@ let ``the Concord view keeps a paragraph with no served edges as plain text`` ()
 [<Fact>]
 let ``the served Concord continuation exposes Next through an Elmish message`` () =
     let model, _ = Model.init (Route.Concord None)
-    let model = ModelTests.withReading { Units = []; Next = Some "BoC 1.1.21"; Version = "root" } model
+    let model = ModelTests.withReading { Units = []; Next = Some (WireFixtures.identity<UnitReference> "BoC 1.1.21"); Version = (WireFixtures.identity<ArtifactRoot> "root") } model
     let mutable messages = []
     use context = new BunitContext()
     let view = render context model (fun message -> messages <- messages @ [message])
@@ -116,7 +116,7 @@ let ``the served Concord continuation exposes Next through an Elmish message`` (
 [<Fact>]
 let ``a terminal Concord page offers no invented continuation`` () =
     let model, _ = Model.init (Route.Concord None)
-    let model = ModelTests.withReading { Units = []; Next = None; Version = "root" } model
+    let model = ModelTests.withReading { Units = []; Next = None; Version = (WireFixtures.identity<ArtifactRoot> "root") } model
     use context = new BunitContext()
     let view = render context model ignore
     Assert.Empty(RenderedComponentExtensions.FindAll<AppView>(view, "[data-testid='concord-next']"))
@@ -164,7 +164,7 @@ let ``Back in the popover dispatches the exploration operation`` () =
 
 [<Fact>]
 let ``a text presentation follows its served anchor within the current exploration`` () =
-    let record = { PresentationTests.node with Kind = NodeKind.TextUnit; Text = Some readingUnit.Body }
+    let record = { PresentationTests.node 0us with Kind = NodeKind.TextUnit; Text = Some readingUnit.Body }
     let trail = Trail.beginAt (PresentationTests.resolved record)
     let model, _ = Model.init Route.Sources
     let model = { model with Focus = FocusState.Opened trail }
@@ -188,7 +188,7 @@ let ``Escape closes the focus without changing the route`` () =
 
 [<Fact>]
 let ``an invalid text presentation retries by renewing the exploration`` () =
-    let trail = Trail.beginAt (PresentationTests.resolved { PresentationTests.node with Kind = NodeKind.TextUnit })
+    let trail = Trail.beginAt (PresentationTests.resolved { PresentationTests.node 0us with Kind = NodeKind.TextUnit })
     let model, _ = Model.init Route.Sources
     let model = { model with Focus = FocusState.Opened trail }
     let mutable messages = []
@@ -251,5 +251,5 @@ let render (context: BunitContext) (model: Model) (dispatch: Message -> unit) : 
 
 let find<'a when 'a :> Microsoft.AspNetCore.Components.IComponent> (view: IRenderedComponent<'a>) (selector: string) : AngleSharp.Dom.IElement =
     RenderedComponentExtensions.Find<'a>(view, selector)
-let readingAnchor: Anchor = { Start = 2; End = 4; Kind = EdgeKind.Mentions; Node = { Id = "Place:served-place"; Kind = NodeKind.Place; Label = "Served place" } }
-let readingUnit: TextUnit = { Ref = "GEN.1.1"; Node = { Id = "TextUnit:served-verse"; Kind = NodeKind.TextUnit; Label = "Genesis 1:1" }; Heading = None; EdgeSummary = []; Body = { Text = "😀 ab cd"; Locus = ModelTests.firstChapter.Locus; Anchors = [readingAnchor]; WordsOfChrist = [{ Start = 2; End = 7 }] } }
+let readingAnchor: Anchor = { Start = 2; End = 4; Kind = EdgeKind.Mentions; Node = { Id = (WireFixtures.identity<NodeId> "Place:served-place"); Kind = NodeKind.Place; Label = "Served place" } }
+let readingUnit: TextUnit = { Ref = (WireFixtures.identity<UnitReference> "GEN.1.1"); Node = { Id = (WireFixtures.identity<NodeId> "TextUnit:served-verse"); Kind = NodeKind.TextUnit; Label = "Genesis 1:1" }; Heading = None; EdgeSummary = []; Body = { Text = "😀 ab cd"; Locus = ModelTests.firstChapter.Locus; Anchors = [readingAnchor]; WordsOfChrist = [{ Start = 2; End = 7 }] } }

@@ -62,11 +62,11 @@ let ``Resume resolves the entire saved journey in one read and retains step kind
 let ``a resumed journey refuses wrong cardinality and mixed artifact roots`` () =
     let target = node "Person:target" "other-root"
     Assert.Equal(Error(Contract "the resolved journey has 1 elements for 1 steps"), Trail.resume [start] [EdgeKind.Contains])
-    Assert.Equal(Error(ArtifactMoved("root", "other-root")), Trail.resume [start; target] [EdgeKind.Contains])
+    Assert.Equal(Error(ArtifactMoved((WireFixtures.identity<ArtifactRoot> "root"), (WireFixtures.identity<ArtifactRoot> "other-root"))), Trail.resume [start; target] [EdgeKind.Contains])
 
 [<Fact>]
 let ``a missing element cannot become a resolved position`` () =
-    Assert.Equal(Error(Contract "the element read names nothing for Person:absent"), Explorable.ofElement "root" (Element.Missing { Id = "Person:absent" }))
+    Assert.Equal(Error(Contract "the element read names nothing for Person:absent"), Explorable.ofElement (WireFixtures.identity<ArtifactRoot> "root") (Element.Missing { Id = (WireFixtures.identity<ElementId> "Person:absent") }))
 
 [<Fact>]
 let ``every generated edge kind has a dual and duality is involutive`` () =
@@ -81,12 +81,12 @@ let ``every generated edge kind has a dual and duality is involutive`` () =
 [<Fact>]
 let ``a node record cannot be stamped with a different element page root`` () =
     let served = Explorable.element start
-    Assert.Equal(Error(ArtifactMoved("page-root", "root")), Explorable.ofElement "page-root" served)
+    Assert.Equal(Error(ArtifactMoved((WireFixtures.identity<ArtifactRoot> "page-root"), (WireFixtures.identity<ArtifactRoot> "root"))), Explorable.ofElement (WireFixtures.identity<ArtifactRoot> "page-root") served)
 let run<'a> (action: Explore<'a>) : Result<'a * Trail, Failure> = Explore.run explorer trail action |> Async.RunSynchronously
 let explorer = { Resolve = fun _ -> async { return Error(Contract "unexpected read") } }
 let node (id: string) (root: string) : Explorable =
-    let record = { Id = id; Kind = NodeKind.Person; Label = id; Provenance = "test"; EdgeSummary = []; Version = root; Book = None; Catechism = None; Description = None; Era = None; Event = None; Map = None; Person = None; Place = None; Polity = None; Text = None }
-    match Explorable.ofElement root (Element.Node { Node = record }) with
+    let record = { Id = (WireFixtures.identity<NodeId> id); Kind = NodeKind.Person; Label = id; Provenance = { Id = "test"; Title = "test" }; EdgeSummary = []; Version = (WireFixtures.identity<ArtifactRoot> root); Book = None; Catechism = None; Description = None; Era = None; Event = None; Map = None; Person = None; Place = None; Polity = None; Text = None }
+    match Explorable.ofElement (WireFixtures.identity<ArtifactRoot> root) (Element.Node { Node = record }) with
     | Ok node -> node
     | Error failure -> failwithf "%A" failure
 

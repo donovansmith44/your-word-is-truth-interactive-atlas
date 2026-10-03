@@ -20,7 +20,7 @@ module Explore =
     let internal walk action = Explore(ReaderT(fun explorer -> StateT(fun trail -> ResultT(action explorer trail))))
     let here = walk (fun _ trail -> async { return Ok(Trail.current trail, trail) })
 
-    let links (kind: EdgeKind) (cursor: int option) : Explore<Frontier<int>> =
+    let links (kind: EdgeKind) (cursor: EdgePageCursor option) : Explore<Frontier<EdgePageCursor>> =
         BibleAtlas.FSharp.Domain.DomainSkeleton.pending "Explore.links"
 
     let renew =

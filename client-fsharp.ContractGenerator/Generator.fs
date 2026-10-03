@@ -165,7 +165,7 @@ module rec Generator =
                 | _ ->
                     let properties = ownFields node |> List.collect (fun own -> get "properties" own |> Option.map (fun properties -> fields properties |> List.map (fun (wire, property) -> wire, property, own)) |> Option.defaultValue [])
                     match properties with
-                    | [] when Map.containsKey typeName identityShapes -> output.AppendLine($"    private | {typeName} of {identityShapes[typeName]}") |> ignore
+                    | [] when Map.containsKey typeName identityShapes -> output.AppendLine($"    private | {typeName} of {identityShapes[typeName]}\n    with\n    override identity.ToString() = match identity with {typeName} value -> System.Convert.ToString(value, System.Globalization.CultureInfo.InvariantCulture)") |> ignore
                     | [] -> output.AppendLine($"    {shape typeName node}") |> ignore
                     | properties ->
                         output.AppendLine("    {") |> ignore

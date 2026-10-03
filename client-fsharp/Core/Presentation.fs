@@ -25,7 +25,7 @@ module rec Presenter =
         | FieldName.Provenance -> "Provenance"
 
     let private node (record: NodeRecord) : Result<PopoverPresentation, Failure> =
-        let provenance = [{ Name = FieldName.Provenance; Value = record.Provenance }]
+        let provenance = [{ Name = FieldName.Provenance; Value = record.Provenance.Title }]
         match record.Kind with
         | NodeKind.TextUnit ->
             match record.Text with
@@ -45,7 +45,7 @@ module rec Presenter =
             Ok(PopoverPresentation.Card { Title = record.Label; Fields = fields @ provenance })
 
     let private edge (record: EdgeRecord) : Result<PopoverPresentation, Failure> =
-        let fields = field FieldName.Provenance record.Provenance |> Option.toList
+        let fields = field FieldName.Provenance (record.Provenance |> Option.map _.Title) |> Option.toList
         Ok(PopoverPresentation.Card { Title = record.Label; Fields = fields })
 
     let private field (name: FieldName) (value: string option) : PresentationField option = value |> Option.map (fun value -> { Name = name; Value = value })

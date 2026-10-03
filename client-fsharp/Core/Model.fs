@@ -219,7 +219,7 @@ module private ConcordSurface =
             match ReadSession.state session with
             | Ready window ->
                 match window.Next with
-                | Some reference -> ReadingSurface.beginRead Corpus.Concord request contents session (Reads.textWindow reference (Some ReadingAffordances.concordPageSize) (Some WindowDir.Onward) None (Some Corpus.Concord))
+                | Some reference -> ReadingSurface.beginRead Corpus.Concord request contents session (Reads.textWindow (TextWindowReference.ofUnitReference reference) (Some ReadingAffordances.concordPageSize) (Some WindowDir.Onward) None (Some Corpus.Concord))
                 | None -> state, []
             | Empty | Loading _ | Failed _ -> state, []
         | ConcordMessage.Next, ReadingState.LoadingContents _ | ConcordMessage.Next, ReadingState.CouldNotLoadContents _ | ConcordMessage.Next, ReadingState.Unavailable _ -> state, []
@@ -236,8 +236,9 @@ module private ReadingSurface =
             | Ok contents when contents.Corpus <> corpus -> ReadingState.Unavailable(Contract "the contents answer names a different corpus"), []
             | Ok contents ->
                 match opening choice contents with
-                | None -> ReadingState.Unavailable(Contract "the requested reading has no opening in the served contents"), []
-                | Some(reference, scope) ->
+                | Error failure -> ReadingState.Unavailable failure, []
+                | Ok None -> ReadingState.Unavailable(Contract "the requested reading has no opening in the served contents"), []
+                | Ok(Some(reference, scope)) ->
                     let size = match corpus with Corpus.Bible -> None | Corpus.Concord -> Some ReadingAffordances.concordPageSize
                     let read = Reads.textWindow reference size None scope (Some corpus)
                     ReadingState.Active(contents, ReadSession.beginRead request read Empty), [ReadText(corpus, request, read)]
@@ -255,16 +256,16 @@ module private ReadingSurface =
     let beginRead (corpus: Corpus) (request: RequestId) (contents: Contents) (session: ReadSession<TextWindow>) (read: Request<TextWindow>) : ReadingState * Effect list =
         ReadingState.Active(contents, ReadSession.beginRead request read (ReadSession.state session)), [ReadText(corpus, request, read)]
 
-    let private opening (choice: ReadingChoice) (contents: Contents) : (string * TextScope option) option =
+    let private opening (choice: ReadingChoice) (contents: Contents) : Result<(TextWindowReference * TextScope option) option, Failure> =
         match choice with
-        | ReadingChoice.Bible None -> contents.Roots |> List.tryHead |> Option.bind (fun root -> root.Children |> List.tryHead) |> Option.map (fun child -> child.Ref, Some TextScope.Chapter)
+        | ReadingChoice.Bible None -> contents.Roots |> List.tryHead |> Option.bind (fun root -> root.Children |> List.tryHead) |> Option.map (fun child -> TextWindowReference.ofContentsReference child.Ref, Some TextScope.Chapter) |> Ok
         | ReadingChoice.Bible(Some location) ->
             contents.Roots |> List.collect _.Children |> List.tryFind (fun child ->
                 match child.Locus with
                 | TextRef.Bible locus -> locus.Book = location.Book && locus.Chapter = location.Chapter
-                | TextRef.Concord _ -> false) |> Option.map (fun child -> child.Ref, Some TextScope.Chapter)
-        | ReadingChoice.Concord(Some reference) -> Some(reference, None)
-        | ReadingChoice.Concord None -> contents.Roots |> List.tryHead |> Option.map (fun root -> root.Ref, None)
+                | TextRef.Concord _ -> false) |> Option.map (fun child -> TextWindowReference.ofContentsReference child.Ref, Some TextScope.Chapter) |> Ok
+        | ReadingChoice.Concord(Some reference) -> Json.decode<ConcordReference>(Json.encode reference) |> Result.map (fun reference -> Some(TextWindowReference.ofConcordReference reference, None))
+        | ReadingChoice.Concord None -> contents.Roots |> List.tryHead |> Option.map (fun root -> TextWindowReference.ofContentsReference root.Ref, None) |> Ok
 
     let private validate (corpus: Corpus) (window: TextWindow) : Result<TextWindow, Failure> =
         let matches =

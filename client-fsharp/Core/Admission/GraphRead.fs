@@ -29,7 +29,7 @@ module rec GraphRead =
                     | Some cursor -> return! read http positions { Cursor = Some cursor; Root = Some page.Version; Remaining = remaining; Reverse = gathered }
     }
 
-    let private append (root: string) (elements: Element list) (remaining: PositionRef list) (gathered: Explorable list) : Result<PositionRef list * Explorable list, Failure> =
+    let private append (root: ArtifactRoot) (elements: Element list) (remaining: PositionRef list) (gathered: Explorable list) : Result<PositionRef list * Explorable list, Failure> =
         match elements, remaining with
         | [], _ -> Ok(remaining, gathered)
         | _ :: _, [] -> Error(Contract "the element read returned more elements than requested positions")
@@ -42,7 +42,7 @@ module rec GraphRead =
                     Error(Contract $"the element read returned {actual} for {wanted}"))
 
     type private Reading =
-        { Cursor: int option
-          Root: string option
+        { Cursor: ElementPageCursor option
+          Root: ArtifactRoot option
           Remaining: PositionRef list
           Reverse: Explorable list }

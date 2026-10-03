@@ -1,7 +1,6 @@
 namespace BibleAtlas.FSharp.Client
 
 open System.Net.Http
-open System.Text.Json
 open System.Threading
 open Elmish
 open BibleAtlas.FSharp
@@ -11,8 +10,7 @@ module rec Runtime =
     let command (http: HttpClient) (effect: Effect) : Cmd<Message> =
         match effect with
         | ReadContents(corpus, request) ->
-            let corpusName = JsonSerializer.Deserialize<string>(Json.encode corpus)
-            Cmd.OfAsync.perform (Api.read http CancellationToken.None) (Reads.contents corpusName) (fun answer -> readingMessage corpus (ReadingMessage.ContentsLoaded(request, answer)))
+            Cmd.OfAsync.perform (Api.read http CancellationToken.None) (Reads.contents corpus) (fun answer -> readingMessage corpus (ReadingMessage.ContentsLoaded(request, answer)))
         | ReadText(corpus, request, read) -> Cmd.OfAsync.perform (Api.read http CancellationToken.None) read (fun answer -> readingMessage corpus (ReadingMessage.TextLoaded(request, answer)))
         | ReadSources request -> Cmd.OfAsync.perform (Api.read http CancellationToken.None) (Reads.sources()) (fun answer -> Page(SurfaceMessage.Sources(SourcesMessage.Loaded(request, answer))))
         | ReadOpening(request, position) ->

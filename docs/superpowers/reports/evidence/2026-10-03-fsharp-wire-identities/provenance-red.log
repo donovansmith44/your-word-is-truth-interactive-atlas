@@ -1,0 +1,167 @@
+  Determining projects to restore...
+  Restored /home/donovan/w/CX-FSHARP-wire/docs/superpowers/reports/evidence/2026-10-03-fsharp-wire-identities/consumers/ConsumerLaws.fsproj (in 156 ms).
+  2 of 3 projects are up-to-date for restore.
+  BibleAtlas.FSharp.ContractGenerator -> /home/donovan/w/CX-FSHARP-wire/client-fsharp.ContractGenerator/bin/Debug/net10.0/BibleAtlas.FSharp.ContractGenerator.dll
+  BibleAtlas.FSharp.Core -> /home/donovan/w/CX-FSHARP-wire/client-fsharp/Core/bin/Debug/net10.0/BibleAtlas.FSharp.Core.dll
+  ConsumerLaws -> /home/donovan/w/CX-FSHARP-wire/docs/superpowers/reports/evidence/2026-10-03-fsharp-wire-identities/consumers/bin/Debug/net10.0/ConsumerLaws.dll
+Test run for /home/donovan/w/CX-FSHARP-wire/docs/superpowers/reports/evidence/2026-10-03-fsharp-wire-identities/consumers/bin/Debug/net10.0/ConsumerLaws.dll (.NETCoreApp,Version=v10.0)
+A total of 1 test files matched the specified pattern.
+[xUnit.net 00:00:00.24]     BibleAtlas.FSharp.Tests.PresentationTests.an edge card preserves its served label and optional provenance title [FAIL]
+[xUnit.net 00:00:00.25]     BibleAtlas.FSharp.Tests.PresentationTests.a node card composes exactly its served label and provenance title [FAIL]
+[xUnit.net 00:00:00.25]     BibleAtlas.FSharp.Tests.PresentationTests.a polity card uses the served reign label without formatting its dates [FAIL]
+[xUnit.net 00:00:00.25]     BibleAtlas.FSharp.Tests.PresentationTests.a place card composes its name and date claims without a blurb [FAIL]
+[xUnit.net 00:00:00.27]     BibleAtlas.FSharp.Tests.PresentationTests.a map or era card uses the whole served window label [FAIL]
+[xUnit.net 00:00:00.27]     BibleAtlas.FSharp.Tests.PresentationTests.a TextUnit presentation preserves its entire served text record and provenance title [FAIL]
+  Failed BibleAtlas.FSharp.Tests.PresentationTests.an edge card preserves its served label and optional provenance title [91 ms]
+  Error Message:
+   FsCheck.Xunit.PropertyFailedException :
+Falsifiable, after 4 tests (1 shrink) (4256305058638878158,14402353228436785509).
+Last step was invoked with size of 5 and seed of (12883292278991361974,11767420706264376317).
+Replay directly at failing step with (12883292278991361974,11767420706264376317,5).
+Original:
+(1us, true)
+Shrunk:
+(0us, true)
+
+---- Assert.Equal() Failure: Values differ
+Expected: Microsoft.FSharp.Core.FSharpResult`2[BibleAtlas.FSharp.PopoverPresentation,BibleAtlas.FSharp.Failure]
+Actual:   Microsoft.FSharp.Core.FSharpResult`2[BibleAtlas.FSharp.PopoverPresentation,BibleAtlas.FSharp.Failure]
+  Stack Trace:
+
+----- Inner Stack Trace -----
+   at BibleAtlas.FSharp.Tests.PresentationTests.an edge card preserves its served label and optional provenance title(UInt16 suffix, Boolean hasProvenance) in /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/PresentationTests.fs:line 43
+   at InvokeStub_PresentationTests.an edge card preserves its served label and optional provenance title(Object, Span`1)
+   at System.Reflection.MethodBaseInvoker.InvokeWithFewArgs(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
+--- End of stack trace from previous location ---
+   at FsCheck.Runner.invokeAndThrowInner@592-1.Invoke(Object[] o) in C:\Users\kurts\Projects\FsCheck\src\FsCheck\Runner.fs:line 595
+   at <StartupCode$FSharp-Core>.$Reflect.Invoke@1230.Invoke(T1 inp) in /__w/1/s/src/fsharp/src/FSharp.Core/reflect.fs:line 1230
+   at System.Lazy`1.ViaFactory(LazyThreadSafetyMode mode)
+   at System.Lazy`1.ExecutionAndPublication(LazyHelper executionAndPublication, Boolean useDefaultConstructor)
+   at System.Lazy`1.CreateValue()
+   at FsCheck.Testable.Prop.safeForce[a](Lazy`1 body) in C:\Users\kurts\Projects\FsCheck\src\FsCheck\Testable.fs:line 164
+  Failed BibleAtlas.FSharp.Tests.PresentationTests.a node card composes exactly its served label and provenance title [4 ms]
+  Error Message:
+   FsCheck.Xunit.PropertyFailedException :
+Falsifiable, after 1 test (0 shrinks) (10615740377478639856,16278267127042676717).
+Last step was invoked with size of 2 and seed of (17998718003858026652,3009448422189780795):
+Original:
+0us
+
+---- Assert.Equal() Failure: Values differ
+Expected: Microsoft.FSharp.Core.FSharpResult`2[BibleAtlas.FSharp.PopoverPresentation,BibleAtlas.FSharp.Failure]
+Actual:   Microsoft.FSharp.Core.FSharpResult`2[BibleAtlas.FSharp.PopoverPresentation,BibleAtlas.FSharp.Failure]
+  Stack Trace:
+
+----- Inner Stack Trace -----
+   at BibleAtlas.FSharp.Tests.PresentationTests.a node card composes exactly its served label and provenance title(UInt16 suffix) in /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/PresentationTests.fs:line 13
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeDirectByRefWithFewArgs(Object obj, Span`1 copyOfArgs, BindingFlags invokeAttr)
+--- End of stack trace from previous location ---
+   at FsCheck.Runner.invokeAndThrowInner@592-1.Invoke(Object[] o) in C:\Users\kurts\Projects\FsCheck\src\FsCheck\Runner.fs:line 595
+   at <StartupCode$FSharp-Core>.$Reflect.Invoke@1230.Invoke(T1 inp) in /__w/1/s/src/fsharp/src/FSharp.Core/reflect.fs:line 1230
+   at System.Lazy`1.ViaFactory(LazyThreadSafetyMode mode)
+   at System.Lazy`1.ExecutionAndPublication(LazyHelper executionAndPublication, Boolean useDefaultConstructor)
+   at System.Lazy`1.CreateValue()
+   at FsCheck.Testable.Prop.safeForce[a](Lazy`1 body) in C:\Users\kurts\Projects\FsCheck\src\FsCheck\Testable.fs:line 164
+  Failed BibleAtlas.FSharp.Tests.PresentationTests.a polity card uses the served reign label without formatting its dates [1 ms]
+  Error Message:
+   FsCheck.Xunit.PropertyFailedException :
+Falsifiable, after 1 test (1 shrink) (13935577499413013236,5128353331028182603).
+Last step was invoked with size of 2 and seed of (12272426977832329123,2376174485308521487):
+Original:
+1us
+Shrunk:
+0us
+
+---- Assert.Equal() Failure: Values differ
+Expected: Microsoft.FSharp.Core.FSharpResult`2[BibleAtlas.FSharp.PopoverPresentation,BibleAtlas.FSharp.Failure]
+Actual:   Microsoft.FSharp.Core.FSharpResult`2[BibleAtlas.FSharp.PopoverPresentation,BibleAtlas.FSharp.Failure]
+  Stack Trace:
+
+----- Inner Stack Trace -----
+   at BibleAtlas.FSharp.Tests.PresentationTests.a polity card uses the served reign label without formatting its dates(UInt16 suffix) in /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/PresentationTests.fs:line 21
+   at InvokeStub_PresentationTests.a polity card uses the served reign label without formatting its dates(Object, Span`1)
+   at System.Reflection.MethodBaseInvoker.InvokeWithOneArg(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
+--- End of stack trace from previous location ---
+   at FsCheck.Runner.invokeAndThrowInner@592-1.Invoke(Object[] o) in C:\Users\kurts\Projects\FsCheck\src\FsCheck\Runner.fs:line 595
+   at <StartupCode$FSharp-Core>.$Reflect.Invoke@1230.Invoke(T1 inp) in /__w/1/s/src/fsharp/src/FSharp.Core/reflect.fs:line 1230
+   at System.Lazy`1.ViaFactory(LazyThreadSafetyMode mode)
+   at System.Lazy`1.ExecutionAndPublication(LazyHelper executionAndPublication, Boolean useDefaultConstructor)
+   at System.Lazy`1.CreateValue()
+   at FsCheck.Testable.Prop.safeForce[a](Lazy`1 body) in C:\Users\kurts\Projects\FsCheck\src\FsCheck\Testable.fs:line 164
+  Failed BibleAtlas.FSharp.Tests.PresentationTests.a place card composes its name and date claims without a blurb [< 1 ms]
+  Error Message:
+   FsCheck.Xunit.PropertyFailedException :
+Falsifiable, after 1 test (0 shrinks) (6464876823720543743,10470690124770216415).
+Last step was invoked with size of 2 and seed of (3393925228720670863,15089330324911992643):
+Original:
+0us
+
+---- Assert.Equal() Failure: Values differ
+Expected: Microsoft.FSharp.Core.FSharpResult`2[BibleAtlas.FSharp.PopoverPresentation,BibleAtlas.FSharp.Failure]
+Actual:   Microsoft.FSharp.Core.FSharpResult`2[BibleAtlas.FSharp.PopoverPresentation,BibleAtlas.FSharp.Failure]
+  Stack Trace:
+
+----- Inner Stack Trace -----
+   at BibleAtlas.FSharp.Tests.PresentationTests.a place card composes its name and date claims without a blurb(UInt16 suffix) in /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/PresentationTests.fs:line 63
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeDirectByRefWithFewArgs(Object obj, Span`1 copyOfArgs, BindingFlags invokeAttr)
+--- End of stack trace from previous location ---
+   at FsCheck.Runner.invokeAndThrowInner@592-1.Invoke(Object[] o) in C:\Users\kurts\Projects\FsCheck\src\FsCheck\Runner.fs:line 595
+   at <StartupCode$FSharp-Core>.$Reflect.Invoke@1230.Invoke(T1 inp) in /__w/1/s/src/fsharp/src/FSharp.Core/reflect.fs:line 1230
+   at System.Lazy`1.ViaFactory(LazyThreadSafetyMode mode)
+   at System.Lazy`1.ExecutionAndPublication(LazyHelper executionAndPublication, Boolean useDefaultConstructor)
+   at System.Lazy`1.CreateValue()
+   at FsCheck.Testable.Prop.safeForce[a](Lazy`1 body) in C:\Users\kurts\Projects\FsCheck\src\FsCheck\Testable.fs:line 164
+  Failed BibleAtlas.FSharp.Tests.PresentationTests.a map or era card uses the whole served window label [< 1 ms]
+  Error Message:
+   FsCheck.Xunit.PropertyFailedException :
+Falsifiable, after 1 test (0 shrinks) (6444670624943874144,15000669933004721471).
+Last step was invoked with size of 2 and seed of (16057028320353169553,7306729562035269223):
+Original:
+(0us, false)
+
+---- Assert.Equal() Failure: Values differ
+Expected: Microsoft.FSharp.Core.FSharpResult`2[BibleAtlas.FSharp.PopoverPresentation,BibleAtlas.FSharp.Failure]
+Actual:   Microsoft.FSharp.Core.FSharpResult`2[BibleAtlas.FSharp.PopoverPresentation,BibleAtlas.FSharp.Failure]
+  Stack Trace:
+
+----- Inner Stack Trace -----
+   at BibleAtlas.FSharp.Tests.PresentationTests.a map or era card uses the whole served window label(UInt16 suffix, Boolean isMap) in /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/PresentationTests.fs:line 51
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeDirectByRefWithFewArgs(Object obj, Span`1 copyOfArgs, BindingFlags invokeAttr)
+--- End of stack trace from previous location ---
+   at FsCheck.Runner.invokeAndThrowInner@592-1.Invoke(Object[] o) in C:\Users\kurts\Projects\FsCheck\src\FsCheck\Runner.fs:line 595
+   at <StartupCode$FSharp-Core>.$Reflect.Invoke@1230.Invoke(T1 inp) in /__w/1/s/src/fsharp/src/FSharp.Core/reflect.fs:line 1230
+   at System.Lazy`1.ViaFactory(LazyThreadSafetyMode mode)
+   at System.Lazy`1.ExecutionAndPublication(LazyHelper executionAndPublication, Boolean useDefaultConstructor)
+   at System.Lazy`1.CreateValue()
+   at FsCheck.Testable.Prop.safeForce[a](Lazy`1 body) in C:\Users\kurts\Projects\FsCheck\src\FsCheck\Testable.fs:line 164
+  Failed BibleAtlas.FSharp.Tests.PresentationTests.a TextUnit presentation preserves its entire served text record and provenance title [1 ms]
+  Error Message:
+   FsCheck.Xunit.PropertyFailedException :
+Falsifiable, after 1 test (1 shrink) (8174672312110108419,3720862913410364755).
+Last step was invoked with size of 2 and seed of (16787769143449557758,14307459260524550791):
+Original:
+1us
+Shrunk:
+0us
+
+---- Assert.Equal() Failure: Values differ
+Expected: Microsoft.FSharp.Core.FSharpResult`2[BibleAtlas.FSharp.PopoverPresentation,BibleAtlas.FSharp.Failure]
+Actual:   Microsoft.FSharp.Core.FSharpResult`2[BibleAtlas.FSharp.PopoverPresentation,BibleAtlas.FSharp.Failure]
+  Stack Trace:
+
+----- Inner Stack Trace -----
+   at BibleAtlas.FSharp.Tests.PresentationTests.a TextUnit presentation preserves its entire served text record and provenance title(UInt16 suffix) in /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/PresentationTests.fs:line 29
+   at InvokeStub_PresentationTests.a TextUnit presentation preserves its entire served text record and provenance title(Object, Span`1)
+   at System.Reflection.MethodBaseInvoker.InvokeWithOneArg(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
+--- End of stack trace from previous location ---
+   at FsCheck.Runner.invokeAndThrowInner@592-1.Invoke(Object[] o) in C:\Users\kurts\Projects\FsCheck\src\FsCheck\Runner.fs:line 595
+   at <StartupCode$FSharp-Core>.$Reflect.Invoke@1230.Invoke(T1 inp) in /__w/1/s/src/fsharp/src/FSharp.Core/reflect.fs:line 1230
+   at System.Lazy`1.ViaFactory(LazyThreadSafetyMode mode)
+   at System.Lazy`1.ExecutionAndPublication(LazyHelper executionAndPublication, Boolean useDefaultConstructor)
+   at System.Lazy`1.CreateValue()
+   at FsCheck.Testable.Prop.safeForce[a](Lazy`1 body) in C:\Users\kurts\Projects\FsCheck\src\FsCheck\Testable.fs:line 164
+
+Failed!  - Failed:     6, Passed:     2, Skipped:     0, Total:     8, Duration: 176 ms - ConsumerLaws.dll (net10.0)

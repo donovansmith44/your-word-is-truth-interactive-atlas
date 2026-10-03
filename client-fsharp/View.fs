@@ -182,9 +182,9 @@ module View =
                                                 }
                                             else Attr.Empty()
                                         attr.``class`` (if explorable then "concord-unit explorable" else "concord-unit")
-                                        "data-testid" => ("concord-unit-" + unit.Node.Id)
+                                        "data-testid" => $"concord-unit-{unit.Node.Id}"
                                         interactive
-                                        span { attr.``class`` "concord-unit-ref"; unit.Ref }
+                                        span { attr.``class`` "concord-unit-ref"; string unit.Ref }
                                         anchoredText unit.Body (fun piece ->
                                             match piece.Anchor with
                                             | None -> text piece.Text
@@ -255,7 +255,7 @@ module View =
     let private unitHeading (heading: UnitHeading) dispatch : Node =
         h2 {
             attr.``class`` ("pericope-heading" + (if heading.IsContinuation then " pericope-heading-continuation" else "") + (if heading.Kind = EventKind.General then " explorable-quiet" else " explorable"))
-            "data-testid" => ("pericope-heading-" + heading.Event.Id)
+            "data-testid" => $"pericope-heading-{heading.Event.Id}"
             "data-continuation" => (if heading.IsContinuation then "true" else "false")
             attr.tabindex 0
             "role" => "button"
@@ -265,7 +265,7 @@ module View =
             if heading.IsContinuation then
                 span {
                     attr.``class`` "pericope-heading-continuation-marker"
-                    "data-testid" => ("pericope-heading-continuation-marker-" + heading.Event.Id)
+                    "data-testid" => $"pericope-heading-continuation-marker-{heading.Event.Id}"
                     "continued"
                 }
             heading.Event.Label

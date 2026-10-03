@@ -12,7 +12,7 @@ open BibleAtlas.FSharp.Contract
 [<Fact>]
 let ``the opening command resolves its typed position and delivers the whole trail`` () =
     let start = ExplorationTests.start
-    let body = Json.encode { Elements = [Explorable.element start]; Version = "root"; Next = None; Previous = None }
+    let body = Json.encode { Elements = [Explorable.element start]; Version = (WireFixtures.identity<ArtifactRoot> "root"); Next = None; Previous = None }
     use response = new HttpResponseMessage(HttpStatusCode.OK, Content = new StringContent(body))
     use handler = new TransportTests.Handler(response)
     use http = new HttpClient(handler, BaseAddress = Uri "http://example.test/")

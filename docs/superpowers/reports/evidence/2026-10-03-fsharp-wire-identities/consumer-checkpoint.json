@@ -1,0 +1,33 @@
+{
+  "producerBase": "da7e00d",
+  "parentSourceCarry": "88f0d26",
+  "normalTests": {
+    "passed": 157,
+    "failed": 0,
+    "skipped": 0
+  },
+  "portableGenerators": 7,
+  "portableIdentities": 6,
+  "portablePresentation": 8,
+  "displayInitialRed": {
+    "passed": 0,
+    "failed": 1
+  },
+  "presentationInitialRed": {
+    "passed": 2,
+    "failed": 6
+  },
+  "debugWasm": {
+    "warnings": 0,
+    "errors": 0
+  },
+  "fullParity": false,
+  "wholeDomainReady": false,
+  "sourceHashes": {
+    "client-fsharp.ContractGenerator/Generator.fs": "32154afbda2046a80c85824aaeb3d797716a82a30f40e345adb409e52b1d8461",
+    "client-fsharp.Tests/ContractIdentityLaws.fs": "e152ad07020d489ef881fdb3fd9260641664cc9a62db49199229df8d9808fe28",
+    "client-fsharp.Tests/PresentationTests.fs": "5ac7533f003dbf326c2a7841a060bfd6ec09d9309c568812ffe83691ea4c02db",
+    "client-fsharp/Core/Model.fs": "3a5b1a1afabc590396e0f853586456a4c31f38e398e2ede10caf0f4552e101d7",
+    "contracts/openapi.yaml": "03a0002ba98f90d39b2a4bb64a4228e7e5dc37d78f1a83c84450c24d3108ec0f"
+  }
+}

@@ -7,10 +7,79 @@ follow that carry-forward. The old unsquashed lane could not merge cleanly with
 squashed main, so that isolated merge was aborted. No producer, C# application,
 contract, artifact or other agent worktree was edited or resolved.
 
-The generated definitions compile and **12 scoped properties pass**, but the
-whole app does not yet compile against these types. Its Core build reports
-**20 FS0001 errors** at existing consumer signatures. This is not a full-domain
-sign-off, review-ready application or parity claim.
+The consumer integration now builds the Debug WebAssembly client with **zero
+warnings/errors** and passes **157 normal tests**, zero failures/skips. The
+portable runners pass **7 generator, 6 identity and 8 presentation properties**;
+these overlap the normal suite and are not extra independent test counts. The
+original 20-error Core failure below is retained historical red evidence. This
+remains author work, not whole-domain sign-off, full parity or C# retirement.
+
+## Consumer integration continuation
+
+The failed abstraction was the generated nominal wire identity: the older F#
+consumers accepted interchangeable primitives. The producer owns those identity
+representations; this change migrates the F# consumers to its approved published
+names. Positions widens node/edge IDs to ElementId through generated doors.
+Explorable, ArtifactMoved and element-page reads retain ArtifactRoot, element
+reads retain ElementPageCursor, frontier signatures retain ArtifactRoot and
+EdgePageCursor, and reading requests widen served ContentsReference or
+UnitReference to TextWindowReference. Corpus goes directly to the generated
+contents request. Browser Concord query input enters through the existing JSON
+library boundary into ConcordReference before widening; there is no reference
+parser or domain reconstruction. Views project identities only for visible text,
+HTML identities/selectors and URLs; request arguments remain typed.
+
+A new enumerating property failed before identity display was generated: F#'s
+default union display exposed representation syntax instead of the exact wire
+primitive. All 21 emitted identities now override the standard ToString via
+BCL Convert with invariant culture. Constructors stay private, and no primitive
+getter or narrowing door was added. Existing external compiler checks still
+refuse all 21 constructors and three wrong conversions in both generated samples.
+The property checks all published identity kinds with varied numeric/Unicode
+samples. String/int identities are the published representations; this is not a
+reference pattern validator or a custom codec.
+
+The served provenance change also exposed a visible behavior difference. Eight
+presentation properties were written before changing the presenters; **six failed,
+two passed** with source IDs. Both node and optional-edge paths now display the
+served **Title**. The laws cover cards, entire UnitText presentations, optional
+edge provenance, place claims and served reign/map/era labels. All eight tests in
+that touched file are now properties, replacing its example attributes. Entire
+Result presentations are asserted. Both remaining property controls stayed green.
+
+The first normal test compile exposed **98 distinct diagnostics** in legacy
+fixtures. The type-directed migration updates only test values, expected results
+and request arguments; generated constructors were not opened. WireFixtures uses
+the existing System.Text.Json library to admit test primitives, never an app
+factory. ContentsReference expectations use the actual generated widening. Old
+example tests outside PresentationTests remain; **157 passing tests is not a
+property-only claim**. Compact compile reds and the 92 initial fixture adaptations
+are retained, followed by the final normal green log. Shared static assets are
+read-only sparse inputs from the approved C# client.
+
+The category of interchangeable request arguments is fenced by generated nominal
+types and private constructors at the migrated consumer signatures. This does
+not certify unfinished reference-shape admission, structured error vocabulary,
+wire enum classification, unsupported-shape policy or every generated type's live
+screen reachability. The legacy generator's mutable emitter/string errors remain
+explicit pending style work. Whole-file newspaper order, the real unused gate,
+61 skeleton pending bodies and complete side-by-side parity remain open; the
+old 294 unused findings are pinned to parent 88f0d26, not measured anew here.
+No pending behavior or new feature was filled before domain sign-off. No producer,
+C# application, contract, data or other agent worktree changed.
+
+Reproduce from the worktree root after sourcing ~/.bible-atlas-env:
+
+```sh
+dotnet test docs/superpowers/reports/evidence/2026-10-03-fsharp-wire-identities/consumers/ConsumerLaws.fsproj
+dotnet test client-fsharp.Tests/BibleAtlas.FSharp.Tests.fsproj
+dotnet build client-fsharp/BibleAtlas.FSharp.Client.fsproj
+```
+
+The current build and native checks are bounded; no new Cargo/AOT, browser,
+mutation or synthetic-size performance gate ran. No Codex lock/server remains.
+The earlier generator-only checkpoint and its limits follow for evidence.
+
 
 ## Existing libraries and the signed rule
 

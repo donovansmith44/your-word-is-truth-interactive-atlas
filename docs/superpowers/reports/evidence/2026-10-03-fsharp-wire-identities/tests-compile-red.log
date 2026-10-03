@@ -1,0 +1,397 @@
+  Determining projects to restore...
+  Restored /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/BibleAtlas.FSharp.Tests.fsproj (in 320 ms).
+  4 of 5 projects are up-to-date for restore.
+  BibleAtlas.Client.ContractGenerator -> /home/donovan/w/CX-FSHARP-wire/client.ContractGenerator/bin/Debug/net10.0/BibleAtlas.Client.ContractGenerator.dll
+  BibleAtlas.FSharp.ContractGenerator -> /home/donovan/w/CX-FSHARP-wire/client-fsharp.ContractGenerator/bin/Debug/net10.0/BibleAtlas.FSharp.ContractGenerator.dll
+  BibleAtlas.FSharp.Core -> /home/donovan/w/CX-FSHARP-wire/client-fsharp/Core/bin/Debug/net10.0/BibleAtlas.FSharp.Core.dll
+  BibleAtlas.FSharp.Client -> /home/donovan/w/CX-FSHARP-wire/client-fsharp/bin/Debug/net10.0/BibleAtlas.FSharp.Client.dll
+  BibleAtlas.FSharp.Client (Blazor output) -> /home/donovan/w/CX-FSHARP-wire/client-fsharp/bin/Debug/net10.0/wwwroot
+/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/AnchoredTextTests.fs(9,77): error FS0001: This expression was expected to have type
+    'NodeId'
+but here has type
+    'string' [/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/BibleAtlas.FSharp.Tests.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/AnchoredTextTests.fs(21,79): error FS0001: This expression was expected to have type
+    'NodeId'
+but here has type
+    'string' [/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/BibleAtlas.FSharp.Tests.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/AnchoredTextTests.fs(22,80): error FS0001: This expression was expected to have type
+    'NodeId'
+but here has type
+    'string' [/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/BibleAtlas.FSharp.Tests.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/ContractTests.fs(18,43): error FS0001: This expression was expected to have type
+    'ElementId'
+but here has type
+    'string' [/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/BibleAtlas.FSharp.Tests.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/ContractTests.fs(64,44): error FS0001: This expression was expected to have type
+    'ArtifactRoot'
+but here has type
+    'string' [/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/BibleAtlas.FSharp.Tests.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/ContractTests.fs(64,82): error FS0001: This expression was expected to have type
+    'UnitReference'
+but here has type
+    'string' [/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/BibleAtlas.FSharp.Tests.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/ContractTests.fs(64,109): error FS0001: This expression was expected to have type
+    'NodeId'
+but here has type
+    'string' [/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/BibleAtlas.FSharp.Tests.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/ContractTests.fs(64,427): error FS0001: This expression was expected to have type
+    'NodeId'
+but here has type
+    'string' [/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/BibleAtlas.FSharp.Tests.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/ExplorationTests.fs(65,38): error FS0001: This expression was expected to have type
+    'ArtifactRoot'
+but here has type
+    'string' [/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/BibleAtlas.FSharp.Tests.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/ExplorationTests.fs(65,46): error FS0001: This expression was expected to have type
+    'ArtifactRoot'
+but here has type
+    'string' [/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/BibleAtlas.FSharp.Tests.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/ExplorationTests.fs(69,107): error FS0001: This expression was expected to have type
+    'ArtifactRoot'
+but here has type
+    'string' [/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/BibleAtlas.FSharp.Tests.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/ExplorationTests.fs(69,138): error FS0001: This expression was expected to have type
+    'ElementId'
+but here has type
+    'string' [/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/BibleAtlas.FSharp.Tests.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/ExplorationTests.fs(84,38): error FS0001: This expression was expected to have type
+    'ArtifactRoot'
+but here has type
+    'string' [/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/BibleAtlas.FSharp.Tests.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/ExplorationTests.fs(84,51): error FS0001: This expression was expected to have type
+    'ArtifactRoot'
+but here has type
+    'string' [/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/BibleAtlas.FSharp.Tests.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/ExplorationTests.fs(84,82): error FS0001: This expression was expected to have type
+    'ArtifactRoot'
+but here has type
+    'string' [/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/BibleAtlas.FSharp.Tests.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/ExplorationTests.fs(88,25): error FS0001: This expression was expected to have type
+    'NodeId'
+but here has type
+    'string' [/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/BibleAtlas.FSharp.Tests.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/ExplorationTests.fs(88,78): error FS0001: This expression was expected to have type
+    'Provenance'
+but here has type
+    'string' [/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/BibleAtlas.FSharp.Tests.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/ExplorationTests.fs(88,114): error FS0001: This expression was expected to have type
+    'ArtifactRoot'
+but here has type
+    'string' [/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/BibleAtlas.FSharp.Tests.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/ExplorationTests.fs(89,32): error FS0001: This expression was expected to have type
+    'ArtifactRoot'
+but here has type
+    'string' [/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/BibleAtlas.FSharp.Tests.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/PresentationTests.fs(32,23): error FS0001: This expression was expected to have type
+    'EdgeId'
+but here has type
+    'string' [/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/BibleAtlas.FSharp.Tests.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/PresentationTests.fs(33,40): error FS0001: This expression was expected to have type
+    'ArtifactRoot'
+but here has type
+    'string' [/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/BibleAtlas.FSharp.Tests.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/PresentationTests.fs(56,71): error FS0001: This expression was expected to have type
+    'ArtifactRoot'
+but here has type
+    'string' [/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/BibleAtlas.FSharp.Tests.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/PresentationTests.fs(58,31): error FS0001: This expression was expected to have type
+    'NodeId'
+but here has type
+    'string' [/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/BibleAtlas.FSharp.Tests.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/PresentationTests.fs(58,111): error FS0001: This expression was expected to have type
+    'Provenance'
+but here has type
+    'string' [/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/BibleAtlas.FSharp.Tests.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/PresentationTests.fs(58,156): error FS0001: This expression was expected to have type
+    'ArtifactRoot'
+but here has type
+    'string' [/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/BibleAtlas.FSharp.Tests.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/TransportTests.fs(13,49): error FS0001: This expression was expected to have type
+    'NodeId'
+but here has type
+    'string' [/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/BibleAtlas.FSharp.Tests.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/TransportTests.fs(13,102): error FS0001: This expression was expected to have type
+    'ElementId'
+but here has type
+    'string' [/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/BibleAtlas.FSharp.Tests.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/TransportTests.fs(13,147): error FS0001: This expression was expected to have type
+    'EdgePageCursor'
+but here has type
+    'int' [/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/BibleAtlas.FSharp.Tests.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/TransportTests.fs(13,192): error FS0001: This expression was expected to have type
+    'TextWindowReference'
+but here has type
+    'string' [/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/BibleAtlas.FSharp.Tests.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/TransportTests.fs(13,271): error FS0001: This expression was expected to have type
+    'ElementId'
+but here has type
+    'string' [/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/BibleAtlas.FSharp.Tests.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/TransportTests.fs(13,282): error FS0001: All elements of a list must be implicitly convertible to the type of the first element, which here is 'ElementId'. This element has type 'string'. [/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/BibleAtlas.FSharp.Tests.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/TransportTests.fs(21,36): error FS0001: This expression was expected to have type
+    'NodeId'
+but here has type
+    'string' [/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/BibleAtlas.FSharp.Tests.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/TransportTests.fs(30,72): error FS0001: This expression was expected to have type
+    'ElementId'
+but here has type
+    'string' [/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/BibleAtlas.FSharp.Tests.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/TransportTests.fs(31,58): error FS0001: This expression was expected to have type
+    'ElementId'
+but here has type
+    'string' [/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/BibleAtlas.FSharp.Tests.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/TransportTests.fs(31,88): error FS0001: This expression was expected to have type
+    'ArtifactRoot'
+but here has type
+    'string' [/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/BibleAtlas.FSharp.Tests.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/TransportTests.fs(38,73): error FS0001: This expression was expected to have type
+    'NodeId'
+but here has type
+    'string' [/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/BibleAtlas.FSharp.Tests.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/GraphTests.fs(13,94): error FS0001: This expression was expected to have type
+    'ArtifactRoot'
+but here has type
+    'string' [/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/BibleAtlas.FSharp.Tests.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/GraphTests.fs(19,69): error FS0001: This expression was expected to have type
+    'ArtifactRoot'
+but here has type
+    'string' [/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/BibleAtlas.FSharp.Tests.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/GraphTests.fs(19,89): error FS0001: This expression was expected to have type
+    'ElementPageCursor'
+but here has type
+    'int' [/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/BibleAtlas.FSharp.Tests.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/GraphTests.fs(19,163): error FS0001: This expression was expected to have type
+    'ArtifactRoot'
+but here has type
+    'string' [/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/BibleAtlas.FSharp.Tests.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/GraphTests.fs(19,200): error FS0001: This expression was expected to have type
+    'ElementPageCursor'
+but here has type
+    'int' [/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/BibleAtlas.FSharp.Tests.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/GraphTests.fs(26,69): error FS0001: This expression was expected to have type
+    'ArtifactRoot'
+but here has type
+    'string' [/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/BibleAtlas.FSharp.Tests.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/GraphTests.fs(26,89): error FS0001: This expression was expected to have type
+    'ElementPageCursor'
+but here has type
+    'int' [/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/BibleAtlas.FSharp.Tests.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/GraphTests.fs(26,162): error FS0001: This expression was expected to have type
+    'ArtifactRoot'
+but here has type
+    'string' [/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/BibleAtlas.FSharp.Tests.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/GraphTests.fs(26,198): error FS0001: This expression was expected to have type
+    'ElementPageCursor'
+but here has type
+    'int' [/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/BibleAtlas.FSharp.Tests.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/GraphTests.fs(28,38): error FS0001: This expression was expected to have type
+    'ArtifactRoot'
+but here has type
+    'string' [/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/BibleAtlas.FSharp.Tests.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/GraphTests.fs(28,46): error FS0001: This expression was expected to have type
+    'ArtifactRoot'
+but here has type
+    'string' [/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/BibleAtlas.FSharp.Tests.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/GraphTests.fs(32,53): error FS0001: This expression was expected to have type
+    'ElementId'
+but here has type
+    'string' [/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/BibleAtlas.FSharp.Tests.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/GraphTests.fs(32,82): error FS0001: This expression was expected to have type
+    'ArtifactRoot'
+but here has type
+    'string' [/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/BibleAtlas.FSharp.Tests.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/GraphTests.fs(38,67): error FS0001: This expression was expected to have type
+    'ArtifactRoot'
+but here has type
+    'string' [/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/BibleAtlas.FSharp.Tests.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/GraphTests.fs(44,68): error FS0001: This expression was expected to have type
+    'ArtifactRoot'
+but here has type
+    'string' [/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/BibleAtlas.FSharp.Tests.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/GraphTests.fs(54,43): error FS0001: This expression was expected to have type
+    'ArtifactRoot'
+but here has type
+    'string' [/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/BibleAtlas.FSharp.Tests.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/GraphTests.fs(54,63): error FS0001: This expression was expected to have type
+    'ElementPageCursor'
+but here has type
+    'int' [/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/BibleAtlas.FSharp.Tests.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/ModelTests.fs(27,68): error FS0001: This expression was expected to have type
+    'TextWindowReference'
+but here has type
+    'ContentsReference' [/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/BibleAtlas.FSharp.Tests.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/ModelTests.fs(28,92): error FS0001: This expression was expected to have type
+    'TextWindowReference'
+but here has type
+    'string' [/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/BibleAtlas.FSharp.Tests.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/ModelTests.fs(32,34): error FS0001: This expression was expected to have type
+    'UnitReference'
+but here has type
+    'string' [/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/BibleAtlas.FSharp.Tests.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/ModelTests.fs(32,58): error FS0001: This expression was expected to have type
+    'NodeId'
+but here has type
+    'string' [/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/BibleAtlas.FSharp.Tests.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/ModelTests.fs(33,71): error FS0001: This expression was expected to have type
+    'ArtifactRoot'
+but here has type
+    'string' [/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/BibleAtlas.FSharp.Tests.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/ModelTests.fs(61,33): error FS0001: This expression was expected to have type
+    'TextWindowReference'
+but here has type
+    'ContentsReference' [/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/BibleAtlas.FSharp.Tests.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/ModelTests.fs(97,33): error FS0001: This expression was expected to have type
+    'TextWindowReference'
+but here has type
+    'string' [/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/BibleAtlas.FSharp.Tests.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/ModelTests.fs(115,56): error FS0001: This expression was expected to have type
+    'UnitReference'
+but here has type
+    'string' [/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/BibleAtlas.FSharp.Tests.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/ModelTests.fs(115,80): error FS0001: This expression was expected to have type
+    'ArtifactRoot'
+but here has type
+    'string' [/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/BibleAtlas.FSharp.Tests.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/ModelTests.fs(119,33): error FS0001: This expression was expected to have type
+    'TextWindowReference'
+but here has type
+    'string' [/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/BibleAtlas.FSharp.Tests.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/ModelTests.fs(146,33): error FS0001: This expression was expected to have type
+    'TextWindowReference'
+but here has type
+    'string' [/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/BibleAtlas.FSharp.Tests.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/ModelTests.fs(253,37): error FS0001: This expression was expected to have type
+    'TextWindowReference'
+but here has type
+    'ContentsReference' [/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/BibleAtlas.FSharp.Tests.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/ModelTests.fs(258,37): error FS0001: This expression was expected to have type
+    'TextWindowReference'
+but here has type
+    'string' [/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/BibleAtlas.FSharp.Tests.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/ModelTests.fs(294,88): error FS0001: This expression was expected to have type
+    'ContentsReference'
+but here has type
+    'string' [/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/BibleAtlas.FSharp.Tests.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/ModelTests.fs(297,24): error FS0001: This expression was expected to have type
+    'UnitReference'
+but here has type
+    'string' [/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/BibleAtlas.FSharp.Tests.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/ModelTests.fs(297,55): error FS0001: This expression was expected to have type
+    'NodeId'
+but here has type
+    'string' [/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/BibleAtlas.FSharp.Tests.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/ModelTests.fs(298,19): error FS0001: This expression was expected to have type
+    'UnitReference'
+but here has type
+    'string' [/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/BibleAtlas.FSharp.Tests.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/ModelTests.fs(298,46): error FS0001: This expression was expected to have type
+    'ArtifactRoot'
+but here has type
+    'string' [/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/BibleAtlas.FSharp.Tests.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/ModelTests.fs(301,33): error FS0001: This expression was expected to have type
+    'TextWindowReference'
+but here has type
+    'string' [/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/BibleAtlas.FSharp.Tests.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/ModelTests.fs(303,67): error FS0001: This expression was expected to have type
+    'ArtifactRoot'
+but here has type
+    'string' [/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/BibleAtlas.FSharp.Tests.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/ModelTests.fs(314,67): error FS0001: This expression was expected to have type
+    'ArtifactRoot'
+but here has type
+    'string' [/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/BibleAtlas.FSharp.Tests.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/ModelTests.fs(339,42): error FS0001: This expression was expected to have type
+    'NodeId'
+but here has type
+    'string' [/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/BibleAtlas.FSharp.Tests.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/ModelTests.fs(339,128): error FS0001: This expression was expected to have type
+    'ContentsReference'
+but here has type
+    'string' [/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/BibleAtlas.FSharp.Tests.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/ModelTests.fs(340,61): error FS0001: This expression was expected to have type
+    'ArtifactRoot'
+but here has type
+    'string' [/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/BibleAtlas.FSharp.Tests.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/ModelTests.fs(340,85): error FS0001: This expression was expected to have type
+    'NodeId'
+but here has type
+    'string' [/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/BibleAtlas.FSharp.Tests.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/ModelTests.fs(340,195): error FS0001: This expression was expected to have type
+    'ContentsReference'
+but here has type
+    'string' [/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/BibleAtlas.FSharp.Tests.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/RuntimeTests.fs(15,79): error FS0001: This expression was expected to have type
+    'ArtifactRoot'
+but here has type
+    'string' [/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/BibleAtlas.FSharp.Tests.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/ViewTests.fs(13,88): error FS0001: This expression was expected to have type
+    'ArtifactRoot'
+but here has type
+    'string' [/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/BibleAtlas.FSharp.Tests.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/ViewTests.fs(24,88): error FS0001: This expression was expected to have type
+    'ArtifactRoot'
+but here has type
+    'string' [/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/BibleAtlas.FSharp.Tests.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/ViewTests.fs(44,41): error FS0001: This expression was expected to have type
+    'UnitReference'
+but here has type
+    'string' [/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/BibleAtlas.FSharp.Tests.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/ViewTests.fs(45,81): error FS0001: This expression was expected to have type
+    'ArtifactRoot'
+but here has type
+    'string' [/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/BibleAtlas.FSharp.Tests.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/ViewTests.fs(54,88): error FS0001: This expression was expected to have type
+    'ArtifactRoot'
+but here has type
+    'string' [/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/BibleAtlas.FSharp.Tests.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/ViewTests.fs(63,24): error FS0001: This expression was expected to have type
+    'NodeId'
+but here has type
+    'string' [/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/BibleAtlas.FSharp.Tests.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/ViewTests.fs(66,81): error FS0001: This expression was expected to have type
+    'ArtifactRoot'
+but here has type
+    'string' [/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/BibleAtlas.FSharp.Tests.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/ViewTests.fs(77,24): error FS0001: This expression was expected to have type
+    'NodeId'
+but here has type
+    'string' [/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/BibleAtlas.FSharp.Tests.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/ViewTests.fs(80,81): error FS0001: This expression was expected to have type
+    'ArtifactRoot'
+but here has type
+    'string' [/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/BibleAtlas.FSharp.Tests.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/ViewTests.fs(88,88): error FS0001: This expression was expected to have type
+    'ArtifactRoot'
+but here has type
+    'string' [/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/BibleAtlas.FSharp.Tests.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/ViewTests.fs(98,41): error FS0001: This expression was expected to have type
+    'UnitReference'
+but here has type
+    'string' [/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/BibleAtlas.FSharp.Tests.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/ViewTests.fs(99,81): error FS0001: This expression was expected to have type
+    'ArtifactRoot'
+but here has type
+    'string' [/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/BibleAtlas.FSharp.Tests.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/ViewTests.fs(107,66): error FS0001: This expression was expected to have type
+    'UnitReference'
+but here has type
+    'string' [/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/BibleAtlas.FSharp.Tests.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/ViewTests.fs(107,90): error FS0001: This expression was expected to have type
+    'ArtifactRoot'
+but here has type
+    'string' [/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/BibleAtlas.FSharp.Tests.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/ViewTests.fs(119,77): error FS0001: This expression was expected to have type
+    'ArtifactRoot'
+but here has type
+    'string' [/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/BibleAtlas.FSharp.Tests.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/ViewTests.fs(254,91): error FS0001: This expression was expected to have type
+    'NodeId'
+but here has type
+    'string' [/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/BibleAtlas.FSharp.Tests.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/ViewTests.fs(255,37): error FS0001: This expression was expected to have type
+    'UnitReference'
+but here has type
+    'string' [/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/BibleAtlas.FSharp.Tests.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/ViewTests.fs(255,62): error FS0001: This expression was expected to have type
+    'NodeId'
+but here has type
+    'string' [/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/BibleAtlas.FSharp.Tests.fsproj]

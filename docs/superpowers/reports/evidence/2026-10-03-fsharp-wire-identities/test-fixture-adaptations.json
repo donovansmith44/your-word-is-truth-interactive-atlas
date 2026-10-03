@@ -1,0 +1,554 @@
+[
+  {
+    "file": "client-fsharp.Tests/AnchoredTextTests.fs",
+    "line": 9,
+    "column": 77,
+    "replacement": "(WireFixtures.identity<NodeId> \"text-unit:JHN.3.16\")"
+  },
+  {
+    "file": "client-fsharp.Tests/AnchoredTextTests.fs",
+    "line": 21,
+    "column": 79,
+    "replacement": "(WireFixtures.identity<NodeId> \"Person:first\")"
+  },
+  {
+    "file": "client-fsharp.Tests/AnchoredTextTests.fs",
+    "line": 22,
+    "column": 80,
+    "replacement": "(WireFixtures.identity<NodeId> \"Person:second\")"
+  },
+  {
+    "file": "client-fsharp.Tests/ContractTests.fs",
+    "line": 18,
+    "column": 43,
+    "replacement": "(WireFixtures.identity<ElementId> \"Event:absent\")"
+  },
+  {
+    "file": "client-fsharp.Tests/ContractTests.fs",
+    "line": 64,
+    "column": 44,
+    "replacement": "(WireFixtures.identity<ArtifactRoot> \"root\")"
+  },
+  {
+    "file": "client-fsharp.Tests/ContractTests.fs",
+    "line": 64,
+    "column": 82,
+    "replacement": "(WireFixtures.identity<UnitReference> \"BoC 1.1.1\")"
+  },
+  {
+    "file": "client-fsharp.Tests/ContractTests.fs",
+    "line": 64,
+    "column": 109,
+    "replacement": "(WireFixtures.identity<NodeId> \"TextUnit:served-concord\")"
+  },
+  {
+    "file": "client-fsharp.Tests/ContractTests.fs",
+    "line": 64,
+    "column": 427,
+    "replacement": "(WireFixtures.identity<NodeId> \"TextUnit:served-citation\")"
+  },
+  {
+    "file": "client-fsharp.Tests/ExplorationTests.fs",
+    "line": 65,
+    "column": 38,
+    "replacement": "(WireFixtures.identity<ArtifactRoot> \"root\")"
+  },
+  {
+    "file": "client-fsharp.Tests/ExplorationTests.fs",
+    "line": 65,
+    "column": 46,
+    "replacement": "(WireFixtures.identity<ArtifactRoot> \"other-root\")"
+  },
+  {
+    "file": "client-fsharp.Tests/ExplorationTests.fs",
+    "line": 69,
+    "column": 107,
+    "replacement": "(WireFixtures.identity<ArtifactRoot> \"root\")"
+  },
+  {
+    "file": "client-fsharp.Tests/ExplorationTests.fs",
+    "line": 69,
+    "column": 138,
+    "replacement": "(WireFixtures.identity<ElementId> \"Person:absent\")"
+  },
+  {
+    "file": "client-fsharp.Tests/ExplorationTests.fs",
+    "line": 84,
+    "column": 38,
+    "replacement": "(WireFixtures.identity<ArtifactRoot> \"page-root\")"
+  },
+  {
+    "file": "client-fsharp.Tests/ExplorationTests.fs",
+    "line": 84,
+    "column": 51,
+    "replacement": "(WireFixtures.identity<ArtifactRoot> \"root\")"
+  },
+  {
+    "file": "client-fsharp.Tests/ExplorationTests.fs",
+    "line": 84,
+    "column": 82,
+    "replacement": "(WireFixtures.identity<ArtifactRoot> \"page-root\")"
+  },
+  {
+    "file": "client-fsharp.Tests/ExplorationTests.fs",
+    "line": 88,
+    "column": 25,
+    "replacement": "(WireFixtures.identity<NodeId> id)"
+  },
+  {
+    "file": "client-fsharp.Tests/ExplorationTests.fs",
+    "line": 88,
+    "column": 78,
+    "replacement": "{ Id = \"test\"; Title = \"test\" }"
+  },
+  {
+    "file": "client-fsharp.Tests/ExplorationTests.fs",
+    "line": 88,
+    "column": 114,
+    "replacement": "(WireFixtures.identity<ArtifactRoot> root)"
+  },
+  {
+    "file": "client-fsharp.Tests/ExplorationTests.fs",
+    "line": 89,
+    "column": 32,
+    "replacement": "(WireFixtures.identity<ArtifactRoot> root)"
+  },
+  {
+    "file": "client-fsharp.Tests/GraphTests.fs",
+    "line": 13,
+    "column": 94,
+    "replacement": "(WireFixtures.identity<ArtifactRoot> \"root\")"
+  },
+  {
+    "file": "client-fsharp.Tests/GraphTests.fs",
+    "line": 19,
+    "column": 69,
+    "replacement": "(WireFixtures.identity<ArtifactRoot> \"root\")"
+  },
+  {
+    "file": "client-fsharp.Tests/GraphTests.fs",
+    "line": 19,
+    "column": 89,
+    "replacement": "(WireFixtures.identity<ElementPageCursor> 1)"
+  },
+  {
+    "file": "client-fsharp.Tests/GraphTests.fs",
+    "line": 19,
+    "column": 163,
+    "replacement": "(WireFixtures.identity<ArtifactRoot> \"root\")"
+  },
+  {
+    "file": "client-fsharp.Tests/GraphTests.fs",
+    "line": 19,
+    "column": 200,
+    "replacement": "(WireFixtures.identity<ElementPageCursor> 0)"
+  },
+  {
+    "file": "client-fsharp.Tests/GraphTests.fs",
+    "line": 26,
+    "column": 69,
+    "replacement": "(WireFixtures.identity<ArtifactRoot> \"root\")"
+  },
+  {
+    "file": "client-fsharp.Tests/GraphTests.fs",
+    "line": 26,
+    "column": 89,
+    "replacement": "(WireFixtures.identity<ElementPageCursor> 1)"
+  },
+  {
+    "file": "client-fsharp.Tests/GraphTests.fs",
+    "line": 26,
+    "column": 162,
+    "replacement": "(WireFixtures.identity<ArtifactRoot> \"new\")"
+  },
+  {
+    "file": "client-fsharp.Tests/GraphTests.fs",
+    "line": 26,
+    "column": 198,
+    "replacement": "(WireFixtures.identity<ElementPageCursor> 0)"
+  },
+  {
+    "file": "client-fsharp.Tests/GraphTests.fs",
+    "line": 28,
+    "column": 38,
+    "replacement": "(WireFixtures.identity<ArtifactRoot> \"root\")"
+  },
+  {
+    "file": "client-fsharp.Tests/GraphTests.fs",
+    "line": 28,
+    "column": 46,
+    "replacement": "(WireFixtures.identity<ArtifactRoot> \"new\")"
+  },
+  {
+    "file": "client-fsharp.Tests/GraphTests.fs",
+    "line": 32,
+    "column": 53,
+    "replacement": "(WireFixtures.identity<ElementId> \"Person:first\")"
+  },
+  {
+    "file": "client-fsharp.Tests/GraphTests.fs",
+    "line": 32,
+    "column": 82,
+    "replacement": "(WireFixtures.identity<ArtifactRoot> \"root\")"
+  },
+  {
+    "file": "client-fsharp.Tests/GraphTests.fs",
+    "line": 38,
+    "column": 67,
+    "replacement": "(WireFixtures.identity<ArtifactRoot> \"root\")"
+  },
+  {
+    "file": "client-fsharp.Tests/GraphTests.fs",
+    "line": 44,
+    "column": 68,
+    "replacement": "(WireFixtures.identity<ArtifactRoot> \"root\")"
+  },
+  {
+    "file": "client-fsharp.Tests/GraphTests.fs",
+    "line": 54,
+    "column": 43,
+    "replacement": "(WireFixtures.identity<ArtifactRoot> \"root\")"
+  },
+  {
+    "file": "client-fsharp.Tests/GraphTests.fs",
+    "line": 54,
+    "column": 63,
+    "replacement": "(WireFixtures.identity<ElementPageCursor> 1)"
+  },
+  {
+    "file": "client-fsharp.Tests/ModelTests.fs",
+    "line": 27,
+    "column": 68,
+    "replacement": "(TextWindowReference.ofContentsReference firstChapter.Ref)"
+  },
+  {
+    "file": "client-fsharp.Tests/ModelTests.fs",
+    "line": 28,
+    "column": 92,
+    "replacement": "(WireFixtures.identity<TextWindowReference> \"served\")"
+  },
+  {
+    "file": "client-fsharp.Tests/ModelTests.fs",
+    "line": 32,
+    "column": 34,
+    "replacement": "(WireFixtures.identity<UnitReference> \"opaque\")"
+  },
+  {
+    "file": "client-fsharp.Tests/ModelTests.fs",
+    "line": 32,
+    "column": 58,
+    "replacement": "(WireFixtures.identity<NodeId> \"served\")"
+  },
+  {
+    "file": "client-fsharp.Tests/ModelTests.fs",
+    "line": 33,
+    "column": 71,
+    "replacement": "(WireFixtures.identity<ArtifactRoot> \"root\")"
+  },
+  {
+    "file": "client-fsharp.Tests/ModelTests.fs",
+    "line": 61,
+    "column": 33,
+    "replacement": "(TextWindowReference.ofContentsReference firstChapter.Ref)"
+  },
+  {
+    "file": "client-fsharp.Tests/ModelTests.fs",
+    "line": 97,
+    "column": 33,
+    "replacement": "(WireFixtures.identity<TextWindowReference> reference)"
+  },
+  {
+    "file": "client-fsharp.Tests/ModelTests.fs",
+    "line": 115,
+    "column": 56,
+    "replacement": "(WireFixtures.identity<UnitReference> continuation)"
+  },
+  {
+    "file": "client-fsharp.Tests/ModelTests.fs",
+    "line": 115,
+    "column": 80,
+    "replacement": "(WireFixtures.identity<ArtifactRoot> \"root\")"
+  },
+  {
+    "file": "client-fsharp.Tests/ModelTests.fs",
+    "line": 119,
+    "column": 33,
+    "replacement": "(WireFixtures.identity<TextWindowReference> continuation)"
+  },
+  {
+    "file": "client-fsharp.Tests/ModelTests.fs",
+    "line": 146,
+    "column": 33,
+    "replacement": "(WireFixtures.identity<TextWindowReference> $\"next-{pageCount - 1}\")"
+  },
+  {
+    "file": "client-fsharp.Tests/ModelTests.fs",
+    "line": 253,
+    "column": 37,
+    "replacement": "(TextWindowReference.ofContentsReference firstChapter.Ref)"
+  },
+  {
+    "file": "client-fsharp.Tests/ModelTests.fs",
+    "line": 258,
+    "column": 37,
+    "replacement": "(WireFixtures.identity<TextWindowReference> reference)"
+  },
+  {
+    "file": "client-fsharp.Tests/ModelTests.fs",
+    "line": 294,
+    "column": 88,
+    "replacement": "(WireFixtures.identity<ContentsReference> reference)"
+  },
+  {
+    "file": "client-fsharp.Tests/ModelTests.fs",
+    "line": 297,
+    "column": 24,
+    "replacement": "(WireFixtures.identity<UnitReference> $\"page-{index}\")"
+  },
+  {
+    "file": "client-fsharp.Tests/ModelTests.fs",
+    "line": 297,
+    "column": 55,
+    "replacement": "(WireFixtures.identity<NodeId> $\"TextUnit:page-{index}\")"
+  },
+  {
+    "file": "client-fsharp.Tests/ModelTests.fs",
+    "line": 298,
+    "column": 19,
+    "replacement": "(WireFixtures.identity<UnitReference> $\"next-{index}\")"
+  },
+  {
+    "file": "client-fsharp.Tests/ModelTests.fs",
+    "line": 298,
+    "column": 46,
+    "replacement": "(WireFixtures.identity<ArtifactRoot> \"root\")"
+  },
+  {
+    "file": "client-fsharp.Tests/ModelTests.fs",
+    "line": 301,
+    "column": 33,
+    "replacement": "(WireFixtures.identity<TextWindowReference> \"served\")"
+  },
+  {
+    "file": "client-fsharp.Tests/ModelTests.fs",
+    "line": 303,
+    "column": 67,
+    "replacement": "(WireFixtures.identity<ArtifactRoot> \"root\")"
+  },
+  {
+    "file": "client-fsharp.Tests/ModelTests.fs",
+    "line": 314,
+    "column": 67,
+    "replacement": "(WireFixtures.identity<ArtifactRoot> \"root\")"
+  },
+  {
+    "file": "client-fsharp.Tests/ModelTests.fs",
+    "line": 339,
+    "column": 42,
+    "replacement": "(WireFixtures.identity<NodeId> \"Container:bible-chapter-GEN-1\")"
+  },
+  {
+    "file": "client-fsharp.Tests/ModelTests.fs",
+    "line": 339,
+    "column": 128,
+    "replacement": "(WireFixtures.identity<ContentsReference> \"GEN.1\")"
+  },
+  {
+    "file": "client-fsharp.Tests/ModelTests.fs",
+    "line": 340,
+    "column": 61,
+    "replacement": "(WireFixtures.identity<ArtifactRoot> \"root\")"
+  },
+  {
+    "file": "client-fsharp.Tests/ModelTests.fs",
+    "line": 340,
+    "column": 85,
+    "replacement": "(WireFixtures.identity<NodeId> \"Container:bible-book-GEN\")"
+  },
+  {
+    "file": "client-fsharp.Tests/ModelTests.fs",
+    "line": 340,
+    "column": 195,
+    "replacement": "(WireFixtures.identity<ContentsReference> \"GEN.1.1\")"
+  },
+  {
+    "file": "client-fsharp.Tests/RuntimeTests.fs",
+    "line": 15,
+    "column": 79,
+    "replacement": "(WireFixtures.identity<ArtifactRoot> \"root\")"
+  },
+  {
+    "file": "client-fsharp.Tests/TransportTests.fs",
+    "line": 13,
+    "column": 49,
+    "replacement": "(WireFixtures.identity<NodeId> \"text-unit:BoC 7.2.1\")"
+  },
+  {
+    "file": "client-fsharp.Tests/TransportTests.fs",
+    "line": 13,
+    "column": 102,
+    "replacement": "(WireFixtures.identity<ElementId> \"Person:god_1324\")"
+  },
+  {
+    "file": "client-fsharp.Tests/TransportTests.fs",
+    "line": 13,
+    "column": 147,
+    "replacement": "(WireFixtures.identity<EdgePageCursor> 0)"
+  },
+  {
+    "file": "client-fsharp.Tests/TransportTests.fs",
+    "line": 13,
+    "column": 192,
+    "replacement": "(WireFixtures.identity<TextWindowReference> \"JHN.3\")"
+  },
+  {
+    "file": "client-fsharp.Tests/TransportTests.fs",
+    "line": 13,
+    "column": 271,
+    "replacement": "(WireFixtures.identity<ElementId> \"Event:a\")"
+  },
+  {
+    "file": "client-fsharp.Tests/TransportTests.fs",
+    "line": 13,
+    "column": 282,
+    "replacement": "(WireFixtures.identity<ElementId> \"Place:b\")"
+  },
+  {
+    "file": "client-fsharp.Tests/TransportTests.fs",
+    "line": 21,
+    "column": 36,
+    "replacement": "(WireFixtures.identity<NodeId> \"Person:a\")"
+  },
+  {
+    "file": "client-fsharp.Tests/TransportTests.fs",
+    "line": 30,
+    "column": 72,
+    "replacement": "(WireFixtures.identity<ElementId> \"Person:absent\")"
+  },
+  {
+    "file": "client-fsharp.Tests/TransportTests.fs",
+    "line": 31,
+    "column": 58,
+    "replacement": "(WireFixtures.identity<ElementId> \"Person:absent\")"
+  },
+  {
+    "file": "client-fsharp.Tests/TransportTests.fs",
+    "line": 31,
+    "column": 88,
+    "replacement": "(WireFixtures.identity<ArtifactRoot> \"root\")"
+  },
+  {
+    "file": "client-fsharp.Tests/TransportTests.fs",
+    "line": 38,
+    "column": 73,
+    "replacement": "(WireFixtures.identity<NodeId> \"Person:absent\")"
+  },
+  {
+    "file": "client-fsharp.Tests/ViewTests.fs",
+    "line": 13,
+    "column": 88,
+    "replacement": "(WireFixtures.identity<ArtifactRoot> \"root\")"
+  },
+  {
+    "file": "client-fsharp.Tests/ViewTests.fs",
+    "line": 24,
+    "column": 88,
+    "replacement": "(WireFixtures.identity<ArtifactRoot> \"root\")"
+  },
+  {
+    "file": "client-fsharp.Tests/ViewTests.fs",
+    "line": 44,
+    "column": 41,
+    "replacement": "(WireFixtures.identity<UnitReference> \"BoC 1.1.1\")"
+  },
+  {
+    "file": "client-fsharp.Tests/ViewTests.fs",
+    "line": 45,
+    "column": 81,
+    "replacement": "(WireFixtures.identity<ArtifactRoot> \"root\")"
+  },
+  {
+    "file": "client-fsharp.Tests/ViewTests.fs",
+    "line": 54,
+    "column": 88,
+    "replacement": "(WireFixtures.identity<ArtifactRoot> \"root\")"
+  },
+  {
+    "file": "client-fsharp.Tests/ViewTests.fs",
+    "line": 63,
+    "column": 24,
+    "replacement": "(WireFixtures.identity<NodeId> \"Event:served-heading\")"
+  },
+  {
+    "file": "client-fsharp.Tests/ViewTests.fs",
+    "line": 66,
+    "column": 81,
+    "replacement": "(WireFixtures.identity<ArtifactRoot> \"root\")"
+  },
+  {
+    "file": "client-fsharp.Tests/ViewTests.fs",
+    "line": 77,
+    "column": 24,
+    "replacement": "(WireFixtures.identity<NodeId> \"Event:served-heading\")"
+  },
+  {
+    "file": "client-fsharp.Tests/ViewTests.fs",
+    "line": 80,
+    "column": 81,
+    "replacement": "(WireFixtures.identity<ArtifactRoot> \"root\")"
+  },
+  {
+    "file": "client-fsharp.Tests/ViewTests.fs",
+    "line": 88,
+    "column": 88,
+    "replacement": "(WireFixtures.identity<ArtifactRoot> \"root\")"
+  },
+  {
+    "file": "client-fsharp.Tests/ViewTests.fs",
+    "line": 98,
+    "column": 41,
+    "replacement": "(WireFixtures.identity<UnitReference> \"BoC 1.1.1\")"
+  },
+  {
+    "file": "client-fsharp.Tests/ViewTests.fs",
+    "line": 99,
+    "column": 81,
+    "replacement": "(WireFixtures.identity<ArtifactRoot> \"root\")"
+  },
+  {
+    "file": "client-fsharp.Tests/ViewTests.fs",
+    "line": 107,
+    "column": 66,
+    "replacement": "(WireFixtures.identity<UnitReference> \"BoC 1.1.21\")"
+  },
+  {
+    "file": "client-fsharp.Tests/ViewTests.fs",
+    "line": 107,
+    "column": 90,
+    "replacement": "(WireFixtures.identity<ArtifactRoot> \"root\")"
+  },
+  {
+    "file": "client-fsharp.Tests/ViewTests.fs",
+    "line": 119,
+    "column": 77,
+    "replacement": "(WireFixtures.identity<ArtifactRoot> \"root\")"
+  },
+  {
+    "file": "client-fsharp.Tests/ViewTests.fs",
+    "line": 254,
+    "column": 91,
+    "replacement": "(WireFixtures.identity<NodeId> \"Place:served-place\")"
+  },
+  {
+    "file": "client-fsharp.Tests/ViewTests.fs",
+    "line": 255,
+    "column": 37,
+    "replacement": "(WireFixtures.identity<UnitReference> \"GEN.1.1\")"
+  },
+  {
+    "file": "client-fsharp.Tests/ViewTests.fs",
+    "line": 255,
+    "column": 62,
+    "replacement": "(WireFixtures.identity<NodeId> \"TextUnit:served-verse\")"
+  }
+]

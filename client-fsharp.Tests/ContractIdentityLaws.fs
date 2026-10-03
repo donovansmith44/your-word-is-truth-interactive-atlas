@@ -2,6 +2,7 @@ module rec BibleAtlas.FSharp.Tests.ContractIdentityLaws
 
 open System
 open System.IO
+open System.Globalization
 open System.Reflection
 open System.Text.Json
 open Microsoft.FSharp.Reflection
@@ -65,6 +66,17 @@ let ``every identity round trips its entire primitive and refuses a mismatched p
         let refusalName = if isNull refusal then None else Some (refusal.GetType().FullName)
         (identity.Name, wire, Some typeof<JsonException>.FullName), (identity.Name, whole, refusalName)) |> List.unzip
     Assert.Equal<(string * string * string option) list>(expected, actual)
+
+[<Property>]
+let ``every generated identity displays its exact primitive without exposing its constructor`` (suffix: uint16) =
+    let document: OpenApiDocument = published ()
+    let expected, actual = identityTypes () |> List.map (fun identity ->
+        let integer = document.Definitions[identity.Name].Type.HasFlag(JsonObjectType.Integer)
+        let text = if integer then (int suffix).ToString(CultureInfo.InvariantCulture) else $"wire-{suffix}-\u03bb"
+        let wire = if integer then text else JsonSerializer.Serialize text
+        let value = JsonSerializer.Deserialize(wire, identity)
+        (identity.Name, text), (identity.Name, value.ToString())) |> List.unzip
+    Assert.Equal<(string * string) list>(expected, actual)
 
 [<Property(MaxTest = 1)>]
 let ``each published cursor default serializes as the exact first page for that cursor`` () =

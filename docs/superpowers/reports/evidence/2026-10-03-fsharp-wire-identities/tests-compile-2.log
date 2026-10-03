@@ -1,0 +1,14 @@
+  Determining projects to restore...
+  All projects are up-to-date for restore.
+  BibleAtlas.Client.ContractGenerator -> /home/donovan/w/CX-FSHARP-wire/client.ContractGenerator/bin/Debug/net10.0/BibleAtlas.Client.ContractGenerator.dll
+  BibleAtlas.FSharp.ContractGenerator -> /home/donovan/w/CX-FSHARP-wire/client-fsharp.ContractGenerator/bin/Debug/net10.0/BibleAtlas.FSharp.ContractGenerator.dll
+  BibleAtlas.FSharp.Core -> /home/donovan/w/CX-FSHARP-wire/client-fsharp/Core/bin/Debug/net10.0/BibleAtlas.FSharp.Core.dll
+  BibleAtlas.FSharp.Client -> /home/donovan/w/CX-FSHARP-wire/client-fsharp/bin/Debug/net10.0/BibleAtlas.FSharp.Client.dll
+  BibleAtlas.FSharp.Client (Blazor output) -> /home/donovan/w/CX-FSHARP-wire/client-fsharp/bin/Debug/net10.0/wwwroot
+/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/ViewTests.fs(167,20): error FS1094: The value 'node' is not accessible from this code location [/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/BibleAtlas.FSharp.Tests.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/ViewTests.fs(167,18): error FS0001: This expression was expected to have type
+    'uint16 -> NodeRecord'
+but here has type
+    'NodeRecord' [/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/BibleAtlas.FSharp.Tests.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/ViewTests.fs(168,50): error FS0039: The value, constructor, namespace or type 'resolved' is not defined. [/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/BibleAtlas.FSharp.Tests.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/ViewTests.fs(191,50): error FS0039: The value, constructor, namespace or type 'resolved' is not defined. [/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/BibleAtlas.FSharp.Tests.fsproj]
