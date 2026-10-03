@@ -1,0 +1,5 @@
+core 6030eb377ec609dff905feb676c80720 production logical hash matches declared manifest
+kjv 163ed466d9d032767cc81bfaca2fa6ff production logical hash matches declared manifest
+concord fedd8f007da7a1e2f3c59d3721815ee1 production logical hash matches declared manifest
+kretzmann 092f39f542cef8433a2d5a553c45da9c production logical hash matches declared manifest
+lexicon 1cc1be08ad6bdf4da70b82475109b5dd production logical hash matches declared manifest

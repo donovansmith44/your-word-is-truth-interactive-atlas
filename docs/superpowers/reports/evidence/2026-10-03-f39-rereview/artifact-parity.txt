@@ -1,0 +1,6 @@
+core all non-meta rows identical: 496335 rows, 55 tables; schema 26
+kjv all non-meta rows identical: 2573067 rows, 16 tables; schema 26
+concord all non-meta rows identical: 331738 rows, 15 tables; schema 26
+kretzmann all non-meta rows identical: 478546 rows, 7 tables; schema 26
+lexicon all non-meta rows identical: 2199740 rows, 9 tables; schema 26
+Whole artifact parity: 6079426 rows across 102 section tables unchanged; only meta.logical_hash differs.
