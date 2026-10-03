@@ -13,13 +13,13 @@ type ByteColumn = private ByteColumn of int64
 type TextPosition = { Line: LineNumber; Column: ByteColumn }
 
 module LineNumbers =
-    let admit line =
+    let admit (line: int64) : Result<LineNumber, LineNumberFailure> =
         if line > 0L then Ok (LineNumber line)
         else Error LineNumberFailure.NonPositiveLine
-    let value (LineNumber line) = line
+    let value (LineNumber line) : int64 = line
 
 module ByteColumns =
-    let admit column =
+    let admit (column: int64) : Result<ByteColumn, ByteColumnFailure> =
         if column > 0L then Ok (ByteColumn column)
         else Error ByteColumnFailure.NonPositiveColumn
-    let value (ByteColumn column) = column
+    let value (ByteColumn column) : int64 = column

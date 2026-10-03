@@ -1,0 +1,23 @@
+{
+  "pending_count": 0,
+  "pending": {},
+  "failures": [
+    "missing real module: Domain/Skeleton.fs",
+    "missing real module: Domain/Time.fs",
+    "missing real module: Domain/Text.fs",
+    "missing real module: Domain/Containers.fs",
+    "missing real module: Domain/Graph.fs",
+    "missing real module: Domain/History.fs",
+    "missing real module: Domain/YearReading.fs",
+    "missing real module: Domain/Position.fs",
+    "missing real module: Paging/ReadingWindow.fs",
+    "missing real module: Paging/NeighbourWindow.fs",
+    "missing real module: Exploration/Trail.fs",
+    "missing real module: Exploration/Focus.fs",
+    "missing real module: Admission/Scalars.fs",
+    "missing real module: Admission/TextSpans.fs",
+    "missing real module: Admission/Paths.fs",
+    "missing real module: Admission/WireFailure.fs",
+    "missing real module: Admission/ReadFailure.fs"
+  ]
+}

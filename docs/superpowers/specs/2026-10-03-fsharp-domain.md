@@ -1,86 +1,51 @@
-# F# domain: actual modules and remaining decisions
+# F# domain: compiling skeleton for owner review
 
-**Partial revision; not ready for whole-domain sign-off.** The declarations below
-compile in Core. Each link is the sole declaration of its types and operations;
-the spec does not duplicate them. The standalone proposal signatures from
-6118be2 have been removed under owner ruling ops 0057d41. Claude's
-[pre-review](https://github.com/donovansmith44/your-word-is-truth-interactive-atlas/blob/4f6eb12/docs/superpowers/reports/2026-10-03-fsharp-domain-prereview.md)
-and the [revision obligations](../reports/2026-10-02-fsharp-client-domain-revision.md)
-remain the full open inventory.
+Owner directive ops `e65c377` supersedes the partial leaf implementation sequence.
+The whole module map now builds in Core and the Debug WebAssembly client. Types,
+private representations and operation signatures live in the files below; this
+page declares none of them. **Skeleton review, not implemented behavior or full
+client parity.** Operations awaiting laws and implementation call the one
+[DomainSkeleton.pending](../../../client-fsharp/Core/Domain/Skeleton.fs) marker.
+The [inventory gate](../../../scripts/fsharp-client/domain-skeleton.py) counts and
+names every pending operation; none is called by the existing app.
 
-| Actual module | Meaning and evidence |
+| Real file, in project compile order | What the owner can inspect |
 |---|---|
-| [Positive](../../../client-fsharp/Core/Domain/Positive.fs) | A positive count, rather than an integer with a label. Zero and negative inputs return its own closed refusal. [Properties](../../../client-fsharp.Tests/Domain/PositiveLaws.fs). |
-| [NonEmpty](../../../client-fsharp/Core/Domain/NonEmpty.fs) | A private adapter around FSharpPlus's nonempty list. Empty input is refused; singleton, create, append and map retain complete ordered values. Append is associative; map preserves identity and composition. [Properties](../../../client-fsharp.Tests/Domain/NonEmptyLaws.fs). |
-| [Rooted](../../../client-fsharp/Core/Domain/Rooted.fs) | An admitted value retains the version it came from. Combining values from different roots is refused with both identities intact. Mapping preserves the root, identity and composition; same-root append is associative. RootMismatch is private, so callers cannot invent a mismatch between equal roots. [Properties](../../../client-fsharp.Tests/Domain/RootedLaws.fs). |
-| [PageCache](../../../client-fsharp/Core/Paging/PageCache.fs) | A private immutable cache holds one root and a positive budget measured in pages. Put rejects another root; a hit promotes the complete page; replacement keeps one entry per key; eviction forgets the oldest page. Rebase preserves the same-root cache or clears it for a new root. The private lookup result retains the returned page and the updated cache together. [Properties](../../../client-fsharp.Tests/Domain/PageCacheLaws.fs). |
-| [ArrayIndex](../../../client-fsharp/Core/Admission/ArrayIndex.fs) | A zero-based, nonnegative array position, distinct from document positions. [Properties](../../../client-fsharp.Tests/Domain/ArrayIndexLaws.fs). |
-| [DocumentPosition](../../../client-fsharp/Core/Admission/DocumentPosition.fs) | One-based line and byte column, separately admitted and retained as a structured location. Neither door accepts zero or a negative number. [Properties](../../../client-fsharp.Tests/Domain/DocumentPositionLaws.fs). |
-| [Coordinates](../../../client-fsharp/Core/Admission/Coordinates.fs) | Finite latitude/longitude inside their respective inclusive bounds. Nonfinite input and finite out-of-range input have distinct refusals. [Properties](../../../client-fsharp.Tests/Domain/CoordinatesLaws.fs). |
-| [HttpUrl](../../../client-fsharp/Core/Admission/HttpUrl.fs) | An absolute HTTP(S) visit URL parsed by System.Uri. Relative/malformed input and other schemes return distinct refusals; admitted spelling is preserved. [Properties](../../../client-fsharp.Tests/Domain/HttpUrlLaws.fs). |
+| [Positive](../../../client-fsharp/Core/Domain/Positive.fs), [NonEmpty](../../../client-fsharp/Core/Domain/NonEmpty.fs), [Rooted](../../../client-fsharp/Core/Domain/Rooted.fs) | Existing tested positive counts, FSharpPlus nonempty collections and coherent-root values, now with explicit signatures throughout. |
+| [Time](../../../client-fsharp/Core/Domain/Time.fs) | A served Year retains its node, label and numeric value; a span has ordered ends; dating has exact/circa precision. Span comparison, containment, cover, overlap, intersection, inclusion, adjacency and filtering of supplied years have signatures. No operation creates the next Year node. |
+| [Text](../../../client-fsharp/Core/Domain/Text.fs) | Bible/Concord references, anchored parts, a body, event headings and a text unit with its compiled edge summary. `GEN.1.1` remains the served verse identity everywhere it occurs. Ordering takes the producer's comparison, never a parsed reference or an invented book ordinal. |
+| [Containers](../../../client-fsharp/Core/Domain/Containers.fs) | Distinct Bible and Concord containers with children, previous and next. Both have an instance of one navigation typeclass, including whole reading. Passages retain the served node, span and mark; one-unit and reversed passages have their own refusals. A Concord document/article is not disguised as a Bible book/chapter. |
+| [Graph](../../../client-fsharp/Core/Domain/Graph.fs) | Entities, specialized nodes and elements; directed/symmetric relations; node-to-node ends and the separate justification-to-edge ends. Edges retain parentage, votes, narrative, provenance and summaries. Contract NodeKind/EdgeKind/Parentage/NarrativeId are reused. |
+| [History](../../../client-fsharp/Core/Domain/History.fs) | Kind-admitted event/story ids, accounts marked as recording history, previous/next chronology, the short complete concurrent set, separate story steps. Undated has no chronology field. Accounts are a list: an absent attestation cannot make an otherwise readable event impossible to represent. |
+| [YearReading](../../../client-fsharp/Core/Domain/YearReading.fs) | Served facet counts, a span composed from year contexts, and individual office terms with their grounds. Several terms allow a person to hold several offices. |
+| [Position](../../../client-fsharp/Core/Domain/Position.fs) | A graph node/edge position or composed Year span; graph/event/year/span resolutions sealed to a root. A passage and an individual Year open as their served node, without a second independent position identity. |
+| [ReadingWindow](../../../client-fsharp/Core/Paging/ReadingWindow.fs) | Container-only query keys, page cursors, previous/next, admitted pages, page/window bounds, append/prepend and whole-container reading. Default policy is 20 units per page and at most 40 visible; its operation awaits implementation. |
+| [NeighbourWindow](../../../client-fsharp/Core/Paging/NeighbourWindow.fs) | Query-bound relation/cursor keys and bounded windows. Entries retain edge evidence alongside the target position, so a trail can follow what a focus shows. |
+| [PageCache](../../../client-fsharp/Core/Paging/PageCache.fs) | Reading/neighbour keys and page alternatives, plus the existing tested immutable cache. The cache owns one root; keys do not repeat it. Its positive budget is measured in pages. |
+| [Trail](../../../client-fsharp/Core/Exploration/Trail.fs) | Rooted transitions, last-N retention, Back/AtStart, root renewal and chain evidence; no server receipts or unlimited old-step history. |
+| [Focus](../../../client-fsharp/Core/Exploration/Focus.fs) | Current resolution, bounded relation windows and one `change` operation for arrows and scrolling. |
+| [ArrayIndex](../../../client-fsharp/Core/Admission/ArrayIndex.fs), [DocumentPosition](../../../client-fsharp/Core/Admission/DocumentPosition.fs), [Coordinates](../../../client-fsharp/Core/Admission/Coordinates.fs), [HttpUrl](../../../client-fsharp/Core/Admission/HttpUrl.fs) | Existing tested admission leaves and their narrow failures. |
+| [Scalars](../../../client-fsharp/Core/Admission/Scalars.fs), [TextSpans](../../../client-fsharp/Core/Admission/TextSpans.fs) | Listed colors, distinct client/server refusal statuses, scalar/UTF-16 offsets and spans, and conversion within supplied text. |
+| [Paths](../../../client-fsharp/Core/Admission/Paths.fs), [WireFailure](../../../client-fsharp/Core/Admission/WireFailure.fs), [ReadFailure](../../../client-fsharp/Core/Admission/ReadFailure.fs) | Structured JSON locations and closed failures. A user cancellation is separate from retryable failures; received unfamiliar text is retained as evidence, not called an admitted vocabulary. |
 
-These are independent domain/admission leaves, not a new UI or a replacement
-wire vocabulary. For example, a supplied count of zero fails admission; an empty
-collection cannot become a nonempty account collection; a latitude of NaN cannot
-enter a map position. The application will consume the approved modules through
-its admission adapters after the full model is reviewed. No future contract type
-or producer is copied into the client to fill a missing dependency.
+**Producer dependency:** the pinned contract predates WIREID, Year and FOCUS-3.
+Their unavailable generated identities, reference unions, cursor types, container
+levels, passage marks, text-part roles, time evidence, facets and offices occupy
+explicit type parameters. These parameters will bind to those generated types
+when their owning work lands. They are not alternate handwritten schemas or
+claims that arbitrary instantiations carry domain guarantees. In particular,
+calendar evidence comes from the producer, including Scripture's within-day
+sequence; the client converts no calendar and infers no concurrency. A final
+concrete admission review is required when the producer types exist. Strings in
+labels, prose, JSON property names and rejected input carry exactly those
+meanings, without costume wrappers.
 
-The [public-surface property](../../../client-fsharp.Tests/Domain/AdmissionSurfaceLaws.fs)
-compiles twelve public-use programs and separately attempts each forbidden
-constructor, including RootMismatch, PageCache and CacheLookup. No constructor's
-diagnostics can hide another constructor's accessibility. The normal regression
-project discovers these domain properties; the small DomainLaws project also
-runs them without a browser build.
-
-For the cache, a budget of two pages admits A and B; looking up A makes it newest,
-so adding C retains C and A and forgets B. Changing the root empties the cache;
-an old-root response is then refused. The previous immutable cache is unchanged.
-Ten thousand distinct puts retain exactly the latest budgeted pages, without
-prefix history. Query/cursor keys remain structured equality values; the cache
-does not stringify, parse or flatten them.
-
-Rooted and PageCache take the admitted identity, key and payload types as
-parameters. This proves coherence and bounded page retention, not identity
-syntax or wire admission. The concrete generated root/query/cursor types are
-producer dependencies; they are not redeclared here. A bounded count of pages
-does not by itself bound each page's size: the reading/neighbour window must
-carry that separate invariant. The cache policy uses FSharp.Core's immutable
-list operations through one private Remember member; its callers precede it.
-The mutually dependent cache/lookup types form a real type cycle, not an
-artificial recursive function group.
-
-The remaining tour must cover concrete served identities and root admission; Year and spans;
-Bible/Concord containers, passage/history/text parts; graph elements, chronology
-and stories; bounded reading/neighbour windows and cache; trail renewal and
-focus; structured wire/contract/read failures. Those actual modules and their
-laws are still owed. Each private scalar must have one validating Result door
-with its own reachable closed failure and independent invalid-input properties.
-
-The owner answered Claude's six choices on ops 75c9925: Years are served
-nodes, stepped by served links; an event has one exact/circa span or is undated
-with no chronology; the trail keeps the last N steps; Bible and Concord have
-distinct types sharing one navigation interface/typeclass; contract names and
-the owner's vocabulary win. Concurrency is a short whole list of genuinely
-simultaneous events, not every event in the same year. This owner ruling
-supersedes pre-review I4's proposed paging. An account is one unbroken verse run;
-a fragmented story has multiple accounts of the same event.
-
-Ops a5f02a1 further rules that Scripture-grounded months/days, festivals and
-weekdays refine events within a Year; the client must not infer those dates or
-concurrency. Festivals are explorable. The amended Year/FOCUS-3 and unlanded
-WIREID contracts remain producer dependencies. There are no invented client
-year/passage constructors or server trail receipts. Canonical verse identities,
-one focus-change path and default 20/40 reading bounds remain binding.
-
-Ops 780e628 further requires ordering by the finest served evidence, including
-Scripture's sequence within a day. Sharing a day does not itself establish
-concurrency. Use the Bible's calendar without conversion; the producer curates
-the events with explicit month/day/festival/weekday evidence first. Those facts
-and ordering links belong to the artifact and contract, not client inference.
-
-The [survey and validation record](../reports/2026-10-02-fsharp-client-domain-revision.md)
-states the dependency choices and what has actually run. The 89-instance costume
-audit, all-source admission/keyword closure, whole-domain sign-off, all-file
-newspaper order and 100% parity remain open. No further view/exemplar expansion
-or retirement of the C# client is claimed by this checkpoint.
+After owner review, laws fill the named operations: span/reference laws under
+served ordering; private-door refusals; symmetric dual involution; 20/40 paging
+and backward slide restoration; query/root coherence; bounded cache/frontier
+accessors; trail current/back inversion (full-state inversion only without
+eviction), callable same-root renewal idempotence, and scrolling/arrow equality
+through the single focus change. No new behavioral law or adapter is implemented
+in this skeleton step. Existing leaf/cache laws remain. The
+[checkpoint report](../reports/2026-10-02-fsharp-client-domain-skeleton.md) records
+red inventory, green build, placeholder count, dependencies and remaining limits.

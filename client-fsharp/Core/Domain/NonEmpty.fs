@@ -8,12 +8,12 @@ type NonEmptyFailure = EmptyCollection
 type NonEmpty<'a> = private NonEmpty of NonEmptyList<'a>
 
 module NonEmpty =
-    let admit values =
+    let admit (values: 'a list) : Result<NonEmpty<'a>, NonEmptyFailure> =
         match NonEmptyList.tryOfList values with
         | Some nonempty -> Ok (NonEmpty nonempty)
         | None -> Error NonEmptyFailure.EmptyCollection
-    let singleton value = NonEmptyList.singleton value |> NonEmpty
-    let create head tail = NonEmptyList.create head tail |> NonEmpty
-    let append (NonEmpty left) (NonEmpty right) = NonEmptyList.append left right |> NonEmpty
-    let map mapping (NonEmpty values) = NonEmptyList.map mapping values |> NonEmpty
-    let toList (NonEmpty values) = NonEmptyList.toList values
+    let singleton (value: 'a) : NonEmpty<'a> = NonEmptyList.singleton value |> NonEmpty
+    let create (head: 'a) (tail: 'a list) : NonEmpty<'a> = NonEmptyList.create head tail |> NonEmpty
+    let append (NonEmpty left: NonEmpty<'a>) (NonEmpty right: NonEmpty<'a>) : NonEmpty<'a> = NonEmptyList.append left right |> NonEmpty
+    let map (mapping: 'a -> 'b) (NonEmpty values: NonEmpty<'a>) : NonEmpty<'b> = NonEmptyList.map mapping values |> NonEmpty
+    let toList (NonEmpty values: NonEmpty<'a>) : 'a list = NonEmptyList.toList values
