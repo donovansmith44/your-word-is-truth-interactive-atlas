@@ -88,3 +88,15 @@ fn a_label_spelling_its_ids_disambiguator_or_a_code_path_is_an_offender_and_a_re
     // Assert
     assert_eq!(judged, (true, false, false, true, true, false));
 }
+
+#[test]
+fn every_citation_edge_the_artifact_holds_records_one_span() {
+    // Arrange
+    let graph = committed_graph();
+
+    // Act
+    let verdict = atlas_graph::law_check::every_citation_edge_records_one_span(graph);
+
+    // Assert
+    assert_eq!(verdict, Ok(()));
+}

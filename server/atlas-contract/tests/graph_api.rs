@@ -3043,3 +3043,35 @@ async fn every_text_row_names_its_node() {
     let resolved: Vec<serde_json::Value> = read["elements"].as_array().unwrap().iter().map(|element| serde_json::json!({ "id": element["node"]["id"], "kind": element["node"]["kind"], "label": element["node"]["label"] })).collect();
     assert_eq!(resolved, named);
 }
+
+const A_VERSE_CITING_A_SPAN: &str = "text-unit:RUT.4.11";
+
+fn bible_verse_of(locus: &atlas_graph_types::text::TextLocus) -> Option<&atlas_graph_types::text::VerseRef> {
+    match &locus.at {
+        atlas_graph_types::text::TextRef::Bible(verse) => Some(verse),
+        atlas_graph_types::text::TextRef::Concord(_) => None,
+    }
+}
+
+#[tokio::test]
+async fn the_edge_record_of_a_cross_reference_to_a_span_names_the_span() {
+    // Arrange
+    let app = compiled_app();
+    let (_, citing, _) = get(&app, &format!("/api/node/{A_VERSE_CITING_A_SPAN}")).await;
+    let span = committed_rows()
+        .cross_refs
+        .iter()
+        .find(|row| row.to_last.is_some() && bible_verse_of(&row.from).map(wire_id_of_verse).as_deref() == Some(A_VERSE_CITING_A_SPAN))
+        .expect("the artifact holds a cross reference from the verse to a span");
+    let first_verse = wire_id_of_verse(bible_verse_of(&span.to).expect("a cross reference ends at a verse"));
+    let entries = every_edge_of(&app, A_VERSE_CITING_A_SPAN, "cites").await;
+    let entry = entries.iter().find(|entry| entry["neighbour"]["node"]["id"] == first_verse.as_str()).expect("the cites page lists the span's first verse");
+    let edge = entry["edge"]["id"].as_str().unwrap();
+
+    // Act
+    let (_, read) = elements(&app, &[edge]).await;
+
+    // Assert
+    let kind = atlas_graph_types::edge::EdgeKind::Directed(atlas_graph_types::edge::RelationId::Cites, atlas_graph_types::edge::Direction::Forward);
+    assert_eq!(read["elements"][0]["edge"]["label"], atlas_graph::labels::edge_label(kind, citing["label"].as_str().unwrap(), &span.target_display));
+}

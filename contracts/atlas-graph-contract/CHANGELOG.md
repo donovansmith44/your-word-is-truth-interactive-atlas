@@ -34,6 +34,14 @@ hatch — and adding one to a previously-green scenario is classified
 
 ---
 
+- **0.23.0** (FOCUS-2 Task 2, a citation of a span is labelled by the span) — **MINOR under the 0.x policy (MAJOR class: blessed fixtures moved).**
+  A `cites` edge whose row records a span is labelled by the passage it cites, read from the
+  row's `target_display` (`JHN.3.16 · Cites · JHN.11.25-26`); every other label is unchanged.
+  The label table sits outside the logical hash (F-39), so the section schema moves 23 -> 24
+  to rewrite the blobs and move the root. Re-blessed: `contract` and `graph-vocabulary`
+  (`section_schema_version` 23 -> 24), `kretzmann-chapter-gen-1` (the root moved with it);
+  the http pact carries them too. No id, scenario or projection changed.
+
 - **0.22.0** (FOCUS-2 Task 1 Part A, a text unit's reference is compiled) — **MINOR under the 0.x policy (MAJOR class: blessed fixtures moved).**
   The `verse` and `concord_unit` tables carry each text unit's compiled `reference`, and the
   served text read takes its references and its anchors' characters from the artifact.

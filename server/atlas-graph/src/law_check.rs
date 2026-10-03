@@ -415,6 +415,22 @@ pub fn indexes_derive_exactly_from_rows(graph: &Graph) -> Result<(), String> {
     Ok(())
 }
 
+pub fn every_citation_edge_records_one_span(graph: &Graph) -> Result<(), String> {
+    let split: Vec<String> = graph
+        .edge_rows
+        .chunk_by(|a, b| a.hash == b.hash)
+        .filter_map(|rows| {
+            let spans: BTreeSet<(Option<&atlas_graph_types::text::TextLocus>, &str)> = crate::labels::citations(graph, rows).map(|citation| (citation.to_last.as_ref(), citation.target_display.as_str())).collect();
+            (spans.len() > 1).then(|| spans.iter().map(|(_, display)| *display).collect::<Vec<_>>().join(" | "))
+        })
+        .collect();
+    if split.is_empty() {
+        Ok(())
+    } else {
+        Err(format!("{} citation edges record more than one span: {}", split.len(), split.join("; ")))
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -459,6 +475,42 @@ mod tests {
         let err = every_row_reference_resolves(&graph).expect_err("must catch the dangling reference");
         assert_eq!(err.relation, "located_at");
         assert_eq!(err.field, "event");
+    }
+
+    fn verse(book: u8, chapter: u16, verse: u16) -> atlas_graph_types::text::TextLocus {
+        atlas_graph_types::text::TextLocus { at: atlas_graph_types::text::TextRef::Bible(atlas_graph_types::text::VerseRef { book, chapter, verse }), span: None }
+    }
+
+    fn citation(to_last: Option<atlas_graph_types::text::TextLocus>, target_display: &str) -> atlas_graph_types::edge::CrossRef {
+        atlas_graph_types::edge::CrossRef { from: verse(0, 1, 1), to: verse(0, 29, 32), to_last, target_display: target_display.to_string(), votes: 0, provenance: "test".into() }
+    }
+
+    #[test]
+    fn a_citation_edge_that_records_one_span_passes() {
+        // Arrange
+        let mut graph = Graph::default();
+        graph.cross_refs = vec![citation(Some(verse(0, 30, 24)), "GEN.29.32-GEN.30.24"), citation(Some(verse(0, 30, 24)), "GEN.29.32-GEN.30.24")];
+        graph.build_indexes();
+
+        // Act
+        let verdict = every_citation_edge_records_one_span(&graph);
+
+        // Assert
+        assert_eq!(verdict, Ok(()));
+    }
+
+    #[test]
+    fn a_citation_edge_that_records_two_spans_fails_naming_both() {
+        // Arrange
+        let mut graph = Graph::default();
+        graph.cross_refs = vec![citation(Some(verse(0, 30, 24)), "GEN.29.32-GEN.30.24"), citation(None, "GEN.29.32")];
+        graph.build_indexes();
+
+        // Act
+        let verdict = every_citation_edge_records_one_span(&graph);
+
+        // Assert
+        assert_eq!(verdict, Err("1 citation edges record more than one span: GEN.29.32 | GEN.29.32-GEN.30.24".to_string()));
     }
 
     fn locus() -> atlas_graph_types::text::TextLocus {
