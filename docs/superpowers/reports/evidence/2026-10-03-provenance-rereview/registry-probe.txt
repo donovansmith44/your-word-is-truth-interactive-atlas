@@ -1,0 +1,4 @@
+1024 generated locator-title cases pass; all prior 32 missing-source, 32 duplicate-source and 32 duplicate-provenance registries now refused by the compiler's exact admitted door.
+32 public FromIterator construction cases still compile and accept conflicting duplicate IDs; complete resulting map keeps only the last title.
+Public constructor current-data reproduction: kjv title Some("The King James Version") -> Some("OpenBible.info Geocoding"); no AdmittedSources value required.
+All 86 full-curated-TOML ambiguous/dangling mutations now refused; all 33 public iterator mutations of its complete title map still admitted and change the expected source's title.

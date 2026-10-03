@@ -1,0 +1,4 @@
+data/compiled: 7 tracked files identical by Git object identity (a986d2c -> a619631).
+contracts: 124 tracked files identical by Git object identity (a986d2c -> a619631).
+data/exports: 3 tracked files identical by Git object identity (a986d2c -> a619631).
+root = "fa95e31a4c84a41ac12339853cefc795"; no rebuild or version change.

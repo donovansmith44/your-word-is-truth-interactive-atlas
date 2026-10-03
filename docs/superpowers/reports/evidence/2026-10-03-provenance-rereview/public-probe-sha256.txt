@@ -1,0 +1,2 @@
+8b8397c950d246c589740b1a0507f669be11b1c7d973df52b8c00600821b26aa  /tmp/libcodex_provenance_core.rlib
+bf082fa5a8599c437e7bcdf30ccc453d1fe6a5421b3263c2263e44f616c93bfd  /tmp/codex-provenance-public
