@@ -24,10 +24,6 @@ Feature: the detail routes — pinned whole until the graph API subsumes them
     When I GET /api/kretzmann/chapter/GEN.1
     Then the consumed projection kretzmann-chapter equals fixture "kretzmann-chapter-gen-1"
 
-  Scenario: a verse
-    When I GET /api/verse/JHN.3.16
-    Then the consumed projection verse equals fixture "verse-jhn-3-16"
-
   Scenario: a catechism item
     When I GET /api/catechism/item/commandment-1
     Then the consumed projection catechism-item equals fixture "catechism-item-commandment-1"

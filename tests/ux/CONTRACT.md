@@ -509,7 +509,8 @@ CHROME-UNIFORMITY-1 (the structural answer to the owner's "we're not
 
   | Kind | Declared chips (`PopoverChromeRegistry.ByKind`) |
   |---|---|
-  | Verse | `popover-chip-book`, `popover-chip-context` |
+  | Verse | `popover-chip-context` (FOCUS-2, OPEN 4b: rendered by `FocusView` for a text unit whose served locus is a verse; navigates the reader to it. `popover-chip-book` is gone from a verse, OPEN 4a) |
+  | Concord paragraph | *(none)* (FOCUS-2: rendered by `FocusView`) |
   | Passage | `popover-chip-book`, `popover-chip-context` |
   | Chapter | `popover-chip-map`, `popover-chip-context`, `popover-chip-book` |
   | Book | `popover-chip-map`, `popover-chip-context`, `popover-chip-book` |
@@ -1680,6 +1681,27 @@ Popover (shared): `popover`, `popover-title`, `popover-breadcrumb-back`,
   "{Kind label} ({count})"; each link follows to that neighbour),
   `popover-entry-edge-{edgeKind}-{edgeId}` (FOCUS-6; the quiet edge step beside an entry;
   follows to the edge itself),
+  `popover-section-text` / `popover-text` / `popover-anchor-{anchorKind}-{nodeId}-{n}`
+  (FOCUS-2; a text unit -- a verse or a Concord paragraph -- on `FocusView`: its served
+  `UnitText` with the words of Christ marked, each served anchor a button following that
+  anchor's node, `n` the anchor's index in the served `anchors`; the record's
+  `popover-field-Provenance` follows the text). A verse's neighbours are its edge groups:
+  `popover-up-member-of-{chapterId}`, `popover-section-attests` (the events it attests,
+  OPEN 3a), `popover-section-cites` / `-cited-by` (cross references, 20 per page, served
+  order), `popover-section-catechism-link`, `popover-section-words`. A verse is read as its
+  record (`GET /api/node/{id}`, which carries `text`) and its edge pages; `GET
+  /api/verse/{vref}` is gone (AQC 0.25.0).
+  Removed in FOCUS-2 for a verse and a Concord paragraph (they remain only on a
+  `PassageNode`, until FOCUS-3): `popover-section-verse-text`, `popover-section-xrefs`,
+  `xref-item-*`, `xrefs-more`/`-collapse`, `popover-section-catechism` (verse),
+  `popover-verse-expand`/`-collapse`/`-reader` and every `popover-reader-*` /
+  `popover-verse-mention-*` id (the verse mini-reader: `popover-chip-context` reads in
+  context instead), `verse-event-*` and `event-section-heading` (membership),
+  `popover-section-event-membership` and `popover-section-passage-membership` (OPEN 3a), `verse-parallel*` and
+  `popover-section-parallels` (OPEN 2), the per-section provenance "?" on a verse,
+  `concord-unit-text`, `concord-small-catechism*`. The cross-reference marker
+  (`verse-xref-marker-{n}`) opens the verse like any other open (OPEN 5a): no
+  xrefs-first reorder and no separate entry-point cap,
   Removed in FOCUS-6 (OPEN 3): `popover-place-date-established`/`-destroyed`
   and their `-verse-{SPAN}`/`-more`/`-collapse`/`-more-all` siblings,
   `popover-place-blurb`, `popover-place-canonical-name`, `place-event-{id}` and

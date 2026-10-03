@@ -57,7 +57,7 @@
         }
         else if (_legacy is null && Exploration is { } exploration)
         {
-            <FocusView Node="exploration.Current" Surface="Surface.Popover" OnFollow="FollowAsync" OnShowOnWorld="WayToTheWorld" OnMoved="Renew" />
+            <FocusView Node="exploration.Current" Surface="Surface.Popover" OnFollow="FollowAsync" OnShowOnWorld="WayToTheWorld" OnReadInContext="ReadInContext" OnMoved="Renew" />
         }
         else if (_usingSectionRegistry)
         {
@@ -399,7 +399,7 @@
             resolved.Add(new PopoverSection(SectionsCouldNotLoad, SomeSectionsCouldNotLoad));
         }
 
-        _sections = XrefEntryPoint ? resolved.OrderByDescending(s => s.Testid == "xrefs").ToList() : resolved;
+        _sections = resolved;
         return true;
     }
 
@@ -503,8 +503,6 @@
 
     public int OtherContextSectionCount => _sections.Count(s => s.Testid is not ("verse-text" or "xrefs"));
 
-    public bool XrefEntryPoint => _legacy is VerseNode { XrefEntryPoint: true };
-
     public IExplorableClient Graph => GraphClient;
 
     Task IPopoverSectionContext.RenewAsync() => Renew();
@@ -546,16 +544,22 @@
                 break;
 
             case ChipTarget.NavigateReader reader:
-                await RequestClose();
-                var query = InSplit
-                    ? $"?{SplitUrlContract.SplitParam}={ViewNames.World}" +
-                      (ViewArrangementAtom.Value.Follow ? $"&{SplitUrlContract.FollowParam}={SplitUrlContract.FollowTrueValue}" : "")
-                    : "";
-                var fragment = reader.Verse is int v ? $"#v{v}" : "";
-                var url = $"/read/{reader.Book}/{reader.Chapter}{query}{fragment}";
-                Nav.NavigateTo(url);
+                await NavigateReader(reader.Book, reader.Chapter, reader.Verse);
                 break;
         }
+    }
+
+    private Task ReadInContext(BibleRef verse) => NavigateReader(verse.Book.WireName(), verse.Chapter, verse.Verse);
+
+    private async Task NavigateReader(string book, int chapter, int? verse)
+    {
+        await RequestClose();
+        var query = InSplit
+            ? $"?{SplitUrlContract.SplitParam}={ViewNames.World}" +
+              (ViewArrangementAtom.Value.Follow ? $"&{SplitUrlContract.FollowParam}={SplitUrlContract.FollowTrueValue}" : "")
+            : "";
+        var fragment = verse is int v ? $"#v{v}" : "";
+        Nav.NavigateTo($"/read/{book}/{chapter}{query}{fragment}");
     }
 
     private Task Renew() =>

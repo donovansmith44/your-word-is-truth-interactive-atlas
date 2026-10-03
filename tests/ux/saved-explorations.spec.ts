@@ -20,15 +20,13 @@ test('EXPLORE-TRAIL-1: save from the popover, list in the hamburger, continue wi
   await openVerse(page, 1);
   await expect(page.getByTestId('popover-title')).toHaveText('GEN.1.1');
 
-  // Grow the trail one hop (decision 1: every Push is recorded) --
-  // "About this book" pushes an AuthorNode.
-  await page.getByTestId('popover-chip-book').click();
-  await expect(page.getByTestId('popover-title')).toHaveText('GEN');
+  await page.getByTestId('popover-up-member-of-Container:bible-chapter-GEN-1').click();
+  await expect(page.getByTestId('popover-title')).toHaveText('GEN.1');
 
   // Decision 2: save does NOT close the popover.
   await page.getByTestId('popover-save-exploration').click();
   await expect(page.getByTestId('popover')).toBeVisible();
-  await expect(page.getByTestId('popover-title')).toHaveText('GEN');
+  await expect(page.getByTestId('popover-title')).toHaveText('GEN.1');
 
   await page.getByTestId('popover-close').click();
   await expect(page.getByTestId('popover')).toHaveCount(0);
@@ -40,7 +38,7 @@ test('EXPLORE-TRAIL-1: save from the popover, list in the hamburger, continue wi
   await expect(panel).toBeVisible();
   const item = page.locator('[data-testid^="exploration-item-"]');
   await expect(item).toHaveCount(1);
-  await expect(item).toContainText('GEN.1.1 → Genesis'); // the served labels: the verse, then the book container the "About this book" hop resolves to
+  await expect(item).toContainText('GEN.1.1 → Genesis 1');
   await expect(item).toContainText('2 nodes');
   const itemTestId = await item.getAttribute('data-testid');
   const id = itemTestId!.replace('exploration-item-', '');
@@ -49,13 +47,11 @@ test('EXPLORE-TRAIL-1: save from the popover, list in the hamburger, continue wi
   // (FOCUS-1 R15/F1-5: a node's label is served; kind names are not user words).
   await item.locator('.hamburger-exploration-summary').click();
   await expect(page.getByTestId('exploration-node-0')).toHaveText('GEN.1.1');
-  await expect(page.getByTestId('exploration-node-1')).toHaveText('Genesis');
+  await expect(page.getByTestId('exploration-node-1')).toHaveText('Genesis 1');
 
-  // "Continue" from the LAST node -- reopens Author(GEN) as Current, with
-  // GEN.1.1 as the back-stack's own preceding node.
   await page.getByTestId('exploration-node-1').click();
-  await expect(panel).toHaveCount(0); // continuing closes the hamburger panel
-  await expect(page.getByTestId('popover-title')).toHaveText('GEN');
+  await expect(panel).toHaveCount(0);
+  await expect(page.getByTestId('popover-title')).toHaveText('GEN.1');
   await expect(page.getByTestId('popover-breadcrumb-back')).toBeVisible();
   await page.getByTestId('popover-breadcrumb-back').click();
   await expect(page.getByTestId('popover-title')).toHaveText('GEN.1.1');
@@ -89,10 +85,7 @@ test('PERI-1: saving an exploration through a general-kind pericope (NUN) lists 
   await openVerse(page, 105);
   await expect(page.getByTestId('popover-title')).toHaveText('PSA.119.105');
 
-  // Drill into the general-kind PASSAGE row itself -- a fresh EventNode,
-  // never previously fetched, the exact shape the review's own trace
-  // named as the deterministic failure case.
-  await page.getByTestId('verse-event-psa_119_nun').click();
+  await page.getByTestId('popover-link-attests-Event:psa_119_nun').click();
   await expect(page.getByTestId('popover-title')).toHaveText('Psalm 119: NUN');
 
   await page.getByTestId('popover-save-exploration').click();

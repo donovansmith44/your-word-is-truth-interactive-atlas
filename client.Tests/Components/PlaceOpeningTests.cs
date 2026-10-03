@@ -86,8 +86,6 @@ public sealed class PlaceOpeningTests : BunitContext
 
         public int OtherContextSectionCount => 0;
 
-        public bool XrefEntryPoint => false;
-
         public IExplorableClient Graph => throw new NotSupportedException();
 
         public Task RenewAsync() => Task.CompletedTask;

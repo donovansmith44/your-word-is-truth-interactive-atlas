@@ -6,7 +6,7 @@ use std::str::FromStr;
 use axum::extract::{FromRequestParts, Path};
 use axum::http::request::Parts;
 
-use atlas_core::refs::{BookId, ScriptureRef, VerseId};
+use atlas_core::refs::{BookId, ScriptureRef};
 use atlas_graph_types::edge::EdgeId;
 use atlas_graph_types::graph::edge_hash;
 use atlas_graph_types::id::AnyNodeId;
@@ -118,18 +118,6 @@ impl FromStr for VerseSpan {
     }
 }
 
-/// A reference naming exactly one verse.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub struct VerseReference(pub VerseId);
-
-impl FromStr for VerseReference {
-    type Err = NamesNoReference;
-
-    fn from_str(raw: &str) -> Result<Self, NamesNoReference> {
-        VerseId::parse_canonical(raw).map(VerseReference).map_err(|_| NamesNoReference)
-    }
-}
-
 /// A reference naming one node of the graph, in the wire form every response hands
 /// one back as.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -174,7 +162,13 @@ impl FromStr for PositionReference {
 pub const ELEMENT_ID_SEPARATOR: char = ',';
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct ElementIds(pub Vec<ElementId>);
+pub struct AskedElement {
+    pub asked: String,
+    pub id: ElementId,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct ElementIds(pub Vec<AskedElement>);
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum ElementIdsRefused {
@@ -190,7 +184,7 @@ impl FromStr for ElementIds {
             return Err(ElementIdsRefused::NoId);
         }
         raw.split(ELEMENT_ID_SEPARATOR)
-            .map(|id| decode_element_id(id).ok_or_else(|| ElementIdsRefused::Malformed(id.to_string())))
+            .map(|asked| decode_element_id(asked).map(|id| AskedElement { asked: asked.to_string(), id }).ok_or_else(|| ElementIdsRefused::Malformed(asked.to_string())))
             .collect::<Result<Vec<_>, _>>()
             .map(ElementIds)
     }
@@ -276,16 +270,6 @@ mod tests {
     }
 
     #[test]
-    fn a_verse_reference_names_exactly_one_verse() {
-        // Arrange
-        let asked = ["JHN.3.16", "JHN.3", "JHN.3.16-18", "nope"];
-        // Act
-        let read: Vec<bool> = asked.iter().map(|raw| raw.parse::<VerseReference>().is_ok()).collect();
-        // Assert
-        assert_eq!(read, vec![true, false, false, false]);
-    }
-
-    #[test]
     fn a_node_reference_names_a_node_in_the_wire_form_a_response_hands_back() {
         // Arrange
         let asked = ["Event:ab_ur", "text-unit:JHN.3.16", "Event:", "not-even-a-colon-pair"];
@@ -351,7 +335,10 @@ mod tests {
         assert_eq!(
             read,
             vec![
-                Ok(ElementIds(vec![ElementId::Node(decode_node_id("Event:ab_ur").unwrap()), ElementId::Edge(EdgeId(AN_EDGE.to_string()))])),
+                Ok(ElementIds(vec![
+                    AskedElement { asked: "Event:ab_ur".to_string(), id: ElementId::Node(decode_node_id("Event:ab_ur").unwrap()) },
+                    AskedElement { asked: AN_EDGE.to_string(), id: ElementId::Edge(EdgeId(AN_EDGE.to_string())) },
+                ])),
                 Err(ElementIdsRefused::NoId),
                 Err(ElementIdsRefused::Malformed("nope".to_string())),
                 Err(ElementIdsRefused::Malformed(String::new())),

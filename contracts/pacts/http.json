@@ -3224,7 +3224,7 @@
     "GET /api/contract": {
       "body": {
         "manifest_schema": 1,
-        "section_schema_version": 22
+        "section_schema_version": 24
       },
       "status": 200
     },
@@ -3763,7 +3763,7 @@
             "verse": 31
           }
         ],
-        "version": "69fefc397684ce50440470295cda9054"
+        "version": "bfaf13ee4ad579ba94b3e2ef4b95b046"
       },
       "status": 200
     },
@@ -5054,7 +5054,7 @@
         "kind": "Event",
         "label": "Terah's family leaves Ur",
         "provenance": "curated",
-        "version": "69fefc397684ce50440470295cda9054"
+        "version": "bfaf13ee4ad579ba94b3e2ef4b95b046"
       },
       "status": 200
     },
@@ -5084,7 +5084,7 @@
           "lon": 35.569167
         },
         "provenance": "curated-places",
-        "version": "69fefc397684ce50440470295cda9054"
+        "version": "bfaf13ee4ad579ba94b3e2ef4b95b046"
       },
       "status": 200
     },
@@ -5125,7 +5125,7 @@
         "kind": "site-of",
         "next": null,
         "previous": null,
-        "version": "69fefc397684ce50440470295cda9054"
+        "version": "bfaf13ee4ad579ba94b3e2ef4b95b046"
       },
       "status": 200
     },
@@ -10958,311 +10958,6 @@
       },
       "status": 200
     },
-    "GET /api/verse/JHN.3.16": {
-      "body": {
-        "book_meta": {
-          "author": "John",
-          "write_from": 85,
-          "write_place": "ephesus",
-          "write_to": 95
-        },
-        "catechism": [
-          {
-            "id": "commandment-1",
-            "name": "The First Commandment",
-            "provenance": [
-              "concord-sc-overlap",
-              "curated-catechism"
-            ],
-            "question": "The First Commandment"
-          },
-          {
-            "id": "commandments-close",
-            "name": "What Does God Say of All These Commandments?",
-            "provenance": [
-              "concord-sc-overlap",
-              "curated-catechism"
-            ],
-            "question": "Redemption in Christ"
-          },
-          {
-            "id": "creed-1",
-            "name": "The First Article — Of Creation",
-            "provenance": [
-              "concord-sc-overlap",
-              "curated-catechism"
-            ],
-            "question": "God Our Father"
-          },
-          {
-            "id": "creed-3",
-            "name": "The Third Article — Of Sanctification",
-            "provenance": [
-              "concord-sc-overlap",
-              "curated-catechism"
-            ],
-            "question": "The Riches of God's Grace"
-          }
-        ],
-        "catechism_provenance": [
-          "concord-sc-overlap",
-          "curated-catechism"
-        ],
-        "cross_refs": [
-          {
-            "preview": "But God commendeth his love toward us, in that, while we were yet sinners, Christ died for us.",
-            "provenance": [
-              "openbible.info-cross-references"
-            ],
-            "target": "ROM.5.8",
-            "votes": 981
-          },
-          {
-            "preview": "In this was manifested the love of God toward us, because that God sent his only begotten Son into the world, that we might live through him.",
-            "provenance": [
-              "openbible.info-cross-references"
-            ],
-            "target": "1JN.4.9-10",
-            "votes": 695
-          },
-          {
-            "preview": "He that spared not his own Son, but delivered him up for us all, how shall he not with him also freely give us all things?",
-            "provenance": [
-              "openbible.info-cross-references"
-            ],
-            "target": "ROM.8.32",
-            "votes": 507
-          },
-          {
-            "preview": "That whosoever believeth in him should not perish, but have eternal life.",
-            "provenance": [
-              "openbible.info-cross-references"
-            ],
-            "target": "JHN.3.15",
-            "votes": 497
-          },
-          {
-            "preview": "Jesus said unto her, I am the resurrection, and the life: he that believeth in me, though he were dead, yet shall he live:",
-            "provenance": [
-              "openbible.info-cross-references"
-            ],
-            "target": "JHN.11.25-26",
-            "votes": 455
-          },
-          {
-            "preview": "And this is the will of him that sent me, that every one which seeth the Son, and believeth on him, may have everlasting life: and I will raise him up at the last day.",
-            "provenance": [
-              "openbible.info-cross-references"
-            ],
-            "target": "JHN.6.40",
-            "votes": 396
-          },
-          {
-            "preview": "He that believeth on the Son hath everlasting life: and he that believeth not the Son shall not see life; but the wrath of God abideth on him.",
-            "provenance": [
-              "openbible.info-cross-references"
-            ],
-            "target": "JHN.3.36",
-            "votes": 374
-          },
-          {
-            "preview": "We love him, because he first loved us.",
-            "provenance": [
-              "openbible.info-cross-references"
-            ],
-            "target": "1JN.4.19",
-            "votes": 349
-          },
-          {
-            "preview": "And I give unto them eternal life; and they shall never perish, neither shall any man pluck them out of my hand.",
-            "provenance": [
-              "openbible.info-cross-references"
-            ],
-            "target": "JHN.10.28",
-            "votes": 317
-          },
-          {
-            "preview": "This is a faithful saying, and worthy of all acceptation, that Christ Jesus came into the world to save sinners; of whom I am chief.",
-            "provenance": [
-              "openbible.info-cross-references"
-            ],
-            "target": "1TI.1.15-16",
-            "votes": 286
-          },
-          {
-            "preview": "For if, when we were enemies, we were reconciled to God by the death of his Son, much more, being reconciled, we shall be saved by his life.",
-            "provenance": [
-              "openbible.info-cross-references"
-            ],
-            "target": "ROM.5.10",
-            "votes": 262
-          },
-          {
-            "preview": "The next day John seeth Jesus coming unto him, and saith, Behold the Lamb of God, which taketh away the sin of the world.",
-            "provenance": [
-              "openbible.info-cross-references"
-            ],
-            "target": "JHN.1.29",
-            "votes": 237
-          },
-          {
-            "preview": "Now our Lord Jesus Christ himself, and God, even our Father, which hath loved us, and hath given us everlasting consolation and good hope through grace,",
-            "provenance": [
-              "openbible.info-cross-references"
-            ],
-            "target": "2TH.2.16",
-            "votes": 224
-          },
-          {
-            "preview": "To wit, that God was in Christ, reconciling the world unto himself, not imputing their trespasses unto them; and hath committed unto us the word of reconciliation.",
-            "provenance": [
-              "openbible.info-cross-references"
-            ],
-            "target": "2CO.5.19-21",
-            "votes": 212
-          },
-          {
-            "preview": "But God, who is rich in mercy, for his great love wherewith he loved us,",
-            "provenance": [
-              "openbible.info-cross-references"
-            ],
-            "target": "EPH.2.4",
-            "votes": 202
-          },
-          {
-            "preview": "But go ye and learn what that meaneth, I will have mercy, and not sacrifice: for I am not come to call the righteous, but sinners to repentance.",
-            "provenance": [
-              "openbible.info-cross-references"
-            ],
-            "target": "MAT.9.13",
-            "votes": 186
-          },
-          {
-            "preview": "And from Jesus Christ, who is the faithful witness, and the first begotten of the dead, and the prince of the kings of the earth. Unto him that loved us, and washed us from our sins in his own blood,",
-            "provenance": [
-              "openbible.info-cross-references"
-            ],
-            "target": "REV.1.5",
-            "votes": 171
-          },
-          {
-            "preview": "And he said, Lay not thine hand upon the lad, neither do thou any thing unto him: for now I know that thou fearest God, seeing thou hast not withheld thy son, thine only son from me.",
-            "provenance": [
-              "openbible.info-cross-references"
-            ],
-            "target": "GEN.22.12",
-            "votes": 164
-          },
-          {
-            "preview": "And the Word was made flesh, and dwelt among us, (and we beheld his glory, the glory as of the only begotten of the Father,) full of grace and truth.",
-            "provenance": [
-              "openbible.info-cross-references"
-            ],
-            "target": "JHN.1.14",
-            "votes": 164
-          },
-          {
-            "preview": "But after that the kindness and love of God our Saviour toward man appeared,",
-            "provenance": [
-              "openbible.info-cross-references"
-            ],
-            "target": "TIT.3.4",
-            "votes": 160
-          },
-          {
-            "preview": "No man hath seen God at any time; the only begotten Son, which is in the bosom of the Father, he hath declared him.",
-            "provenance": [
-              "openbible.info-cross-references"
-            ],
-            "target": "JHN.1.18",
-            "votes": 148
-          },
-          {
-            "preview": "Having yet therefore one son, his wellbeloved, he sent him also last unto them, saying, They will reverence my son.",
-            "provenance": [
-              "openbible.info-cross-references"
-            ],
-            "target": "MRK.12.6",
-            "votes": 137
-          },
-          {
-            "preview": "Glory to God in the highest, and on earth peace, good will toward men.",
-            "provenance": [
-              "openbible.info-cross-references"
-            ],
-            "target": "LUK.2.14",
-            "votes": 127
-          }
-        ],
-        "cross_refs_provenance": [
-          "openbible.info-cross-references"
-        ],
-        "events": [
-          {
-            "id": "rob_nicodemus",
-            "kind": "event",
-            "label": "Nicodemus comes to Jesus by night",
-            "places": [
-              "jerusalem"
-            ],
-            "provenance": "curated",
-            "verse_groups": [
-              {
-                "book": "JHN",
-                "chapter": 2,
-                "count": 3,
-                "verses": [
-                  "JHN.2.23",
-                  "JHN.2.24",
-                  "JHN.2.25"
-                ]
-              },
-              {
-                "book": "JHN",
-                "chapter": 3,
-                "count": 21,
-                "verses": [
-                  "JHN.3.1",
-                  "JHN.3.2",
-                  "JHN.3.3",
-                  "JHN.3.4",
-                  "JHN.3.5",
-                  "JHN.3.6",
-                  "JHN.3.7",
-                  "JHN.3.8",
-                  "JHN.3.9",
-                  "JHN.3.10",
-                  "JHN.3.11",
-                  "JHN.3.12",
-                  "JHN.3.13",
-                  "JHN.3.14",
-                  "JHN.3.15",
-                  "JHN.3.16",
-                  "JHN.3.17",
-                  "JHN.3.18",
-                  "JHN.3.19",
-                  "JHN.3.20"
-                ]
-              }
-            ],
-            "when": {
-              "from_year": 30,
-              "to_year": 30
-            }
-          }
-        ],
-        "provenance": "kjv",
-        "ref": "JHN.3.16",
-        "text": "For God so loved the world, that he gave his only begotten Son, that whosoever believeth in him should not perish, but have everlasting life.",
-        "words_of_christ": [
-          {
-            "end": 141,
-            "start": 0
-          }
-        ]
-      },
-      "status": 200
-    },
     "GET /api/xrefs/JHN.3.16": {
       "body": [
         {
@@ -11605,7 +11300,7 @@
             "name": "Shows"
           }
         ],
-        "section_schema_version": 22,
+        "section_schema_version": 24,
         "symmetric": [
           {
             "display": "Analogous to",

@@ -17,6 +17,8 @@
 
     [Parameter] public EventCallback OnMoved { get; set; }
 
+    [Parameter] public EventCallback<BibleRef> OnReadInContext { get; set; }
+
     private readonly RequestSeries _series = new();
     private PresentationRequest? _request;
     private Outcome<Presented>? _outcome;
@@ -96,6 +98,12 @@
                     @onclick="() => OnShowOnWorld.InvokeAsync()">&#8982;</button>
         }
 
+        @if (OnReadInContext.HasDelegate && presented.Presentation is Presentation.Text { Unit.Locus: BibleRef verse })
+        {
+            <button type="button" class="popover-head-action" data-testid="@($"{handle}-chip-context")" aria-label="Read in context" title="Read in context"
+                    @onclick="() => OnReadInContext.InvokeAsync(verse)">&#182;</button>
+        }
+
         @foreach (var end in request.Element.Ends.Where(request.Offers))
         {
             <button type="button" class="focus-up explorable" data-testid="@($"{handle}-end-{Id(end)}")"
@@ -106,9 +114,8 @@
         {
             @foreach (var entry in Shown(presented, group))
             {
-                <button type="button" class="focus-up explorable" data-testid="@($"{handle}-up-{group.Kind.WireName()}-{Id(entry.Neighbour)}")"
-                        @onclick="() => OnFollow.InvokeAsync(entry.Neighbour)">@Label(entry.Neighbour)</button>
-                @EdgeStep(request, entry)
+                @Stepped(request, entry, @<button type="button" class="focus-up explorable" data-testid="@($"{handle}-up-{group.Kind.WireName()}-{Id(entry.Neighbour)}")"
+                        @onclick="() => OnFollow.InvokeAsync(entry.Neighbour)">@Label(entry.Neighbour)</button>)
             }
             @Reveal(presented, group, $"{handle}-up-{group.Kind.WireName()}")
         }
@@ -117,12 +124,15 @@
         {
             <div class="popover-section" data-testid="@($"{handle}-section-card")">
                 <p class="focus-title" data-testid="@($"{handle}-card-title")">@card.Title</p>
-                <dl class="focus-fields">
-                    @foreach (var field in card.Fields)
-                    {
-                        <div class="focus-field" data-testid="@($"{handle}-field-{field.Name}")"><dt>@field.Name</dt><dd>@field.Value</dd></div>
-                    }
-                </dl>
+                @Fields(handle, card.Fields)
+            </div>
+        }
+
+        @if (presented.Presentation is Presentation.Text text)
+        {
+            <div class="popover-section" data-testid="@($"{handle}-section-text")">
+                <UnitTextView Unit="text.Unit" Handle="@handle" OnFollow="OnFollow" />
+                @Fields(handle, text.Fields)
             </div>
         }
 
@@ -130,9 +140,8 @@
         {
             @foreach (var entry in Shown(presented, group))
             {
-                <button type="button" class="focus-arrow explorable" data-testid="@($"{handle}-{ArrowHandle(arrows.Direction)}")"
-                        @onclick="() => OnFollow.InvokeAsync(entry.Neighbour)">@Arrowed(arrows.Direction, Label(entry.Neighbour))</button>
-                @EdgeStep(request, entry)
+                @Stepped(request, entry, @<button type="button" class="focus-arrow explorable" data-testid="@($"{handle}-{ArrowHandle(arrows.Direction)}")"
+                        @onclick="() => OnFollow.InvokeAsync(entry.Neighbour)">@Arrowed(arrows.Direction, Label(entry.Neighbour))</button>)
             }
             @Reveal(presented, group, $"{handle}-{ArrowHandle(arrows.Direction)}")
         }
@@ -143,9 +152,9 @@
             <div class="popover-section" data-testid="@section">
                 @foreach (var entry in Shown(presented, group))
                 {
-                    <button type="button" class="focus-child explorable" data-testid="@($"{handle}-child-{group.Kind.WireName()}-{Id(entry.Neighbour)}")"
-                            @onclick="() => OnFollow.InvokeAsync(entry.Neighbour)">@Label(entry.Neighbour)</button>
-                    @EdgeStep(request, entry)
+                    @Stepped(request, entry, @<button type="button" class="focus-child explorable" data-testid="@($"{handle}-child-{group.Kind.WireName()}-{Id(entry.Neighbour)}")"
+                            @onclick="() => OnFollow.InvokeAsync(entry.Neighbour)">@Label(entry.Neighbour)</button>)
+                    @Words($"{handle}-words-{group.Kind.WireName()}-{Id(entry.Neighbour)}", entry)
                 }
                 @Reveal(presented, group, section)
             </div>
@@ -158,12 +167,30 @@
                 <p class="catechism-section-heading" data-testid="@($"{section}-heading")">@Heading(request.Surface, group)</p>
                 @foreach (var entry in Shown(presented, group))
                 {
-                    <button type="button" class="focus-link @Register(list.Style)" data-testid="@($"{handle}-link-{group.Kind.WireName()}-{Id(entry.Neighbour)}")"
-                            @onclick="() => OnFollow.InvokeAsync(entry.Neighbour)">@Label(entry.Neighbour)</button>
-                    @EdgeStep(request, entry)
+                    @Stepped(request, entry, @<button type="button" class="focus-link @Register(list.Style)" data-testid="@($"{handle}-link-{group.Kind.WireName()}-{Id(entry.Neighbour)}")"
+                            @onclick="() => OnFollow.InvokeAsync(entry.Neighbour)">@Label(entry.Neighbour)</button>)
+                    @Words($"{handle}-words-{group.Kind.WireName()}-{Id(entry.Neighbour)}", entry)
                 }
                 @Reveal(presented, group, section)
             </div>
+        }
+    };
+
+    private static RenderFragment Fields(string handle, IReadOnlyList<Presentation.Field> fields) => __builder =>
+    {
+        <dl class="focus-fields">
+            @foreach (var field in fields)
+            {
+                <div class="focus-field" data-testid="@($"{handle}-field-{field.Name}")"><dt>@field.Name</dt><dd>@field.Value</dd></div>
+            }
+        </dl>
+    };
+
+    private RenderFragment Words(string handle, Entry entry) => __builder =>
+    {
+        @if (entry.Words is { } words)
+        {
+            <div class="focus-words"><UnitTextView Unit="words" Handle="@handle" OnFollow="OnFollow" /></div>
         }
     };
 
@@ -196,6 +223,11 @@
         ArrowDirection.Next => $"{label} ›",
     };
 
+    private RenderFragment Stepped(PresentationRequest request, Entry entry, RenderFragment link) => __builder =>
+    {
+        <span class="focus-entry">@link@EdgeStep(request, entry)</span>
+    };
+
     private RenderFragment EdgeStep(PresentationRequest request, Entry entry) => __builder =>
     {
         @if (request.Offers(entry.Edge))
@@ -208,7 +240,7 @@
 
     private static IEnumerable<(FrontierGroup Group, T Affordance)> Offered<T>(PresentationRequest request) where T : Affordance
     {
-        foreach (var group in request.Element.Groups)
+        foreach (var group in Affordances.InRuledOrder(request.Element.Groups))
         {
             if (Affordances.Of(group.Kind) is T affordance)
             {

@@ -34,6 +34,27 @@ hatch — and adding one to a previously-green scenario is classified
 
 ---
 
+- **0.24.0** (FOCUS-2 Task 6, `/api/verse` is gone) — **MINOR under the 0.x policy (MAJOR class: a scenario removed).**
+  The `detail-routes` scenario "a verse" (`GET /api/verse/JHN.3.16`) and its fixture `verse-jhn-3-16`
+  are removed with the route: a verse is read as an element (`/api/node/{id}` carries its text) and its
+  edge pages, which `identity` and `edges` already pin. The http pact drops the interaction. The
+  `verse` projection stays in the vendored runner's universe. No other scenario or fixture changed.
+
+- **0.23.0** (FOCUS-2 Task 2, a citation of a span is labelled by the span) — **MINOR under the 0.x policy (MAJOR class: blessed fixtures moved).**
+  A `cites` edge whose row records a span is labelled by the passage it cites, read from the
+  row's `target_display` (`JHN.3.16 · Cites · JHN.11.25-26`); every other label is unchanged.
+  The label table sits outside the logical hash (F-39), so the section schema moves 23 -> 24
+  to rewrite the blobs and move the root. Re-blessed: `contract` and `graph-vocabulary`
+  (`section_schema_version` 23 -> 24), `kretzmann-chapter-gen-1` (the root moved with it);
+  the http pact carries them too. No id, scenario or projection changed.
+
+- **0.22.0** (FOCUS-2 Task 1 Part A, a text unit's reference is compiled) — **MINOR under the 0.x policy (MAJOR class: blessed fixtures moved).**
+  The `verse` and `concord_unit` tables carry each text unit's compiled `reference`, and the
+  served text read takes its references and its anchors' characters from the artifact.
+  Re-blessed: `contract` and `graph-vocabulary` (`section_schema_version` 22 -> 23),
+  `kretzmann-chapter-gen-1` (the version root moved with it); the http pact carries them too.
+  No id, scenario or projection changed.
+
 - **0.21.0** (stack fix wave 2, F-69: edge counts are compiled) — **MINOR under the 0.x policy (MAJOR class: blessed fixtures moved).**
   Every section carries a compiled `edge_count` table, the distinct count per position, relation
   and direction, and the served edge summary reads it instead of counting the adjacency.

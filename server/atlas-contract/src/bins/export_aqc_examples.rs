@@ -48,7 +48,7 @@ async fn main() -> anyhow::Result<()> {
 
     for (kind, wire_id) in SEEDS {
         let decoded = decode_node_id(wire_id).unwrap_or_else(|| panic!("export_aqc_examples: seed id '{wire_id}' does not even PARSE via graph_wire::decode_node_id -- fix the SEEDS list"));
-        let re_encoded = encode_node_id(&decoded);
+        let re_encoded = encode_node_id(&decoded, &snap).unwrap_or_else(|_| panic!("export_aqc_examples: seed id '{wire_id}' names a text unit no reference is compiled for"));
         assert_eq!(&re_encoded, wire_id, "export_aqc_examples: seed id '{wire_id}' does not round-trip (got '{re_encoded}') -- the G2 wire bijection is broken for this id");
         let actual_kind = decoded.kind.name();
         assert_eq!(&actual_kind, kind, "export_aqc_examples: seed id '{wire_id}' decodes to kind '{actual_kind}', expected '{kind}'");

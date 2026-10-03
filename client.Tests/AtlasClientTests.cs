@@ -216,17 +216,6 @@ public sealed class AtlasClientTests
     }
 
     [Fact]
-    public async Task Verse_requests_the_verse_endpoint()
-    {
-        // Arrange
-        var (client, handler) = MakeClient("{}");
-        // Act
-        await client.Verse("JHN.3.16");
-        // Assert
-        Assert.Equal("/api/verse/JHN.3.16", handler.RequestedUris[0].AbsolutePath);
-    }
-
-    [Fact]
     public async Task KretzmannChapter_requests_the_kretzmann_chapter_endpoint_uncached()
     {
         // Arrange

@@ -1,11 +1,11 @@
 use std::collections::BTreeMap;
 
 use atlas_core::data::AtlasData;
-use atlas_graph_types::edge::{EdgeId, EdgeKind, EdgeRecord};
-use atlas_graph_types::graph::Graph;
+use atlas_graph_types::canon::RowFamily;
+use atlas_graph_types::edge::{CrossRef, EdgeId, EdgeKind, EdgeRecord};
+use atlas_graph_types::graph::{EdgeRow, Graph};
 use atlas_graph_types::id::{AnchorId, AnyNodeId, Position};
 use atlas_graph_types::node::{Node, NodePayload};
-use atlas_graph_types::text::{ConcordRef, ConcordTag, Corpus};
 
 use crate::geography::Geography;
 
@@ -43,13 +43,7 @@ impl<'a> ReaderNames<'a> {
 }
 
 pub fn node_label(id: &AnyNodeId, node: Option<&Node>, names: &ReaderNames) -> Option<String> {
-    if let Some((book, chapter, verse)) = crate::kjv_adapter::decode_text_unit(id) {
-        return Some(crate::kjv_adapter::dot_ref(book, chapter, verse));
-    }
-    if let Some((part, article, paragraph)) = crate::concord_adapter::decode_text_unit(id) {
-        return Some(ConcordTag::cite(&ConcordRef { part, article, paragraph }));
-    }
-    node.and_then(|n| names.of_node(n))
+    crate::references::unit_reference(id).or_else(|| node.and_then(|n| names.of_node(n)))
 }
 
 pub fn edge_label(kind: EdgeKind, subject: &str, object: &str) -> String {
@@ -75,12 +69,21 @@ fn label_of(position: &Position, graph: &Graph, edges: &BTreeMap<EdgeId, EdgeRec
         Position::Edge(id) => {
             let record = edges.get(id)?;
             let subject = label_of(&record.subject, graph, edges, names, labels)?;
-            let object = label_of(&record.object, graph, edges, names, labels)?;
+            let object = object_label(record, graph, edges, names, labels)?;
             edge_label(record.kind, &subject, &object)
         }
     };
     labels.insert(position.clone(), label.clone());
     Some(label)
+}
+
+pub fn citations<'g>(graph: &'g Graph, rows: &'g [EdgeRow]) -> impl Iterator<Item = &'g CrossRef> {
+    rows.iter().filter(|row| row.family == RowFamily::CrossRefs).filter_map(|row| graph.cross_refs.get(row.row_ord as usize))
+}
+
+fn object_label(record: &EdgeRecord, graph: &Graph, edges: &BTreeMap<EdgeId, EdgeRecord>, names: &ReaderNames, labels: &mut BTreeMap<Position, String>) -> Option<String> {
+    let cited_span = citations(graph, graph.rows_of_edge(&record.id)).find(|citation| citation.to_last.is_some()).map(|citation| citation.target_display.clone());
+    cited_span.or_else(|| label_of(&record.object, graph, edges, names, labels))
 }
 
 #[cfg(test)]
@@ -190,6 +193,47 @@ mod tests {
 
         // Assert
         assert_eq!(label, "The Flood · Located at · Ararat");
+    }
+
+    fn verse_at(book: u8, chapter: u16, verse: u16) -> atlas_graph_types::text::TextLocus {
+        atlas_graph_types::text::TextLocus { at: atlas_graph_types::text::TextRef::Bible(atlas_graph_types::text::VerseRef { book, chapter, verse }), span: None }
+    }
+
+    fn cited(to_last: Option<atlas_graph_types::text::TextLocus>, target_display: &str) -> Graph {
+        let mut g = Graph::default();
+        g.cross_refs = vec![CrossRef { from: verse_at(GENESIS, 1, 1), to: verse_at(GENESIS, 29, 32), to_last, target_display: target_display.to_string(), votes: 0, provenance: "test".into() }];
+        g.build_indexes();
+        g
+    }
+
+    fn citation_label(mut g: Graph) -> Option<String> {
+        let edge = entry_id(RelationId::Cites, &Position::Node(crate::kjv_adapter::verse_node_id(GENESIS, 1, 1)), &Position::Node(crate::kjv_adapter::verse_node_id(GENESIS, 29, 32)));
+        compile(&mut g, &no_names());
+        g.labels.get(&Position::Edge(edge)).cloned()
+    }
+
+    #[test]
+    fn a_citation_of_a_span_is_labelled_by_the_passage_it_cites() {
+        // Arrange
+        let g = cited(Some(verse_at(GENESIS, 30, 24)), "GEN.29.32-GEN.30.24");
+
+        // Act
+        let label = citation_label(g);
+
+        // Assert
+        assert_eq!(label, Some("GEN.1.1 · Cites · GEN.29.32-GEN.30.24".to_string()));
+    }
+
+    #[test]
+    fn a_citation_of_one_verse_is_labelled_by_that_verse() {
+        // Arrange
+        let g = cited(None, "GEN.29.32");
+
+        // Act
+        let label = citation_label(g);
+
+        // Assert
+        assert_eq!(label, Some("GEN.1.1 · Cites · GEN.29.32".to_string()));
     }
 
     #[test]

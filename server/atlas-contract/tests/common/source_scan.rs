@@ -232,7 +232,12 @@ pub fn rust_sources_under(dirs: &[&str]) -> Vec<PathBuf> {
     let root = repository_root();
     let mut out = Vec::new();
     for dir in dirs {
-        walk(&root.join(dir), &|p| p.extension().is_some_and(|e| e == "rs"), &mut out);
+        let at = root.join(dir);
+        if at.is_file() {
+            out.push(at);
+        } else {
+            walk(&at, &|p| p.extension().is_some_and(|e| e == "rs"), &mut out);
+        }
     }
     out.sort();
     out

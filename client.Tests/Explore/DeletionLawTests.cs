@@ -8,11 +8,36 @@ namespace BibleAtlas.Client.Tests;
 
 public sealed class DeletionLawTests
 {
-    private static readonly IReadOnlyList<NodeKind> MigratedKinds = [NodeKind.Place, NodeKind.Polity, NodeKind.Era, NodeKind.Map];
+    private static readonly IReadOnlyList<NodeKind> MigratedKinds = [NodeKind.Place, NodeKind.Polity, NodeKind.Era, NodeKind.Map, NodeKind.TextUnit];
 
-    private static readonly IReadOnlyList<Type> HeldForTheMapsMigration = [typeof(PolityDeltaNode)];
+    private static readonly IReadOnlyDictionary<NodeKind, IReadOnlyList<string>> LegacyNames = new Dictionary<NodeKind, IReadOnlyList<string>>
+    {
+        [NodeKind.Place] = ["Place"],
+        [NodeKind.Polity] = ["Polity"],
+        [NodeKind.Era] = ["Era"],
+        [NodeKind.Map] = ["Map"],
+        [NodeKind.TextUnit] = ["Verse", "ConcordUnit"],
+    };
+
+    private static readonly IReadOnlyDictionary<Type, string> HeldUntil = new Dictionary<Type, string>
+    {
+        [typeof(PolityDeltaNode)] = "MAPS",
+    };
 
     private const string AnyLocalId = "any";
+
+    [Fact]
+    public void Every_migrated_kind_names_its_legacy_names()
+    {
+        // Arrange
+        var migrated = MigratedKinds;
+
+        // Act
+        var unnamed = migrated.Where(kind => !LegacyNames.TryGetValue(kind, out var names) || names.Count == 0).ToList();
+
+        // Assert
+        Assert.Empty(unnamed);
+    }
 
     [Fact]
     public void No_kind_is_served_by_both_mechanisms()
@@ -34,8 +59,8 @@ public sealed class DeletionLawTests
         var providers = File.ReadAllText(Path.Combine(ConformanceTests.ClientRoot, "Legacy", "PopoverSectionProviders.cs"));
 
         // Act
-        var named = MigratedKinds
-            .Where(kind => Regex.IsMatch(providers, $@"AppliesTo\(IExplorable node\) => node\.Kind (==|is)[^;]*""{kind}"""))
+        var named = RetiredNames()
+            .Where(name => Regex.IsMatch(providers, $@"AppliesTo\(IExplorable node\) => node\.Kind (==|is)[^;]*""{name}"""))
             .ToList();
 
         // Assert
@@ -47,15 +72,17 @@ public sealed class DeletionLawTests
     {
         // Arrange
         var legacyNodes = typeof(IExplorable).Assembly.GetTypes()
-            .Where(type => typeof(IExplorable).IsAssignableFrom(type) && !type.IsInterface && !HeldForTheMapsMigration.Contains(type));
+            .Where(type => typeof(IExplorable).IsAssignableFrom(type) && !type.IsInterface && !HeldUntil.ContainsKey(type));
 
         // Act
         var named = legacyNodes
-            .Where(type => MigratedKinds.Any(kind => type.Name.StartsWith(kind.ToString(), StringComparison.Ordinal)))
+            .Where(type => RetiredNames().Any(name => type.Name.StartsWith(name, StringComparison.Ordinal)))
             .Select(type => type.Name)
             .ToList();
 
         // Assert
         Assert.Empty(named);
     }
+
+    private static IEnumerable<string> RetiredNames() => MigratedKinds.SelectMany(kind => LegacyNames[kind]);
 }

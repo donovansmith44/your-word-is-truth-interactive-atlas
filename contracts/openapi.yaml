@@ -3,7 +3,7 @@ openapi: 3.1.0
 info:
   title: Bible Atlas API
   description: The Bible Atlas HTTP API, generated from the Rust that serves it. The `x-atlas-relations` extension lists every relation this atlas joins two nodes by, each with the label its forward and its inverse neighbours are asked for and the words each is displayed by, so a consumer builds its own vocabulary from that list rather than writing one out.
-  version: 0.21.0
+  version: 0.25.0
 paths:
   /api/books:
     get:
@@ -729,46 +729,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorBody'
-  /api/verse/{vref}:
-    get:
-      tags:
-      - reading
-      summary: 'One verse in full: its text, who wrote its book, the events it belongs to, its cross references with previews, and the catechism items citing it.'
-      description: |-
-        `{vref}` is `BOOK.CHAPTER.VERSE`, such as `JHN.3.16`; any other shape is
-        `bad_ref`, and a well-formed reference this atlas holds no text for is
-        `not_found`.
-      operationId: verse
-      parameters:
-      - name: vref
-        in: path
-        required: true
-        schema:
-          type: string
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/VerseDetail'
-        '400':
-          description: The reference, window or query could not be read; the body's `code` is `bad_ref`.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorBody'
-        '404':
-          description: Nothing in this atlas answers to that reference.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorBody'
-        '500':
-          description: The request was well formed but this atlas's own data for it is incomplete.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorBody'
   /api/xrefs/{sref}:
     get:
       tags:
@@ -953,29 +913,6 @@ components:
       - 3JN
       - JUD
       - REV
-    BookMeta:
-      type: object
-      description: Who wrote one book of the Bible, where, and when.
-      required:
-      - author
-      properties:
-        author:
-          type: string
-        write_from:
-          type:
-          - integer
-          - 'null'
-          format: int32
-        write_place:
-          type:
-          - string
-          - 'null'
-        write_to:
-          type:
-          - integer
-          - 'null'
-          format: int32
-      additionalProperties: false
     CanonBook:
       type: object
       description: 'One book of the canon: its code, its name, and how many verses each of its chapters holds.'
@@ -2081,6 +2018,10 @@ components:
           - type: 'null'
         provenance:
           type: string
+        text:
+          oneOf:
+          - $ref: '#/components/schemas/UnitText'
+          - type: 'null'
         version:
           type: string
       additionalProperties: false
@@ -2661,16 +2602,12 @@ components:
       description: 'One unit of a reading spine: a verse of Scripture, or a paragraph of the Book of Concord.'
       required:
       - ref
-      - locus
-      - text
-      - words_of_christ
-      - anchors
+      - node
+      - body
       - edge_summary
       properties:
-        anchors:
-          type: array
-          items:
-            $ref: '#/components/schemas/Anchor'
+        body:
+          $ref: '#/components/schemas/UnitText'
         edge_summary:
           type: array
           items:
@@ -2679,16 +2616,10 @@ components:
           oneOf:
           - $ref: '#/components/schemas/UnitHeading'
           - type: 'null'
-        locus:
-          $ref: '#/components/schemas/TextRef'
+        node:
+          $ref: '#/components/schemas/NodeRef'
         ref:
           type: string
-        text:
-          type: string
-        words_of_christ:
-          type: array
-          items:
-            $ref: '#/components/schemas/WordsOfChristSpan'
       additionalProperties: false
     TextWindow:
       type: object
@@ -2751,6 +2682,28 @@ components:
         kind:
           $ref: '#/components/schemas/EventKind'
       additionalProperties: false
+    UnitText:
+      type: object
+      description: 'What a text unit is: where it stands, its words, the words of Christ in it, and what its words stand for, each anchor in reading order.'
+      required:
+      - locus
+      - text
+      - words_of_christ
+      - anchors
+      properties:
+        anchors:
+          type: array
+          items:
+            $ref: '#/components/schemas/Anchor'
+        locus:
+          $ref: '#/components/schemas/TextRef'
+        text:
+          type: string
+        words_of_christ:
+          type: array
+          items:
+            $ref: '#/components/schemas/WordsOfChristSpan'
+      additionalProperties: false
     Verse:
       type: object
       description: 'One verse: its text, and what the graph attests at it.'
@@ -2787,86 +2740,6 @@ components:
         xref_count:
           type: integer
           minimum: 0
-      additionalProperties: false
-    VerseDetail:
-      type: object
-      description: One verse in full, with everything the graph attaches to it.
-      required:
-      - ref
-      - text
-      - words_of_christ
-      - book_meta
-      - events
-      - cross_refs
-      - catechism
-      - provenance
-      - cross_refs_provenance
-      - catechism_provenance
-      properties:
-        book_meta:
-          $ref: '#/components/schemas/BookMeta'
-        catechism:
-          type: array
-          items:
-            $ref: '#/components/schemas/CatechismRef'
-        catechism_provenance:
-          type: array
-          items:
-            type: string
-        cross_refs:
-          type: array
-          items:
-            $ref: '#/components/schemas/CrossRef'
-        cross_refs_provenance:
-          type: array
-          items:
-            type: string
-        events:
-          type: array
-          items:
-            $ref: '#/components/schemas/VerseEvent'
-        provenance:
-          type: string
-        ref:
-          type: string
-        text:
-          type: string
-        words_of_christ:
-          type: array
-          items:
-            $ref: '#/components/schemas/WordsOfChristSpan'
-      additionalProperties: false
-    VerseEvent:
-      type: object
-      description: One event or titled passage a verse belongs to.
-      required:
-      - id
-      - label
-      - verse_groups
-      - places
-      - kind
-      - provenance
-      properties:
-        id:
-          type: string
-        kind:
-          $ref: '#/components/schemas/EventKind'
-        label:
-          type: string
-        places:
-          type: array
-          items:
-            type: string
-        provenance:
-          type: string
-        verse_groups:
-          type: array
-          items:
-            $ref: '#/components/schemas/VerseGroup'
-        when:
-          oneOf:
-          - $ref: '#/components/schemas/YearSpan'
-          - type: 'null'
       additionalProperties: false
     VerseGroup:
       type: object

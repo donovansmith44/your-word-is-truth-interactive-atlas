@@ -156,7 +156,7 @@
         return last.Chapter == first.Chapter ? last.Verse : int.MaxValue;
     }
 
-    private IExplorable ExploreNodeOf(PassageBlockData block)
+    private IExplorable? PassageOf(PassageBlockData block)
     {
         if (block.ExploreSref is string sref)
         {
@@ -165,20 +165,22 @@
                 : block.Verses.Take(block.ExploreVerseCount).ToList();
             return runVerses.Count >= 2 && !ExploreAsVerse
                 ? new PassageNode(sref, string.Join(" ", runVerses.Select(v => v.Text)))
-                : new VerseNode(block.FirstVref);
+                : null;
         }
         return block.IsPassage && !ExploreAsVerse
             ? new PassageNode(block.Span, string.Join(" ", block.Verses.Select(v => v.Text)))
-            : new VerseNode(block.FirstVref);
+            : null;
     }
 
-    private Task Explore(PassageBlockData block) => OnExplore.InvokeAsync(new PopoverOpening.Legacy(ExploreNodeOf(block)));
+    private PopoverOpening OpeningOf(PassageBlockData block) =>
+        PassageOf(block) is { } passage ? new PopoverOpening.Legacy(passage) : LegacyTextUnits.Opening(block.FirstVref);
 
-    private Task OnEntryClick(MouseEventArgs e, PassageBlockData block)
-    {
-        var node = ExploreNodeOf(block);
-        return e.CtrlKey || e.MetaKey ? OnToggleSelect.InvokeAsync(node.Identity) : OnExplore.InvokeAsync(new PopoverOpening.Legacy(node));
-    }
+    private NodeRef SelectionOf(PassageBlockData block) => PassageOf(block)?.Identity ?? LegacyTextUnits.Node(block.FirstVref);
+
+    private Task Explore(PassageBlockData block) => OnExplore.InvokeAsync(OpeningOf(block));
+
+    private Task OnEntryClick(MouseEventArgs e, PassageBlockData block) =>
+        e.CtrlKey || e.MetaKey ? OnToggleSelect.InvokeAsync(SelectionOf(block)) : Explore(block);
 
     private Task OnKeyDown(KeyboardEventArgs e, PassageBlockData block) => e.Key == "Enter" ? Explore(block) : Task.CompletedTask;
 }

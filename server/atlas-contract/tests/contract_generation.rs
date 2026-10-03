@@ -378,3 +378,23 @@ fn forbidden_words_in(text: &str, vocabularies: &[&[&'static str]]) -> Vec<Forbi
         })
         .collect()
 }
+
+#[test]
+fn the_published_document_serves_a_text_units_text_once_and_names_its_node() {
+    // Arrange
+    let document = published_document();
+    let schemas = &document["components"]["schemas"];
+
+    // Act
+    let shapes = (schemas["TextUnit"]["required"].clone(), schemas["UnitText"]["required"].clone(), schemas["NodeRecord"]["properties"]["text"].clone());
+
+    // Assert
+    assert_eq!(
+        shapes,
+        (
+            serde_json::json!(["ref", "node", "body", "edge_summary"]),
+            serde_json::json!(["locus", "text", "words_of_christ", "anchors"]),
+            serde_json::json!({ "oneOf": [{ "$ref": "#/components/schemas/UnitText" }, { "type": "null" }] }),
+        )
+    );
+}

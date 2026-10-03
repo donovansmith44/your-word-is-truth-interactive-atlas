@@ -58,7 +58,7 @@ test('req 1b NAMED CASE, this run\'s own new authoring: Psalm 14 and Psalm 53 (t
   // ACCOUNTS shows both entries.
   await page.goto('/read/PSA/14');
   await openVerse(page, 1);
-  await page.getByTestId('verse-event-psa_014').click();
+  await page.getByTestId('popover-link-attests-Event:psa_014').click();
   const witnessesSection = page.getByTestId('popover-section-event-witnesses');
   await expect(witnessesSection).toBeVisible();
   await expect(witnessesSection.getByTestId('event-section-heading')).toHaveText('PARALLEL ACCOUNTS');

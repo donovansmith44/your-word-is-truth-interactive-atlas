@@ -21,7 +21,7 @@
         "edge": {
           "id": "Cites:eaa59650fa21a2231374997066fc8bff",
           "kind": "cites",
-          "label": "JHN.3.16 · Cites · 1JN.4.9"
+          "label": "JHN.3.16 · Cites · 1JN.4.9-10"
         },
         "neighbour": {
           "node": {
@@ -69,7 +69,7 @@
         "edge": {
           "id": "Cites:0949b073010a5d4c696954f0e01599a0",
           "kind": "cites",
-          "label": "JHN.3.16 · Cites · JHN.11.25"
+          "label": "JHN.3.16 · Cites · JHN.11.25-26"
         },
         "neighbour": {
           "node": {
@@ -149,7 +149,7 @@
         "edge": {
           "id": "Cites:e3acde5fcbd7dc2fac01a0b85cadc024",
           "kind": "cites",
-          "label": "JHN.3.16 · Cites · 1TI.1.15"
+          "label": "JHN.3.16 · Cites · 1TI.1.15-16"
         },
         "neighbour": {
           "node": {
@@ -213,7 +213,7 @@
         "edge": {
           "id": "Cites:d04fcb0bfcbb570efe7888a8b8a68776",
           "kind": "cites",
-          "label": "JHN.3.16 · Cites · 2CO.5.19"
+          "label": "JHN.3.16 · Cites · 2CO.5.19-21"
         },
         "neighbour": {
           "node": {
@@ -325,7 +325,7 @@
     "kind": "cites",
     "next": 20,
     "previous": null,
-    "version": "40cfb5f71731986598f7e9277ca69084"
+    "version": "338276c54656f5eaf260225e4be9a9db"
   },
   "status": 200
 }

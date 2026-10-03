@@ -42,24 +42,24 @@ public sealed class PopoverOpeningTests
     public void An_opening_on_a_legacy_node_is_matched_as_legacy()
     {
         // Arrange
-        PopoverOpening opening = new PopoverOpening.Legacy(new VerseNode("GEN.1.1"));
+        PopoverOpening opening = new PopoverOpening.Legacy(new ChapterNode("GEN", 1));
 
         // Act
         var described = Described(opening);
 
         // Assert
-        Assert.Equal("legacy GEN.1.1", described);
+        Assert.Equal("legacy GEN.1", described);
     }
 
     [Fact]
     public void Only_an_opening_on_a_legacy_node_answers_for_that_node()
     {
         // Arrange
-        var verse = new VerseNode("GEN.1.1");
-        var openings = new PopoverOpening[] { new PopoverOpening.Explore(Exodus), new PopoverOpening.Resume(Saved), new PopoverOpening.Legacy(verse) };
+        var chapter = new ChapterNode("GEN", 1);
+        var openings = new PopoverOpening[] { new PopoverOpening.Explore(Exodus), new PopoverOpening.Resume(Saved), new PopoverOpening.Legacy(chapter) };
 
         // Act
-        var answers = openings.Select(opening => opening.OpensLegacy(node => node == verse)).ToList();
+        var answers = openings.Select(opening => opening.OpensLegacy(node => node == chapter)).ToList();
 
         // Assert
         Assert.Equal([false, false, true], answers);

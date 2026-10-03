@@ -1,7 +1,7 @@
 @using BibleAtlas.Client.Exploring
 
 <div class="@RowClass" data-testid="@RowTestId" data-focal="@(Focal ? "true" : "false")" id="@Id"
-     tabindex="0" role="button" aria-label="@($"Explore {Vref}")"
+     tabindex="0" role="button" aria-label="@($"Explore {Unit.Node.Label}")"
      @onclick="OnRowClick" @onkeydown="@(e => OnLineKeyDown(e))">
     @if (ShowVerseNumButton)
     {
@@ -14,7 +14,7 @@
         <span class="@VerseNumClass">@Verse.Number</span>
     }
     <span class="@TextClass">
-        <MentionText Text="@Unit.Text" Anchors="@Unit.Anchors" WordsOfChrist="@Unit.WordsOfChrist" Verse="@Verse.Number"
+        <MentionText Text="@Unit.Body.Text" Anchors="@Unit.Body.Anchors" WordsOfChrist="@Unit.Body.WordsOfChrist" Verse="@Verse.Number"
                      ClassPrefix="@MentionClass" TestIdSuffix="@TestIdSuffix" OnExplore="OnExplore" OnToggleSelect="OnToggleSelect" />
         @if (ShowXrefMarker)
         {
@@ -31,17 +31,15 @@
 @code {
     [Parameter, EditorRequired] public Verse Verse { get; set; } = default!;
     [Parameter, EditorRequired] public TextUnit Unit { get; set; } = default!;
-    [Parameter, EditorRequired] public string Book { get; set; } = default!;
-    [Parameter, EditorRequired] public int Chapter { get; set; }
 
     [Parameter, EditorRequired] public EventCallback<PopoverOpening> OnExplore { get; set; }
 
     [Parameter] public EventCallback<NodeRef> OnToggleSelect { get; set; }
 
-    // Ctrl/Cmd-click toggles selection instead of opening a popover; shift's range-extend
-    // meaning lives on verse-num (OnVerseNumClick), not here.
     private Task OnRowClick(MouseEventArgs e) =>
-        e.CtrlKey || e.MetaKey ? OnToggleSelect.InvokeAsync(new VerseNode(Vref).Identity) : OnExplore.InvokeAsync(new PopoverOpening.Legacy(new VerseNode(Vref)));
+        e.CtrlKey || e.MetaKey ? OnToggleSelect.InvokeAsync(Unit.Node) : Explore();
+
+    private Task Explore() => OnExplore.InvokeAsync(new PopoverOpening.Explore(new NodePosition(Unit.Node)));
 
     [Parameter] public bool Focal { get; set; }
 
@@ -70,7 +68,6 @@
     [Parameter] public EventCallback<int> OnXrefHoverEnter { get; set; }
     [Parameter] public EventCallback OnXrefHoverLeave { get; set; }
 
-    private string Vref => $"{Book}.{Chapter}.{Verse.Number}";
     private string RowTestId => $"{RowTestIdPrefix}-{Verse.Number}{TestIdSuffix}";
 
     private string? VerseNumTestId => VerseNumTestIdPrefix is { } prefix ? $"{prefix}-{Verse.Number}{TestIdSuffix}" : null;
@@ -111,6 +108,6 @@
     private string XrefMarkerAriaLabel => $"Cross-references for verse {Verse.Number}";
     private string XrefMarkerTestId => $"{XrefMarkerTestIdPrefix}-{Verse.Number}{TestIdSuffix}";
 
-    private Task OnLineKeyDown(KeyboardEventArgs e) => e.Key == "Enter" ? OnExplore.InvokeAsync(new PopoverOpening.Legacy(new VerseNode(Vref))) : Task.CompletedTask;
+    private Task OnLineKeyDown(KeyboardEventArgs e) => e.Key == "Enter" ? Explore() : Task.CompletedTask;
     private Task OnXrefKeyDown(KeyboardEventArgs e) => e.Key == "Enter" ? OnXrefClick.InvokeAsync(Verse.Number) : Task.CompletedTask;
 }

@@ -90,10 +90,10 @@ fn john_1_1_carries_every_nt_applicable_edition_on_the_real_graph() {
 }
 
 #[tokio::test]
-async fn api_verse_still_projects_only_the_canonical_kjv_text() {
-    let (status, body) = get_json(real_app(), "/api/verse/GEN.1.1").await;
+async fn a_verses_record_still_projects_only_the_canonical_kjv_text() {
+    let (status, body) = get_json(real_app(), "/api/node/text-unit:GEN.1.1").await;
     assert_eq!(status, StatusCode::OK);
-    assert_eq!(body["text"], "In the beginning God created the heaven and the earth.");
+    assert_eq!(body["text"]["text"], "In the beginning God created the heaven and the earth.");
     assert!(body.get("renderings").is_none());
     assert!(body.get("latin_vulgate").is_none());
 }
@@ -104,7 +104,7 @@ async fn api_text_window_still_projects_only_the_canonical_kjv_text() {
     assert_eq!(status, StatusCode::OK);
     let units = body["units"].as_array().expect("units array");
     assert_eq!(units.len(), 1);
-    assert_eq!(units[0]["text"], "In the beginning was the Word, and the Word was with God, and the Word was God.");
+    assert_eq!(units[0]["body"]["text"], "In the beginning was the Word, and the Word was with God, and the Word was God.");
     assert!(units[0].get("renderings").is_none());
 }
 

@@ -38,8 +38,8 @@ public sealed class LegacyNodesTests
         // Assert
         Assert.Equal(
             [
-                "VerseNode GEN.1.1",
-                "ConcordUnitNode BoC 7.2.1",
+                GenericPath,
+                GenericPath,
                 "ChapterNode GEN.1",
                 "BookNode GEN",
                 GenericPath,
@@ -79,8 +79,6 @@ public sealed class LegacyNodesTests
         // Arrange
         var legacy = new IExplorable[]
         {
-            new VerseNode("GEN.1.1"),
-            new ConcordUnitNode("BoC 7.2.1"),
             new ChapterNode("GEN", 1),
             new BookNode("GEN"),
             new PassageNode("GEN.1.1-5", "In the beginning"),
@@ -97,11 +95,9 @@ public sealed class LegacyNodesTests
         // Assert
         Assert.Equal(
             [
-                ("VerseNode GEN.1.1", true),
-                ("ConcordUnitNode BoC 7.2.1", true),
                 ("ChapterNode GEN.1", true),
                 ("BookNode GEN", true),
-                ("VerseNode GEN.1.1", true),
+                (GenericPath, false),
                 ("PersonNode Moses", true),
                 ("EventNode Terah's family leaves Ur", true),
                 ("CatechismNode The First Commandment", true),

@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { openVerse } from './lib/verse';
 import { api } from './lib/api';
+import { elementNode, neighbourNode } from './lib/edges';
 
 // Batch HOTFIX-4 requirement 1 ("whole-DAG chronological traversal"),
 // requirement 4 (acceptance, the owner's own report inverted), requirement
@@ -47,25 +48,18 @@ function parseVerse(vref: string): { book: string; chapter: number; verse: numbe
   return { book, chapter: Number(chapter), verse: Number(verse) };
 }
 
-// Opens EVENT `eventId`'s own popover by navigating to its own first
-// witness verse and clicking through the verse's own EVENT membership row
-// -- the SAME path popover-sections.spec.ts's own "three-narrative full
-// walk" test uses, isolating the traversal-walk acceptance itself from
-// wherever the popover happens to be reached from.
 async function openEventPopover(page: any, eventId: string) {
   const detail = await api.event(eventId);
   const vref = detail.witnesses[0].verse_groups[0].verses[0];
   const v = parseVerse(vref);
   await page.goto(`/read/${v.book}/${v.chapter}`);
-  // M-D3/U5, a real, live-caught regression (this shared helper's own
-  // verse-line click hung indefinitely on a real witness verse whose
-  // attested mentions happened to sit at the click's own geometric
-  // center -- the SAME class of hazard CONTRACT.md's own MENTION-1 note
-  // documents): keyboard activation sidesteps the coordinates entirely.
-  await page.getByTestId(`verse-line-${v.verse}`).focus();
-  await page.keyboard.press('Enter');
-  await page.getByTestId(`verse-event-${eventId}`).click();
+  await openVerse(page, v.verse);
+  await page.getByTestId(attestsLink(eventId)).click();
   await expect(page.getByTestId('popover-title')).toHaveText(detail.title);
+}
+
+function attestsLink(eventId: string): string {
+  return `popover-link-attests-Event:${eventId}`;
 }
 
 test('HOTFIX-4 req 1/4, TRAV-1/CHRONO-1: gen_binding_isaac (a real W1 container event, no narrative membership) traverses the global timeline via the Chronology block -- FOLLOWING and PRIOR each walk >=5 hops, every destination rendering its own traversal sections', async ({ page }) => {
@@ -190,7 +184,7 @@ test('HOTFIX-4 req 2/5, TRAV-1/CHRONO-3: a general-kind container shows no trave
 
   await page.goto('/read/LUK/1');
   await openVerse(page, 1);
-  await page.getByTestId('verse-event-rob_luke_preface').click();
+  await page.getByTestId(attestsLink('rob_luke_preface')).click();
   await expect(page.getByTestId('popover-title')).toHaveText('Luke\'s preface to Theophilus');
 
   // CHRONO-MERGE-1: the narrative nav this used to also check is retired
@@ -327,11 +321,8 @@ test('HOTFIX-4 req 3, TRAV-1: map coherence -- traversing the Chronology block f
   const vref = gethsemaneDetail.witnesses[0].verse_groups[0].verses[0];
   const v = parseVerse(vref);
   await page.goto(`/read/${v.book}/${v.chapter}?split=world`);
-  // Keyboard activation -- see openEventPopover's own comment above for
-  // why a plain coordinate click on a verse-line is unsafe now.
-  await page.getByTestId(`verse-line-${v.verse}`).focus();
-  await page.keyboard.press('Enter');
-  await page.getByTestId('verse-event-pw_gethsemane').click();
+  await openVerse(page, v.verse);
+  await page.getByTestId(attestsLink('pw_gethsemane')).click();
   await expect(page.getByTestId('popover-title')).toHaveText(gethsemaneDetail.title);
   await expect(page.locator('[data-narrative-focus]').first()).toBeAttached();
 
@@ -359,9 +350,8 @@ test('HOTFIX-4 req 3, TRAV-1: map coherence -- traversing the Chronology block f
   const isaacVref = isaacDetail.witnesses[0].verse_groups[0].verses[0];
   const iv = parseVerse(isaacVref);
   await page.goto(`/read/${iv.book}/${iv.chapter}?split=world`);
-  await page.getByTestId(`verse-line-${iv.verse}`).focus();
-  await page.keyboard.press('Enter');
-  await page.getByTestId('verse-event-gen_binding_isaac').click();
+  await openVerse(page, iv.verse);
+  await page.getByTestId(attestsLink('gen_binding_isaac')).click();
   await expect(page.getByTestId('popover-title')).toHaveText(isaacDetail.title);
 
   const staleFocus = await page.locator('[data-narrative-focus]').count();
@@ -390,7 +380,7 @@ test('AFFORDANCE-1: a general-kind container\'s own reader heading renders visib
   await expect(page.getByTestId('popover-section-event-chronology')).toHaveCount(0);
 });
 
-test('AFFORDANCE-1: a dated event\'s own reader heading and verse EVENT-membership row keep the traversable .explorable class, and every one of a dated event\'s own affordances actually traverses', async ({ page }) => {
+test('AFFORDANCE-1: a dated event\'s own reader heading and its witness verse\'s attests link keep the traversable .explorable class, and every one of a dated event\'s own affordances actually traverses', async ({ page }) => {
   // jm_egypt is dated, real, heading-worthy (a narrative leg AND a merge
   // survivor -- HOTFIX-4's own event_merge.rs) -- the positive control
   // against the general-kind test immediately above.
@@ -411,12 +401,8 @@ test('AFFORDANCE-1: a dated event\'s own reader heading and verse EVENT-membersh
   await expect(page.getByTestId('popover-section-event-chronology')).toBeVisible();
   await page.keyboard.press('Escape'); // close the popover before the next click -- it otherwise intercepts pointer events over the reader
 
-  // The SAME event's own verse-membership row also keeps .explorable --
-  // checked directly against the verse popover's own EVENT section.
-  // Keyboard activation -- see openEventPopover's own comment above.
-  await page.getByTestId(`verse-line-${v.verse}`).focus();
-  await page.keyboard.press('Enter');
-  const row = page.getByTestId('verse-event-jm_egypt');
+  await openVerse(page, v.verse);
+  const row = page.getByTestId(attestsLink('jm_egypt'));
   expect(await hasClass(row, 'explorable')).toBe(true);
   expect(await hasClass(row, 'explorable-quiet')).toBe(false);
   await row.click();
@@ -433,9 +419,8 @@ test('ACCT-RUNS-1: the temple-dedication popover lists one entry per account the
   const chronicles = firstUnitOf('2CH');
 
   await page.goto(`/read/${chronicles.book}/${chronicles.chapter}`);
-  await page.getByTestId(`verse-line-${chronicles.verse}`).focus();
-  await page.keyboard.press('Enter');
-  await page.getByTestId('verse-event-1ki_temple_dedication').click();
+  await openVerse(page, chronicles.verse);
+  await page.getByTestId(attestsLink('1ki_temple_dedication')).click();
   await expect(page.getByTestId('popover-title')).toHaveText(detail.title);
 
   const witnessesSection = page.getByTestId('popover-section-event-witnesses');
@@ -859,67 +844,22 @@ test('EVT-3/RefsList: the Inline story-thread leg (a diverging narrative row) st
   await expect(leg.locator('.popover-refs-list')).toHaveCount(0);
 });
 
-// DUP-DEATH REGRESSION (the owner's own original repro, ledgered in
-// .superpowers/sdd/2026-08-17-bible-atlas-m1/dup-events-investigation.md):
-// before Batch CHRON-1's own charter merge (rob_leper_healed/theo-286),
-// MAT.8.3 cited TWO independently-dated events for the identical Gospel
-// pericope -- two PARALLELS cards, two conflicting dates. THE CHRONOLOGY
-// AUTHORITY LAW (owner: "why are we pulling chronology from conflicting
-// sources? we should have one absolute source of truth") fixes this at
-// the data layer (server/atlas-core/src/event_merge.rs); this test proves
-// it end to end, through the real popover a reader actually sees.
-//
-// BATCH ATTEST-1 (2026-09-07) RE-POINTED THIS TEST. The distinction
-// matters, so it is written out rather than silently patched:
-//
-//   THE INVARIANT IS UNCHANGED and is still the whole point -- MAT.8.3
-//   cites exactly ONE event, never two independently-dated opinions
-//   about one pericope. CHRON-1's merge still stands; theo-286 is still
-//   absorbed.
-//
-//   WHAT CHANGED IS *WHICH* EVENT, on the owner's own report: "A leper
-//   healed; a great popular excitement is given a parallel where there
-//   shouldn't be from Mat.8.1-4; another leprosy story." Matthew 8:1-4
-//   dates its own occasion "when he was come down from the mountain"
-//   (after the Sermon on the Mount); Mark 1:40-45 and Luke 5:12-16 sit
-//   in the first Galilean tour and close with the publishing-abroad
-//   aftermath rob_leper_healed is TITLED for. MAT.8.3 now cites
-//   mat_leper_healed, and the two events are joined by an Analogue row
-//   instead of by a fabricated parallel account.
-//
-//   CONSEQUENTLY THE PARALLELS SECTION IS NOW ABSENT HERE, and that
-//   absence IS the owner's fix landing: VerseParallelsSection shows a
-//   verse's event's OTHER witnesses, and Matthew's leper has none (one
-//   account, its own). Mark's and Luke's are no longer offered as
-//   parallels of Matthew's occasion, which is precisely what was
-//   reported as wrong. The similar-but-distinct relationship stays
-//   reachable one click away under SIMILAR ACCOUNTS on the event itself
-//   -- asserted positively in accounts-and-mentions.spec.ts, so it is
-//   not merely asserted absent here.
-test('EV-1/dup-death regression: MAT.8.3 cites exactly ONE event -- after ATTEST-1 that event is mat_leper_healed, with no false Mark/Luke parallel', async ({ page }) => {
-  const verseOut = await api.verse('MAT.8.3');
-  expect(verseOut.events.map((e: any) => e.id), 'MAT.8.3 must cite exactly one event id, never two independently-dated opinions about the identical pericope').toEqual(['mat_leper_healed']);
+test('EV-1/dup-death regression: MAT.8.3 attests exactly ONE event -- after ATTEST-1 that event is mat_leper_healed, never the other leprosy occasion', async ({ page }) => {
+  // Arrange
+  const verseId = 'text-unit:MAT.8.3';
+  const attested = (await api.nodeEdges(verseId, 'attests')).entries.map(neighbourNode);
+  expect(attested.map((event) => event.id), 'MAT.8.3 must attest exactly one event id, never two independently-dated opinions about the identical pericope').toEqual(['Event:mat_leper_healed']);
+  const [verseElement] = (await api.elements([verseId])).elements;
+  const verse = elementNode(verseElement, verseId);
 
+  // Act
   await page.goto('/read/MAT/8');
   await openVerse(page, 3);
-  await expect(page.getByTestId('popover-title')).toHaveText('MAT.8.3');
 
-  const eventSection = page.getByTestId('popover-section-event-membership');
-  await expect(eventSection).toBeVisible();
-  await expect(eventSection.getByTestId('event-section-heading')).toHaveText('EVENT');
-  await expect(eventSection.getByTestId('verse-event-mat_leper_healed')).toBeVisible();
-  // The ORIGINAL invariant, unchanged: no second, independently-dated
-  // event card for the same pericope.
-  await expect(eventSection.locator('[data-testid^="verse-event-"]')).toHaveCount(1);
-  // ... and specifically not the OTHER leprosy event, which is a distinct
-  // occasion, not another account of this one.
-  await expect(eventSection.getByTestId('verse-event-rob_leper_healed')).toHaveCount(0);
-
-  // ATTEST-1: no PARALLELS section at all here. Matthew's leper has
-  // exactly one account -- its own -- so there is no OTHER witness to
-  // preview, and Mark's/Luke's must NOT be offered as parallels of it.
-  await expect(
-    page.getByTestId('popover-section-parallels'),
-    "Mark/Luke must no longer be offered as parallel accounts of Matthew 8:1-4 -- that WAS the parallel where there shouldn't be one"
-  ).toHaveCount(0);
+  // Assert
+  await expect(page.getByTestId('popover-title')).toHaveText(verse.label);
+  const attestsSection = page.getByTestId('popover-section-attests');
+  await expect(attestsSection.locator('[data-testid^="popover-link-attests-"]')).toHaveCount(1);
+  await expect(attestsSection.getByTestId(attestsLink('mat_leper_healed'))).toHaveText(attested[0].label);
+  await expect(attestsSection.getByTestId(attestsLink('rob_leper_healed'))).toHaveCount(0);
 });

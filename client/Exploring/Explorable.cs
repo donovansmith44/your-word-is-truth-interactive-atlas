@@ -64,10 +64,13 @@ public sealed class Explorable
 
         var page = await _pages.Read(Root, Id, kind, cursor, limit);
         return new Page<Entry>(
-            page.Entries.Select(entry => new Entry(new Link(kind, entry.Neighbour), new Link(kind, new EdgePosition(entry.Edge)))).ToList(),
-            page.Previous,
-            page.Next);
+            page.Edges.Entries.Select(entry => new Entry(new Link(kind, entry.Neighbour), new Link(kind, new EdgePosition(entry.Edge)), WordsOf(entry.Neighbour, page.Words))).ToList(),
+            page.Edges.Previous,
+            page.Edges.Next);
     }
+
+    private static UnitText? WordsOf(PositionRef neighbour, IReadOnlyDictionary<string, UnitText> words) =>
+        words.GetValueOrDefault(Positions.Of(neighbour).Id);
 
     public override bool Equals(object? obj) => obj is Explorable other && PositionIdentity.Comparer.Equals(Identity, other.Identity);
 

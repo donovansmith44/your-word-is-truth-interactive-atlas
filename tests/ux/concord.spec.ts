@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { openVerse } from './lib/verse';
 import { api } from './lib/api';
+import { neighbourNode } from './lib/edges';
 
 // Batch CORPREAD-1b (ticket C, owner order verbatim: "I want to be able ot
 // read it like the normal BoC. Everything doesn't need to be shown
@@ -41,7 +42,7 @@ test('CONCORD-2: opens on the Preface (BoC 1.1.1) and every rendered paragraph i
   for (const unit of ground.units) {
     const row = page.getByTestId(`concord-unit-${unit.ref.replace(/ /g, '-').replace(/\./g, '-')}`);
     await expect(row).toBeVisible();
-    await expect(row).toContainText(unit.text);
+    await expect(row).toContainText(unit.body.text);
   }
 });
 
@@ -60,7 +61,7 @@ test('CONCORD-2b (ticket C, "boxes die ... part/article structure carried by TYP
 test('CONCORD-3: the part/article/paragraph picker navigates the corpus\'s OWN shape -- jumping to 7.2.1 shows the real First Commandment text', async ({ page }) => {
   const ground = await api.reading('BoC 7.2.1', 1, { corpus: 'concord' });
   expect(ground.units).toHaveLength(1);
-  const realText = ground.units[0].text as string;
+  const realText = ground.units[0].body.text as string;
 
   await page.goto('/concord');
   await page.getByTestId('concord-picker-part').fill('7');
@@ -83,7 +84,7 @@ test('CONCORD-3: the part/article/paragraph picker navigates the corpus\'s OWN s
 // retired affordance on a non-explorable Part.
 test('CONCORD-4 (ONE-RULE): plain click on an explorable paragraph opens the existing explore/popover, carrying the REAL full paragraph text', async ({ page }) => {
   const ground = await api.reading('BoC 7.2.1', 1, { corpus: 'concord' });
-  const realText = ground.units[0].text as string;
+  const realText = ground.units[0].body.text as string;
 
   await page.goto('/concord');
   await page.getByTestId('concord-toc-part-7').click();
@@ -98,7 +99,7 @@ test('CONCORD-4 (ONE-RULE): plain click on an explorable paragraph opens the exi
   await page.getByTestId('concord-unit-BoC-7-2-1').click();
 
   await expect(page.getByTestId('popover-title')).toContainText('BoC 7.2.1');
-  await expect(page.getByTestId('popover-body')).toContainText(realText);
+  await expect(page.getByTestId('popover-text')).toHaveText(realText);
 });
 
 // ---------------------------------------------------------------------
@@ -232,7 +233,7 @@ test('CONCORD-9 (BoC nav menu, C2: always visible): the ten traditional document
   await expect(page.getByTestId('concord-toc-part-9')).toContainText('Epitome');
 
   const ground = await api.reading('BoC 7.1.1', 1, { corpus: 'concord' });
-  const realText = ground.units[0].text as string;
+  const realText = ground.units[0].body.text as string;
 
   await page.getByTestId('concord-toc-part-7').click();
 
@@ -281,7 +282,7 @@ test('CONCORD-9d (C2, search relocated into the sidebar): the numeric picker liv
   await expect(sidebarSearch.getByTestId('concord-picker-go')).toBeVisible();
 
   const ground = await api.reading('BoC 7.2.1', 1, { corpus: 'concord' });
-  const realText = ground.units[0].text as string;
+  const realText = ground.units[0].body.text as string;
 
   await sidebarSearch.getByTestId('concord-picker-part').fill('7');
   await sidebarSearch.getByTestId('concord-picker-article').fill('2');
@@ -353,7 +354,7 @@ test('CONCORD-9b (S-8): every one of the ten TOC entries lands on its own real o
     const startRef = `BoC ${doc.part}.1.1`;
     const ground = await api.reading(startRef, 1, { corpus: 'concord' });
     expect(ground.units).toHaveLength(1);
-    const realText = ground.units[0].text as string;
+    const realText = ground.units[0].body.text as string;
 
     // Batch CORPREAD-2 (C2): always visible now -- no toggle click needed.
     await page.getByTestId(`concord-toc-part-${doc.part}`).click();
@@ -399,7 +400,7 @@ test('BOC-SCROLL-1: clicking a second ToC item after scrolling to the bottom of 
 });
 
 // Ticket C, "same mechanism as ticket K -- do not fork the scanner."
-test('CONCORD-10 (explorable-reference law): a scripture reference inside confession prose opens the SAME VerseNode popover', async ({ page }) => {
+test('CONCORD-10 (explorable-reference law): a scripture reference inside confession prose opens the SAME verse popover', async ({ page }) => {
   await page.goto('/concord');
   // Batch CORPREAD-2 (C2): always visible now -- no toggle click needed.
   // The Augsburg Confession -- real, verified citations present in its own
@@ -418,10 +419,8 @@ test('CONCORD-10 (explorable-reference law): a scripture reference inside confes
   await ref.click();
 
   await expect(page.getByTestId('popover-title')).toBeVisible();
-  // A vref-shaped title (e.g. "LUK.17.10") -- the SAME VerseNode popover
-  // every other verse reference in this app opens, not a bespoke citation
-  // popover.
   await expect(page.getByTestId('popover-title')).toHaveText(/^[A-Z0-9]{2,3}\.\d+\.\d+/);
+  await expect(page.getByTestId('popover-text')).toBeVisible();
 });
 
 // ---------------------------------------------------------------------
@@ -436,43 +435,45 @@ test('CONCORD-10 (explorable-reference law): a scripture reference inside confes
 // ---------------------------------------------------------------------
 
 test('D3: /concord?ref= deep-links to a paragraph, and its card reaches the Small Catechism item and back', async ({ page }) => {
+  // Arrange
+  const ground = await api.reading('BoC 7.2.1', 1, { corpus: 'concord' });
+  const paragraph = ground.units[0].node;
+  const links = await api.nodeEdges(paragraph.id, 'catechism-link');
+  const item = neighbourNode(links.entries[0]);
   await page.goto('/concord?ref=7.2.1');
   await expect(page.getByTestId('concord-position')).toContainText('BoC 7.2.1');
   const row = page.getByTestId('concord-unit-BoC-7-2-1');
   await expect(row).toBeVisible();
   await expect(row).toHaveAttribute('role', 'button');
 
+  // Act
   await row.click();
-  await expect(page.getByTestId('popover-title')).toContainText('BoC 7.2.1');
-  const section = page.getByTestId('popover-section-concord-small-catechism');
-  await expect(section).toBeVisible();
-  await expect(section.getByTestId('concord-small-catechism-heading')).toContainText(/^THE SMALL CATECHISM \(\d+\)$/);
-  const item = section.locator('[data-testid^="catechism-item-"]').first();
-  const itemName = (await item.textContent())?.trim() ?? '';
-  expect(itemName.length).toBeGreaterThan(0);
-
-  // → the item
-  await item.click();
-  await expect(page.getByTestId('popover-title')).toContainText(itemName);
+  await expect(page.getByTestId('popover-title')).toHaveText(paragraph.label);
+  await expect(page.getByTestId('popover-section-catechism-link-heading')).toHaveText(`Catechism link (${links.entries.length})`);
+  await page.getByTestId(`popover-link-catechism-link-${item.id}`).click();
+  await expect(page.getByTestId('popover-title')).toContainText(item.label);
   const back = page.getByTestId('popover-section-catechism-in-concord');
   await expect(back).toBeVisible();
   await expect(back.getByTestId('catechism-in-concord-heading')).toContainText(/^IN THE BOOK OF CONCORD \(\d+\)$/);
-
-  // → and back to the very paragraph we started from (symmetric)
-  await expect(back.getByTestId('concord-link-BoC-7-2-1')).toBeVisible();
   await back.getByTestId('concord-link-BoC-7-2-1').click();
-  await expect(page.getByTestId('popover-title')).toContainText('BoC 7.2.1');
-  const ground = await api.reading('BoC 7.2.1', 1, { corpus: 'concord' });
-  await expect(page.getByTestId('popover-body')).toContainText(ground.units[0].text);
+
+  // Assert
+  await expect(page.getByTestId('popover-title')).toHaveText(paragraph.label);
+  await expect(page.getByTestId('popover-text')).toHaveText(ground.units[0].body.text);
 });
 
 test('D3: from Genesis 1:1 the catechism card reaches the Book of Concord', async ({ page }) => {
+  // Arrange
+  const links = await api.nodeEdges('text-unit:GEN.1.1', 'catechism-link');
+  const item = neighbourNode(links.entries[0]);
   await page.goto('/read/GEN/1');
   await openVerse(page, 1);
   await expect(page.getByTestId('popover-title')).toContainText('GEN.1.1');
-  const item = page.locator('[data-testid^="catechism-item-"]').first();
-  await expect(item).toBeVisible();
-  await item.click();
+
+  // Act
+  await page.getByTestId(`popover-link-catechism-link-${item.id}`).click();
+
+  // Assert
   const section = page.getByTestId('popover-section-catechism-in-concord');
   await expect(section).toBeVisible();
   expect(await section.locator('[data-testid^="concord-link-"]').count()).toBeGreaterThan(0);

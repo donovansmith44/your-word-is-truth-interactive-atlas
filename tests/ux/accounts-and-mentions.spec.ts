@@ -1,6 +1,8 @@
 import { test, expect } from '@playwright/test';
 import { api } from './lib/api';
 import { popoverSectionsHolding } from './lib/popover';
+import { neighbourNode } from './lib/edges';
+import { openVerse } from './lib/verse';
 
 // Batch ATTEST-1 -- ACCOUNTS vs. MENTIONS, and the Analogue relation.
 //
@@ -34,15 +36,10 @@ function parseVerse(vref: string): { book: string; chapter: number; verse: numbe
   return { book, chapter: Number(chapter), verse: Number(verse) };
 }
 
-// Opens a verse's own popover the keyboard way -- the SAME hazard-free
-// activation `event-timeline.spec.ts`'s own helper documents (a verse-line
-// click can land on an attested mention sitting at the click's geometric
-// centre and hang).
 async function openVersePopover(page: any, vref: string) {
   const v = parseVerse(vref);
   await page.goto(`/read/${v.book}/${v.chapter}`);
-  await page.getByTestId(`verse-line-${v.verse}`).focus();
-  await page.keyboard.press('Enter');
+  await openVerse(page, v.verse);
 }
 
 test('ATTEST-1 (owner report 2): LUK.1.27 belongs to exactly ONE event -- the annunciation -- and the espousal is no longer among its accounts', async ({ page }) => {
@@ -52,18 +49,16 @@ test('ATTEST-1 (owner report 2): LUK.1.27 belongs to exactly ONE event -- the an
   // offered two event rows and the espousal claimed a verse from inside the
   // annunciation narrative as one of its own "parallel accounts".
   await openVersePopover(page, 'LUK.1.27');
-  await expect(page.getByTestId('verse-event-rob_annunciation_mary')).toBeVisible();
+  await expect(page.getByTestId('popover-link-attests-Event:rob_annunciation_mary')).toBeVisible();
   await expect(
-    page.getByTestId('verse-event-theo-249'),
+    page.getByTestId('popover-link-attests-Event:theo-249'),
     'the espousal must NOT claim LUK.1.27 as an account: "To a virgin espoused to a man whose name was Joseph" MENTIONS the betrothal inside Luke\'s account of the ANNUNCIATION -- it does not narrate it'
   ).toHaveCount(0);
 
-  // And the same at the wire, so a green DOM can never rest on a missing
-  // testid: the API itself must partition the verse to one event.
-  const verse = await api.verse('LUK.1.27');
-  const eventIds = (verse.events ?? []).map((e: any) => e.id);
-  expect(eventIds).toContain('rob_annunciation_mary');
-  expect(eventIds).not.toContain('theo-249');
+  const attests = await api.nodeEdges('text-unit:LUK.1.27', 'attests');
+  const eventIds = attests.entries.map(entry => neighbourNode(entry).id);
+  expect(eventIds).toContain('Event:rob_annunciation_mary');
+  expect(eventIds).not.toContain('Event:theo-249');
 });
 
 test('ATTEST-1 (L3, owner report 2): the Espousal of Mary is a MENTION-ONLY event -- "MENTIONED IN" renders, "PARALLEL ACCOUNTS" does not', async ({ page }) => {
@@ -84,7 +79,7 @@ test('ATTEST-1 (L3, owner report 2): the Espousal of Mary is a MENTION-ONLY even
   // the espousal, and Zacharias's FOLLOWING is the annunciation.
   const zacharias = await api.event('rob_zacharias_vision');
   await openVersePopover(page, zacharias.witnesses[0].verse_groups[0].verses[0]);
-  await page.getByTestId('verse-event-rob_zacharias_vision').click();
+  await page.getByTestId('popover-link-attests-Event:rob_zacharias_vision').click();
   await expect(page.getByTestId('popover-title')).toHaveText(zacharias.title);
 
   await expect(
@@ -133,10 +128,10 @@ test('ATTEST-1 (L4, owner report 1): Matthew\'s leper is its own event, joined t
   // DOM: MAT.8.2 (the leper's own request verse) now offers Matthew's event
   // and only Matthew's.
   await openVersePopover(page, 'MAT.8.2');
-  await expect(page.getByTestId('verse-event-mat_leper_healed')).toBeVisible();
-  await expect(page.getByTestId('verse-event-rob_leper_healed')).toHaveCount(0);
+  await expect(page.getByTestId('popover-link-attests-Event:mat_leper_healed')).toBeVisible();
+  await expect(page.getByTestId('popover-link-attests-Event:rob_leper_healed')).toHaveCount(0);
 
-  await page.getByTestId('verse-event-mat_leper_healed').click();
+  await page.getByTestId('popover-link-attests-Event:mat_leper_healed').click();
   await expect(page.getByTestId('popover-title')).toHaveText(matthews.title);
   // ONE account -> no "PARALLEL ACCOUNTS" eyebrow (the pre-existing
   // single-witness rule, now reaching the honest answer).
@@ -200,7 +195,7 @@ test('ATTEST-1: an ordinary event is untouched -- no MENTIONED IN, no SIMILAR AC
   expect(bethany.analogues ?? []).toHaveLength(0);
 
   await openVersePopover(page, bethany.witnesses[0].verse_groups[0].verses[0]);
-  await page.getByTestId('verse-event-pw_bethany').click();
+  await page.getByTestId('popover-link-attests-Event:pw_bethany').click();
   await expect(page.getByTestId('popover-title')).toHaveText(bethany.title);
   await expect(page.getByTestId('popover-section-event-witnesses')).toBeVisible();
   await expect(page.getByTestId('popover-section-event-mentions')).toHaveCount(0);

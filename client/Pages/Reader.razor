@@ -114,7 +114,7 @@
                     {
                         <PericopeHeading Heading="@heading" OnExplore="OnLineExplore" />
                     }
-                    <VerseLine Verse="@v" Unit="@_text!.Verse(v.Number)" Book="@_book" Chapter="@_chapterNum" OnExplore="OnLineExplore" Id="@($"v{v.Number}")"
+                    <VerseLine Verse="@v" Unit="@_text!.Verse(v.Number)" OnExplore="OnLineExplore" Id="@($"v{v.Number}")"
                                RowClass="verse-line explorable" RowTestIdPrefix="verse-line"
                                VerseNumClass="verse-num" ShowVerseNumButton="true" VerseNumTestIdPrefix="verse-num"
                                OnVerseNumClick="@(e => OnVerseNumClick(e, v.Number))"
@@ -414,9 +414,9 @@
 
     private void OpenVerseXrefEntry(int verseNum, bool persistent)
     {
-        var vref = $"{_book}.{_chapterNum}.{verseNum}";
+        PopoverOpening opening = new PopoverOpening.Explore(new NodePosition(_text!.Verse(verseNum).Node));
         _xrefEntryVerse = verseNum;
-        if (_opening?.OpensLegacy(node => node is VerseNode { XrefEntryPoint: true } current && current.Title == vref) == true)
+        if (opening == _opening)
         {
             if (persistent)
             {
@@ -426,7 +426,7 @@
             return;
         }
 
-        _opening = new PopoverOpening.Legacy(new VerseNode(vref, xrefEntryPoint: true));
+        _opening = opening;
         _hoverOnlyOpen = !persistent;
         CancelHoverCloseTimer();
     }

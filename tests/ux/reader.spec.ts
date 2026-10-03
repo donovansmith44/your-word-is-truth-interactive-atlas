@@ -4,6 +4,9 @@ import fc from 'fast-check';
 import { api } from './lib/api';
 import { loadToc, arbChapterRef, arbVerseRef } from './lib/canon';
 import { fcAssert, RUNS_UI } from './lib/fc';
+import { neighbourNode } from './lib/edges';
+
+const CITES_PAGE = 20;
 
 test('READ-1 + NAV-1: chapter deep links render exactly the TOC verses', async ({ page }) => {
   const toc = await loadToc();
@@ -37,8 +40,8 @@ test('READ-2: verse popover shows the API text', async ({ page }) => {
     await page.getByTestId(`verse-line-${v}`).focus();
     await page.keyboard.press('Enter');
     await expect(page.getByTestId('popover-title')).toHaveText(vref);
-    const detail = await api.verse(vref);
-    await expect(page.getByTestId('popover')).toContainText(detail.text.slice(0, 40));
+    const record = await api.node(`text-unit:${vref}`);
+    await expect(page.getByTestId('popover-text')).toContainText(record.text.text.slice(0, 40));
   }), RUNS_UI);
 });
 
@@ -140,33 +143,34 @@ test('B4: the picker follows prev/next chapter navigation and a picker-applied j
   await expect(page.getByTestId('picker-chapter')).toHaveValue('1');
 });
 
-// Batch R requirement 3(b): the old popover-chip-xrefs TOGGLE is gone --
-// cross-references render INLINE, immediately, no button press -- so each
-// loop iteration below reads xref-item-* directly rather than clicking a
-// chip to reveal them first.
 test('READ-3: cross-ref chains push and pop breadcrumbs faithfully', async ({ page }) => {
   const toc = await loadToc();
   await fcAssert(fc.asyncProperty(arbVerseRef(toc), fc.array(fc.nat(4), { maxLength: 3 }), async (vref, picks) => {
+    // Arrange
     const [b, c, v] = vref.split('.');
     await page.goto(`/read/${b}/${c}`);
     await openVerse(page, v);
+    await expect(page.getByTestId('popover-title')).toHaveText(vref);
     const titles = [vref];
+    const ids = [`text-unit:${vref}`];
+
+    // Act
     for (const pick of picks) {
-      const items = page.getByTestId(/^xref-item-/);
-      const n = await items.count();
-      if (n === 0) break;
-      const detail = await api.verse(titles[titles.length - 1]);
-      for (let i = 0; i < Math.min(n, detail.cross_refs.length); i++) {   // list order == API order
-        await expect(items.nth(i)).toContainText(detail.cross_refs[i].target);
-      }
-      const chosen = Math.min(pick, n - 1);
-      const target = detail.cross_refs[chosen].target;
-      await items.nth(chosen).click();
-      const head = target.match(/^[A-Z0-9]{3}\.\d+\.\d+/)![0];
-      await expect(page.getByTestId('popover-title')).toHaveText(head);
-      titles.push(head);
+      const served = (await api.nodeEdges(ids[ids.length - 1], 'cites', { limit: CITES_PAGE })).entries.map(neighbourNode);
+      if (served.length === 0) break;
+      const links = page.locator('[data-testid^="popover-link-cites-"]');
+      await expect(links).toHaveCount(served.length);
+      expect(await links.evaluateAll(els => els.map(el => el.getAttribute('data-testid'))))
+        .toEqual(served.map(node => `popover-link-cites-${node.id}`));
+      const chosen = served[Math.min(pick, served.length - 1)];
+      await page.getByTestId(`popover-link-cites-${chosen.id}`).click();
+      await expect(page.getByTestId('popover-title')).toHaveText(chosen.label);
+      titles.push(chosen.label);
+      ids.push(chosen.id);
     }
-    while (titles.length > 1) {                                            // walk back restores each title
+
+    // Assert
+    while (titles.length > 1) {
       await page.getByTestId('popover-breadcrumb-back').click();
       titles.pop();
       await expect(page.getByTestId('popover-title')).toHaveText(titles[titles.length - 1]);

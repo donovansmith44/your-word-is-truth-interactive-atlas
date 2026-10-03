@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { api } from './lib/api';
 import { elementEdge, elementNode, neighbourNode, positionNode } from './lib/edges';
+import { openVerse } from './lib/verse';
 
 const verseId = 'text-unit:EXO.14.21';
 
@@ -38,4 +39,21 @@ test('A-EDGES: a step onto an attestation shows the served edge under its two en
   await expect(page.getByTestId('popover-card-title')).toHaveText(edge.label);
   await page.getByTestId('popover-breadcrumb-back').click();
   await expect(page.getByTestId('popover-title')).toHaveText(verse.label);
+});
+
+test('a verse opened from the reader offers a step onto each entry\'s edge, and the step opens the edge under its two ends', async ({ page }) => {
+  const attests = await api.nodeEdges(verseId, 'attests');
+  const entry = attests.entries[0];
+  const [edgeElement] = (await api.elements([entry.edge.id])).elements;
+  const edge = elementEdge(edgeElement, entry.edge.id);
+  const subject = positionNode(edge.subject, `${edge.id}'s subject`);
+  const object = positionNode(edge.object, `${edge.id}'s object`);
+
+  await page.goto('/read/EXO/14');
+  await openVerse(page, 21);
+  await page.getByTestId(`popover-entry-edge-attests-${entry.edge.id}`).click();
+
+  await expect(page.getByTestId('popover-card-title')).toHaveText(edge.label);
+  await expect(page.getByTestId(`popover-end-${subject.id}`)).toHaveText(subject.label);
+  await expect(page.getByTestId(`popover-end-${object.id}`)).toHaveText(object.label);
 });

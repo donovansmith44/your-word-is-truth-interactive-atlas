@@ -12,6 +12,69 @@
    not component rules -- nothing else targets those elements, so nothing
    is "fighting" them. */
 
+@font-face {
+    font-family: "Overpass";
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+    src: url("../fonts/overpass/overpass-latin-400-normal.woff2") format("woff2");
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+    font-family: "Overpass";
+    font-style: normal;
+    font-weight: 600;
+    font-display: swap;
+    src: url("../fonts/overpass/overpass-latin-600-normal.woff2") format("woff2");
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+    font-family: "Overpass";
+    font-style: normal;
+    font-weight: 700;
+    font-display: swap;
+    src: url("../fonts/overpass/overpass-latin-700-normal.woff2") format("woff2");
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+    font-family: "Atkinson Hyperlegible";
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+    src: url("../fonts/atkinson-hyperlegible/atkinson-hyperlegible-latin-400-normal.woff2") format("woff2");
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+    font-family: "Atkinson Hyperlegible";
+    font-style: italic;
+    font-weight: 400;
+    font-display: swap;
+    src: url("../fonts/atkinson-hyperlegible/atkinson-hyperlegible-latin-400-italic.woff2") format("woff2");
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+    font-family: "Atkinson Hyperlegible";
+    font-style: normal;
+    font-weight: 700;
+    font-display: swap;
+    src: url("../fonts/atkinson-hyperlegible/atkinson-hyperlegible-latin-700-normal.woff2") format("woff2");
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+    font-family: "Atkinson Hyperlegible";
+    font-style: italic;
+    font-weight: 700;
+    font-display: swap;
+    src: url("../fonts/atkinson-hyperlegible/atkinson-hyperlegible-latin-700-italic.woff2") format("woff2");
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
 :root {
     /* color */
     --parchment: #F6F1E5;
@@ -133,8 +196,8 @@
     --kretzmann-scripture-measure: 66ch;
 
     /* type */
-    --font-serif: "EB Garamond", "Palatino Linotype", Palatino, Georgia, serif;
-    --font-mono: "Cascadia Mono", Consolas, ui-monospace, monospace;
+    --font-heading: "Overpass", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    --font-body: "Atkinson Hyperlegible", Verdana, "Segoe UI", Arial, sans-serif;
 
     /* Batch UX-1 (CAT-SCRIPT-1, owner addendum, verbatim: "TITLE ... in
        bigger, more readable letters than it is in its current state"): the
@@ -165,7 +228,16 @@ body {
     margin: 0;
     background: var(--parchment);
     color: var(--ink);
-    font-family: var(--font-serif);
+    font-family: var(--font-body);
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+    font-family: var(--font-heading);
 }
 
 a {
@@ -490,7 +562,7 @@ input:focus-visible,
 }
 
 .sources-title {
-    font-family: var(--font-serif);
+    font-family: var(--font-heading);
     font-variant-caps: small-caps;
     letter-spacing: 0.08em;
     font-size: 2.4rem;
@@ -499,7 +571,7 @@ input:focus-visible,
 }
 
 .sources-intro {
-    font-family: var(--font-serif);
+    font-family: var(--font-body);
     font-size: 1.05rem;
     line-height: 1.7;
     color: var(--ink);
@@ -508,7 +580,7 @@ input:focus-visible,
 }
 
 .sources-loading {
-    font-family: var(--font-serif);
+    font-family: var(--font-body);
     color: var(--ink);
 }
 
@@ -517,7 +589,7 @@ input:focus-visible,
 }
 
 .sources-category-title {
-    font-family: var(--font-serif);
+    font-family: var(--font-heading);
     font-variant-caps: small-caps;
     letter-spacing: 0.08em;
     font-size: 1.3rem;
@@ -549,7 +621,7 @@ input:focus-visible,
 }
 
 .source-title {
-    font-family: var(--font-serif);
+    font-family: var(--font-heading);
     font-size: 1.05rem;
     font-weight: 600;
     color: var(--ink);
@@ -559,7 +631,7 @@ input:focus-visible,
 .source-what,
 .source-built,
 .source-license {
-    font-family: var(--font-serif);
+    font-family: var(--font-body);
     font-size: 0.92rem;
     line-height: 1.55;
     color: var(--ink);
@@ -575,7 +647,7 @@ input:focus-visible,
 
 .source-link {
     align-self: flex-start;
-    font-family: var(--font-serif);
+    font-family: var(--font-body);
     font-size: 0.88rem;
     color: var(--ink);
     text-decoration: underline;
@@ -679,7 +751,7 @@ input:focus-visible,
 
 .kretzmann-loading,
 .kretzmann-empty {
-    font-family: var(--font-serif);
+    font-family: var(--font-body);
     color: var(--ink);
 }
 
@@ -729,7 +801,7 @@ input:focus-visible,
     display: block;
     width: 100%;
     text-align: left;
-    font-family: var(--font-serif);
+    font-family: var(--font-body);
     font-size: 1.1rem;
     line-height: 1.7;
     color: var(--ink);
@@ -745,7 +817,7 @@ input:focus-visible,
    for its one-level-down structural heading, so a Kretzmann section reads
    at the same typographic weight a Concord article does. */
 .kretzmann-section-heading {
-    font-family: var(--font-serif);
+    font-family: var(--font-heading);
     font-variant-caps: small-caps;
     letter-spacing: 0.07em;
     font-size: 0.92rem;
@@ -755,7 +827,7 @@ input:focus-visible,
 }
 
 .kretzmann-item-loading {
-    font-family: var(--font-mono);
+    font-family: var(--font-body);
     font-size: 0.85em;
     color: var(--ink-soft);
 }
@@ -802,7 +874,7 @@ input:focus-visible,
 }
 
 .kretzmann-nav-button {
-    font-family: var(--font-serif);
+    font-family: var(--font-body);
     font-variant-caps: small-caps;
     letter-spacing: 0.06em;
     font-size: 0.95rem;
@@ -879,7 +951,7 @@ input:focus-visible,
 }
 
 .concord-sidebar-label {
-    font-family: var(--font-serif);
+    font-family: var(--font-heading);
     font-variant-caps: small-caps;
     letter-spacing: 0.08em;
     font-size: 0.8rem;
@@ -931,7 +1003,7 @@ input:focus-visible,
    66ch always won. Deleted; Concord shares the reader's own 66ch measure
    honestly now. */
 .concord-title {
-    font-family: var(--font-serif);
+    font-family: var(--font-heading);
     font-variant-caps: small-caps;
     letter-spacing: 0.08em;
     font-size: 2.4rem;
@@ -940,7 +1012,7 @@ input:focus-visible,
 }
 
 .concord-intro {
-    font-family: var(--font-serif);
+    font-family: var(--font-body);
     font-size: 1.05rem;
     line-height: 1.7;
     color: var(--ink);
@@ -971,7 +1043,7 @@ input:focus-visible,
     display: block;
     width: 100%;
     text-align: left;
-    font-family: var(--font-serif);
+    font-family: var(--font-body);
     font-size: 0.95rem;
     color: var(--ink);
     background: none;
@@ -1020,7 +1092,7 @@ input:focus-visible,
 }
 
 .concord-picker-label {
-    font-family: var(--font-serif);
+    font-family: var(--font-body);
     font-variant-caps: small-caps;
     letter-spacing: 0.06em;
     font-size: 0.75rem;
@@ -1038,7 +1110,7 @@ input:focus-visible,
 .concord-picker-input {
     width: 100%;
     box-sizing: border-box;
-    font-family: var(--font-serif);
+    font-family: var(--font-body);
     font-size: 0.95rem;
     color: var(--ink);
     background: var(--parchment);
@@ -1060,7 +1132,7 @@ input:focus-visible,
    a position
    ANNOUNCEMENT, not a second document heading. */
 .concord-position {
-    font-family: var(--font-mono);
+    font-family: var(--font-body);
     font-size: 0.78rem;
     letter-spacing: 0.04em;
     color: var(--bronze-ink);
@@ -1068,7 +1140,7 @@ input:focus-visible,
 }
 
 .concord-loading {
-    font-family: var(--font-serif);
+    font-family: var(--font-body);
     color: var(--ink);
 }
 
@@ -1080,7 +1152,7 @@ input:focus-visible,
    document boundary is genuinely chapter-scale structure; .concord-article-
    heading reuses .pericope-heading's own quieter register one level down. */
 .concord-part-heading {
-    font-family: var(--font-serif);
+    font-family: var(--font-heading);
     font-variant-caps: small-caps;
     letter-spacing: 0.06em;
     font-size: 1.7rem;
@@ -1092,7 +1164,7 @@ input:focus-visible,
 }
 
 .concord-article-heading {
-    font-family: var(--font-serif);
+    font-family: var(--font-heading);
     font-variant-caps: small-caps;
     letter-spacing: 0.07em;
     font-size: 0.92rem;
@@ -1111,7 +1183,7 @@ input:focus-visible,
     display: block;
     width: 100%;
     text-align: left;
-    font-family: var(--font-serif);
+    font-family: var(--font-body);
     font-size: 1.1rem;
     line-height: 1.7;
     color: var(--ink);
@@ -1123,7 +1195,7 @@ input:focus-visible,
 
 .concord-unit-ref {
     display: block;
-    font-family: var(--font-mono);
+    font-family: var(--font-body);
     font-size: 0.75rem;
     letter-spacing: 0.04em;
     color: var(--bronze-ink);
@@ -1141,7 +1213,7 @@ input:focus-visible,
    tuned against .reader-page's own layout); Concord's own prev/next is
    plain in-flow furniture at the bottom of its own list. */
 .concord-nav-button {
-    font-family: var(--font-serif);
+    font-family: var(--font-body);
     font-variant-caps: small-caps;
     letter-spacing: 0.06em;
     font-size: 0.9rem;
@@ -1533,7 +1605,7 @@ input:focus-visible,
 }
 
 .wordmark {
-    font-family: var(--font-serif);
+    font-family: var(--font-heading);
     font-variant-caps: small-caps;
     letter-spacing: 0.08em;
     font-size: 1.2rem;
@@ -1553,7 +1625,7 @@ input:focus-visible,
 }
 
 .nav-link {
-    font-family: var(--font-serif);
+    font-family: var(--font-body);
     font-variant-caps: small-caps;
     letter-spacing: 0.08em;
     font-size: 0.95rem;
@@ -1572,7 +1644,7 @@ input:focus-visible,
 }
 
 .translation-label {
-    font-family: var(--font-serif);
+    font-family: var(--font-body);
     font-variant-caps: small-caps;
     letter-spacing: 0.08em;
     font-size: 0.85rem;
@@ -1580,7 +1652,7 @@ input:focus-visible,
 }
 
 .translation-select {
-    font-family: var(--font-serif);
+    font-family: var(--font-body);
     font-variant-caps: small-caps;
     letter-spacing: 0.08em;
     font-size: 0.9rem;
@@ -1592,7 +1664,7 @@ input:focus-visible,
 }
 
 .attribution {
-    font-family: var(--font-serif);
+    font-family: var(--font-body);
     font-size: 0.8rem;
     color: var(--header-fg-soft, var(--ink-soft));
     opacity: 0.85;
@@ -1653,7 +1725,7 @@ input:focus-visible,
 .reader-loading {
     padding: 8rem 1.5rem;
     text-align: center;
-    font-family: var(--font-serif);
+    font-family: var(--font-body);
     font-variant-caps: small-caps;
     letter-spacing: .05em;
     font-size: .95rem;
@@ -1677,7 +1749,7 @@ input:focus-visible,
 }
 
 .chapter-head-book {
-    font-family: var(--font-serif);
+    font-family: var(--font-heading);
     font-variant-caps: small-caps;
     letter-spacing: .12em;
     font-size: 1.05rem;
@@ -1686,7 +1758,7 @@ input:focus-visible,
 }
 
 .chapter-head-num {
-    font-family: var(--font-serif);
+    font-family: var(--font-heading);
     font-variant-numeric: oldstyle-nums;
     font-size: 3.4rem;
     line-height: 1;
@@ -1747,7 +1819,7 @@ input:focus-visible,
 
 .chapter-head-peek-position {
     margin: 0 0 .3rem;
-    font-family: var(--font-mono);
+    font-family: var(--font-body);
     font-size: .74rem;
     letter-spacing: .03em;
     text-transform: uppercase;
@@ -1761,7 +1833,7 @@ input:focus-visible,
     display: flex;
     flex-direction: column;
     gap: .2rem;
-    font-family: var(--font-serif);
+    font-family: var(--font-heading);
     color: var(--ink);
 }
 
@@ -1805,7 +1877,7 @@ input:focus-visible,
 .pericope-heading {
     margin: 1.75rem 0 .6rem;
     padding: .35rem .4rem;
-    font-family: var(--font-serif);
+    font-family: var(--font-heading);
     font-variant-caps: small-caps;
     letter-spacing: .07em;
     font-size: .92rem;
@@ -1850,7 +1922,7 @@ input:focus-visible,
     flex: none;
     width: 2.25rem;
     text-align: right;
-    font-family: var(--font-mono);
+    font-family: var(--font-body);
     font-size: .78rem;
     line-height: 1.7;
     color: var(--bronze-ink);
@@ -1866,7 +1938,7 @@ input:focus-visible,
 
 .verse-text {
     flex: 1 1 auto;
-    font-family: var(--font-serif);
+    font-family: var(--font-body);
     font-size: 1.2rem;
     line-height: 1.7;
     color: var(--ink);
@@ -1911,7 +1983,7 @@ input:focus-visible,
     display: inline;
     vertical-align: super;
     line-height: 1;
-    font-family: var(--font-mono);
+    font-family: var(--font-body);
     font-size: .62rem;
     letter-spacing: .02em;
     color: var(--bronze-ink);
@@ -2067,7 +2139,7 @@ input:focus-visible,
     min-height: 4.5rem;
     padding: .3rem .2rem;
     text-align: center;
-    font-family: var(--font-serif);
+    font-family: var(--font-body);
     font-variant-caps: small-caps;
     letter-spacing: .05em;
     font-size: var(--nav-glyph-size, 1.1rem);
@@ -2094,7 +2166,7 @@ input:focus-visible,
     min-height: 4.5rem;
     padding: .3rem .2rem;
     text-align: center;
-    font-family: var(--font-serif);
+    font-family: var(--font-body);
     font-variant-caps: small-caps;
     letter-spacing: .05em;
     font-size: var(--nav-glyph-size, 1.1rem);
@@ -2135,7 +2207,7 @@ input:focus-visible,
     bottom: 1.5rem;
     transform: translateX(-50%);
     z-index: 20;
-    font-family: var(--font-mono);
+    font-family: var(--font-body);
     font-size: .85rem;
     letter-spacing: .02em;
     color: var(--bronze-ink);
@@ -2257,7 +2329,7 @@ input:focus-visible,
 
 .world-page .leaflet-container {
     background: var(--parchment);
-    font-family: var(--font-serif);
+    font-family: var(--font-body);
 }
 
 /* Hand-authored per-polity timerange borders (Batch B2, "borders v2, the
@@ -2530,7 +2602,7 @@ input:focus-visible,
     left: 0;
     white-space: nowrap;
     pointer-events: none;
-    font-family: var(--font-mono);
+    font-family: var(--font-body);
     font-size: 0.62rem;
     letter-spacing: 0.02em;
     color: var(--bronze-ink);
@@ -2795,7 +2867,7 @@ input:focus-visible,
 }
 
 .atlas-cluster-count {
-    font-family: var(--font-serif);
+    font-family: var(--font-body);
     font-weight: 700;
     font-size: .68rem;
     line-height: 1;
@@ -2861,7 +2933,7 @@ input:focus-visible,
     margin-inline-start: .5rem;
     transform: translateY(-50%);
     white-space: nowrap;
-    font-family: var(--font-serif);
+    font-family: var(--font-body);
     font-variant-caps: small-caps;
     letter-spacing: .06em;
     font-size: .78rem;
@@ -2907,7 +2979,7 @@ input:focus-visible,
     margin-inline-start: .4rem;
     transform: translateY(-50%);
     white-space: nowrap;
-    font-family: var(--font-serif);
+    font-family: var(--font-body);
     font-variant-caps: small-caps;
     letter-spacing: .05em;
     font-size: .64rem;
@@ -2951,7 +3023,7 @@ input:focus-visible,
     transform: translate(3px, calc(-100% - 2px));
     white-space: nowrap;
     pointer-events: none;
-    font-family: var(--font-serif);
+    font-family: var(--font-body);
     font-size: .68rem;
     color: var(--ink-soft);
     text-shadow: 0 0 2px rgba(246, 241, 229, .95), 0 0 4px rgba(246, 241, 229, .9), 0 1px 5px rgba(246, 241, 229, .8);
@@ -3046,7 +3118,7 @@ input:focus-visible,
     left: 0;
     white-space: nowrap;
     pointer-events: none;
-    font-family: var(--font-serif);
+    font-family: var(--font-body);
     font-variant-caps: small-caps;
     letter-spacing: .12em;
     color: var(--ink-soft);
@@ -3262,7 +3334,7 @@ input:focus-visible,
     max-width: 26rem;
     padding: 0 1.5rem;
     text-align: center;
-    font-family: var(--font-serif);
+    font-family: var(--font-body);
     font-variant-caps: small-caps;
     letter-spacing: .05em;
     font-size: 1rem;
@@ -3352,7 +3424,7 @@ input:focus-visible,
     border: none;
     border-radius: 3px;
     background: none;
-    font-family: var(--font-serif);
+    font-family: var(--font-body);
     font-size: .85rem;
     color: var(--ink);
     text-align: left;
@@ -3420,7 +3492,7 @@ input:focus-visible,
     border: 1px solid var(--bronze);
     border-radius: 4px;
     box-shadow: 0 8px 20px rgba(0, 0, 0, .4);
-    font-family: var(--font-serif);
+    font-family: var(--font-body);
     font-size: .82rem;
     color: var(--ink);
     white-space: nowrap;
@@ -3476,7 +3548,7 @@ input:focus-visible,
 .slider-readout {
     width: 10rem;
     text-align: center;
-    font-family: var(--font-mono);
+    font-family: var(--font-body);
     font-size: 0.82rem;
     letter-spacing: 0.03em;
     color: var(--bronze-bright);
@@ -3524,7 +3596,7 @@ input:focus-visible,
 }
 
 .slider-era {
-    font-family: var(--font-serif);
+    font-family: var(--font-body);
     font-variant-caps: small-caps;
     letter-spacing: 0.06em;
     font-size: 0.6rem;
@@ -3609,7 +3681,7 @@ input:focus-visible,
 }
 
 .slider-cross {
-    font-family: var(--font-mono);
+    font-family: var(--font-body);
     font-size: 0.82rem;
     color: var(--bronze-bright);
     background: var(--panel-inset);
@@ -3708,7 +3780,7 @@ input:focus-visible,
 }
 
 .legend-name {
-    font-family: var(--font-serif);
+    font-family: var(--font-body);
     font-variant-caps: small-caps;
     letter-spacing: .05em;
     font-size: .85rem;
@@ -3717,7 +3789,7 @@ input:focus-visible,
 }
 
 .legend-count {
-    font-family: var(--font-mono);
+    font-family: var(--font-body);
     font-size: .75rem;
     /* Fix round 1 addendum: was --dusk-ink-soft, measured 4.36:1 (real
        screenshot pixels) -- under the 7:1 floor, and design-direction.md's
@@ -3831,7 +3903,7 @@ input:focus-visible,
 .picker-eyebrow {
     flex-basis: 100%;
     margin: 0;
-    font-family: var(--font-serif);
+    font-family: var(--font-heading);
     font-variant-caps: small-caps;
     letter-spacing: .08em;
     font-size: .78rem;
@@ -3839,7 +3911,7 @@ input:focus-visible,
 }
 
 .picker-select {
-    font-family: var(--font-serif);
+    font-family: var(--font-body);
     font-variant-caps: small-caps;
     letter-spacing: .05em;
     font-size: .85rem;
@@ -3858,7 +3930,7 @@ input:focus-visible,
    same discipline as the rest of the file. */
 .picker-verse {
     width: 3.4rem;
-    font-family: var(--font-mono);
+    font-family: var(--font-body);
     font-size: .85rem;
     color: var(--picker-verse-fg);
     background: var(--picker-verse-bg);
@@ -3881,11 +3953,11 @@ input:focus-visible,
 
 .picker-verse-sep {
     color: var(--picker-sep-fg);
-    font-family: var(--font-mono);
+    font-family: var(--font-body);
 }
 
 .picker-apply {
-    font-family: var(--font-serif);
+    font-family: var(--font-body);
     font-variant-caps: small-caps;
     letter-spacing: .06em;
     font-size: .82rem;
@@ -3937,7 +4009,7 @@ input:focus-visible,
 }
 
 .mode-chip-label {
-    font-family: var(--font-serif);
+    font-family: var(--font-body);
     font-variant-caps: small-caps;
     letter-spacing: .06em;
     font-size: .78rem;
@@ -3947,7 +4019,7 @@ input:focus-visible,
 }
 
 .mode-chip-ref {
-    font-family: var(--font-mono);
+    font-family: var(--font-body);
     font-size: .95rem;
     letter-spacing: .03em;
     color: var(--bronze-bright);
@@ -3963,7 +4035,7 @@ input:focus-visible,
 }
 
 .mode-chip-return {
-    font-family: var(--font-serif);
+    font-family: var(--font-body);
     font-variant-caps: small-caps;
     letter-spacing: .05em;
     font-size: .78rem;
@@ -3992,7 +4064,7 @@ input:focus-visible,
    .nav-link); the close buttons are a plain glyph, matching .popover-close's
    own treatment. */
 .split-open {
-    font-family: var(--font-serif);
+    font-family: var(--font-body);
     font-variant-caps: small-caps;
     letter-spacing: .06em;
     font-size: .85rem;
@@ -4061,7 +4133,7 @@ input:focus-visible,
 }
 
 .follow-chip {
-    font-family: var(--font-serif);
+    font-family: var(--font-body);
     font-variant-caps: small-caps;
     letter-spacing: .06em;
     font-size: .85rem;
@@ -4118,7 +4190,7 @@ input:focus-visible,
 }
 
 .split-close {
-    font-family: var(--font-serif);
+    font-family: var(--font-body);
     font-size: 1.15rem;
     line-height: 1;
     padding: .25rem .6rem;
@@ -4233,7 +4305,7 @@ input:focus-visible,
 
 .toast-message {
     margin: 0;
-    font-family: var(--font-serif);
+    font-family: var(--font-body);
     font-size: 0.9rem;
     color: var(--ink);
 }
@@ -4430,7 +4502,7 @@ input:focus-visible,
     flex: none;
     width: 1.9rem;
     height: 1.9rem;
-    font-family: var(--font-serif);
+    font-family: var(--font-body);
     font-size: 1.05rem;
     line-height: 1;
     color: var(--bronze-ink);
@@ -4449,7 +4521,7 @@ input:focus-visible,
     flex: none;
     width: 1.9rem;
     height: 1.9rem;
-    font-family: var(--font-serif);
+    font-family: var(--font-body);
     font-size: 1.3rem;
     line-height: 1;
     color: var(--bronze-ink);
@@ -4488,14 +4560,14 @@ input:focus-visible,
     text-overflow: ellipsis;
     white-space: nowrap;
     margin: 0;
-    font-family: var(--font-mono);
+    font-family: var(--font-body);
     font-size: 1.15rem;
     letter-spacing: .02em;
     color: var(--ink);
 }
 
 .popover-title[data-ref="false"] {
-    font-family: var(--font-serif);
+    font-family: var(--font-heading);
     font-variant-caps: small-caps;
     letter-spacing: .05em;
     font-size: 1.2rem;
@@ -4503,7 +4575,7 @@ input:focus-visible,
 
 .popover-close {
     flex: none;
-    font-family: var(--font-serif);
+    font-family: var(--font-body);
     font-size: 1.3rem;
     line-height: 1;
     color: var(--ink-soft);
@@ -4518,7 +4590,7 @@ input:focus-visible,
 }
 
 .popover-body {
-    font-family: var(--font-serif);
+    font-family: var(--font-body);
     color: var(--ink);
 }
 
@@ -4526,6 +4598,28 @@ input:focus-visible,
     margin: 0;
     font-size: 1.1rem;
     line-height: 1.7;
+}
+
+.focus-text {
+    margin: 0;
+    font-size: 1.1rem;
+    line-height: 1.7;
+}
+
+.focus-anchor {
+    font: inherit;
+    color: inherit;
+    background-color: transparent;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    border-radius: 2px;
+}
+
+.focus-anchor:hover,
+.focus-anchor:focus-visible {
+    background-color: rgba(44, 74, 112, .14);
+    color: var(--lapis);
 }
 
 /* Batch CORP-1b: a Kretzmann CommentaryItem's own prose (CommentaryItemProseSection)
@@ -4605,7 +4699,7 @@ input:focus-visible,
 }
 
 .popover-passage-ref-label {
-    font-family: var(--font-mono);
+    font-family: var(--font-body);
     font-size: .85rem;
     color: var(--lapis);
 }
@@ -4651,7 +4745,7 @@ input:focus-visible,
    line ~5937, already gives for picking --bronze-ink over --ink-soft
    elsewhere in this file). */
 .popover-passage-title {
-    font-family: var(--font-serif);
+    font-family: var(--font-heading);
     font-size: var(--passage-title-size);
     font-weight: 600;
     color: var(--bronze-ink);
@@ -4670,7 +4764,7 @@ input:focus-visible,
 
 .popover-passage-text {
     margin: 0;
-    font-family: var(--font-serif);
+    font-family: var(--font-body);
     font-size: .95rem;
     line-height: 1.55;
     color: var(--ink);
@@ -4691,7 +4785,7 @@ input:focus-visible,
    own separate rule -- a different background/container entirely). */
 .popover-passage-verse-num,
 .popover-arrow-peek-verse-num {
-    font-family: var(--font-mono);
+    font-family: var(--font-body);
     font-size: .7rem;
     color: var(--bronze-ink);
 }
@@ -4705,7 +4799,7 @@ input:focus-visible,
     display: block;
     margin: .3rem 0 0 .65rem;
     padding: 0;
-    font-family: var(--font-serif);
+    font-family: var(--font-body);
     font-size: .95rem;
     line-height: 1;
     color: var(--ink-soft);
@@ -4754,7 +4848,7 @@ input:focus-visible,
 .popover-reveal-link {
     margin: 0;
     padding: 0;
-    font-family: var(--font-serif);
+    font-family: var(--font-body);
     font-variant-caps: small-caps;
     letter-spacing: .03em;
     font-size: .82rem;
@@ -4769,7 +4863,7 @@ input:focus-visible,
 }
 
 .popover-page-position {
-    font-family: var(--font-serif);
+    font-family: var(--font-body);
     font-size: .82rem;
     color: var(--bronze-ink);
 }
@@ -4811,7 +4905,7 @@ input:focus-visible,
    .explorable -- a title is not a click target. */
 .catechism-section-heading {
     margin: 0 0 .3rem;
-    font-family: var(--font-serif);
+    font-family: var(--font-heading);
     font-variant-caps: small-caps;
     letter-spacing: .06em;
     font-size: .85rem;
@@ -4865,7 +4959,7 @@ input:focus-visible,
     display: block;
     width: 100%;
     text-align: start;
-    font-family: var(--font-serif);
+    font-family: var(--font-body);
     font-size: .92rem;
     color: var(--ink);
     background: none;
@@ -4954,7 +5048,7 @@ input:focus-visible,
     border: none;
     border-bottom: 1px solid rgba(138, 107, 61, .18);
     background: none;
-    font-family: var(--font-serif);
+    font-family: var(--font-body);
     text-align: start;
     cursor: pointer;
 }
@@ -4980,7 +5074,7 @@ input:focus-visible,
 }
 
 .popover-event-place {
-    font-family: var(--font-serif);
+    font-family: var(--font-body);
     font-size: .85rem;
     color: var(--lapis);
     background: none;
@@ -5012,7 +5106,7 @@ input:focus-visible,
 
 .popover-frontier-metadata-label {
     flex: none;
-    font-family: var(--font-serif);
+    font-family: var(--font-heading);
     font-size: .82rem;
     letter-spacing: .04em;
     text-transform: uppercase;
@@ -5026,7 +5120,7 @@ input:focus-visible,
 }
 
 .popover-frontier-metadata-value {
-    font-family: var(--font-serif);
+    font-family: var(--font-body);
     font-size: .85rem;
     color: var(--lapis);
     background: none;
@@ -5122,7 +5216,7 @@ input:focus-visible,
     width: 1.15rem;
     height: 1.15rem;
     padding: 0;
-    font-family: var(--font-serif);
+    font-family: var(--font-body);
     font-size: .72rem;
     line-height: 1;
     color: var(--bronze-ink);
@@ -5209,7 +5303,7 @@ input:focus-visible,
     background: var(--parchment-raised);
     border-left: 2px solid var(--bronze);
     border-radius: 3px;
-    font-family: var(--font-serif);
+    font-family: var(--font-body);
     font-size: .8rem;
     line-height: 1.45;
     color: var(--ink-soft);
@@ -5259,7 +5353,7 @@ input:focus-visible,
    this block. */
 .popover-provenance-error {
     display: block;
-    font-family: var(--font-mono);
+    font-family: var(--font-body);
     font-size: .74rem;
     color: #8A2A2A;
 }
@@ -5307,7 +5401,7 @@ input:focus-visible,
 }
 
 .popover-refs-list-item {
-    font-family: var(--font-mono);
+    font-family: var(--font-body);
     font-size: .8rem;
     color: var(--lapis);
     background: none;
@@ -5323,7 +5417,7 @@ input:focus-visible,
 
 .popover-event-years {
     flex: none;
-    font-family: var(--font-mono);
+    font-family: var(--font-body);
     font-size: .82rem;
     color: var(--bronze-ink);
 }
@@ -5353,7 +5447,7 @@ input:focus-visible,
    as the sole surviving selector rather than two coincidentally-identical
    rules under one now-single name. */
 .popover-event-nav-role {
-    font-family: var(--font-mono);
+    font-family: var(--font-body);
     font-size: .78rem;
     letter-spacing: .03em;
     text-transform: uppercase;
@@ -5378,7 +5472,7 @@ input:focus-visible,
    growing unboundedly for the rare long one. */
 .popover-event-nav-verse {
     margin: .2rem 0 0;
-    font-family: var(--font-serif);
+    font-family: var(--font-body);
     font-size: .82rem;
     line-height: 1.4;
     color: var(--ink);
@@ -5391,7 +5485,7 @@ input:focus-visible,
 }
 
 .popover-event-nav-verse-ref {
-    font-family: var(--font-mono);
+    font-family: var(--font-body);
     font-size: .72rem;
     color: var(--bronze-ink);
     margin-right: .35rem;
@@ -5468,7 +5562,7 @@ input:focus-visible,
     padding: .2rem .35rem;
     border: none;
     background: none;
-    font-family: var(--font-serif);
+    font-family: var(--font-body);
     text-align: start;
     cursor: pointer;
 }
@@ -5637,7 +5731,7 @@ input:focus-visible,
 
 .popover-arrow-peek-title {
     margin: 0;
-    font-family: var(--font-serif);
+    font-family: var(--font-heading);
     font-weight: 600;
     color: var(--ink);
 }
@@ -5649,7 +5743,7 @@ input:focus-visible,
    without dominating a box this size). */
 .popover-arrow-peek-close {
     flex: none;
-    font-family: var(--font-serif);
+    font-family: var(--font-body);
     font-size: 1.1rem;
     line-height: 1;
     color: var(--ink-soft);
@@ -5789,7 +5883,7 @@ input:focus-visible,
     flex: none;
     width: 1.9rem;
     text-align: right;
-    font-family: var(--font-mono);
+    font-family: var(--font-body);
     font-size: .72rem;
     color: var(--bronze-ink);
 }
@@ -5890,7 +5984,7 @@ input:focus-visible,
     flex: none;
     width: 1.9rem;
     height: 1.9rem;
-    font-family: var(--font-serif);
+    font-family: var(--font-body);
     font-size: 1rem;
     line-height: 1;
     color: var(--bronze-ink);
@@ -5935,7 +6029,7 @@ input:focus-visible,
     flex: none;
     width: 1.8rem;
     height: 1.8rem;
-    font-family: var(--font-serif);
+    font-family: var(--font-body);
     font-size: 1.05rem;
     line-height: 1;
     color: var(--header-fg, var(--ink));
@@ -5978,7 +6072,7 @@ input:focus-visible,
 
 .hamburger-empty {
     margin: 0;
-    font-family: var(--font-serif);
+    font-family: var(--font-body);
     font-size: .92rem;
     /* Real, readable copy (not quiet metadata) -- --ink, same as
        .popover-body/.popover-verse-text, matches the established >=7:1
@@ -6029,14 +6123,14 @@ input:focus-visible,
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    font-family: var(--font-serif);
+    font-family: var(--font-body);
     font-size: .96rem;
     color: var(--ink);
 }
 
 .hamburger-exploration-meta {
     flex: none;
-    font-family: var(--font-mono);
+    font-family: var(--font-body);
     font-size: .78rem;
     color: var(--bronze-ink);
 }
@@ -6044,7 +6138,7 @@ input:focus-visible,
 .hamburger-rename-input {
     flex: 1 1 auto;
     min-width: 0;
-    font-family: var(--font-serif);
+    font-family: var(--font-body);
     font-size: .96rem;
     color: var(--ink);
     background: var(--parchment);
@@ -6061,7 +6155,7 @@ input:focus-visible,
 }
 
 .hamburger-exploration-control {
-    font-family: var(--font-serif);
+    font-family: var(--font-body);
     font-variant-caps: small-caps;
     letter-spacing: .03em;
     font-size: .78rem;
@@ -6079,7 +6173,7 @@ input:focus-visible,
 }
 
 .hamburger-delete-confirm-text {
-    font-family: var(--font-serif);
+    font-family: var(--font-body);
     font-size: .78rem;
     /* --red-letter, not --ochre-alert -- this is STATIC warning text (not a
        transient hover state the way .popover-close:hover's own --ochre-alert
@@ -6121,7 +6215,7 @@ input:focus-visible,
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    font-family: var(--font-mono);
+    font-family: var(--font-body);
     font-size: .88rem;
     color: var(--ink);
 }
@@ -6155,7 +6249,7 @@ input:focus-visible,
 
 .selection-tray-count {
     flex: none;
-    font-family: var(--font-serif);
+    font-family: var(--font-body);
     font-variant-caps: small-caps;
     letter-spacing: .04em;
     font-size: .82rem;
@@ -6189,14 +6283,14 @@ input:focus-visible,
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    font-family: var(--font-mono);
+    font-family: var(--font-body);
     font-size: .82rem;
     color: var(--ink);
 }
 
 .selection-chip-remove {
     flex: none;
-    font-family: var(--font-serif);
+    font-family: var(--font-body);
     font-size: .95rem;
     line-height: 1;
     color: var(--ink-soft);
@@ -6212,7 +6306,7 @@ input:focus-visible,
 
 .selection-clear {
     flex: none;
-    font-family: var(--font-serif);
+    font-family: var(--font-body);
     font-variant-caps: small-caps;
     letter-spacing: .04em;
     font-size: .8rem;
@@ -6293,7 +6387,7 @@ input:focus-visible,
 .loading-progress-text {
     position: absolute;
     text-align: center;
-    font-family: var(--font-mono);
+    font-family: var(--font-body);
     font-weight: bold;
     inset: calc(20vh + 3.25rem) 0 auto 0.2rem;
 }
@@ -6309,7 +6403,7 @@ input:focus-visible,
    the bronze left rule .concord-toc-item-current already established. */
 .contents-open {
     margin-left: .75rem;
-    font-family: var(--font-serif);
+    font-family: var(--font-body);
     font-variant-caps: small-caps;
     letter-spacing: .05em;
     font-size: .8rem;
@@ -6336,7 +6430,7 @@ input:focus-visible,
 
 .contents-current {
     margin: 0 0 .5rem;
-    font-family: var(--font-mono);
+    font-family: var(--font-body);
     font-size: .8rem;
     color: var(--bronze-ink);
 }
@@ -6383,7 +6477,7 @@ input:focus-visible,
     justify-content: space-between;
     gap: .5rem;
     text-align: left;
-    font-family: var(--font-serif);
+    font-family: var(--font-body);
     font-size: .95rem;
     color: var(--ink);
     background: none;
@@ -6406,7 +6500,7 @@ input:focus-visible,
 }
 
 .contents-count {
-    font-family: var(--font-mono);
+    font-family: var(--font-body);
     font-size: .72rem;
     color: var(--ink-soft, var(--ink));
     font-variant-numeric: tabular-nums;
@@ -6416,7 +6510,7 @@ input:focus-visible,
     display: block;
     width: 100%;
     text-align: left;
-    font-family: var(--font-serif);
+    font-family: var(--font-body);
     font-variant-caps: small-caps;
     letter-spacing: .05em;
     color: var(--ink);
@@ -6437,13 +6531,13 @@ input:focus-visible,
    Chips reuse .popover-catechism-item; the family groups are labelled rows. */
 .person-life-line {
     margin: 0 0 .5rem;
-    font-family: var(--font-serif);
+    font-family: var(--font-body);
     color: var(--ink);
 }
 
 .person-family-label {
     margin: .4rem 0 .15rem;
-    font-family: var(--font-mono);
+    font-family: var(--font-body);
     font-size: .72rem;
     letter-spacing: .05em;
     color: var(--bronze-ink);
@@ -6508,4 +6602,123 @@ input:focus-visible,
 .enter-split-menu-item:hover,
 .enter-split-menu-item:focus-visible {
     background: rgba(0, 0, 0, .06);
+}
+
+.focus-up,
+.focus-arrow,
+.focus-child,
+.focus-link,
+.focus-entry-edge {
+    appearance: none;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    font: inherit;
+    color: inherit;
+    text-align: start;
+}
+
+.focus-up,
+.focus-arrow {
+    margin: 0 .2rem .15rem 0;
+    padding: .05rem .25rem;
+    font-family: var(--font-body);
+    font-variant-caps: small-caps;
+    letter-spacing: .04em;
+    font-size: .88rem;
+    color: var(--bronze-ink);
+}
+
+.focus-child,
+.focus-link {
+    margin: 0 0 .2rem;
+    padding: .05rem .25rem;
+    font-family: var(--font-body);
+    font-size: .95rem;
+    line-height: 1.5;
+    color: var(--lapis);
+}
+
+.focus-up:hover,
+.focus-up:focus-visible,
+.focus-arrow:hover,
+.focus-arrow:focus-visible,
+.focus-child:hover,
+.focus-child:focus-visible,
+.focus-link:hover,
+.focus-link:focus-visible {
+    color: var(--lapis);
+    text-decoration: underline dotted;
+    text-underline-offset: .2em;
+}
+
+.focus-entry-edge {
+    margin: 0 .6rem .2rem 0;
+    padding: 0 .2rem;
+    font-size: .78rem;
+    line-height: 1;
+    vertical-align: .1em;
+    color: var(--ink-soft);
+    opacity: .7;
+    border-radius: 3px;
+}
+
+.focus-entry-edge:hover,
+.focus-entry-edge:focus-visible {
+    color: var(--lapis);
+    opacity: 1;
+}
+
+.focus-title {
+    margin: 0 0 .4rem;
+    font-family: var(--font-heading);
+    font-size: 1.05rem;
+    color: var(--ink);
+}
+
+.focus-fields {
+    margin: 0;
+    font-family: var(--font-body);
+}
+
+.focus-field {
+    display: flex;
+    align-items: baseline;
+    gap: .75rem;
+    padding: .15rem 0;
+}
+
+.focus-field > dt {
+    flex: none;
+    font-family: var(--font-heading);
+    min-width: 6.5rem;
+    font-variant-caps: small-caps;
+    letter-spacing: .04em;
+    font-size: .85rem;
+    color: var(--bronze-ink);
+}
+
+.focus-field > dd {
+    margin: 0;
+    font-size: .95rem;
+    color: var(--ink);
+}
+
+.focus-entry {
+    display: inline-flex;
+    align-items: baseline;
+    max-width: 100%;
+}
+
+.focus-words {
+    margin: 0 0 .45rem .25rem;
+    padding-left: .5rem;
+    border-left: 2px solid var(--rule, #c9bfae);
+}
+
+.focus-words .focus-text {
+    font-size: .92rem;
+    line-height: 1.5;
+    color: var(--ink-soft);
 }

@@ -39,6 +39,8 @@ pub struct NodeRecord {
     pub era: Option<EraDetail>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub polity: Option<PolityDetail>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub text: Option<UnitText>,
 }
 
 #[derive(Debug, Serialize, utoipa::ToSchema)]
@@ -332,13 +334,21 @@ pub struct TextWindow {
 #[schema(description = "One unit of a reading spine: a verse of Scripture, or a paragraph of the Book of Concord.")]
 pub struct TextUnit {
     pub r#ref: String,
+    pub node: NodeRef,
+    pub body: UnitText,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub heading: Option<UnitHeading>,
+    pub edge_summary: Vec<EdgeSummaryEntry>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, utoipa::ToSchema)]
+#[serde(deny_unknown_fields)]
+#[schema(description = "What a text unit is: where it stands, its words, the words of Christ in it, and what its words stand for, each anchor in reading order.")]
+pub struct UnitText {
     pub locus: super::TextRef,
     pub text: String,
     pub words_of_christ: Vec<super::reading::WordsOfChristSpan>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub heading: Option<UnitHeading>,
     pub anchors: Vec<super::Anchor>,
-    pub edge_summary: Vec<EdgeSummaryEntry>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, utoipa::ToSchema)]

@@ -3,48 +3,43 @@ import fc from 'fast-check';
 import { api } from './lib/api';
 import { loadToc, arbVerseRef, arbChapterRef, arbPassageRef } from './lib/canon';
 import { fcAssert, RUNS_API } from './lib/fc';
+import { neighbourNode } from './lib/edges';
 
+const CITES_PAGE = 20;
+const VERSE_RE = /^[A-Z0-9]{3}\.\d+\.\d+$/;
+const VERSE_PREFIX_RE = /^[A-Z0-9]{3}\.\d+\.\d+/;
 const SPAN_RE = /^[A-Z0-9]{3}\.\d+\.\d+(-(\d+|[A-Z0-9]{3}\.\d+\.\d+))?$/;
 
-test('XREF-1: verse details are sound', async () => {
+test('XREF-1: a verse\'s record and its first page of cross references are sound', async () => {
   const toc = await loadToc();
   await fcAssert(fc.asyncProperty(arbVerseRef(toc), async vref => {
-    const d = await api.verse(vref);
-    expect(d.__status).toBeUndefined();
-    expect(d.ref).toBe(vref);
-    expect(d.text.length).toBeGreaterThan(0);
-    expect(typeof d.book_meta.author).toBe('string');
-    let last = Infinity;
-    for (const x of d.cross_refs) {
-      expect(x.votes).toBeLessThanOrEqual(last); last = x.votes;   // votes descending
-      expect(SPAN_RE.test(x.target)).toBe(true);                   // canon-parseable target
-      expect(x.target).not.toBe(vref);                             // no self (exact match only)
-      expect(x.preview.length).toBeGreaterThan(0);
+    // Arrange
+    const id = `text-unit:${vref}`;
+
+    // Act
+    const [record, cites] = await Promise.all([api.node(id), api.nodeEdges(id, 'cites', { limit: CITES_PAGE })]);
+
+    // Assert
+    expect(record.__status).toBeUndefined();
+    expect(record.label).toBe(vref);
+    expect(record.text.text.length).toBeGreaterThan(0);
+    for (const target of cites.entries.map(neighbourNode)) {
+      expect(VERSE_RE.test(target.label)).toBe(true);
     }
   }), RUNS_API);
 });
 
-// Batch G1: GET /api/xrefs/{sref}. atlas_core::xrefs's own Rust proptest
-// (server/atlas-core/src/xrefs.rs, "xref_2_span_aggregation") already proves
-// the aggregation algebra itself (sum, subset-drop, sort, cap) against a
-// small hand-built fixture -- this is the endpoint's real-data counterpart,
-// same relationship XREF-1 above already has to the ETL-time xref checks:
-// exercises the ACTUAL compiled dataset (hundreds of thousands of real
-// cross-ref rows) through the real HTTP handler, not a fixture. A single-
-// verse span's aggregation reduces to exactly that verse's OWN cross_refs
-// (mod the 20-cap XREF-1's own endpoint never applies) -- a strong,
-// precise equality check requiring no shadow reimplementation of the
-// subset-drop logic in TypeScript; a passage span gets the general
-// soundness checks alone (every target parses, votes non-increasing,
-// capped at 20, non-empty preview).
-test('XREF-2: single-verse span equals that verse\'s own cross_refs (capped); passage spans stay sound', async () => {
+test('XREF-2: a single-verse span cites the verses its first page of cites edges reaches, in the same order; passage spans stay sound', async () => {
   const toc = await loadToc();
   await fcAssert(fc.asyncProperty(arbVerseRef(toc), async vref => {
-    const [got, verseDetail] = await Promise.all([api.xrefs(vref), api.verse(vref)]);
+    // Act
+    const [got, cites] = await Promise.all([api.xrefs(vref), api.nodeEdges(`text-unit:${vref}`, 'cites', { limit: CITES_PAGE })]);
+
+    // Assert
     expect(got.__status).toBeUndefined();
     expect(Array.isArray(got)).toBe(true);
-    expect(got.length).toBeLessThanOrEqual(20);
-    expect(got).toEqual(verseDetail.cross_refs.slice(0, 20));
+    expect(got.length).toBeLessThanOrEqual(CITES_PAGE);
+    expect(got.map((x: { target: string }) => x.target.match(VERSE_PREFIX_RE)![0])).toEqual(cites.entries.map(entry => neighbourNode(entry).label));
   }), RUNS_API);
 
   await fcAssert(fc.asyncProperty(arbPassageRef(toc), async sref => {

@@ -28,14 +28,14 @@ else
                 {
                     <PericopeHeading Heading="@heading" TestIdSuffix="@TestIdSuffix" OnExplore="OnExplore" />
                 }
-                <VerseLine Verse="@v" Unit="@_text!.Verse(v.Number)" Book="@Book" Chapter="@Chapter" OnExplore="OnExplore"
+                <VerseLine Verse="@v" Unit="@_text!.Verse(v.Number)" OnExplore="OnExplore"
                            Focal="@isFocal" Id="@(v.Number == FocalFromVerse ? _focalDomId : null)"
                            RowClass="popover-reader-verse explorable" RowTestIdPrefix="popover-reader-verse" TestIdSuffix="@TestIdSuffix"
                            VerseNumClass="popover-reader-verse-num" ShowVerseNumButton="false"
                            TextClass="popover-reader-verse-text" MentionClass="popover-reader-mention"
                            XrefMarkerTestIdPrefix="popover-reader-xref-marker"
                            XrefMarkerGlyph="@xrefLetters.GetValueOrDefault(v.Number, "")"
-                           OnXrefClick="@(vn => OnExplore.InvokeAsync(new PopoverOpening.Legacy(new VerseNode($"{Book}.{Chapter}.{vn}", xrefEntryPoint: true))))" />
+                           OnXrefClick="@(vn => OnExplore.InvokeAsync(new PopoverOpening.Explore(new NodePosition(_text!.Verse(vn).Node))))" />
             }
         }
     </div>

@@ -112,6 +112,7 @@ public sealed class IdentityEqualityLawTests
             [typeof(EdgeKind)] = EdgeKind.Mentions,
             [typeof(DateTimeOffset)] = DateTimeOffset.UnixEpoch,
             [typeof(TimeRange)] = LegacyViews.TwoThousandBc,
+            [typeof(UnitText)] = ServedGraph.WordsOf("shared"),
         };
 
         public static bool Holds(Type type) =>

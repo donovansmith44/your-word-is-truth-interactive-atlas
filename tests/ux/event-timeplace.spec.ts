@@ -1,6 +1,7 @@
 import { test, expect, Page } from '@playwright/test';
 import { api } from './lib/api';
 import { popoverSectionsHolding } from './lib/popover';
+import { openVerse } from './lib/verse';
 
 // EVT-3 Ticket 3 (owner verbatim, EVENT-TIMEPLACE-1): "At the top, right
 // below the header of the 'event' frontier, I want Time: and Place: ...
@@ -28,9 +29,8 @@ async function openEventPopover(page: Page, eventId: string, query = '') {
   const vref = detail.witnesses[0].verse_groups[0].verses[0];
   const v = parseVerse(vref);
   await page.goto(`/read/${v.book}/${v.chapter}${query}`);
-  await page.getByTestId(`verse-line-${v.verse}`).focus();
-  await page.keyboard.press('Enter');
-  await page.getByTestId(`verse-event-${eventId}`).click();
+  await openVerse(page, v.verse);
+  await page.getByTestId(`popover-link-attests-Event:${eventId}`).click();
   await expect(page.getByTestId('popover-title')).toHaveText(detail.title);
   return detail;
 }
@@ -147,9 +147,8 @@ test('EVT-3/Place: clicking "Nazareth" opens the map focused on Nazareth AT the 
   const vref = detail.witnesses[0].verse_groups[0].verses[0];
   const v = parseVerse(vref);
   await page.goto(`/read/${v.book}/${v.chapter}?split=world`);
-  await page.getByTestId(`verse-line-${v.verse}`).focus();
-  await page.keyboard.press('Enter');
-  await page.getByTestId('verse-event-rob_last_nazareth_visit').click();
+  await openVerse(page, v.verse);
+  await page.getByTestId('popover-link-attests-Event:rob_last_nazareth_visit').click();
   await expect(page.getByTestId('popover-title')).toHaveText(detail.title);
 
   await page.getByTestId('event-place-nazareth').click();

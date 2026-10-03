@@ -13,6 +13,7 @@ internal sealed class ServedGraph : IExplorableClient
     private readonly Dictionary<string, EdgeRecord> _edges = [];
     private readonly Dictionary<(string Id, EdgeKind Kind, int? Cursor), EdgePage> _pages = [];
     private string _root = Version;
+    private string? _elementsRoot;
 
     public int? LimitAsked { get; private set; }
 
@@ -23,6 +24,12 @@ internal sealed class ServedGraph : IExplorableClient
     public ServedGraph AtRoot(string root)
     {
         _root = root;
+        return this;
+    }
+
+    public ServedGraph ElementsAt(string root)
+    {
+        _elementsRoot = root;
         return this;
     }
 
@@ -41,6 +48,11 @@ internal sealed class ServedGraph : IExplorableClient
     public ServedGraph Serving(string id, EdgeKind kind, int? cursor, EdgePage page)
     {
         _pages[(id, kind, cursor)] = page;
+        foreach (var unit in page.Entries.Select(entry => entry.Neighbour).OfType<NodePosition>().Select(position => position.Node).Where(node => node.Kind == NodeKind.TextUnit))
+        {
+            _cards.TryAdd(unit.Id, TextCard(unit, WordsOf(unit.Id)));
+        }
+
         return this;
     }
 
@@ -55,7 +67,7 @@ internal sealed class ServedGraph : IExplorableClient
     public Task<ElementPage> Elements(IReadOnlyList<string> ids)
     {
         ElementReads++;
-        return Task.FromResult(new ElementPage(elements: ids.Select(Element).ToList(), next: null, previous: null, version: _root));
+        return Task.FromResult(new ElementPage(elements: ids.Select(Element).ToList(), next: null, previous: null, version: _elementsRoot ?? _root));
     }
 
     public Task<EdgePage> Edges(string positionId, EdgeKind kind, int? cursor = null, int limit = BibleAtlas.Client.Exploring.Affordances.PageSize)
@@ -78,7 +90,20 @@ internal sealed class ServedGraph : IExplorableClient
             book: null, catechism: null, description: null,
             edgeSummary: Summary(groups),
             @event: null, id: id, kind: kind, label: label, person: null, place: null, era: null, map: null, polity: null,
-            provenance: Provenance, version: Version);
+            provenance: Provenance, text: null, version: Version);
+
+    public static NodeRecord TextCard(NodeRef unit, UnitText text, params FrontierGroup[] groups) =>
+        Card(unit.Kind, unit.Id, unit.Label, groups) with { Text = text };
+
+    public static UnitText UnitTextOf(TextRef locus, string text, IReadOnlyList<Anchor> anchors, IReadOnlyList<WordsOfChristSpan> wordsOfChrist) =>
+        new(anchors: anchors, locus: locus, text: text, wordsOfChrist: wordsOfChrist);
+
+    public static UnitText WordsOf(string words) => UnitTextOf(new BibleRef(book: BookId.GEN, chapter: 1, verse: 1), words, [], []);
+
+    public static Element ElementOf(string id, NodeRecord subject) =>
+        new NodeElement(id == subject.Id ? subject : TextCard(Ref(NodeKind.TextUnit, id, id), WordsOf(id)));
+
+    public static Anchor AnchorOf(EdgeKind kind, NodeRef node, int start, int end) => new(end: end, kind: kind, node: node, start: start);
 
     public static EdgeRecord EdgeRecordOf(EdgeRef edge, NodeRef subject, NodeRef @object, params FrontierGroup[] groups) =>
         EdgeRecordOf(edge, subject, @object, Provenance, groups);
@@ -115,7 +140,7 @@ internal sealed class ServedGraph : IExplorableClient
         EdgeRef(kind, $"{EdgeId}:{Positions.Of(neighbour).Id}", $"{EdgeId} {Positions.Of(neighbour).Label}");
 
     public static Entry EntryTo(EdgeKind kind, PositionRef neighbour) =>
-        new(new Link(kind, neighbour), new Link(kind, AtEdge(EdgeTo(kind, neighbour))));
+        new(new Link(kind, neighbour), new Link(kind, AtEdge(EdgeTo(kind, neighbour))), null);
 
     public static EdgePage Page(EdgeKind kind, int? next, params NodeRef[] nodes) =>
         Page(kind, next, nodes.Select(At).ToArray());

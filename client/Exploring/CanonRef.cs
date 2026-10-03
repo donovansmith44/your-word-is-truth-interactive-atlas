@@ -17,12 +17,6 @@ public static class CanonRef
 
     public static string SpanOf(TextSpan span) => PassageGrouping.SpanRef(VerseOf(FirstVerseOf(span)), VerseOf(LastVerseOf(span)));
 
-    public static BibleRef BibleRefOf(string vref)
-    {
-        var (book, chapter, verse) = ParseVerse(vref);
-        return new BibleRef(WireNames.Parse<BookId>(book), chapter, verse);
-    }
-
     public static bool Covers(TextSpan span, BibleRef verse) =>
         verse.Book == FirstVerseOf(span).Book
         && (verse.Chapter, verse.Verse).CompareTo((FirstVerseOf(span).Chapter, FirstVerseOf(span).Verse)) >= 0

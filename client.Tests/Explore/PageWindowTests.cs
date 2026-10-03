@@ -500,7 +500,7 @@ public sealed class PageWindowTests
 
         public Task<ElementPage> Elements(IReadOnlyList<string> ids) =>
             Task.FromResult(new ElementPage(
-                elements: [new NodeElement(ServedGraph.Card(NodeKind.Person, Positions.Of(Subject).Id, Positions.Of(Subject).Label, new FrontierGroup(EdgeKind.MentionedIn, size)))],
+                elements: ids.Select(id => ServedGraph.ElementOf(id, ServedGraph.Card(NodeKind.Person, Positions.Of(Subject).Id, Positions.Of(Subject).Label, new FrontierGroup(EdgeKind.MentionedIn, size)))).ToList(),
                 next: null, previous: null, version: ServedGraph.Version));
 
         public Task<EdgePage> Edges(string positionId, EdgeKind kind, int? cursor = null, int limit = BibleAtlas.Client.Exploring.Affordances.PageSize)

@@ -43,6 +43,13 @@ public static class Affordances
 
     public static readonly Affordance.SectionList DefaultList = new(SectionStyle.Standard, SectionOrder.Canonical);
 
+    private static readonly IReadOnlyList<EdgeKind> RuledOrder = [EdgeKind.Attests, EdgeKind.CatechismLink, EdgeKind.Cites];
+
+    private static readonly IReadOnlyDictionary<EdgeKind, int> RuledRank = RuledOrder.Select((kind, rank) => (kind, rank)).ToDictionary(pair => pair.kind, pair => pair.rank);
+
+    public static IEnumerable<FrontierGroup> InRuledOrder(IEnumerable<FrontierGroup> served) =>
+        served.OrderBy(group => RuledRank.GetValueOrDefault(group.Kind, RuledOrder.Count));
+
     public static Affordance Of(EdgeKind kind) => kind switch
     {
         EdgeKind.FollowsIn => new Affordance.Arrows(ArrowDirection.Next),

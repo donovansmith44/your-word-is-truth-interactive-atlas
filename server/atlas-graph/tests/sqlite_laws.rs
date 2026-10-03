@@ -1110,6 +1110,7 @@ fn the_graph_derived_extras_of_the_specimen_round_trip_and_agree_with_the_attach
     let mut g = specimen_graph();
     g.build_indexes();
     atlas_graph::event_world::add_justified_by(&mut g);
+    atlas_graph::references::compile(&mut g);
     let mut resolved = std::collections::HashMap::new();
     resolved.insert(
         "e1".to_string(),
@@ -1145,7 +1146,7 @@ fn the_graph_derived_extras_of_the_specimen_round_trip_and_agree_with_the_attach
     red.insert("GEN.1.1".to_string(), vec![(0usize, 5usize), (10, 12)]);
     let extras = Extras::graph_derived(&g, &chrono, &red).unwrap();
     let verse = extras.table("verse").unwrap();
-    assert!(verse.rows.iter().any(|r| r == &vec![Col::Text("TextUnit:bible/1.1.1".into()), Col::Int(1), Col::Int(1), Col::Int(1)]), "{:?}", verse.rows);
+    assert!(verse.rows.iter().any(|r| r == &vec![Col::Text("TextUnit:bible/1.1.1".into()), Col::Int(1), Col::Int(1), Col::Int(1), Col::Text("EXO.1.1".into())]), "{:?}", verse.rows);
     let token = |verse: i64, ord: i64, char_start: i64, char_end: i64| {
         vec![Col::Int(1), Col::Int(1), Col::Int(verse), Col::Int(ord), Col::Int(char_start), Col::Int(char_end)]
     };
@@ -1180,7 +1181,7 @@ fn the_graph_derived_extras_of_the_specimen_round_trip_and_agree_with_the_attach
     assert_eq!(place.rows, vec![vec![Col::Text("Place:ur-1".into()), Col::Text("Ur".into()), Col::Real(30.96), Col::Real(46.1)]]);
     assert_eq!(extras.table("polity_era").unwrap().rows.len(), 2);
     assert_eq!(extras.table("era").unwrap().rows.len(), 1);
-    assert_eq!(extras.table("concord_unit").unwrap().rows, vec![vec![Col::Text("TextUnit:concord/1.1.1".into()), Col::Int(1), Col::Int(1), Col::Int(1)]]);
+    assert_eq!(extras.table("concord_unit").unwrap().rows, vec![vec![Col::Text("TextUnit:concord/1.1.1".into()), Col::Int(1), Col::Int(1), Col::Int(1), Col::Text("BoC 1.1.1".into())]]);
     assert_eq!(
         extras.table("concord_token").unwrap().rows,
         vec![
@@ -1489,6 +1490,40 @@ fn every_held_position_answers_one_compiled_label_and_every_edge_its_record_from
 
     // Assert
     assert_eq!((admitted, unlabelled, edges_read), (true, 0, g.edges_by_id.len()));
+}
+
+#[test]
+fn every_text_unit_answers_one_compiled_reference_and_no_other_node_answers_one() {
+    // Arrange
+    use atlas_graph_types::id::{AnyNodeId, NodeKind};
+    let mut g = specimen_graph();
+    g.build_indexes();
+    atlas_graph::event_world::add_justified_by(&mut g);
+    atlas_graph::references::compile(&mut g);
+    let no_chronology = atlas_graph::event_world::ChronologyDerivation {
+        order: Vec::new(),
+        placements: std::collections::HashMap::new(),
+        resolved: std::collections::HashMap::new(),
+        source_meta: std::collections::HashMap::new(),
+    };
+    let extras = Extras::graph_derived(&g, &no_chronology, &std::collections::HashMap::new()).unwrap();
+    extras.attach(&mut g);
+    let dir = std::env::temp_dir().join(format!("f2-references-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&dir);
+    write_sections(&g, &extras, "test", &layout_under(&dir)).unwrap();
+    let snap = open_written(&dir).unwrap();
+    let asked = [
+        AnyNodeId { kind: NodeKind::TextUnit, raw: "bible/1.1.1".into() },
+        AnyNodeId { kind: NodeKind::TextUnit, raw: "concord/1.1.1".into() },
+        AnyNodeId { kind: NodeKind::Era, raw: "patriarchs".into() },
+    ];
+
+    // Act
+    let admitted = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| assert_answers_match(&snap, &g))).is_ok();
+    let read = snap.references(&asked);
+
+    // Assert
+    assert_eq!((admitted, read), (true, vec![Some("EXO.1.1".to_string()), Some("BoC 1.1.1".to_string()), None]));
 }
 
 fn every_end_held(mut g: atlas_graph_types::graph::Graph) -> atlas_graph_types::graph::Graph {

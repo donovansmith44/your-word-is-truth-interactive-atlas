@@ -130,7 +130,7 @@ public class GraphExplorableClientTests
         Assert.Equal(
             ("/api/elements", "?ids=text-unit:EXO.14.21,Attests:00aa,Event:nowhere", WholeValue.Of(new Element[]
             {
-                new NodeElement(new NodeRecord(book: null, catechism: null, description: null, edgeSummary: [], @event: null, id: "text-unit:EXO.14.21", kind: NodeKind.TextUnit, label: "Exodus 14:21", person: null, place: null, era: null, map: null, polity: null, provenance: "kjv", version: "abc123")),
+                new NodeElement(new NodeRecord(book: null, catechism: null, description: null, edgeSummary: [], @event: null, id: "text-unit:EXO.14.21", kind: NodeKind.TextUnit, label: "Exodus 14:21", person: null, place: null, era: null, map: null, polity: null, provenance: "kjv", text: null, version: "abc123")),
                 new EdgeElement(new EdgeRecord(edgeSummary: [], id: "Attests:00aa", kind: EdgeKind.AttestedIn, label: "The Red Sea parted · Attested in · Exodus 14:21", narrative: null,
                     @object: new NodePosition(new NodeRef(id: "text-unit:EXO.14.21", kind: NodeKind.TextUnit, label: "Exodus 14:21")), parentage: null, provenance: "kjv",
                     subject: new NodePosition(new NodeRef(id: "Event:red_sea", kind: NodeKind.Event, label: "The Red Sea parted")), votes: null)),

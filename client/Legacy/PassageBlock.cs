@@ -5,7 +5,7 @@ namespace BibleAtlas.Client.Legacy;
 
 public sealed record PassageListVerse(string Vref, string Text, int? GroupCount = null, IReadOnlyList<Anchor>? Anchors = null, IReadOnlyList<WordsOfChristSpan>? WordsOfChrist = null)
 {
-    public static PassageListVerse Of(TextUnit unit) => new(unit.Ref, unit.Text, Anchors: unit.Anchors, WordsOfChrist: unit.WordsOfChrist);
+    public static PassageListVerse Of(TextUnit unit) => new(unit.Ref, unit.Body.Text, Anchors: unit.Body.Anchors, WordsOfChrist: unit.Body.WordsOfChrist);
 }
 
 public record PassageSourceUnit(IReadOnlyList<PassageListVerse> Verses, string? Caption = null);
@@ -51,7 +51,7 @@ public static class VerseTextResolver
         text = chapters.Zip(fetched).ToDictionary(pair => pair.First, pair => pair.Second);
 
         return spans
-            .SelectMany(span => ChaptersOf(span).SelectMany(c => text[c].Units.Where(unit => CanonRef.Covers(span, (BibleRef)unit.Locus))))
+            .SelectMany(span => ChaptersOf(span).SelectMany(c => text[c].Units.Where(unit => CanonRef.Covers(span, (BibleRef)unit.Body.Locus))))
             .Select(PassageListVerse.Of)
             .ToList();
     }

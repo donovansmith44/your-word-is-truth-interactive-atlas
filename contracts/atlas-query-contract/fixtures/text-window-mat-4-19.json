@@ -3,7 +3,22 @@
     "next": "MAT.4.20",
     "units": [
       {
-        "anchors": [],
+        "body": {
+          "anchors": [],
+          "locus": {
+            "book": "MAT",
+            "chapter": 4,
+            "corpus": "bible",
+            "verse": 19
+          },
+          "text": "And he saith unto them, Follow me, and I will make you fishers of men.",
+          "words_of_christ": [
+            {
+              "end": 70,
+              "start": 24
+            }
+          ]
+        },
         "edge_summary": [
           {
             "count": 1,
@@ -34,23 +49,15 @@
             "kind": "spoken-at"
           }
         ],
-        "locus": {
-          "book": "MAT",
-          "chapter": 4,
-          "corpus": "bible",
-          "verse": 19
+        "node": {
+          "id": "text-unit:MAT.4.19",
+          "kind": "TextUnit",
+          "label": "MAT.4.19"
         },
-        "ref": "MAT.4.19",
-        "text": "And he saith unto them, Follow me, and I will make you fishers of men.",
-        "words_of_christ": [
-          {
-            "end": 70,
-            "start": 24
-          }
-        ]
+        "ref": "MAT.4.19"
       }
     ],
-    "version": "40cfb5f71731986598f7e9277ca69084"
+    "version": "338276c54656f5eaf260225e4be9a9db"
   },
   "status": 200
 }

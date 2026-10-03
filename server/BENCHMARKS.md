@@ -126,7 +126,6 @@ smelled -- it is just ~5ms at the ceiling, not ~200ms.
 | land_mask | 343ns [336, 349] |
 | polities (full span) | 18.81us [18.40, 19.24] |
 | chapter (JHN.3) | 218.8us [214.6, 223.3] |
-| verse (JHN.3.16) | 16.20us [15.83, 16.63] |
 | xrefs (JHN.3.16) | 12.90us [12.60, 13.23] |
 | event (ab_ur) | 3.73us [3.65, 3.81] |
 | narrative_event_positions (ab_ur) | 4.04us [3.92, 4.17] |

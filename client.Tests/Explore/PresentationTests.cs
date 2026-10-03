@@ -9,7 +9,7 @@ public sealed class PresentationTests
     private const string Kjv = "kjv";
 
     [Fact]
-    public void Every_node_kind_is_a_card_on_the_popover_and_has_its_own_form_on_at_most_one_home_surface()
+    public void Every_node_kind_has_a_form_on_the_popover_and_its_own_form_on_at_most_one_home_surface()
     {
         // Arrange
         var everyKind = Enum.GetValues<NodeKind>();
@@ -22,7 +22,7 @@ public sealed class PresentationTests
         // Assert
         Assert.Equal(
             [
-                (NodeKind.TextUnit, null, Presentation.Form.Text, Presentation.Form.Card),
+                (NodeKind.TextUnit, null, Presentation.Form.Text, Presentation.Form.Text),
                 (NodeKind.Container, null, Presentation.Form.Sequence, Presentation.Form.Card),
                 (NodeKind.Event, null, null, Presentation.Form.Card),
                 (NodeKind.Narrative, null, null, Presentation.Form.Card),

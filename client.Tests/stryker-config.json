@@ -11,6 +11,7 @@
       "**/State/ExplorationState.cs",
       "**/Legacy/LegacyNodes.cs",
       "**/Legacy/LegacySaves.cs",
+      "**/Legacy/LegacyTextUnits.cs",
       "**/Exploring/RenderedLegacyNodes.cs",
       "**/SavedExplorationsService.cs",
       "!**/obj/**"

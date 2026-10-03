@@ -559,7 +559,7 @@ CREATE INDEX provenance_by_source ON provenance_entry (source);
 
 const EXTRA_DDL_KJV: &str = "
 CREATE TABLE verse (
-  node_id TEXT PRIMARY KEY, book INTEGER NOT NULL, chapter INTEGER NOT NULL, verse INTEGER NOT NULL
+  node_id TEXT PRIMARY KEY, book INTEGER NOT NULL, chapter INTEGER NOT NULL, verse INTEGER NOT NULL, reference TEXT NOT NULL
 ) WITHOUT ROWID;
 CREATE TABLE red_letter_span (
   book INTEGER NOT NULL, chapter INTEGER NOT NULL, verse INTEGER NOT NULL, ord INTEGER NOT NULL,
@@ -578,7 +578,7 @@ CREATE UNIQUE INDEX verse_by_ref ON verse (book, chapter, verse);
 
 const EXTRA_DDL_CONCORD: &str = "
 CREATE TABLE concord_unit (
-  node_id TEXT PRIMARY KEY, part INTEGER NOT NULL, article INTEGER NOT NULL, paragraph INTEGER NOT NULL
+  node_id TEXT PRIMARY KEY, part INTEGER NOT NULL, article INTEGER NOT NULL, paragraph INTEGER NOT NULL, reference TEXT NOT NULL
 ) WITHOUT ROWID;
 CREATE TABLE concord_token (
   part INTEGER NOT NULL, article INTEGER NOT NULL, paragraph INTEGER NOT NULL, ord INTEGER NOT NULL,

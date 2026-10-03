@@ -256,6 +256,7 @@ impl Pass for LabelPass {
         "label"
     }
     fn run(&self, ctx: &mut BuildCtx) -> Result<()> {
+        crate::references::compile(&mut ctx.graph);
         let geography = crate::geography::Geography::compile(&ctx.graph, ctx.atlas);
         crate::labels::compile(&mut ctx.graph, &crate::labels::ReaderNames::of(&geography, ctx.atlas));
         Ok(())
@@ -297,6 +298,9 @@ impl Pass for LawCheckPass {
         crate::law_check::analogue_rows_join_two_distinct_events(&ctx.graph)
             .map_err(|e| anyhow::anyhow!("{e}"))
             .context("ATTEST-1 Analogue distinctness law (L4)")?;
+        crate::law_check::every_citation_edge_records_one_span(&ctx.graph)
+            .map_err(|e| anyhow::anyhow!("{e}"))
+            .context("F-65 citation span law (one span per cites edge)")?;
         // The adapter-specific halves only: referential integrity of these rows' endpoints is already
         // covered by `every_row_reference_resolves` above, so re-checking it here would duplicate it.
         crate::person_adapter::check_person_fidelity(ctx.atlas, &ctx.graph)

@@ -12,8 +12,6 @@ internal static class LegacyViews
 
     public static IReadOnlyList<IExplorable> Every() =>
     [
-        new VerseNode("GEN.1.1"),
-        new ConcordUnitNode("BoC 7.2.1"),
         new ChapterNode("GEN", 1, 50),
         new BookNode("GEN"),
         new PassageNode("GEN.1.1-5", "In the beginning"),
