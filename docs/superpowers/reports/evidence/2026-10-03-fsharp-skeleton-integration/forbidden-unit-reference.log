@@ -1,4 +1,3 @@
 
 
 /home/donovan/w/CX-FSHARP/docs/superpowers/reports/evidence/2026-10-03-fsharp-account-skeleton/forbidden-unit-reference.fsx(3,56): error FS0039: The type 'UnitReference' is not defined in 'BibleAtlas.FSharp.Domain'.
-

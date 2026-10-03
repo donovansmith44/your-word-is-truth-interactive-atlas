@@ -1,4 +1,3 @@
 
 
 /home/donovan/w/CX-FSHARP/docs/superpowers/reports/evidence/2026-10-03-fsharp-account-skeleton/forbidden-history-account.fsx(6,5): error FS1093: The union cases or fields of the type 'HistoricalAccount' are not accessible from this code location
-
