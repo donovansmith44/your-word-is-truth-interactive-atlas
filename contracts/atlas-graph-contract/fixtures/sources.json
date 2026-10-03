@@ -114,6 +114,12 @@
         },
         {
             "category": "lutheran-texts",
+            "id": "concordia-triglotta-scan",
+            "license": "Public domain (published 1921, USA)",
+            "title": "Concordia Triglotta (1921), as scanned"
+        },
+        {
+            "category": "lutheran-texts",
             "id": "catechism-mapping",
             "license": "No license file -- used by the project owner's own explicit direction",
             "title": "Catechism Verse Mapping"
