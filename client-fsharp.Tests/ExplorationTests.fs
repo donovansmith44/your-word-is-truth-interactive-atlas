@@ -66,11 +66,11 @@ let ``Resume resolves every saved identity once and retains the bounded whole jo
     Assert.Equal((Ok expectedTrail, [expectedRead], Ok expectedWalked), (actual, calls, actual |> Result.map Trail.walked))
 
 [<Property>]
-let ``Resume preserves a failed whole-journey read without constructing a false trail`` (suffix: uint16) (kinds: EdgeKind list) (NonNull reason: NonNull<string>) =
+let ``Resume preserves a failed whole-journey read without constructing a false trail`` (suffix: uint16) (kinds: EdgeKind list) (code: ErrorCode) =
     let start = node $"Person:start-{suffix}" $"root-{suffix}"
     let targets: Link list = kinds |> List.mapi (fun index kind -> { Kind = kind; Target = Explorable.position (node $"Person:target-{suffix}-{index}" $"root-{suffix}") })
     let mutable calls = []
-    let failure = Transport reason
+    let failure = WireFixtures.readFailure code
     let resolver = { Resolve = fun asked -> async { calls <- calls @ [asked]; return Error failure } }
     let actual = Explore.resume resolver (Explorable.position start) targets |> Async.RunSynchronously
     Assert.Equal((Error failure, [Explorable.position start :: List.map (fun (link: Link) -> link.Target) targets]), (actual, calls))

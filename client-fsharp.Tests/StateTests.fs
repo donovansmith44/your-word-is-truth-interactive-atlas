@@ -1,9 +1,9 @@
 module rec BibleAtlas.FSharp.Tests.StateTests
 
 open Xunit
-open FsCheck
 open FsCheck.Xunit
 open BibleAtlas.FSharp
+open BibleAtlas.FSharp.Contract
 
 [<Property>]
 let ``every obsolete completion leaves the newer pending state unchanged`` (old: int) (stale: int) (steps: byte) =
@@ -13,9 +13,9 @@ let ``every obsolete completion leaves the newer pending state unchanged`` (old:
     Assert.Equal(Loading(next, Some old), LoadState.complete first (Ok stale) pending)
 
 [<Property>]
-let ``every failed read preserves the entire last value and permits a fresh retry`` (old: int list) (replacement: int list) (NonNull reason: NonNull<string>) (steps: byte) =
+let ``every failed read preserves the entire last value and permits a fresh retry`` (old: int list) (replacement: int list) (code: ErrorCode) (steps: byte) =
     let first = requestAfter steps
-    let failure = Transport reason
+    let failure = WireFixtures.readFailure code
     let failed = Ready old |> LoadState.beginRead first |> LoadState.complete first (Error failure)
     let next = RequestId.next first
     Assert.Equal(Failed(first, failure, Some old), failed)
@@ -29,7 +29,7 @@ let ``a completion after leaving a view cannot reopen any old value`` (stale: in
 let ``beginning a new request preserves the last complete value through every pending state`` (old: int list option) (failed: bool) (steps: byte) =
     let first = requestAfter steps
     let next = RequestId.next first
-    let prior = if failed then Failed(first, Transport "prior failure", old) else Loading(first, old)
+    let prior = if failed then Failed(first, WireFixtures.readFailure ErrorCode.NotFound, old) else Loading(first, old)
     Assert.Equal(Loading(next, old), LoadState.beginRead next prior)
 
 let private requestAfter steps = [1 .. int steps] |> List.fold (fun identity _ -> RequestId.next identity) RequestId.initial

@@ -9,6 +9,8 @@ open FsCheck
 open FsCheck.Xunit
 open BibleAtlas.FSharp
 open BibleAtlas.FSharp.Contract
+open BibleAtlas.FSharp.Admission
+open Microsoft.FSharp.Reflection
 
 [<Property>]
 let ``generated requests compose escaped paths and the contract enum spellings`` (suffix: uint16) =
@@ -36,26 +38,100 @@ let ``a typed HTTP read returns the whole element page`` (suffix: uint16) =
     Assert.Equal(Ok expected, actual)
 
 [<Property>]
-let ``a served refusal stays an explicit failure instead of an empty collection`` (NonNull reason: NonNull<string>) (notFound: bool) =
-    let status, code = if notFound then HttpStatusCode.NotFound, ErrorCode.NotFound else HttpStatusCode.BadRequest, ErrorCode.BadRef
+let ``every client refusal retains its exact admitted status and published error code`` (offset: byte) (code: ErrorCode) (NonNull reason: NonNull<string>) =
+    let status = enum<HttpStatusCode> (clientRefusalMinimum + int offset % refusalClassSize)
     let body = Json.encode { Error = { Code = code; Message = reason } }
     use response = new HttpResponseMessage(status, Content = new StringContent(body))
     use handler = new Handler(response)
     use http = new HttpClient(handler, BaseAddress = Uri "http://example.test/")
     let actual = Api.read http CancellationToken.None (Reads.nodeRecord (WireFixtures.identity<NodeId> "Person:absent")) |> Async.RunSynchronously
-    Assert.Equal(Error(Transport $"{int status}: {reason}"), actual)
+    Assert.Equal(Error(BibleAtlas.FSharp.Failure.Read(ReadFailure.Terminal(TerminalFailure.ClientRefusal(clientStatus (int status), Some code)))), actual)
 
 [<Property>]
-let ``an interrupted HTTP request completes with an explicit retryable failure`` (NonNull reason: NonNull<string>) =
-    use handler = new InterruptedHandler(reason)
+let ``an interrupted HTTP request completes with an explicit retryable failure`` (NonNull reason: NonNull<string>) (network: bool) =
+    use handler = new InterruptedHandler(reason, network)
     use http = new HttpClient(handler, BaseAddress = Uri "http://example.test/")
     let actual = Api.read http CancellationToken.None (Reads.sources()) |> Async.RunSynchronously
-    Assert.Equal(Error(Transport reason), actual)
+    Assert.Equal(Error(BibleAtlas.FSharp.Failure.Read(ReadFailure.Transient TransientFailure.Unreachable)), actual)
+
+
+[<Property>]
+let ``every server refusal retains its exact admitted status and published error code`` (offset: byte) (code: ErrorCode) (NonNull reason: NonNull<string>) =
+    let status = serverRefusalMinimum + int offset % refusalClassSize
+    let body = Json.encode { Error = { Code = code; Message = reason } }
+    use response = new HttpResponseMessage(enum<HttpStatusCode> status, Content = new StringContent(body))
+    use handler = new Handler(response)
+    use http = new HttpClient(handler, BaseAddress = Uri "http://example.test/")
+    let actual = Api.read http CancellationToken.None (Reads.sources()) |> Async.RunSynchronously
+    Assert.Equal(Error(BibleAtlas.FSharp.Failure.Read(ReadFailure.Transient(TransientFailure.ServerRefusal(serverStatus status, Some code)))), actual)
+
+[<Property>]
+let ``a user-cancelled HTTP read is distinct from a retryable interruption`` (NonNull reason: NonNull<string>) =
+    use cancellation = new CancellationTokenSource()
+    cancellation.Cancel()
+    use handler = new InterruptedHandler(reason, false)
+    use http = new HttpClient(handler, BaseAddress = Uri "http://example.test/")
+    let actual = Api.read http cancellation.Token (Reads.sources()) |> Async.RunSynchronously
+    Assert.Equal(Error(BibleAtlas.FSharp.Failure.Read ReadFailure.Cancelled), actual)
+
+[<Property>]
+let ``every malformed refusal body preserves its HTTP classification without inventing an error code`` (offset: byte) (server: bool) =
+    let status = (if server then serverRefusalMinimum else clientRefusalMinimum) + int offset % refusalClassSize
+    let body = $"{{\"error\":{{\"code\":\"unknown-{offset}\",\"message\":\"unrecognized\"}}}}"
+    use response = new HttpResponseMessage(enum<HttpStatusCode> status, Content = new StringContent(body))
+    use handler = new Handler(response)
+    use http = new HttpClient(handler, BaseAddress = Uri "http://example.test/")
+    let expected = if server then ReadFailure.Transient(TransientFailure.ServerRefusal(serverStatus status, None)) else ReadFailure.Terminal(TerminalFailure.ClientRefusal(clientStatus status, None))
+    let actual = Api.read http CancellationToken.None (Reads.sources()) |> Async.RunSynchronously
+    Assert.Equal(Error(BibleAtlas.FSharp.Failure.Read expected), actual)
+
+[<Property>]
+let ``unexpected HTTP statuses retain their evidence and invalid codes have server-error retryability`` (offset: uint16) (family: byte) (code: ErrorCode) =
+    let status =
+        match family % 3uy with
+        | 0uy -> informationalMinimum + int offset % refusalClassSize
+        | 1uy -> redirectionMinimum + int offset % refusalClassSize
+        | _ -> afterServerRefusals + int offset % unexpectedExtensionSize
+    let body = Json.encode { Error = { Code = code; Message = "unexpected status" } }
+    use response = new HttpResponseMessage(enum<HttpStatusCode> status, Content = new StringContent(body))
+    use handler = new Handler(response)
+    use http = new HttpClient(handler, BaseAddress = Uri "http://example.test/")
+    let actual = Api.read http CancellationToken.None (Reads.sources()) |> Async.RunSynchronously
+    let expected =
+        if status >= afterServerRefusals then ReadFailure.Transient(TransientFailure.InvalidStatus(enum<HttpStatusCode> status, Some code))
+        else ReadFailure.Terminal(TerminalFailure.UnexpectedStatus(enum<HttpStatusCode> status, Some code))
+    Assert.Equal(Error(BibleAtlas.FSharp.Failure.Read expected), actual)
+
+[<Property(MaxTest = 1)>]
+let ``the application failure vocabulary exposes structured reads and no raw transport string constructor`` () =
+    let actual = FSharpType.GetUnionCases(typeof<Failure>) |> Array.map (fun case -> case.Name, case.GetFields() |> Array.map (fun field -> field.PropertyType) |> Array.toList) |> Array.toList
+    let expected = ["Read", [typeof<ReadFailure>]; "Contract", [typeof<string>]; "ArtifactMoved", [typeof<ArtifactRoot>; typeof<ArtifactRoot>]]
+    Assert.Equal<(string * Type list) list>(expected, actual)
+
+let private clientStatus status =
+    match RefusalStatuses.client status with
+    | Ok status -> status
+    | Error failure -> failwithf "%A" failure
+
+let private serverStatus status =
+    match RefusalStatuses.server status with
+    | Ok status -> status
+    | Error failure -> failwithf "%A" failure
+
+let private clientRefusalMinimum = 400
+let private serverRefusalMinimum = 500
+let private refusalClassSize = 100
+let private informationalMinimum = 100
+let private redirectionMinimum = 300
+let private afterServerRefusals = 600
+let private unexpectedExtensionSize = 400
 
 type Handler(response: HttpResponseMessage) =
     inherit HttpMessageHandler()
     override _.SendAsync(_, _) = System.Threading.Tasks.Task.FromResult response
 
-type InterruptedHandler(reason: string) =
+type InterruptedHandler(reason: string, network: bool) =
     inherit HttpMessageHandler()
-    override _.SendAsync(_, _) = System.Threading.Tasks.Task.FromException<HttpResponseMessage>(System.OperationCanceledException reason)
+    override _.SendAsync(_, _) =
+        let failure: exn = if network then HttpRequestException reason else OperationCanceledException reason
+        System.Threading.Tasks.Task.FromException<HttpResponseMessage>(failure)

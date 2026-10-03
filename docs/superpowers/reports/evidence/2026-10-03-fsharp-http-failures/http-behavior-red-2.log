@@ -1,0 +1,375 @@
+  BibleAtlas.FSharp.ContractGenerator -> /home/donovan/w/CX-FSHARP-wire/client-fsharp.ContractGenerator/bin/Debug/net10.0/BibleAtlas.FSharp.ContractGenerator.dll
+  BibleAtlas.Client.ContractGenerator -> /home/donovan/w/CX-FSHARP-wire/client.ContractGenerator/bin/Debug/net10.0/BibleAtlas.Client.ContractGenerator.dll
+  BibleAtlas.FSharp.Core -> /home/donovan/w/CX-FSHARP-wire/client-fsharp/Core/bin/Debug/net10.0/BibleAtlas.FSharp.Core.dll
+  BibleAtlas.FSharp.Client -> /home/donovan/w/CX-FSHARP-wire/client-fsharp/bin/Debug/net10.0/BibleAtlas.FSharp.Client.dll
+  BibleAtlas.FSharp.Client (Blazor output) -> /home/donovan/w/CX-FSHARP-wire/client-fsharp/bin/Debug/net10.0/wwwroot
+  BibleAtlas.FSharp.Tests -> /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/bin/Debug/net10.0/BibleAtlas.FSharp.Tests.dll
+Test run for /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/bin/Debug/net10.0/BibleAtlas.FSharp.Tests.dll (.NETCoreApp,Version=v10.0)
+A total of 1 test files matched the specified pattern.
+[xUnit.net 00:00:00.00] xUnit.net VSTest Adapter v3.1.4+50e68bbb8b (64-bit .NET 10.0.12)
+[xUnit.net 00:00:00.06]   Discovering: BibleAtlas.FSharp.Tests
+[xUnit.net 00:00:00.10]   Discovered:  BibleAtlas.FSharp.Tests
+[xUnit.net 00:00:00.12]   Starting:    BibleAtlas.FSharp.Tests
+[xUnit.net 00:00:00.36]     BibleAtlas.FSharp.Tests.TransportTests.the application failure vocabulary exposes structured reads and no raw transport string constructor [FAIL]
+[xUnit.net 00:00:00.36]       FsCheck.Xunit.PropertyFailedException : 
+[xUnit.net 00:00:00.36]       Falsifiable, after 1 test (0 shrinks) (4368404976675930868,7395695103566570777). 
+[xUnit.net 00:00:00.36]       Last step was invoked with size of 100 and seed of (10801971102862872802,2047733498449312113):
+[xUnit.net 00:00:00.36]       Original:
+[xUnit.net 00:00:00.36]       <null>
+[xUnit.net 00:00:00.36]       
+[xUnit.net 00:00:00.36]       ---- Assert.Equal() Failure: Collections differ
+[xUnit.net 00:00:00.36]       Expected: [Tuple ("Read", [···]), Tuple ("Contract", [···]), Tuple ("ArtifactMoved", [···])]
+[xUnit.net 00:00:00.36]       Actual:   [Tuple ("Read", [···]), Tuple ("Transport", [···]), Tuple ("Contract", [···]), Tuple ("ArtifactMoved", [···])]
+[xUnit.net 00:00:00.36]       Stack Trace:
+[xUnit.net 00:00:00.36]         
+[xUnit.net 00:00:00.36]         ----- Inner Stack Trace -----
+[xUnit.net 00:00:00.36]         /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/TransportTests.fs(106,0): at BibleAtlas.FSharp.Tests.TransportTests.the application failure vocabulary exposes structured reads and no raw transport string constructor()
+[xUnit.net 00:00:00.36]            at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+[xUnit.net 00:00:00.36]            at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+[xUnit.net 00:00:00.36]         --- End of stack trace from previous location ---
+[xUnit.net 00:00:00.36]         C:\Users\kurts\Projects\FsCheck\src\FsCheck\Runner.fs(595,0): at FsCheck.Runner.invokeAndThrowInner@592-1.Invoke(Object[] o)
+[xUnit.net 00:00:00.36]         /__w/1/s/src/fsharp/src/FSharp.Core/reflect.fs(1230,0): at <StartupCode$FSharp-Core>.$Reflect.Invoke@1230.Invoke(T1 inp)
+[xUnit.net 00:00:00.36]            at System.Lazy`1.ViaFactory(LazyThreadSafetyMode mode)
+[xUnit.net 00:00:00.36]            at System.Lazy`1.ExecutionAndPublication(LazyHelper executionAndPublication, Boolean useDefaultConstructor)
+[xUnit.net 00:00:00.36]            at System.Lazy`1.CreateValue()
+[xUnit.net 00:00:00.36]         C:\Users\kurts\Projects\FsCheck\src\FsCheck\Testable.fs(164,0): at FsCheck.Testable.Prop.safeForce[a](Lazy`1 body)
+[xUnit.net 00:00:00.44]     BibleAtlas.FSharp.Tests.TransportTests.a user-cancelled HTTP read is distinct from a retryable interruption [FAIL]
+[xUnit.net 00:00:00.44]       FsCheck.Xunit.PropertyFailedException : 
+[xUnit.net 00:00:00.44]       Falsifiable, after 1 test (1 shrink) (16442653436774974644,17550897506667646351). 
+[xUnit.net 00:00:00.44]       Last step was invoked with size of 2 and seed of (4911601855066485917,10438967395688611451):
+[xUnit.net 00:00:00.44]       Original:
+[xUnit.net 00:00:00.44]       NonNull "w"
+[xUnit.net 00:00:00.44]       Shrunk:
+[xUnit.net 00:00:00.44]       NonNull ""
+[xUnit.net 00:00:00.44]       
+[xUnit.net 00:00:00.44]       ---- Assert.Equal() Failure: Values differ
+[xUnit.net 00:00:00.44]       Expected: Microsoft.FSharp.Core.FSharpResult`2[BibleAtlas.FSharp.Contract.SourcesDocument,BibleAtlas.FSharp.Failure]
+[xUnit.net 00:00:00.44]       Actual:   Microsoft.FSharp.Core.FSharpResult`2[BibleAtlas.FSharp.Contract.SourcesDocument,BibleAtlas.FSharp.Failure]
+[xUnit.net 00:00:00.44]       Stack Trace:
+[xUnit.net 00:00:00.44]         
+[xUnit.net 00:00:00.44]         ----- Inner Stack Trace -----
+[xUnit.net 00:00:00.44]         /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/TransportTests.fs(75,0): at BibleAtlas.FSharp.Tests.TransportTests.a user-cancelled HTTP read is distinct from a retryable interruption(NonNull`1 _arg4)
+[xUnit.net 00:00:00.44]            at InvokeStub_TransportTests.a user-cancelled HTTP read is distinct from a retryable interruption(Object, Span`1)
+[xUnit.net 00:00:00.44]            at System.Reflection.MethodBaseInvoker.InvokeWithOneArg(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
+[xUnit.net 00:00:00.44]         --- End of stack trace from previous location ---
+[xUnit.net 00:00:00.44]         C:\Users\kurts\Projects\FsCheck\src\FsCheck\Runner.fs(595,0): at FsCheck.Runner.invokeAndThrowInner@592-1.Invoke(Object[] o)
+[xUnit.net 00:00:00.44]         /__w/1/s/src/fsharp/src/FSharp.Core/reflect.fs(1230,0): at <StartupCode$FSharp-Core>.$Reflect.Invoke@1230.Invoke(T1 inp)
+[xUnit.net 00:00:00.44]            at System.Lazy`1.ViaFactory(LazyThreadSafetyMode mode)
+[xUnit.net 00:00:00.44]            at System.Lazy`1.ExecutionAndPublication(LazyHelper executionAndPublication, Boolean useDefaultConstructor)
+[xUnit.net 00:00:00.44]            at System.Lazy`1.CreateValue()
+[xUnit.net 00:00:00.44]         C:\Users\kurts\Projects\FsCheck\src\FsCheck\Testable.fs(164,0): at FsCheck.Testable.Prop.safeForce[a](Lazy`1 body)
+[xUnit.net 00:00:00.47]     BibleAtlas.FSharp.Tests.TransportTests.every client refusal retains its exact admitted status and published error code [FAIL]
+[xUnit.net 00:00:00.47]       FsCheck.Xunit.PropertyFailedException : 
+[xUnit.net 00:00:00.47]       Falsifiable, after 1 test (1 shrink) (2163910215846976228,11015639082440428761). 
+[xUnit.net 00:00:00.47]       Last step was invoked with size of 2 and seed of (4310734923436539949,13880214986390590341):
+[xUnit.net 00:00:00.47]       Original:
+[xUnit.net 00:00:00.47]       (214uy, Internal, NonNull "")
+[xUnit.net 00:00:00.47]       Shrunk:
+[xUnit.net 00:00:00.47]       (0uy, Internal, NonNull "")
+[xUnit.net 00:00:00.47]       
+[xUnit.net 00:00:00.47]       ---- Assert.Equal() Failure: Values differ
+[xUnit.net 00:00:00.47]       Expected: Microsoft.FSharp.Core.FSharpResult`2[BibleAtlas.FSharp.Contract.NodeRecord,BibleAtlas.FSharp.Failure]
+[xUnit.net 00:00:00.47]       Actual:   Microsoft.FSharp.Core.FSharpResult`2[BibleAtlas.FSharp.Contract.NodeRecord,BibleAtlas.FSharp.Failure]
+[xUnit.net 00:00:00.47]       Stack Trace:
+[xUnit.net 00:00:00.47]         
+[xUnit.net 00:00:00.47]         ----- Inner Stack Trace -----
+[xUnit.net 00:00:00.47]         /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/TransportTests.fs(48,0): at BibleAtlas.FSharp.Tests.TransportTests.every client refusal retains its exact admitted status and published error code(Byte offset, ErrorCode code, NonNull`1 _arg1)
+[xUnit.net 00:00:00.47]            at InvokeStub_TransportTests.every client refusal retains its exact admitted status and published error code(Object, Span`1)
+[xUnit.net 00:00:00.47]            at System.Reflection.MethodBaseInvoker.InvokeWithFewArgs(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
+[xUnit.net 00:00:00.47]         --- End of stack trace from previous location ---
+[xUnit.net 00:00:00.47]         C:\Users\kurts\Projects\FsCheck\src\FsCheck\Runner.fs(595,0): at FsCheck.Runner.invokeAndThrowInner@592-1.Invoke(Object[] o)
+[xUnit.net 00:00:00.47]         /__w/1/s/src/fsharp/src/FSharp.Core/reflect.fs(1230,0): at <StartupCode$FSharp-Core>.$Reflect.Invoke@1230.Invoke(T1 inp)
+[xUnit.net 00:00:00.47]            at System.Lazy`1.ViaFactory(LazyThreadSafetyMode mode)
+[xUnit.net 00:00:00.47]            at System.Lazy`1.ExecutionAndPublication(LazyHelper executionAndPublication, Boolean useDefaultConstructor)
+[xUnit.net 00:00:00.47]            at System.Lazy`1.CreateValue()
+[xUnit.net 00:00:00.47]         C:\Users\kurts\Projects\FsCheck\src\FsCheck\Testable.fs(164,0): at FsCheck.Testable.Prop.safeForce[a](Lazy`1 body)
+[xUnit.net 00:00:00.48]     BibleAtlas.FSharp.Tests.TransportTests.every malformed refusal body preserves its HTTP classification without inventing an error code [FAIL]
+[xUnit.net 00:00:00.48]       FsCheck.Xunit.PropertyFailedException : 
+[xUnit.net 00:00:00.48]       Falsifiable, after 1 test (1 shrink) (8414767455373802027,8614404135374558547). 
+[xUnit.net 00:00:00.48]       Last step was invoked with size of 2 and seed of (2112728816067916508,9750488649142519029):
+[xUnit.net 00:00:00.48]       Original:
+[xUnit.net 00:00:00.48]       (83uy, true)
+[xUnit.net 00:00:00.48]       Shrunk:
+[xUnit.net 00:00:00.48]       (0uy, true)
+[xUnit.net 00:00:00.48]       
+[xUnit.net 00:00:00.48]       ---- Assert.Equal() Failure: Values differ
+[xUnit.net 00:00:00.48]       Expected: Microsoft.FSharp.Core.FSharpResult`2[BibleAtlas.FSharp.Contract.SourcesDocument,BibleAtlas.FSharp.Failure]
+[xUnit.net 00:00:00.48]       Actual:   Microsoft.FSharp.Core.FSharpResult`2[BibleAtlas.FSharp.Contract.SourcesDocument,BibleAtlas.FSharp.Failure]
+[xUnit.net 00:00:00.48]       Stack Trace:
+[xUnit.net 00:00:00.48]         
+[xUnit.net 00:00:00.48]         ----- Inner Stack Trace -----
+[xUnit.net 00:00:00.48]         /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/TransportTests.fs(86,0): at BibleAtlas.FSharp.Tests.TransportTests.every malformed refusal body preserves its HTTP classification without inventing an error code(Byte offset, Boolean server)
+[xUnit.net 00:00:00.48]            at InvokeStub_TransportTests.every malformed refusal body preserves its HTTP classification without inventing an error code(Object, Span`1)
+[xUnit.net 00:00:00.48]            at System.Reflection.MethodBaseInvoker.InvokeWithFewArgs(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
+[xUnit.net 00:00:00.48]         --- End of stack trace from previous location ---
+[xUnit.net 00:00:00.48]         C:\Users\kurts\Projects\FsCheck\src\FsCheck\Runner.fs(595,0): at FsCheck.Runner.invokeAndThrowInner@592-1.Invoke(Object[] o)
+[xUnit.net 00:00:00.48]         /__w/1/s/src/fsharp/src/FSharp.Core/reflect.fs(1230,0): at <StartupCode$FSharp-Core>.$Reflect.Invoke@1230.Invoke(T1 inp)
+[xUnit.net 00:00:00.48]            at System.Lazy`1.ViaFactory(LazyThreadSafetyMode mode)
+[xUnit.net 00:00:00.48]            at System.Lazy`1.ExecutionAndPublication(LazyHelper executionAndPublication, Boolean useDefaultConstructor)
+[xUnit.net 00:00:00.48]            at System.Lazy`1.CreateValue()
+[xUnit.net 00:00:00.48]         C:\Users\kurts\Projects\FsCheck\src\FsCheck\Testable.fs(164,0): at FsCheck.Testable.Prop.safeForce[a](Lazy`1 body)
+[xUnit.net 00:00:00.48]     BibleAtlas.FSharp.Tests.TransportTests.an interrupted HTTP request completes with an explicit retryable failure [FAIL]
+[xUnit.net 00:00:00.48]       FsCheck.Xunit.PropertyFailedException : 
+[xUnit.net 00:00:00.48]       Falsifiable, after 1 test (2 shrinks) (2669053166024642892,11995401540159852833). 
+[xUnit.net 00:00:00.48]       Last step was invoked with size of 2 and seed of (2723603754670590249,3510703301921162781):
+[xUnit.net 00:00:00.48]       Original:
+[xUnit.net 00:00:00.48]       NonNull "M\028" (At least one control character has been escaped as a char code, e.g. \023)
+[xUnit.net 00:00:00.48]       Shrunk:
+[xUnit.net 00:00:00.48]       NonNull ""
+[xUnit.net 00:00:00.48]       
+[xUnit.net 00:00:00.48]       ---- Assert.Equal() Failure: Values differ
+[xUnit.net 00:00:00.48]       Expected: Microsoft.FSharp.Core.FSharpResult`2[BibleAtlas.FSharp.Contract.SourcesDocument,BibleAtlas.FSharp.Failure]
+[xUnit.net 00:00:00.48]       Actual:   Microsoft.FSharp.Core.FSharpResult`2[BibleAtlas.FSharp.Contract.SourcesDocument,BibleAtlas.FSharp.Failure]
+[xUnit.net 00:00:00.48]       Stack Trace:
+[xUnit.net 00:00:00.48]         
+[xUnit.net 00:00:00.48]         ----- Inner Stack Trace -----
+[xUnit.net 00:00:00.48]         /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/TransportTests.fs(55,0): at BibleAtlas.FSharp.Tests.TransportTests.an interrupted HTTP request completes with an explicit retryable failure(NonNull`1 _arg2)
+[xUnit.net 00:00:00.48]            at InvokeStub_TransportTests.an interrupted HTTP request completes with an explicit retryable failure(Object, Span`1)
+[xUnit.net 00:00:00.48]            at System.Reflection.MethodBaseInvoker.InvokeWithOneArg(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
+[xUnit.net 00:00:00.48]         --- End of stack trace from previous location ---
+[xUnit.net 00:00:00.48]         C:\Users\kurts\Projects\FsCheck\src\FsCheck\Runner.fs(595,0): at FsCheck.Runner.invokeAndThrowInner@592-1.Invoke(Object[] o)
+[xUnit.net 00:00:00.48]         /__w/1/s/src/fsharp/src/FSharp.Core/reflect.fs(1230,0): at <StartupCode$FSharp-Core>.$Reflect.Invoke@1230.Invoke(T1 inp)
+[xUnit.net 00:00:00.48]            at System.Lazy`1.ViaFactory(LazyThreadSafetyMode mode)
+[xUnit.net 00:00:00.48]            at System.Lazy`1.ExecutionAndPublication(LazyHelper executionAndPublication, Boolean useDefaultConstructor)
+[xUnit.net 00:00:00.48]            at System.Lazy`1.CreateValue()
+[xUnit.net 00:00:00.48]         C:\Users\kurts\Projects\FsCheck\src\FsCheck\Testable.fs(164,0): at FsCheck.Testable.Prop.safeForce[a](Lazy`1 body)
+[xUnit.net 00:00:00.48]     BibleAtlas.FSharp.Tests.TransportTests.every server refusal retains its exact admitted status and published error code [FAIL]
+[xUnit.net 00:00:00.48]       FsCheck.Xunit.PropertyFailedException : 
+[xUnit.net 00:00:00.48]       Falsifiable, after 1 test (2 shrinks) (10690913293563443261,17258363037241821005). 
+[xUnit.net 00:00:00.48]       Last step was invoked with size of 2 and seed of (4087236153214274069,14480389594116285613):
+[xUnit.net 00:00:00.48]       Original:
+[xUnit.net 00:00:00.48]       (5uy, Internal, NonNull "?")
+[xUnit.net 00:00:00.48]       Shrunk:
+[xUnit.net 00:00:00.48]       (0uy, Internal, NonNull "")
+[xUnit.net 00:00:00.48]       
+[xUnit.net 00:00:00.48]       ---- Assert.Equal() Failure: Values differ
+[xUnit.net 00:00:00.48]       Expected: Microsoft.FSharp.Core.FSharpResult`2[BibleAtlas.FSharp.Contract.SourcesDocument,BibleAtlas.FSharp.Failure]
+[xUnit.net 00:00:00.48]       Actual:   Microsoft.FSharp.Core.FSharpResult`2[BibleAtlas.FSharp.Contract.SourcesDocument,BibleAtlas.FSharp.Failure]
+[xUnit.net 00:00:00.48]       Stack Trace:
+[xUnit.net 00:00:00.48]         
+[xUnit.net 00:00:00.48]         ----- Inner Stack Trace -----
+[xUnit.net 00:00:00.48]         /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/TransportTests.fs(66,0): at BibleAtlas.FSharp.Tests.TransportTests.every server refusal retains its exact admitted status and published error code(Byte offset, ErrorCode code, NonNull`1 _arg3)
+[xUnit.net 00:00:00.48]            at InvokeStub_TransportTests.every server refusal retains its exact admitted status and published error code(Object, Span`1)
+[xUnit.net 00:00:00.48]            at System.Reflection.MethodBaseInvoker.InvokeWithFewArgs(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
+[xUnit.net 00:00:00.48]         --- End of stack trace from previous location ---
+[xUnit.net 00:00:00.48]         C:\Users\kurts\Projects\FsCheck\src\FsCheck\Runner.fs(595,0): at FsCheck.Runner.invokeAndThrowInner@592-1.Invoke(Object[] o)
+[xUnit.net 00:00:00.48]         /__w/1/s/src/fsharp/src/FSharp.Core/reflect.fs(1230,0): at <StartupCode$FSharp-Core>.$Reflect.Invoke@1230.Invoke(T1 inp)
+[xUnit.net 00:00:00.48]            at System.Lazy`1.ViaFactory(LazyThreadSafetyMode mode)
+[xUnit.net 00:00:00.48]            at System.Lazy`1.ExecutionAndPublication(LazyHelper executionAndPublication, Boolean useDefaultConstructor)
+[xUnit.net 00:00:00.48]            at System.Lazy`1.CreateValue()
+[xUnit.net 00:00:00.48]         C:\Users\kurts\Projects\FsCheck\src\FsCheck\Testable.fs(164,0): at FsCheck.Testable.Prop.safeForce[a](Lazy`1 body)
+  Passed BibleAtlas.FSharp.Tests.TransportTests.a typed HTTP read refuses a record missing its required fields [128 ms]
+  Passed BibleAtlas.FSharp.Tests.TransportTests.a typed HTTP read returns the whole element page [28 ms]
+  Failed BibleAtlas.FSharp.Tests.TransportTests.the application failure vocabulary exposes structured reads and no raw transport string constructor [11 ms]
+  Error Message:
+   FsCheck.Xunit.PropertyFailedException : 
+Falsifiable, after 1 test (0 shrinks) (4368404976675930868,7395695103566570777). 
+Last step was invoked with size of 100 and seed of (10801971102862872802,2047733498449312113):
+Original:
+<null>
+
+---- Assert.Equal() Failure: Collections differ
+Expected: [Tuple ("Read", [···]), Tuple ("Contract", [···]), Tuple ("ArtifactMoved", [···])]
+Actual:   [Tuple ("Read", [···]), Tuple ("Transport", [···]), Tuple ("Contract", [···]), Tuple ("ArtifactMoved", [···])]
+  Stack Trace:
+  
+----- Inner Stack Trace -----
+   at BibleAtlas.FSharp.Tests.TransportTests.the application failure vocabulary exposes structured reads and no raw transport string constructor() in /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/TransportTests.fs:line 106
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+--- End of stack trace from previous location ---
+   at FsCheck.Runner.invokeAndThrowInner@592-1.Invoke(Object[] o) in C:\Users\kurts\Projects\FsCheck\src\FsCheck\Runner.fs:line 595
+   at <StartupCode$FSharp-Core>.$Reflect.Invoke@1230.Invoke(T1 inp) in /__w/1/s/src/fsharp/src/FSharp.Core/reflect.fs:line 1230
+   at System.Lazy`1.ViaFactory(LazyThreadSafetyMode mode)
+   at System.Lazy`1.ExecutionAndPublication(LazyHelper executionAndPublication, Boolean useDefaultConstructor)
+   at System.Lazy`1.CreateValue()
+   at FsCheck.Testable.Prop.safeForce[a](Lazy`1 body) in C:\Users\kurts\Projects\FsCheck\src\FsCheck\Testable.fs:line 164
+  Passed BibleAtlas.FSharp.Tests.TransportTests.generated requests compose escaped paths and the contract enum spellings [62 ms]
+  Failed BibleAtlas.FSharp.Tests.TransportTests.a user-cancelled HTTP read is distinct from a retryable interruption [9 ms]
+  Error Message:
+   FsCheck.Xunit.PropertyFailedException : 
+Falsifiable, after 1 test (1 shrink) (16442653436774974644,17550897506667646351). 
+Last step was invoked with size of 2 and seed of (4911601855066485917,10438967395688611451):
+Original:
+NonNull "w"
+Shrunk:
+NonNull ""
+
+---- Assert.Equal() Failure: Values differ
+Expected: Microsoft.FSharp.Core.FSharpResult`2[BibleAtlas.FSharp.Contract.SourcesDocument,BibleAtlas.FSharp.Failure]
+Actual:   Microsoft.FSharp.Core.FSharpResult`2[BibleAtlas.FSharp.Contract.SourcesDocument,BibleAtlas.FSharp.Failure]
+  Stack Trace:
+  
+----- Inner Stack Trace -----
+   at BibleAtlas.FSharp.Tests.TransportTests.a user-cancelled HTTP read is distinct from a retryable interruption(NonNull`1 _arg4) in /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/TransportTests.fs:line 75
+   at InvokeStub_TransportTests.a user-cancelled HTTP read is distinct from a retryable interruption(Object, Span`1)
+   at System.Reflection.MethodBaseInvoker.InvokeWithOneArg(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
+--- End of stack trace from previous location ---
+   at FsCheck.Runner.invokeAndThrowInner@592-1.Invoke(Object[] o) in C:\Users\kurts\Projects\FsCheck\src\FsCheck\Runner.fs:line 595
+   at <StartupCode$FSharp-Core>.$Reflect.Invoke@1230.Invoke(T1 inp) in /__w/1/s/src/fsharp/src/FSharp.Core/reflect.fs:line 1230
+   at System.Lazy`1.ViaFactory(LazyThreadSafetyMode mode)
+   at System.Lazy`1.ExecutionAndPublication(LazyHelper executionAndPublication, Boolean useDefaultConstructor)
+   at System.Lazy`1.CreateValue()
+   at FsCheck.Testable.Prop.safeForce[a](Lazy`1 body) in C:\Users\kurts\Projects\FsCheck\src\FsCheck\Testable.fs:line 164
+  Failed BibleAtlas.FSharp.Tests.TransportTests.every client refusal retains its exact admitted status and published error code [33 ms]
+  Error Message:
+   FsCheck.Xunit.PropertyFailedException : 
+Falsifiable, after 1 test (1 shrink) (2163910215846976228,11015639082440428761). 
+Last step was invoked with size of 2 and seed of (4310734923436539949,13880214986390590341):
+Original:
+(214uy, Internal, NonNull "")
+Shrunk:
+(0uy, Internal, NonNull "")
+
+---- Assert.Equal() Failure: Values differ
+Expected: Microsoft.FSharp.Core.FSharpResult`2[BibleAtlas.FSharp.Contract.NodeRecord,BibleAtlas.FSharp.Failure]
+Actual:   Microsoft.FSharp.Core.FSharpResult`2[BibleAtlas.FSharp.Contract.NodeRecord,BibleAtlas.FSharp.Failure]
+  Stack Trace:
+  
+----- Inner Stack Trace -----
+   at BibleAtlas.FSharp.Tests.TransportTests.every client refusal retains its exact admitted status and published error code(Byte offset, ErrorCode code, NonNull`1 _arg1) in /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/TransportTests.fs:line 48
+   at InvokeStub_TransportTests.every client refusal retains its exact admitted status and published error code(Object, Span`1)
+   at System.Reflection.MethodBaseInvoker.InvokeWithFewArgs(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
+--- End of stack trace from previous location ---
+   at FsCheck.Runner.invokeAndThrowInner@592-1.Invoke(Object[] o) in C:\Users\kurts\Projects\FsCheck\src\FsCheck\Runner.fs:line 595
+   at <StartupCode$FSharp-Core>.$Reflect.Invoke@1230.Invoke(T1 inp) in /__w/1/s/src/fsharp/src/FSharp.Core/reflect.fs:line 1230
+   at System.Lazy`1.ViaFactory(LazyThreadSafetyMode mode)
+   at System.Lazy`1.ExecutionAndPublication(LazyHelper executionAndPublication, Boolean useDefaultConstructor)
+   at System.Lazy`1.CreateValue()
+   at FsCheck.Testable.Prop.safeForce[a](Lazy`1 body) in C:\Users\kurts\Projects\FsCheck\src\FsCheck\Testable.fs:line 164
+  Failed BibleAtlas.FSharp.Tests.TransportTests.every malformed refusal body preserves its HTTP classification without inventing an error code [3 ms]
+  Error Message:
+   FsCheck.Xunit.PropertyFailedException : 
+Falsifiable, after 1 test (1 shrink) (8414767455373802027,8614404135374558547). 
+Last step was invoked with size of 2 and seed of (2112728816067916508,9750488649142519029):
+Original:
+(83uy, true)
+Shrunk:
+(0uy, true)
+
+---- Assert.Equal() Failure: Values differ
+Expected: Microsoft.FSharp.Core.FSharpResult`2[BibleAtlas.FSharp.Contract.SourcesDocument,BibleAtlas.FSharp.Failure]
+Actual:   Microsoft.FSharp.Core.FSharpResult`2[BibleAtlas.FSharp.Contract.SourcesDocument,BibleAtlas.FSharp.Failure]
+  Stack Trace:
+  
+----- Inner Stack Trace -----
+   at BibleAtlas.FSharp.Tests.TransportTests.every malformed refusal body preserves its HTTP classification without inventing an error code(Byte offset, Boolean server) in /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/TransportTests.fs:line 86
+   at InvokeStub_TransportTests.every malformed refusal body preserves its HTTP classification without inventing an error code(Object, Span`1)
+   at System.Reflection.MethodBaseInvoker.InvokeWithFewArgs(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
+--- End of stack trace from previous location ---
+   at FsCheck.Runner.invokeAndThrowInner@592-1.Invoke(Object[] o) in C:\Users\kurts\Projects\FsCheck\src\FsCheck\Runner.fs:line 595
+   at <StartupCode$FSharp-Core>.$Reflect.Invoke@1230.Invoke(T1 inp) in /__w/1/s/src/fsharp/src/FSharp.Core/reflect.fs:line 1230
+   at System.Lazy`1.ViaFactory(LazyThreadSafetyMode mode)
+   at System.Lazy`1.ExecutionAndPublication(LazyHelper executionAndPublication, Boolean useDefaultConstructor)
+   at System.Lazy`1.CreateValue()
+   at FsCheck.Testable.Prop.safeForce[a](Lazy`1 body) in C:\Users\kurts\Projects\FsCheck\src\FsCheck\Testable.fs:line 164
+  Failed BibleAtlas.FSharp.Tests.TransportTests.an interrupted HTTP request completes with an explicit retryable failure [< 1 ms]
+  Error Message:
+   FsCheck.Xunit.PropertyFailedException : 
+Falsifiable, after 1 test (2 shrinks) (2669053166024642892,11995401540159852833). 
+Last step was invoked with size of 2 and seed of (2723603754670590249,3510703301921162781):
+Original:
+NonNull "M\028" (At least one control character has been escaped as a char code, e.g. \023)
+Shrunk:
+NonNull ""
+
+---- Assert.Equal() Failure: Values differ
+Expected: Microsoft.FSharp.Core.FSharpResult`2[BibleAtlas.FSharp.Contract.SourcesDocument,BibleAtlas.FSharp.Failure]
+Actual:   Microsoft.FSharp.Core.FSharpResult`2[BibleAtlas.FSharp.Contract.SourcesDocument,BibleAtlas.FSharp.Failure]
+  Stack Trace:
+  
+----- Inner Stack Trace -----
+   at BibleAtlas.FSharp.Tests.TransportTests.an interrupted HTTP request completes with an explicit retryable failure(NonNull`1 _arg2) in /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/TransportTests.fs:line 55
+   at InvokeStub_TransportTests.an interrupted HTTP request completes with an explicit retryable failure(Object, Span`1)
+   at System.Reflection.MethodBaseInvoker.InvokeWithOneArg(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
+--- End of stack trace from previous location ---
+   at FsCheck.Runner.invokeAndThrowInner@592-1.Invoke(Object[] o) in C:\Users\kurts\Projects\FsCheck\src\FsCheck\Runner.fs:line 595
+   at <StartupCode$FSharp-Core>.$Reflect.Invoke@1230.Invoke(T1 inp) in /__w/1/s/src/fsharp/src/FSharp.Core/reflect.fs:line 1230
+   at System.Lazy`1.ViaFactory(LazyThreadSafetyMode mode)
+   at System.Lazy`1.ExecutionAndPublication(LazyHelper executionAndPublication, Boolean useDefaultConstructor)
+   at System.Lazy`1.CreateValue()
+   at FsCheck.Testable.Prop.safeForce[a](Lazy`1 body) in C:\Users\kurts\Projects\FsCheck\src\FsCheck\Testable.fs:line 164
+  Failed BibleAtlas.FSharp.Tests.TransportTests.every server refusal retains its exact admitted status and published error code [1 ms]
+  Error Message:
+   FsCheck.Xunit.PropertyFailedException : 
+Falsifiable, after 1 test (2 shrinks) (10690913293563443261,17258363037241821005). 
+Last step was invoked with size of 2 and seed of (4087236153214274069,14480389594116285613):
+Original:
+(5uy, Internal, NonNull "?")
+Shrunk:
+(0uy, Internal, NonNull "")
+
+---- Assert.Equal() Failure: Values differ
+Expected: Microsoft.FSharp.Core.FSharpResult`2[BibleAtlas.FSharp.Contract.SourcesDocument,BibleAtlas.FSharp.Failure]
+Actual:   Microsoft.FSharp.Core.FSharpResult`2[BibleAtlas.FSharp.Contract.SourcesDocument,BibleAtlas.FSharp.Failure]
+  Stack Trace:
+  
+----- Inner Stack Trace -----
+   at BibleAtlas.FSharp.Tests.TransportTests.every server refusal retains its exact admitted status and published error code(Byte offset, ErrorCode code, NonNull`1 _arg3) in /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/TransportTests.fs:line 66
+   at InvokeStub_TransportTests.every server refusal retains its exact admitted status and published error code(Object, Span`1)
+   at System.Reflection.MethodBaseInvoker.InvokeWithFewArgs(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
+--- End of stack trace from previous location ---
+   at FsCheck.Runner.invokeAndThrowInner@592-1.Invoke(Object[] o) in C:\Users\kurts\Projects\FsCheck\src\FsCheck\Runner.fs:line 595
+   at <StartupCode$FSharp-Core>.$Reflect.Invoke@1230.Invoke(T1 inp) in /__w/1/s/src/fsharp/src/FSharp.Core/reflect.fs:line 1230
+   at System.Lazy`1.ViaFactory(LazyThreadSafetyMode mode)
+   at System.Lazy`1.ExecutionAndPublication(LazyHelper executionAndPublication, Boolean useDefaultConstructor)
+   at System.Lazy`1.CreateValue()
+   at FsCheck.Testable.Prop.safeForce[a](Lazy`1 body) in C:\Users\kurts\Projects\FsCheck\src\FsCheck\Testable.fs:line 164
+[xUnit.net 00:00:00.50]     BibleAtlas.FSharp.Tests.TransportTests.an unexpected HTTP status remains a terminal refusal with its exact received evidence [FAIL]
+[xUnit.net 00:00:00.50]       FsCheck.Xunit.PropertyFailedException : 
+[xUnit.net 00:00:00.50]       Falsifiable, after 1 test (1 shrink) (17298969778863481892,11176763724179302191). 
+[xUnit.net 00:00:00.50]       Last step was invoked with size of 2 and seed of (16935136021240242178,1328780387184009309):
+[xUnit.net 00:00:00.50]       Original:
+[xUnit.net 00:00:00.50]       (0us, 122uy, BadScope)
+[xUnit.net 00:00:00.50]       Shrunk:
+[xUnit.net 00:00:00.50]       (0us, 0uy, BadScope)
+[xUnit.net 00:00:00.50]       
+[xUnit.net 00:00:00.50]       ---- Assert.Equal() Failure: Values differ
+[xUnit.net 00:00:00.50]       Expected: Microsoft.FSharp.Core.FSharpResult`2[BibleAtlas.FSharp.Contract.SourcesDocument,BibleAtlas.FSharp.Failure]
+[xUnit.net 00:00:00.50]       Actual:   Microsoft.FSharp.Core.FSharpResult`2[BibleAtlas.FSharp.Contract.SourcesDocument,BibleAtlas.FSharp.Failure]
+[xUnit.net 00:00:00.50]       Stack Trace:
+[xUnit.net 00:00:00.50]         
+[xUnit.net 00:00:00.50]         ----- Inner Stack Trace -----
+[xUnit.net 00:00:00.50]         /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/TransportTests.fs(100,0): at BibleAtlas.FSharp.Tests.TransportTests.an unexpected HTTP status remains a terminal refusal with its exact received evidence(UInt16 offset, Byte family, ErrorCode code)
+[xUnit.net 00:00:00.50]            at InvokeStub_TransportTests.an unexpected HTTP status remains a terminal refusal with its exact received evidence(Object, Span`1)
+[xUnit.net 00:00:00.50]            at System.Reflection.MethodBaseInvoker.InvokeWithFewArgs(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
+[xUnit.net 00:00:00.50]         --- End of stack trace from previous location ---
+[xUnit.net 00:00:00.50]         C:\Users\kurts\Projects\FsCheck\src\FsCheck\Runner.fs(595,0): at FsCheck.Runner.invokeAndThrowInner@592-1.Invoke(Object[] o)
+[xUnit.net 00:00:00.50]         /__w/1/s/src/fsharp/src/FSharp.Core/reflect.fs(1230,0): at <StartupCode$FSharp-Core>.$Reflect.Invoke@1230.Invoke(T1 inp)
+[xUnit.net 00:00:00.50]            at System.Lazy`1.ViaFactory(LazyThreadSafetyMode mode)
+[xUnit.net 00:00:00.50]            at System.Lazy`1.ExecutionAndPublication(LazyHelper executionAndPublication, Boolean useDefaultConstructor)
+[xUnit.net 00:00:00.50]            at System.Lazy`1.CreateValue()
+[xUnit.net 00:00:00.50]         C:\Users\kurts\Projects\FsCheck\src\FsCheck\Testable.fs(164,0): at FsCheck.Testable.Prop.safeForce[a](Lazy`1 body)
+[xUnit.net 00:00:00.50]   Finished:    BibleAtlas.FSharp.Tests
+  Failed BibleAtlas.FSharp.Tests.TransportTests.an unexpected HTTP status remains a terminal refusal with its exact received evidence [3 ms]
+  Error Message:
+   FsCheck.Xunit.PropertyFailedException : 
+Falsifiable, after 1 test (1 shrink) (17298969778863481892,11176763724179302191). 
+Last step was invoked with size of 2 and seed of (16935136021240242178,1328780387184009309):
+Original:
+(0us, 122uy, BadScope)
+Shrunk:
+(0us, 0uy, BadScope)
+
+---- Assert.Equal() Failure: Values differ
+Expected: Microsoft.FSharp.Core.FSharpResult`2[BibleAtlas.FSharp.Contract.SourcesDocument,BibleAtlas.FSharp.Failure]
+Actual:   Microsoft.FSharp.Core.FSharpResult`2[BibleAtlas.FSharp.Contract.SourcesDocument,BibleAtlas.FSharp.Failure]
+  Stack Trace:
+  
+----- Inner Stack Trace -----
+   at BibleAtlas.FSharp.Tests.TransportTests.an unexpected HTTP status remains a terminal refusal with its exact received evidence(UInt16 offset, Byte family, ErrorCode code) in /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/TransportTests.fs:line 100
+   at InvokeStub_TransportTests.an unexpected HTTP status remains a terminal refusal with its exact received evidence(Object, Span`1)
+   at System.Reflection.MethodBaseInvoker.InvokeWithFewArgs(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
+--- End of stack trace from previous location ---
+   at FsCheck.Runner.invokeAndThrowInner@592-1.Invoke(Object[] o) in C:\Users\kurts\Projects\FsCheck\src\FsCheck\Runner.fs:line 595
+   at <StartupCode$FSharp-Core>.$Reflect.Invoke@1230.Invoke(T1 inp) in /__w/1/s/src/fsharp/src/FSharp.Core/reflect.fs:line 1230
+   at System.Lazy`1.ViaFactory(LazyThreadSafetyMode mode)
+   at System.Lazy`1.ExecutionAndPublication(LazyHelper executionAndPublication, Boolean useDefaultConstructor)
+   at System.Lazy`1.CreateValue()
+   at FsCheck.Testable.Prop.safeForce[a](Lazy`1 body) in C:\Users\kurts\Projects\FsCheck\src\FsCheck\Testable.fs:line 164
+
+Test Run Failed.
+Total tests: 10
+     Passed: 3
+     Failed: 7
+ Total time: 0.7905 Seconds

@@ -1,0 +1,58 @@
+status-red.log
+[xUnit.net 00:00:00.26]     BibleAtlas.FSharp.Tests.Domain.StatusLaws.server refusal admission preserves exactly the whole 500 through 599 range [FAIL]
+[xUnit.net 00:00:00.27]     BibleAtlas.FSharp.Tests.Domain.StatusLaws.client refusal admission preserves exactly the whole 400 through 499 range [FAIL]
+[xUnit.net 00:00:00.27]     BibleAtlas.FSharp.Tests.Domain.StatusLaws.every code in each refusal range is preserved at its distinct door [FAIL]
+   FsCheck.Xunit.PropertyFailedException : 
+Falsifiable, after 1 test (2 shrinks) (15072026353190660682,6424661520511411413). 
+Last step was invoked with size of 2 and seed of (15131924076072513523,11040097061757606765):
+Original:
+   FsCheck.Xunit.PropertyFailedException : 
+Falsifiable, after 1 test (1 shrink) (418285611659870536,12657322261692024849). 
+Last step was invoked with size of 2 and seed of (1525323545863192094,3350311683553213291):
+Original:
+   FsCheck.Xunit.PropertyFailedException : 
+Falsifiable, after 1 test (1 shrink) (18041765332149263289,3939974876724311369). 
+Last step was invoked with size of 2 and seed of (3809064307052288739,8038253277097119431):
+Original:
+http-behavior-red-2.log
+[xUnit.net 00:00:00.36]     BibleAtlas.FSharp.Tests.TransportTests.the application failure vocabulary exposes structured reads and no raw transport string constructor [FAIL]
+[xUnit.net 00:00:00.44]     BibleAtlas.FSharp.Tests.TransportTests.a user-cancelled HTTP read is distinct from a retryable interruption [FAIL]
+[xUnit.net 00:00:00.47]     BibleAtlas.FSharp.Tests.TransportTests.every client refusal retains its exact admitted status and published error code [FAIL]
+[xUnit.net 00:00:00.48]     BibleAtlas.FSharp.Tests.TransportTests.every malformed refusal body preserves its HTTP classification without inventing an error code [FAIL]
+[xUnit.net 00:00:00.48]     BibleAtlas.FSharp.Tests.TransportTests.an interrupted HTTP request completes with an explicit retryable failure [FAIL]
+[xUnit.net 00:00:00.48]     BibleAtlas.FSharp.Tests.TransportTests.every server refusal retains its exact admitted status and published error code [FAIL]
+   FsCheck.Xunit.PropertyFailedException : 
+Falsifiable, after 1 test (0 shrinks) (4368404976675930868,7395695103566570777). 
+Last step was invoked with size of 100 and seed of (10801971102862872802,2047733498449312113):
+Original:
+   FsCheck.Xunit.PropertyFailedException : 
+Falsifiable, after 1 test (1 shrink) (16442653436774974644,17550897506667646351). 
+Last step was invoked with size of 2 and seed of (4911601855066485917,10438967395688611451):
+Original:
+   FsCheck.Xunit.PropertyFailedException : 
+Falsifiable, after 1 test (1 shrink) (2163910215846976228,11015639082440428761). 
+Last step was invoked with size of 2 and seed of (4310734923436539949,13880214986390590341):
+Original:
+   FsCheck.Xunit.PropertyFailedException : 
+Falsifiable, after 1 test (1 shrink) (8414767455373802027,8614404135374558547). 
+Last step was invoked with size of 2 and seed of (2112728816067916508,9750488649142519029):
+Original:
+   FsCheck.Xunit.PropertyFailedException : 
+Falsifiable, after 1 test (2 shrinks) (2669053166024642892,11995401540159852833). 
+Last step was invoked with size of 2 and seed of (2723603754670590249,3510703301921162781):
+Original:
+   FsCheck.Xunit.PropertyFailedException : 
+Falsifiable, after 1 test (2 shrinks) (10690913293563443261,17258363037241821005). 
+Last step was invoked with size of 2 and seed of (4087236153214274069,14480389594116285613):
+Original:
+[xUnit.net 00:00:00.50]     BibleAtlas.FSharp.Tests.TransportTests.an unexpected HTTP status remains a terminal refusal with its exact received evidence [FAIL]
+   FsCheck.Xunit.PropertyFailedException : 
+Falsifiable, after 1 test (1 shrink) (17298969778863481892,11176763724179302191). 
+Last step was invoked with size of 2 and seed of (16935136021240242178,1328780387184009309):
+Original:
+http-invalid-behavior-red.log
+[xUnit.net 00:00:00.38]     BibleAtlas.FSharp.Tests.TransportTests.unexpected HTTP statuses retain their evidence and invalid codes have server-error retryability [FAIL]
+   FsCheck.Xunit.PropertyFailedException : 
+Falsifiable, after 2 tests (1 shrink) (15256288486385274216,7274837741464438601). 
+Last step was invoked with size of 3 and seed of (7381057014681706714,3874565241339300701).
+Replay directly at failing step with (7381057014681706714,3874565241339300701,3).

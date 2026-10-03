@@ -1,8 +1,9 @@
 namespace BibleAtlas.FSharp
 
 open BibleAtlas.FSharp.Contract
+open BibleAtlas.FSharp.Admission
 
 type Failure =
-    | Transport of string
+    | Read of ReadFailure
     | Contract of string
     | ArtifactMoved of resolved: ArtifactRoot * serving: ArtifactRoot

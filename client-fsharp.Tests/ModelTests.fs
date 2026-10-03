@@ -63,17 +63,17 @@ let ``reader startup uses the complete served contents to open its selected chap
     Assert.Equal((expected, [ReadText(Corpus.Bible, request, read)]), Model.update (Page(SurfaceMessage.Reader(ReadingMessage.ContentsLoaded(model.Serial, Ok served)))) model)
 
 [<Property>]
-let ``a text completion after navigation cannot reopen a departed reading`` (NonNull reason: NonNull<string>) =
+let ``a text completion after navigation cannot reopen a departed reading`` (code: ErrorCode) =
     let model, _ = Model.init Route.Reader
     let model, _ = Model.update (Page(SurfaceMessage.Reader(ReadingMessage.ContentsLoaded(model.Serial, Ok contents)))) model
     let replacement, _ = Model.update (Navigate Route.Sources) model
-    Assert.Equal((replacement, []), Model.update (Page(SurfaceMessage.Reader(ReadingMessage.TextLoaded(model.Serial, Error(Transport reason))))) replacement)
+    Assert.Equal((replacement, []), Model.update (Page(SurfaceMessage.Reader(ReadingMessage.TextLoaded(model.Serial, Error(WireFixtures.readFailure code))))) replacement)
 
 [<Property>]
-let ``source retry advances only its failed operation and keeps its entire last value`` (NonNull title: NonNull<string>) (NonNull reason: NonNull<string>) =
+let ``source retry advances only its failed operation and keeps its entire last value`` (NonNull title: NonNull<string>) (code: ErrorCode) =
     let model, _ = Model.init Route.Sources
     let prior: SourcesDocument = { Categories = [{ Id = "served"; Label = title }]; Sources = []; Provenances = None }
-    let model = { model with Surface = Surface.Sources(Failed(model.Serial, Transport reason, Some prior)) }
+    let model = { model with Surface = Surface.Sources(Failed(model.Serial, WireFixtures.readFailure code, Some prior)) }
     let request = RequestId.next model.Serial
     let expected = { model with Serial = request; Surface = Surface.Sources(Loading(request, Some prior)) }
     Assert.Equal((expected, [ReadSources request]), Model.update (Page(SurfaceMessage.Sources SourcesMessage.Retry)) model)
@@ -109,7 +109,7 @@ let ``a missing chapter is unavailable without a manufactured request identity o
     Assert.Equal((expected, []), Model.update (Page(SurfaceMessage.Reader ReadingMessage.RetryText)) expected)
 
 [<Property>]
-let ``Concord Next and failed-page retry preserve exactly the served continuation request`` (suffix: uint16) (NonNull reason: NonNull<string>) =
+let ``Concord Next and failed-page retry preserve exactly the served continuation request`` (suffix: uint16) (code: ErrorCode) =
     let reference = $"route-{suffix}"
     let continuation = $"next-{suffix}"
     let window: TextWindow = { Units = []; Next = Some (WireFixtures.identity<UnitReference> continuation); Version = (WireFixtures.identity<ArtifactRoot> "root") }
@@ -122,7 +122,7 @@ let ``Concord Next and failed-page retry preserve exactly the served continuatio
     let pending, effects = Model.update (Page(SurfaceMessage.Concord ConcordMessage.Next)) model
     Assert.Equal((expected, [ReadText(Corpus.Concord, request, read)]), (pending, effects))
     Assert.Equal((pending, []), Model.update (Page(SurfaceMessage.Concord ConcordMessage.Next)) pending)
-    let failure = Transport reason
+    let failure = WireFixtures.readFailure code
     let failed, _ = Model.update (Page(SurfaceMessage.Concord(ConcordMessage.Reading(ReadingMessage.TextLoaded(request, Error failure))))) pending
     let retryId = RequestId.next request
     let expectedRetry = { failed with Serial = retryId; Surface = Surface.Concord(concordPage (Some reference) (ReadingState.Active(served, ReadSession.beginRead retryId read (Failed(request, failure, Some window))))) }
@@ -150,9 +150,9 @@ let ``future sized Concord turns retain exactly the final page and current reque
     Assert.Equal(expected, actual)
 
 [<Property>]
-let ``every message belonging to another surface preserves every page state`` (NonNull reason: NonNull<string>) (steps: byte) =
+let ``every message belonging to another surface preserves every page state`` (code: ErrorCode) (steps: byte) =
     let request = requestAfter steps
-    let failure = Transport reason
+    let failure = WireFixtures.readFailure code
     let fixtures = surfaceFixtures request failure
     let messages = surfaceMessages request failure
     let cases = [for surface in fixtures do for message in messages do if owner surface <> messageOwner message then yield surface, message]
@@ -162,11 +162,11 @@ let ``every message belonging to another surface preserves every page state`` (N
     Assert.Equal<(Model * Effect list) list>(expected, actual)
 
 [<Property>]
-let ``every noncurrent surface completion preserves every page state and its focus`` (NonNull reason: NonNull<string>) (steps: byte) focused =
+let ``every noncurrent surface completion preserves every page state and its focus`` (code: ErrorCode) (steps: byte) focused =
     let request = requestAfter steps
-    let fixtures = surfaceFixtures request (Transport reason)
+    let fixtures = surfaceFixtures request (WireFixtures.readFailure code)
     let messages =
-        surfaceMessages (RequestId.next request) (Transport reason)
+        surfaceMessages (RequestId.next request) (WireFixtures.readFailure code)
         |> List.filter (function
             | SurfaceMessage.Reader(ReadingMessage.ContentsLoaded _ | ReadingMessage.TextLoaded _)
             | SurfaceMessage.Concord(ConcordMessage.Reading(ReadingMessage.ContentsLoaded _ | ReadingMessage.TextLoaded _))
@@ -179,9 +179,9 @@ let ``every noncurrent surface completion preserves every page state and its foc
     Assert.Equal<(Model * Effect list) list>(expected, actual)
 
 [<Property>]
-let ``a failed contents read retries only contents with a new identity`` (NonNull reason: NonNull<string>) =
+let ``a failed contents read retries only contents with a new identity`` (code: ErrorCode) =
     let model, _ = Model.init Route.Reader
-    let failure = Transport reason
+    let failure = WireFixtures.readFailure code
     let failed, effects = Model.update (Page(SurfaceMessage.Reader(ReadingMessage.ContentsLoaded(model.Serial, Error failure)))) model
     let expectedFailed = { model with Surface = Surface.Reader(readerPage None (ReadingState.CouldNotLoadContents failure)) }
     Assert.Equal((expectedFailed, []), (failed, effects))
@@ -231,7 +231,7 @@ let ``a superseded focus completion cannot replace a later traversal`` (steps: b
     let model = { model with Focus = FocusState.Opened ExplorationTests.trail }
     let first, _ = Model.update (Traverse Traversal.Back) model
     let next, _ = Model.update (Traverse Traversal.Renew) first
-    let actual, effects = Model.update (FocusLoaded(first.Serial, Error(Transport "old"))) next
+    let actual, effects = Model.update (FocusLoaded(first.Serial, Error(WireFixtures.readFailure ErrorCode.NotFound))) next
     Assert.Equal(next, actual)
     Assert.Equal<Effect list>([], effects)
 
@@ -240,8 +240,8 @@ let ``a failed opening retains exactly the position needed by Retry`` (steps: by
     let model, _ = seedModel Route.Sources steps
     let position = Explorable.position ExplorationTests.start
     let opening, _ = Model.update (OpenPosition position) model
-    let failed, _ = Model.update (FocusLoaded(opening.Serial, Error(Transport "offline"))) opening
-    Assert.Equal({ opening with Focus = FocusState.CouldNotOpen(position, Transport "offline") }, failed)
+    let failed, _ = Model.update (FocusLoaded(opening.Serial, Error(WireFixtures.readFailure ErrorCode.NotFound))) opening
+    Assert.Equal({ opening with Focus = FocusState.CouldNotOpen(position, WireFixtures.readFailure ErrorCode.NotFound) }, failed)
     let retry, effects = Model.update RetryFocus failed
     let request = RequestId.next failed.Serial
     Assert.Equal({ failed with Serial = request; Focus = FocusState.Opening(request, position) }, retry)

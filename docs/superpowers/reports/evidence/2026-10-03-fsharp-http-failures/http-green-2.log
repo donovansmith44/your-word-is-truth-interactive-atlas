@@ -1,0 +1,44 @@
+  BibleAtlas.FSharp.ContractGenerator -> /home/donovan/w/CX-FSHARP-wire/client-fsharp.ContractGenerator/bin/Debug/net10.0/BibleAtlas.FSharp.ContractGenerator.dll
+  BibleAtlas.Client.ContractGenerator -> /home/donovan/w/CX-FSHARP-wire/client.ContractGenerator/bin/Debug/net10.0/BibleAtlas.Client.ContractGenerator.dll
+  BibleAtlas.FSharp.Core -> /home/donovan/w/CX-FSHARP-wire/client-fsharp/Core/bin/Debug/net10.0/BibleAtlas.FSharp.Core.dll
+  BibleAtlas.FSharp.Client -> /home/donovan/w/CX-FSHARP-wire/client-fsharp/bin/Debug/net10.0/BibleAtlas.FSharp.Client.dll
+  BibleAtlas.FSharp.Client (Blazor output) -> /home/donovan/w/CX-FSHARP-wire/client-fsharp/bin/Debug/net10.0/wwwroot
+  BibleAtlas.FSharp.Tests -> /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/bin/Debug/net10.0/BibleAtlas.FSharp.Tests.dll
+Test run for /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/bin/Debug/net10.0/BibleAtlas.FSharp.Tests.dll (.NETCoreApp,Version=v10.0)
+A total of 1 test files matched the specified pattern.
+[xUnit.net 00:00:00.00] xUnit.net VSTest Adapter v3.1.4+50e68bbb8b (64-bit .NET 10.0.12)
+[xUnit.net 00:00:00.06]   Discovering: BibleAtlas.FSharp.Tests
+[xUnit.net 00:00:00.11]   Discovered:  BibleAtlas.FSharp.Tests
+[xUnit.net 00:00:00.13]   Starting:    BibleAtlas.FSharp.Tests
+  Passed BibleAtlas.FSharp.Tests.Domain.StatusLaws.server refusal admission preserves exactly the whole 500 through 599 range [55 ms]
+  Passed BibleAtlas.FSharp.Tests.Domain.StatusLaws.client refusal admission preserves exactly the whole 400 through 499 range [1 ms]
+  Passed BibleAtlas.FSharp.Tests.Domain.StatusLaws.every code in each refusal range is preserved at its distinct door [9 ms]
+  Passed BibleAtlas.FSharp.Tests.TransportTests.a typed HTTP read refuses a record missing its required fields [143 ms]
+  Passed BibleAtlas.FSharp.Tests.TransportTests.a typed HTTP read returns the whole element page [29 ms]
+  Passed BibleAtlas.FSharp.Tests.TransportTests.the application failure vocabulary exposes structured reads and no raw transport string constructor [5 ms]
+  Passed BibleAtlas.FSharp.Tests.TransportTests.generated requests compose escaped paths and the contract enum spellings [65 ms]
+  Passed BibleAtlas.FSharp.Tests.TransportTests.a user-cancelled HTTP read is distinct from a retryable interruption [12 ms]
+  Passed BibleAtlas.FSharp.Tests.TransportTests.every client refusal retains its exact admitted status and published error code [41 ms]
+  Passed BibleAtlas.FSharp.Tests.TransportTests.every malformed refusal body preserves its HTTP classification without inventing an error code [7 ms]
+  Passed BibleAtlas.FSharp.Tests.TransportTests.an interrupted HTTP request completes with an explicit retryable failure [3 ms]
+  Passed BibleAtlas.FSharp.Tests.TransportTests.every server refusal retains its exact admitted status and published error code [4 ms]
+  Passed BibleAtlas.FSharp.Tests.SourceOrderTests.the order gate finds a fixture used through a served record field [316 ms]
+  Passed BibleAtlas.FSharp.Tests.TransportTests.an unexpected HTTP status remains a terminal refusal with its exact received evidence [6 ms]
+  Passed BibleAtlas.FSharp.Tests.SourceOrderTests.the order gate refuses a helper above its caller and accepts descending intent [38 ms]
+  Passed BibleAtlas.FSharp.Tests.SourceOrderTests.the order gate checks type member helpers below their first member caller [57 ms]
+  Passed BibleAtlas.FSharp.Tests.SourceOrderTests.the order gate preserves private helper checking inside nested modules [39 ms]
+[xUnit.net 00:00:01.61]   Finished:    BibleAtlas.FSharp.Tests
+  Passed BibleAtlas.FSharp.Tests.SourceOrderTests.the order gate permits local inputs before computations that consume them [19 ms]
+  Passed BibleAtlas.FSharp.Tests.SourceOrderTests.the order gate distinguishes a shadowing parameter from the outer helper [17 ms]
+  Passed BibleAtlas.FSharp.Tests.SourceOrderTests.the order gate checks helpers reached through a qualified module reference [34 ms]
+  Passed BibleAtlas.FSharp.Tests.SourceOrderTests.the order gate checks every exported helper regardless of its visibility [37 ms]
+  Passed BibleAtlas.FSharp.Tests.SourceOrderTests.the order gate permits module data before an operation that reads it [16 ms]
+  Passed BibleAtlas.FSharp.Tests.SourceOrderTests.the order gate finds module helpers called inside nested and destructured bindings [43 ms]
+  Passed BibleAtlas.FSharp.Tests.SourceOrderTests.the order gate distinguishes a shadowing lambda argument from the outer helper [25 ms]
+  Passed BibleAtlas.FSharp.Tests.SourceOrderTests.the order gate checks local helper chains within their binding scope [41 ms]
+  Passed BibleAtlas.FSharp.Tests.SourceOrderTests.helper functions members and shared test fixtures follow their first caller in every FSharp source [739 ms]
+
+Test Run Successful.
+Total tests: 26
+     Passed: 26
+ Total time: 1.8984 Seconds

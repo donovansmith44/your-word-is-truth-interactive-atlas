@@ -32,9 +32,9 @@ let ``a served reader anchor opens its typed position from the keyboard`` (suffi
     Assert.Equal<Message list>([OpenPosition(PositionRef.Node { Node = readingAnchor.Node })], messages)
 
 [<Property>]
-let ``the reader shows a failed contents read with an explicit Retry`` (suffix: uint16) =
+let ``the reader shows a failed contents read with an explicit Retry`` (code: ErrorCode) =
     let model, _ = Model.init Route.Reader
-    let model = { model with Surface = Surface.Reader(ModelTests.readerPage None (ReadingState.CouldNotLoadContents(Transport $"offline-{suffix}"))) }
+    let model = { model with Surface = Surface.Reader(ModelTests.readerPage None (ReadingState.CouldNotLoadContents(WireFixtures.readFailure code))) }
     let mutable messages = []
     use context = new BunitContext()
     let view = render context model (fun message -> messages <- message :: messages)
@@ -151,9 +151,9 @@ let ``closing a visible focus dispatches CloseFocus`` (suffix: uint16) =
     Assert.Equal<Message list>([CloseFocus], messages)
 
 [<Property>]
-let ``a failed focus retries its own request rather than the underlying page`` (suffix: uint16) =
+let ``a failed focus retries its own request rather than the underlying page`` (suffix: uint16) (code: ErrorCode) =
     let model, _ = Model.init Route.Sources
-    let model = { model with Focus = FocusState.CouldNotOpen(Explorable.position (Trail.current (focusTrail suffix)), Transport $"offline-{suffix}") }
+    let model = { model with Focus = FocusState.CouldNotOpen(Explorable.position (Trail.current (focusTrail suffix)), WireFixtures.readFailure code) }
     let mutable messages = []
     use context = new BunitContext()
     let view = render context model (fun message -> messages <- messages @ [message])
@@ -220,9 +220,9 @@ let ``the source view composes the complete served source under its category`` (
     Assert.Equal(expected, (find view $"[data-testid='source-test-{suffix}']").OuterHtml)
 
 [<Property>]
-let ``an explicit failure offers Retry and dispatches its message`` (suffix: uint16) =
+let ``an explicit failure offers Retry and dispatches its message`` (code: ErrorCode) =
     let model, _ = Model.init Route.Sources
-    let model = { model with Surface = Surface.Sources(Failed(model.Serial, Transport $"offline-{suffix}", None)) }
+    let model = { model with Surface = Surface.Sources(Failed(model.Serial, WireFixtures.readFailure code, None)) }
     let mutable messages = []
     use context = new BunitContext()
     let view = render context model (fun message -> messages <- message :: messages)

@@ -1,0 +1,171 @@
+  BibleAtlas.Client.ContractGenerator -> /home/donovan/w/CX-FSHARP-wire/client.ContractGenerator/bin/Debug/net10.0/BibleAtlas.Client.ContractGenerator.dll
+  BibleAtlas.FSharp.ContractGenerator -> /home/donovan/w/CX-FSHARP-wire/client-fsharp.ContractGenerator/bin/Debug/net10.0/BibleAtlas.FSharp.ContractGenerator.dll
+  BibleAtlas.FSharp.Core -> /home/donovan/w/CX-FSHARP-wire/client-fsharp/Core/bin/Debug/net10.0/BibleAtlas.FSharp.Core.dll
+  BibleAtlas.FSharp.Client -> /home/donovan/w/CX-FSHARP-wire/client-fsharp/bin/Debug/net10.0/BibleAtlas.FSharp.Client.dll
+  BibleAtlas.FSharp.Client (Blazor output) -> /home/donovan/w/CX-FSHARP-wire/client-fsharp/bin/Debug/net10.0/wwwroot
+  BibleAtlas.FSharp.Tests -> /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/bin/Debug/net10.0/BibleAtlas.FSharp.Tests.dll
+Test run for /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/bin/Debug/net10.0/BibleAtlas.FSharp.Tests.dll (.NETCoreApp,Version=v10.0)
+A total of 1 test files matched the specified pattern.
+[xUnit.net 00:00:00.00] xUnit.net VSTest Adapter v3.1.4+50e68bbb8b (64-bit .NET 10.0.12)
+[xUnit.net 00:00:00.08]   Discovering: BibleAtlas.FSharp.Tests
+[xUnit.net 00:00:00.13]   Discovered:  BibleAtlas.FSharp.Tests
+[xUnit.net 00:00:00.14]   Starting:    BibleAtlas.FSharp.Tests
+[xUnit.net 00:00:00.26]     BibleAtlas.FSharp.Tests.Domain.StatusLaws.server refusal admission preserves exactly the whole 500 through 599 range [FAIL]
+[xUnit.net 00:00:00.26]       FsCheck.Xunit.PropertyFailedException : 
+[xUnit.net 00:00:00.26]       Falsifiable, after 1 test (2 shrinks) (15072026353190660682,6424661520511411413). 
+[xUnit.net 00:00:00.26]       Last step was invoked with size of 2 and seed of (15131924076072513523,11040097061757606765):
+[xUnit.net 00:00:00.26]       Original:
+[xUnit.net 00:00:00.26]       -2
+[xUnit.net 00:00:00.26]       Shrunk:
+[xUnit.net 00:00:00.26]       0
+[xUnit.net 00:00:00.26]       
+[xUnit.net 00:00:00.26]       ---- System.NotImplementedException : RefusalStatuses.server
+[xUnit.net 00:00:00.26]       Stack Trace:
+[xUnit.net 00:00:00.26]         
+[xUnit.net 00:00:00.26]         ----- Inner Stack Trace -----
+[xUnit.net 00:00:00.26]         /home/donovan/w/CX-FSHARP-wire/client-fsharp/Core/Domain/Skeleton.fs(5,0): at BibleAtlas.FSharp.Domain.DomainSkeleton.pending[value](String operation)
+[xUnit.net 00:00:00.26]         /home/donovan/w/CX-FSHARP-wire/client-fsharp/Core/Admission/Scalars.fs(29,0): at BibleAtlas.FSharp.Admission.RefusalStatuses.server(Int32 status)
+[xUnit.net 00:00:00.26]         /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/Domain/StatusLaws.fs(15,0): at BibleAtlas.FSharp.Tests.Domain.StatusLaws.server refusal admission preserves exactly the whole 500 through 599 range(Int32 status)
+[xUnit.net 00:00:00.26]            at InvokeStub_StatusLaws.server refusal admission preserves exactly the whole 500 through 599 range(Object, Span`1)
+[xUnit.net 00:00:00.26]            at System.Reflection.MethodBaseInvoker.InvokeWithOneArg(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
+[xUnit.net 00:00:00.26]         --- End of stack trace from previous location ---
+[xUnit.net 00:00:00.26]         C:\Users\kurts\Projects\FsCheck\src\FsCheck\Runner.fs(595,0): at FsCheck.Runner.invokeAndThrowInner@592-1.Invoke(Object[] o)
+[xUnit.net 00:00:00.26]         /__w/1/s/src/fsharp/src/FSharp.Core/reflect.fs(1230,0): at <StartupCode$FSharp-Core>.$Reflect.Invoke@1230.Invoke(T1 inp)
+[xUnit.net 00:00:00.26]            at System.Lazy`1.ViaFactory(LazyThreadSafetyMode mode)
+[xUnit.net 00:00:00.26]            at System.Lazy`1.ExecutionAndPublication(LazyHelper executionAndPublication, Boolean useDefaultConstructor)
+[xUnit.net 00:00:00.26]            at System.Lazy`1.CreateValue()
+[xUnit.net 00:00:00.26]         C:\Users\kurts\Projects\FsCheck\src\FsCheck\Testable.fs(164,0): at FsCheck.Testable.Prop.safeForce[a](Lazy`1 body)
+[xUnit.net 00:00:00.27]     BibleAtlas.FSharp.Tests.Domain.StatusLaws.client refusal admission preserves exactly the whole 400 through 499 range [FAIL]
+[xUnit.net 00:00:00.27]       FsCheck.Xunit.PropertyFailedException : 
+[xUnit.net 00:00:00.27]       Falsifiable, after 1 test (1 shrink) (418285611659870536,12657322261692024849). 
+[xUnit.net 00:00:00.27]       Last step was invoked with size of 2 and seed of (1525323545863192094,3350311683553213291):
+[xUnit.net 00:00:00.27]       Original:
+[xUnit.net 00:00:00.27]       2
+[xUnit.net 00:00:00.27]       Shrunk:
+[xUnit.net 00:00:00.27]       0
+[xUnit.net 00:00:00.27]       
+[xUnit.net 00:00:00.27]       ---- System.NotImplementedException : RefusalStatuses.client
+[xUnit.net 00:00:00.27]       Stack Trace:
+[xUnit.net 00:00:00.27]         
+[xUnit.net 00:00:00.27]         ----- Inner Stack Trace -----
+[xUnit.net 00:00:00.27]         /home/donovan/w/CX-FSHARP-wire/client-fsharp/Core/Domain/Skeleton.fs(5,0): at BibleAtlas.FSharp.Domain.DomainSkeleton.pending[value](String operation)
+[xUnit.net 00:00:00.27]         /home/donovan/w/CX-FSHARP-wire/client-fsharp/Core/Admission/Scalars.fs(27,0): at BibleAtlas.FSharp.Admission.RefusalStatuses.client(Int32 status)
+[xUnit.net 00:00:00.27]         /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/Domain/StatusLaws.fs(10,0): at BibleAtlas.FSharp.Tests.Domain.StatusLaws.client refusal admission preserves exactly the whole 400 through 499 range(Int32 status)
+[xUnit.net 00:00:00.27]            at InvokeStub_StatusLaws.client refusal admission preserves exactly the whole 400 through 499 range(Object, Span`1)
+[xUnit.net 00:00:00.27]            at System.Reflection.MethodBaseInvoker.InvokeWithOneArg(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
+[xUnit.net 00:00:00.27]         --- End of stack trace from previous location ---
+[xUnit.net 00:00:00.27]         C:\Users\kurts\Projects\FsCheck\src\FsCheck\Runner.fs(595,0): at FsCheck.Runner.invokeAndThrowInner@592-1.Invoke(Object[] o)
+[xUnit.net 00:00:00.27]         /__w/1/s/src/fsharp/src/FSharp.Core/reflect.fs(1230,0): at <StartupCode$FSharp-Core>.$Reflect.Invoke@1230.Invoke(T1 inp)
+[xUnit.net 00:00:00.27]            at System.Lazy`1.ViaFactory(LazyThreadSafetyMode mode)
+[xUnit.net 00:00:00.27]            at System.Lazy`1.ExecutionAndPublication(LazyHelper executionAndPublication, Boolean useDefaultConstructor)
+[xUnit.net 00:00:00.27]            at System.Lazy`1.CreateValue()
+[xUnit.net 00:00:00.27]         C:\Users\kurts\Projects\FsCheck\src\FsCheck\Testable.fs(164,0): at FsCheck.Testable.Prop.safeForce[a](Lazy`1 body)
+[xUnit.net 00:00:00.27]     BibleAtlas.FSharp.Tests.Domain.StatusLaws.every code in each refusal range is preserved at its distinct door [FAIL]
+[xUnit.net 00:00:00.27]       FsCheck.Xunit.PropertyFailedException : 
+[xUnit.net 00:00:00.27]       Falsifiable, after 1 test (1 shrink) (18041765332149263289,3939974876724311369). 
+[xUnit.net 00:00:00.27]       Last step was invoked with size of 2 and seed of (3809064307052288739,8038253277097119431):
+[xUnit.net 00:00:00.27]       Original:
+[xUnit.net 00:00:00.27]       30uy
+[xUnit.net 00:00:00.27]       Shrunk:
+[xUnit.net 00:00:00.27]       0uy
+[xUnit.net 00:00:00.27]       
+[xUnit.net 00:00:00.27]       ---- System.NotImplementedException : RefusalStatuses.client
+[xUnit.net 00:00:00.27]       Stack Trace:
+[xUnit.net 00:00:00.27]         
+[xUnit.net 00:00:00.27]         ----- Inner Stack Trace -----
+[xUnit.net 00:00:00.27]         /home/donovan/w/CX-FSHARP-wire/client-fsharp/Core/Domain/Skeleton.fs(5,0): at BibleAtlas.FSharp.Domain.DomainSkeleton.pending[value](String operation)
+[xUnit.net 00:00:00.27]         /home/donovan/w/CX-FSHARP-wire/client-fsharp/Core/Admission/Scalars.fs(27,0): at BibleAtlas.FSharp.Admission.RefusalStatuses.client(Int32 status)
+[xUnit.net 00:00:00.27]         /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/Domain/StatusLaws.fs(20,0): at BibleAtlas.FSharp.Tests.Domain.StatusLaws.every code in each refusal range is preserved at its distinct door(Byte offset)
+[xUnit.net 00:00:00.27]            at InvokeStub_StatusLaws.every code in each refusal range is preserved at its distinct door(Object, Span`1)
+[xUnit.net 00:00:00.27]            at System.Reflection.MethodBaseInvoker.InvokeWithOneArg(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
+[xUnit.net 00:00:00.27]         --- End of stack trace from previous location ---
+[xUnit.net 00:00:00.27]         C:\Users\kurts\Projects\FsCheck\src\FsCheck\Runner.fs(595,0): at FsCheck.Runner.invokeAndThrowInner@592-1.Invoke(Object[] o)
+[xUnit.net 00:00:00.27]         /__w/1/s/src/fsharp/src/FSharp.Core/reflect.fs(1230,0): at <StartupCode$FSharp-Core>.$Reflect.Invoke@1230.Invoke(T1 inp)
+[xUnit.net 00:00:00.27]            at System.Lazy`1.ViaFactory(LazyThreadSafetyMode mode)
+[xUnit.net 00:00:00.27]            at System.Lazy`1.ExecutionAndPublication(LazyHelper executionAndPublication, Boolean useDefaultConstructor)
+[xUnit.net 00:00:00.27]            at System.Lazy`1.CreateValue()
+[xUnit.net 00:00:00.27]         C:\Users\kurts\Projects\FsCheck\src\FsCheck\Testable.fs(164,0): at FsCheck.Testable.Prop.safeForce[a](Lazy`1 body)
+[xUnit.net 00:00:00.27]   Finished:    BibleAtlas.FSharp.Tests
+  Failed BibleAtlas.FSharp.Tests.Domain.StatusLaws.server refusal admission preserves exactly the whole 500 through 599 range [47 ms]
+  Error Message:
+   FsCheck.Xunit.PropertyFailedException : 
+Falsifiable, after 1 test (2 shrinks) (15072026353190660682,6424661520511411413). 
+Last step was invoked with size of 2 and seed of (15131924076072513523,11040097061757606765):
+Original:
+-2
+Shrunk:
+0
+
+---- System.NotImplementedException : RefusalStatuses.server
+  Stack Trace:
+  
+----- Inner Stack Trace -----
+   at BibleAtlas.FSharp.Domain.DomainSkeleton.pending[value](String operation) in /home/donovan/w/CX-FSHARP-wire/client-fsharp/Core/Domain/Skeleton.fs:line 5
+   at BibleAtlas.FSharp.Admission.RefusalStatuses.server(Int32 status) in /home/donovan/w/CX-FSHARP-wire/client-fsharp/Core/Admission/Scalars.fs:line 29
+   at BibleAtlas.FSharp.Tests.Domain.StatusLaws.server refusal admission preserves exactly the whole 500 through 599 range(Int32 status) in /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/Domain/StatusLaws.fs:line 15
+   at InvokeStub_StatusLaws.server refusal admission preserves exactly the whole 500 through 599 range(Object, Span`1)
+   at System.Reflection.MethodBaseInvoker.InvokeWithOneArg(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
+--- End of stack trace from previous location ---
+   at FsCheck.Runner.invokeAndThrowInner@592-1.Invoke(Object[] o) in C:\Users\kurts\Projects\FsCheck\src\FsCheck\Runner.fs:line 595
+   at <StartupCode$FSharp-Core>.$Reflect.Invoke@1230.Invoke(T1 inp) in /__w/1/s/src/fsharp/src/FSharp.Core/reflect.fs:line 1230
+   at System.Lazy`1.ViaFactory(LazyThreadSafetyMode mode)
+   at System.Lazy`1.ExecutionAndPublication(LazyHelper executionAndPublication, Boolean useDefaultConstructor)
+   at System.Lazy`1.CreateValue()
+   at FsCheck.Testable.Prop.safeForce[a](Lazy`1 body) in C:\Users\kurts\Projects\FsCheck\src\FsCheck\Testable.fs:line 164
+  Failed BibleAtlas.FSharp.Tests.Domain.StatusLaws.client refusal admission preserves exactly the whole 400 through 499 range [< 1 ms]
+  Error Message:
+   FsCheck.Xunit.PropertyFailedException : 
+Falsifiable, after 1 test (1 shrink) (418285611659870536,12657322261692024849). 
+Last step was invoked with size of 2 and seed of (1525323545863192094,3350311683553213291):
+Original:
+2
+Shrunk:
+0
+
+---- System.NotImplementedException : RefusalStatuses.client
+  Stack Trace:
+  
+----- Inner Stack Trace -----
+   at BibleAtlas.FSharp.Domain.DomainSkeleton.pending[value](String operation) in /home/donovan/w/CX-FSHARP-wire/client-fsharp/Core/Domain/Skeleton.fs:line 5
+   at BibleAtlas.FSharp.Admission.RefusalStatuses.client(Int32 status) in /home/donovan/w/CX-FSHARP-wire/client-fsharp/Core/Admission/Scalars.fs:line 27
+   at BibleAtlas.FSharp.Tests.Domain.StatusLaws.client refusal admission preserves exactly the whole 400 through 499 range(Int32 status) in /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/Domain/StatusLaws.fs:line 10
+   at InvokeStub_StatusLaws.client refusal admission preserves exactly the whole 400 through 499 range(Object, Span`1)
+   at System.Reflection.MethodBaseInvoker.InvokeWithOneArg(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
+--- End of stack trace from previous location ---
+   at FsCheck.Runner.invokeAndThrowInner@592-1.Invoke(Object[] o) in C:\Users\kurts\Projects\FsCheck\src\FsCheck\Runner.fs:line 595
+   at <StartupCode$FSharp-Core>.$Reflect.Invoke@1230.Invoke(T1 inp) in /__w/1/s/src/fsharp/src/FSharp.Core/reflect.fs:line 1230
+   at System.Lazy`1.ViaFactory(LazyThreadSafetyMode mode)
+   at System.Lazy`1.ExecutionAndPublication(LazyHelper executionAndPublication, Boolean useDefaultConstructor)
+   at System.Lazy`1.CreateValue()
+   at FsCheck.Testable.Prop.safeForce[a](Lazy`1 body) in C:\Users\kurts\Projects\FsCheck\src\FsCheck\Testable.fs:line 164
+  Failed BibleAtlas.FSharp.Tests.Domain.StatusLaws.every code in each refusal range is preserved at its distinct door [4 ms]
+  Error Message:
+   FsCheck.Xunit.PropertyFailedException : 
+Falsifiable, after 1 test (1 shrink) (18041765332149263289,3939974876724311369). 
+Last step was invoked with size of 2 and seed of (3809064307052288739,8038253277097119431):
+Original:
+30uy
+Shrunk:
+0uy
+
+---- System.NotImplementedException : RefusalStatuses.client
+  Stack Trace:
+  
+----- Inner Stack Trace -----
+   at BibleAtlas.FSharp.Domain.DomainSkeleton.pending[value](String operation) in /home/donovan/w/CX-FSHARP-wire/client-fsharp/Core/Domain/Skeleton.fs:line 5
+   at BibleAtlas.FSharp.Admission.RefusalStatuses.client(Int32 status) in /home/donovan/w/CX-FSHARP-wire/client-fsharp/Core/Admission/Scalars.fs:line 27
+   at BibleAtlas.FSharp.Tests.Domain.StatusLaws.every code in each refusal range is preserved at its distinct door(Byte offset) in /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/Domain/StatusLaws.fs:line 20
+   at InvokeStub_StatusLaws.every code in each refusal range is preserved at its distinct door(Object, Span`1)
+   at System.Reflection.MethodBaseInvoker.InvokeWithOneArg(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
+--- End of stack trace from previous location ---
+   at FsCheck.Runner.invokeAndThrowInner@592-1.Invoke(Object[] o) in C:\Users\kurts\Projects\FsCheck\src\FsCheck\Runner.fs:line 595
+   at <StartupCode$FSharp-Core>.$Reflect.Invoke@1230.Invoke(T1 inp) in /__w/1/s/src/fsharp/src/FSharp.Core/reflect.fs:line 1230
+   at System.Lazy`1.ViaFactory(LazyThreadSafetyMode mode)
+   at System.Lazy`1.ExecutionAndPublication(LazyHelper executionAndPublication, Boolean useDefaultConstructor)
+   at System.Lazy`1.CreateValue()
+   at FsCheck.Testable.Prop.safeForce[a](Lazy`1 body) in C:\Users\kurts\Projects\FsCheck\src\FsCheck\Testable.fs:line 164
+
+Test Run Failed.
+Total tests: 3
+     Failed: 3
+ Total time: 0.6203 Seconds

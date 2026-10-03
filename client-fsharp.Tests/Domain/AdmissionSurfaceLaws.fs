@@ -13,6 +13,7 @@ let ``every private representation refuses direct construction while its own pub
     let core = typeof<Positive>.Assembly.Location
     let collections = typeof<FSharpPlus.Data.NonEmptyList<int>>.Assembly.Location
     let inaccessibleRepresentation = 1093
+    let missingMember = 39
     let cases =
         [ {| Public = "Positive.admit 1"; Forbidden = "Positive 0"; Errors = [inaccessibleRepresentation] |}
           {| Public = "NonEmpty.admit [1]"; Forbidden = "NonEmpty (FSharpPlus.Data.NonEmptyList.singleton 1)"; Errors = [inaccessibleRepresentation] |}
@@ -29,6 +30,9 @@ let ``every private representation refuses direct construction while its own pub
           {| Public = "ByteColumns.admit 1L"; Forbidden = "ByteColumn 0L"; Errors = [inaccessibleRepresentation] |}
           {| Public = "Latitudes.admit 0.0"; Forbidden = "Latitude nan"; Errors = [inaccessibleRepresentation] |}
           {| Public = "Longitudes.admit 0.0"; Forbidden = "Longitude infinity"; Errors = [inaccessibleRepresentation] |}
+          {| Public = "RefusalStatuses.client 400 |> Result.map (fun status -> BibleAtlas.FSharp.Failure.Read(ReadFailure.Terminal(TerminalFailure.ClientRefusal(status, None))))"; Forbidden = "BibleAtlas.FSharp.Failure.Transport \"raw reason\""; Errors = [missingMember] |}
+          {| Public = "RefusalStatuses.client 400"; Forbidden = "ClientStatus 400"; Errors = [inaccessibleRepresentation] |}
+          {| Public = "RefusalStatuses.server 500"; Forbidden = "ServerStatus 500"; Errors = [inaccessibleRepresentation] |}
           {| Public = "HttpUrls.admit \"https://example.org/\""; Forbidden = "HttpUrl (System.Uri \"file:///tmp/source\")"; Errors = [inaccessibleRepresentation] |} ]
     let actual = cases |> List.mapi (fun caseNumber case ->
         let outcomes =
