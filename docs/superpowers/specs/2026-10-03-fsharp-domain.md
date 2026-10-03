@@ -12,6 +12,8 @@ remain the full open inventory.
 |---|---|
 | [Positive](../../../client-fsharp/Core/Domain/Positive.fs) | A positive count, rather than an integer with a label. Zero and negative inputs return its own closed refusal. [Properties](../../../client-fsharp.Tests/Domain/PositiveLaws.fs). |
 | [NonEmpty](../../../client-fsharp/Core/Domain/NonEmpty.fs) | A private adapter around FSharpPlus's nonempty list. Empty input is refused; singleton, create, append and map retain complete ordered values. Append is associative; map preserves identity and composition. [Properties](../../../client-fsharp.Tests/Domain/NonEmptyLaws.fs). |
+| [Rooted](../../../client-fsharp/Core/Domain/Rooted.fs) | An admitted value retains the version it came from. Combining values from different roots is refused with both identities intact. Mapping preserves the root, identity and composition; same-root append is associative. RootMismatch is private, so callers cannot invent a mismatch between equal roots. [Properties](../../../client-fsharp.Tests/Domain/RootedLaws.fs). |
+| [PageCache](../../../client-fsharp/Core/Paging/PageCache.fs) | A private immutable cache holds one root and a positive budget measured in pages. Put rejects another root; a hit promotes the complete page; replacement keeps one entry per key; eviction forgets the oldest page. Rebase preserves the same-root cache or clears it for a new root. The private lookup result retains the returned page and the updated cache together. [Properties](../../../client-fsharp.Tests/Domain/PageCacheLaws.fs). |
 | [ArrayIndex](../../../client-fsharp/Core/Admission/ArrayIndex.fs) | A zero-based, nonnegative array position, distinct from document positions. [Properties](../../../client-fsharp.Tests/Domain/ArrayIndexLaws.fs). |
 | [DocumentPosition](../../../client-fsharp/Core/Admission/DocumentPosition.fs) | One-based line and byte column, separately admitted and retained as a structured location. Neither door accepts zero or a negative number. [Properties](../../../client-fsharp.Tests/Domain/DocumentPositionLaws.fs). |
 | [Coordinates](../../../client-fsharp/Core/Admission/Coordinates.fs) | Finite latitude/longitude inside their respective inclusive bounds. Nonfinite input and finite out-of-range input have distinct refusals. [Properties](../../../client-fsharp.Tests/Domain/CoordinatesLaws.fs). |
@@ -25,11 +27,30 @@ its admission adapters after the full model is reviewed. No future contract type
 or producer is copied into the client to fill a missing dependency.
 
 The [public-surface property](../../../client-fsharp.Tests/Domain/AdmissionSurfaceLaws.fs)
-compiles all eight public doors and independently attempts all eight forbidden
-constructors. The normal regression project discovers these domain properties;
-the small DomainLaws project also runs them without a browser build.
+compiles twelve public-use programs and separately attempts each forbidden
+constructor, including RootMismatch, PageCache and CacheLookup. No constructor's
+diagnostics can hide another constructor's accessibility. The normal regression
+project discovers these domain properties; the small DomainLaws project also
+runs them without a browser build.
 
-The remaining tour must cover served identities/root seals; Year and spans;
+For the cache, a budget of two pages admits A and B; looking up A makes it newest,
+so adding C retains C and A and forgets B. Changing the root empties the cache;
+an old-root response is then refused. The previous immutable cache is unchanged.
+Ten thousand distinct puts retain exactly the latest budgeted pages, without
+prefix history. Query/cursor keys remain structured equality values; the cache
+does not stringify, parse or flatten them.
+
+Rooted and PageCache take the admitted identity, key and payload types as
+parameters. This proves coherence and bounded page retention, not identity
+syntax or wire admission. The concrete generated root/query/cursor types are
+producer dependencies; they are not redeclared here. A bounded count of pages
+does not by itself bound each page's size: the reading/neighbour window must
+carry that separate invariant. The cache policy uses FSharp.Core's immutable
+list operations through one private Remember member; its callers precede it.
+The mutually dependent cache/lookup types form a real type cycle, not an
+artificial recursive function group.
+
+The remaining tour must cover concrete served identities and root admission; Year and spans;
 Bible/Concord containers, passage/history/text parts; graph elements, chronology
 and stories; bounded reading/neighbour windows and cache; trail renewal and
 focus; structured wire/contract/read failures. Those actual modules and their

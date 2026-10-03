@@ -7,42 +7,42 @@ open FSharp.Compiler.Text
 open FsCheck.Xunit
 open BibleAtlas.FSharp.Domain
 
-[<Property(MaxTest = 10)>]
-let ``every new private representation refuses direct construction while its public door compiles`` (suffix: uint16) =
+[<Property(MaxTest = 3)>]
+let ``every private representation refuses direct construction while its own public door compiles`` (suffix: uint16) =
     let checker = FSharpChecker.Create()
     let core = typeof<Positive>.Assembly.Location
     let collections = typeof<FSharpPlus.Data.NonEmptyList<int>>.Assembly.Location
-    let publicExpressions =
-        [ "Positive.admit 1"
-          "NonEmpty.admit [1]"
-          "ArrayIndices.admit 0"
-          "LineNumbers.admit 1L"
-          "ByteColumns.admit 1L"
-          "Latitudes.admit 0.0"
-          "Longitudes.admit 0.0"
-          "HttpUrls.admit \"https://example.org/\"" ]
-    let privateExpressions =
-        [ "Positive 0"
-          "NonEmpty (FSharpPlus.Data.NonEmptyList.singleton 1)"
-          "ArrayIndex -1"
-          "LineNumber 0L"
-          "ByteColumn 0L"
-          "Latitude nan"
-          "Longitude infinity"
-          "HttpUrl (System.Uri \"file:///tmp/source\")" ]
-    let actual =
-        [ publicExpressions; privateExpressions ]
-        |> List.mapi (fun index expressions ->
-            let declarations = expressions |> List.mapi (fun item expression -> $"let admitted{item} = {expression}") |> String.concat "\n"
-            let source = SourceText.ofString $"#r @\"{core}\"\n#r @\"{collections}\"\nopen BibleAtlas.FSharp.Domain\nopen BibleAtlas.FSharp.Admission\n{declarations}\n"
-            let file = Path.Combine(Path.GetTempPath(), $"admission-{suffix}-{index}.fsx")
-            let options, scriptDiagnostics = checker.GetProjectOptionsFromScript(file, source, assumeDotNetFramework = false) |> Async.RunSynchronously
-            let _, result = checker.ParseAndCheckFileInProject(file, 0, source, options) |> Async.RunSynchronously
-            match result with
-            | FSharpCheckFileAnswer.Succeeded checkedFile ->
-                let errors = checkedFile.Diagnostics |> Array.filter (fun diagnostic -> diagnostic.Severity = FSharpDiagnosticSeverity.Error) |> Array.map _.ErrorNumber |> Array.toList
-                Some (scriptDiagnostics |> List.map _.ErrorNumber, errors)
-            | FSharpCheckFileAnswer.Aborted -> None)
     let inaccessibleRepresentation = 1093
-    let expected = [ Some ([], []); Some ([], List.replicate privateExpressions.Length inaccessibleRepresentation) ]
-    actual = expected
+    let cases =
+        [ {| Public = "Positive.admit 1"; Forbidden = "Positive 0"; Errors = [inaccessibleRepresentation] |}
+          {| Public = "NonEmpty.admit [1]"; Forbidden = "NonEmpty (FSharpPlus.Data.NonEmptyList.singleton 1)"; Errors = [inaccessibleRepresentation] |}
+          {| Public = "Rooted.admit 0us 0us [1]"; Forbidden = "Rooted (0us, [1])"; Errors = [inaccessibleRepresentation] |}
+          {| Public = "Rooted.admit 0us 1us [1] |> Result.mapError id"; Forbidden = "RootMismatch (0us, 0us)"; Errors = [inaccessibleRepresentation] |}
+          {| Public = "Positive.admit 1 |> Result.map (BibleAtlas.FSharp.Paging.PageCache<uint16, int, int>.Empty 0us)"
+             Forbidden = "Positive.admit 1 |> Result.map (fun capacity -> ({ Version = 0us; PageBudget = capacity; MostRecent = [] }: BibleAtlas.FSharp.Paging.PageCache<uint16, int, int>))"
+             Errors = List.replicate 6 inaccessibleRepresentation |}
+          {| Public = "Positive.admit 1 |> Result.map (fun capacity -> (BibleAtlas.FSharp.Paging.PageCache<uint16, int, int>.Empty 0us capacity).Lookup 0)"
+             Forbidden = "Positive.admit 1 |> Result.map (fun capacity -> BibleAtlas.FSharp.Paging.CacheLookup (None, BibleAtlas.FSharp.Paging.PageCache<uint16, int, int>.Empty 0us capacity))"
+             Errors = [inaccessibleRepresentation] |}
+          {| Public = "ArrayIndices.admit 0"; Forbidden = "ArrayIndex -1"; Errors = [inaccessibleRepresentation] |}
+          {| Public = "LineNumbers.admit 1L"; Forbidden = "LineNumber 0L"; Errors = [inaccessibleRepresentation] |}
+          {| Public = "ByteColumns.admit 1L"; Forbidden = "ByteColumn 0L"; Errors = [inaccessibleRepresentation] |}
+          {| Public = "Latitudes.admit 0.0"; Forbidden = "Latitude nan"; Errors = [inaccessibleRepresentation] |}
+          {| Public = "Longitudes.admit 0.0"; Forbidden = "Longitude infinity"; Errors = [inaccessibleRepresentation] |}
+          {| Public = "HttpUrls.admit \"https://example.org/\""; Forbidden = "HttpUrl (System.Uri \"file:///tmp/source\")"; Errors = [inaccessibleRepresentation] |} ]
+    let actual = cases |> List.mapi (fun caseNumber case ->
+        let outcomes =
+            [ case.Public; case.Forbidden ]
+            |> List.mapi (fun variant expression ->
+                let source = SourceText.ofString $"#r @\"{core}\"\n#r @\"{collections}\"\nopen BibleAtlas.FSharp.Domain\nopen BibleAtlas.FSharp.Admission\nlet admitted = {expression}\n"
+                let file = Path.Combine(Path.GetTempPath(), $"admission-{suffix}-{caseNumber}-{variant}.fsx")
+                let options, scriptDiagnostics = checker.GetProjectOptionsFromScript(file, source, assumeDotNetFramework = false) |> Async.RunSynchronously
+                let _, result = checker.ParseAndCheckFileInProject(file, 0, source, options) |> Async.RunSynchronously
+                match result with
+                | FSharpCheckFileAnswer.Succeeded checkedFile ->
+                    let errors = checkedFile.Diagnostics |> Array.filter (fun diagnostic -> diagnostic.Severity = FSharpDiagnosticSeverity.Error) |> Array.map _.ErrorNumber |> Array.toList
+                    Some (scriptDiagnostics |> List.map _.ErrorNumber, errors)
+                | FSharpCheckFileAnswer.Aborted -> None)
+        {| Door = case.Public; Outcomes = outcomes |})
+    let expected = cases |> List.map (fun case -> {| Door = case.Public; Outcomes = [Some ([], []); Some ([], case.Errors)] |})
+    Xunit.Assert.True((actual = expected), sprintf "Expected %A\nActual %A" expected actual)

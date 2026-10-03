@@ -1,0 +1,43 @@
+namespace BibleAtlas.FSharp.Paging
+
+open BibleAtlas.FSharp.Domain
+
+type PageCache<'root, 'key, 'page when 'root: equality and 'key: equality> =
+    private
+        { Version: 'root
+          PageBudget: Positive
+          MostRecent: ('key * Rooted<'root, 'page>) list }
+
+    static member Empty (root: 'root) (capacity: Positive) : PageCache<'root, 'key, 'page> =
+        { Version = root; PageBudget = capacity; MostRecent = [] }
+
+    member cache.Put key page =
+        Rooted.admit cache.Version (Rooted.root page) page
+        |> Result.map (fun _ -> cache.Remember key page)
+
+    member cache.Lookup key : CacheLookup<'root, 'key, 'page> =
+        match cache.MostRecent |> List.tryFind (fun (storedKey, _) -> storedKey = key) with
+        | Some (_, page) -> CacheLookup (Some page, cache.Remember key page)
+        | None -> CacheLookup (None, cache)
+
+    member cache.Rebase root =
+        if root = cache.Version then cache
+        else PageCache<'root, 'key, 'page>.Empty root cache.PageBudget
+
+    member cache.Root = cache.Version
+    member cache.Capacity = cache.PageBudget
+    member cache.Entries = cache.MostRecent
+
+    member private cache.Remember key page =
+        { cache with
+            MostRecent =
+                (key, page) :: cache.MostRecent
+                |> List.distinctBy fst
+                |> List.truncate (Positive.value cache.PageBudget) }
+
+and CacheLookup<'root, 'key, 'page when 'root: equality and 'key: equality> =
+    private CacheLookup of page: Rooted<'root, 'page> option * cache: PageCache<'root, 'key, 'page>
+    with
+
+    member lookup.Page = match lookup with CacheLookup (page, _) -> page
+    member lookup.Cache = match lookup with CacheLookup (_, cache) -> cache

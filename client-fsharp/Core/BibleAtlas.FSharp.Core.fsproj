@@ -5,6 +5,8 @@
     <Compile Include="obj/Contract/Vocabulary.g.fs" />
     <Compile Include="Domain/Positive.fs" />
     <Compile Include="Domain/NonEmpty.fs" />
+    <Compile Include="Domain/Rooted.fs" />
+    <Compile Include="Paging/PageCache.fs" />
     <Compile Include="Admission/ArrayIndex.fs" />
     <Compile Include="Admission/DocumentPosition.fs" />
     <Compile Include="Admission/Coordinates.fs" />

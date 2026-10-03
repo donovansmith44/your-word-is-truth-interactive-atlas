@@ -1,0 +1,63 @@
+  BibleAtlas.FSharp.ContractGenerator -> /home/donovan/w/CX-FSHARP/client-fsharp.ContractGenerator/bin/Debug/net10.0/BibleAtlas.FSharp.ContractGenerator.dll
+  BibleAtlas.FSharp.Core -> /home/donovan/w/CX-FSHARP/client-fsharp/Core/bin/Debug/net10.0/BibleAtlas.FSharp.Core.dll
+  DomainLaws -> /home/donovan/w/CX-FSHARP/client-fsharp.Tests/Domain/bin/Debug/net10.0/DomainLaws.dll
+Test run for /home/donovan/w/CX-FSHARP/client-fsharp.Tests/Domain/bin/Debug/net10.0/DomainLaws.dll (.NETCoreApp,Version=v10.0)
+A total of 1 test files matched the specified pattern.
+[xUnit.net 00:00:00.30]     BibleAtlas.FSharp.Tests.Domain.RootedLaws.root admission accepts exactly the requested data version and preserves the whole value [FAIL]
+[xUnit.net 00:00:00.30]     BibleAtlas.FSharp.Tests.Domain.RootedLaws.combining values is admitted only on one coherent root [FAIL]
+[xUnit.net 00:00:00.30]     BibleAtlas.FSharp.Tests.Domain.RootedLaws.same root combination is associative and preserves the complete ordered payload [FAIL]
+[xUnit.net 00:00:00.30]     BibleAtlas.FSharp.Tests.Domain.RootedLaws.mapping preserves both the admitted root and the complete transformed value [FAIL]
+  Failed BibleAtlas.FSharp.Tests.Domain.RootedLaws.root admission accepts exactly the requested data version and preserves the whole value [8 ms]
+  Error Message:
+   FsCheck.Xunit.PropertyFailedException :
+Falsifiable, after 1 test (0 shrinks) (338847012878929955,12169587657404911929).
+Last step was invoked with size of 2 and seed of (14831852916011848974,3932000090109225299):
+Original:
+(0us, 0us, [])
+
+---- System.Exception : Expected true, got false.
+  Stack Trace:
+
+----- Inner Stack Trace -----
+
+  Failed BibleAtlas.FSharp.Tests.Domain.RootedLaws.combining values is admitted only on one coherent root [2 ms]
+  Error Message:
+   FsCheck.Xunit.PropertyFailedException :
+Falsifiable, after 1 test (0 shrinks) (7540091433907121934,18047483755055361795).
+Last step was invoked with size of 2 and seed of (6090774494428684580,3344156234270696725):
+Original:
+(0us, 0us, [], [])
+
+---- System.Exception : Expected true, got false.
+  Stack Trace:
+
+----- Inner Stack Trace -----
+
+  Failed BibleAtlas.FSharp.Tests.Domain.RootedLaws.same root combination is associative and preserves the complete ordered payload [1 ms]
+  Error Message:
+   FsCheck.Xunit.PropertyFailedException :
+Falsifiable, after 1 test (0 shrinks) (9991742499771215239,7919931006921533065).
+Last step was invoked with size of 2 and seed of (9039290431701255210,17818176393517733473):
+Original:
+(0us, [], [], [])
+
+---- System.Exception : Expected true, got false.
+  Stack Trace:
+
+----- Inner Stack Trace -----
+
+  Failed BibleAtlas.FSharp.Tests.Domain.RootedLaws.mapping preserves both the admitted root and the complete transformed value [< 1 ms]
+  Error Message:
+   FsCheck.Xunit.PropertyFailedException :
+Falsifiable, after 1 test (0 shrinks) (18196367649950658510,3310751751400514775).
+Last step was invoked with size of 2 and seed of (14917872852737134549,18383707826165130181):
+Original:
+(0us, [])
+
+---- System.Exception : Expected true, got false.
+  Stack Trace:
+
+----- Inner Stack Trace -----
+
+
+Failed!  - Failed:     4, Passed:     2, Skipped:     0, Total:     6, Duration: 154 ms - DomainLaws.dll (net10.0)

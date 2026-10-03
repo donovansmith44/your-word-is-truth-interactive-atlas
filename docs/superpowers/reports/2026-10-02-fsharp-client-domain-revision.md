@@ -131,7 +131,7 @@ Private constructors now carry meaningful guarantees for this scoped set, but
 all-source/all-door/keyword closure and the remaining costume inventory are open.
 Whole-domain pre-review C1/I1/M1/M8 is advanced, not collectively closed. Served
 root/identity/time/container/history modules, paging/cache/trail/focus and full
-structured failures are still owed; six owner choices are still pending. The
+structured failures are still owed; the six owner choices are now resolved above. The
 new leaves have no production consumers until the domain integration is approved;
 they are an owner-requested compiling design checkpoint, not completed feature
 code or a claim against the no-dead-code landing gate. Further view/exemplar work
@@ -162,3 +162,59 @@ property laws, package choice and native/WASM/runtime-size gates remain ahead
 of implementation and domain approval. No cache package was installed or custom
 LRU implemented in this checkpoint. This advances M1's survey obligation, not
 its remaining adoption/runtime evidence.
+
+
+Root coherence and bounded cache checkpoint (2026-10-03, after the survey):
+[Rooted](../../../client-fsharp/Core/Domain/Rooted.fs) and
+[PageCache](../../../client-fsharp/Core/Paging/PageCache.fs) now compile in Core.
+Their actual declarations, examples and limits are in the
+[module tour](../specs/2026-10-03-fsharp-domain.md). No cache package or new wire
+identity was added. The generic parameters stand for already admitted version,
+query/key and payload types; this is not an alternative contract vocabulary.
+
+Rooted admits equality of expected/observed identities at one door. Mapping
+preserves the seal; map2 reuses the same door before combining values. The cache
+owns one root and a positive page budget, rejects foreign-root pages, promotes
+hits, replaces equal keys once and forgets older pages. Rebase is identity for
+the same root and empty for a new root. All operations preserve prior immutable
+snapshots. The single private Remember member delegates uniqueness/truncation
+to existing FSharp.Core lists; no dictionary, mutable list or cache framework is
+implemented. Its callers precede it; cache and lookup form a genuine mutual
+type dependency. Each page still needs its own size bound in a later window
+module; cache cardinality does not establish that bound.
+
+The failed category was forgeable invariant-bearing results: RootMismatch and
+CacheLookup initially had public records, allowing equal-root mismatches and
+inconsistent lookup/cache pairs. Both representations are now private. The
+compiler property checks each public-use/forbidden-construction program
+independently, including all twelve representations; a larger diagnostic count
+on one record cannot hide zero diagnostics on another constructor. This is
+scoped constructor closure, not all-source admission/identity/keyword closure.
+
+| Gate | Exact observed result |
+|---|---|
+| [Root red](evidence/2026-10-03-fsharp-domain/rooted-red.log) | Six properties written first; the always-refusing scaffold fails four meaningful root/map/combine properties. No scaffold retained in production. |
+| [Cache red](evidence/2026-10-03-fsharp-domain/cache-red.log) | Eight initial properties; the no-op Remember scaffold fails five insertion/replacement/eviction/resource properties. No scaffold retained in production. |
+| [Result-construction red](evidence/2026-10-03-fsharp-domain/rooted-cache-construction-red.log) | All twelve cases compile independently; public RootMismatch and CacheLookup record construction incorrectly succeeds. The refined gate exposes both holes despite the private cache record's six diagnostics. |
+| [Domain green](evidence/2026-10-03-fsharp-domain/rooted-cache-green.log) | 33 properties pass, none skipped. Includes six Rooted and ten cache laws, structured cursor keys, old-root completion refusal after rebase, hit/eviction snapshots and twelve generated 10,000-put journeys. Three generated script-name variants exercise 72 independent public/forbidden compilation programs. |
+| [Regression green](evidence/2026-10-03-fsharp-domain/rooted-cache-regression.log) | 142 normal tests pass, none skipped; same physical domain files discovered by the ordinary test project. The existing module-helper/fixture source-order gate passes. |
+| [Debug WASM](evidence/2026-10-03-fsharp-domain/rooted-cache-wasm.log) | Client build passes with zero warnings/errors. Build compatibility only; no browser, fresh AOT, runtime-size or parity claim. |
+
+All sixteen added behavioural tests are properties. The constructor property is
+also a property and uses the pinned FSharp.Compiler.Service, confined to native
+tests. No new application comments, fake rec, partial input access or exception
+control flow is introduced in these modules. Old example tests and broader
+source-order violations remain open. These modules remain a compiling design
+checkpoint until the owner approves and the actual application adapters consume
+them; they do not satisfy the no-dead-code landing or whole-domain gates alone.
+
+Concrete generated roots/cursors, served Years and finer chronology, containers,
+passages/accounts, bounded reading/neighbour windows, trail/focus and structured
+failure composition remain to implement. Full pre-review closure, sign-off and
+100% client parity are still open; view/exemplar expansion stays gated.
+
+Capacity: retain these small evidence files and gate metadata, then prune
+stopped owned mutation results/targets and obsolete build outputs under CX-I3.
+The remaining large mut directory belongs to Claude (claude-WIREID); it is
+untouched. Windows C: still has about 3.7 GB free while WSL reports about 785 GB.
+No fresh Cargo/AOT target, shared artifact write, server or Codex lock was used.

@@ -1,0 +1,79 @@
+  BibleAtlas.FSharp.ContractGenerator -> /home/donovan/w/CX-FSHARP/client-fsharp.ContractGenerator/bin/Debug/net10.0/BibleAtlas.FSharp.ContractGenerator.dll
+  BibleAtlas.FSharp.Core -> /home/donovan/w/CX-FSHARP/client-fsharp/Core/bin/Debug/net10.0/BibleAtlas.FSharp.Core.dll
+  DomainLaws -> /home/donovan/w/CX-FSHARP/client-fsharp.Tests/Domain/bin/Debug/net10.0/DomainLaws.dll
+Test run for /home/donovan/w/CX-FSHARP/client-fsharp.Tests/Domain/bin/Debug/net10.0/DomainLaws.dll (.NETCoreApp,Version=v10.0)
+A total of 1 test files matched the specified pattern.
+[xUnit.net 00:00:00.27]     BibleAtlas.FSharp.Tests.Domain.PageCacheLaws.replacing a key installs its new page once and makes it most recent [FAIL]
+[xUnit.net 00:00:00.28]     BibleAtlas.FSharp.Tests.Domain.PageCacheLaws.ten thousand distinct puts retain exactly the latest page budget and no prefix history [FAIL]
+[xUnit.net 00:00:00.28]     BibleAtlas.FSharp.Tests.Domain.PageCacheLaws.a hit returns the whole page and refreshes recency before eviction [FAIL]
+[xUnit.net 00:00:00.28]     BibleAtlas.FSharp.Tests.Domain.PageCacheLaws.rebasing is identity at the same root and clears pages at another root [FAIL]
+[xUnit.net 00:00:00.29]     BibleAtlas.FSharp.Tests.Domain.PageCacheLaws.put preserves a complete admitted page under its exact key [FAIL]
+  Failed BibleAtlas.FSharp.Tests.Domain.PageCacheLaws.replacing a key installs its new page once and makes it most recent [8 ms]
+  Error Message:
+   FsCheck.Xunit.PropertyFailedException :
+Falsifiable, after 1 test (0 shrinks) (8998497448162097791,14992444740031239753).
+Last step was invoked with size of 2 and seed of (9915238060891062288,17458423051018068057):
+Original:
+(0us, [], [], [])
+
+---- System.Exception : Expected true, got false.
+  Stack Trace:
+
+----- Inner Stack Trace -----
+
+  Failed BibleAtlas.FSharp.Tests.Domain.PageCacheLaws.ten thousand distinct puts retain exactly the latest page budget and no prefix history [7 ms]
+  Error Message:
+   FsCheck.Xunit.PropertyFailedException :
+Falsifiable, after 1 test (1 shrink) (9470318677182997898,15092382855147006877).
+Last step was invoked with size of 9 and seed of (3957658600163519224,675149776327447231):
+Original:
+(2us, 0us)
+Shrunk:
+(0us, 0us)
+
+---- System.Exception : Expected true, got false.
+  Stack Trace:
+
+----- Inner Stack Trace -----
+
+  Failed BibleAtlas.FSharp.Tests.Domain.PageCacheLaws.a hit returns the whole page and refreshes recency before eviction [1 ms]
+  Error Message:
+   FsCheck.Xunit.PropertyFailedException :
+Falsifiable, after 1 test (0 shrinks) (13276226979717526951,4193626795416409887).
+Last step was invoked with size of 2 and seed of (176108477294992793,3189233085888171983):
+Original:
+(0us, [], [], [])
+
+---- System.Exception : Expected true, got false.
+  Stack Trace:
+
+----- Inner Stack Trace -----
+
+  Failed BibleAtlas.FSharp.Tests.Domain.PageCacheLaws.rebasing is identity at the same root and clears pages at another root [2 ms]
+  Error Message:
+   FsCheck.Xunit.PropertyFailedException :
+Falsifiable, after 1 test (0 shrinks) (823314905245220286,12266325296367380413).
+Last step was invoked with size of 2 and seed of (18190688481947244652,16347006165415425669):
+Original:
+(0us, [])
+
+---- System.Exception : Expected true, got false.
+  Stack Trace:
+
+----- Inner Stack Trace -----
+
+  Failed BibleAtlas.FSharp.Tests.Domain.PageCacheLaws.put preserves a complete admitted page under its exact key [1 ms]
+  Error Message:
+   FsCheck.Xunit.PropertyFailedException :
+Falsifiable, after 1 test (0 shrinks) (15133016682901286777,958276183236787491).
+Last step was invoked with size of 2 and seed of (9143849296384761199,2498210915829579977):
+Original:
+(0us, 0, [])
+
+---- System.Exception : Expected true, got false.
+  Stack Trace:
+
+----- Inner Stack Trace -----
+
+
+Failed!  - Failed:     5, Passed:     3, Skipped:     0, Total:     8, Duration: 160 ms - DomainLaws.dll (net10.0)

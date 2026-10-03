@@ -1,0 +1,81 @@
+  BibleAtlas.FSharp.ContractGenerator -> /home/donovan/w/CX-FSHARP/client-fsharp.ContractGenerator/bin/Debug/net10.0/BibleAtlas.FSharp.ContractGenerator.dll
+  BibleAtlas.FSharp.Core -> /home/donovan/w/CX-FSHARP/client-fsharp/Core/bin/Debug/net10.0/BibleAtlas.FSharp.Core.dll
+  DomainLaws -> /home/donovan/w/CX-FSHARP/client-fsharp.Tests/Domain/bin/Debug/net10.0/DomainLaws.dll
+Test run for /home/donovan/w/CX-FSHARP/client-fsharp.Tests/Domain/bin/Debug/net10.0/DomainLaws.dll (.NETCoreApp,Version=v10.0)
+A total of 1 test files matched the specified pattern.
+[xUnit.net 00:00:05.35]     BibleAtlas.FSharp.Tests.Domain.AdmissionSurfaceLaws.every private representation refuses direct construction while its own public door compiles [FAIL]
+  Failed BibleAtlas.FSharp.Tests.Domain.AdmissionSurfaceLaws.every private representation refuses direct construction while its own public door compiles [5 s]
+  Error Message:
+   FsCheck.Xunit.PropertyFailedException :
+Falsifiable, after 1 test (0 shrinks) (17713158276086056386,11703631861735668029).
+Last step was invoked with size of 34 and seed of (659213614258857229,4403981032326460483):
+Original:
+0us
+
+---- Expected [{| Door = "Positive.admit 1"
+    Outcomes = [Some ([], []); Some ([], [1093])] |};
+ {| Door = "NonEmpty.admit [1]"
+    Outcomes = [Some ([], []); Some ([], [1093])] |};
+ {| Door = "Rooted.admit 0us 0us [1]"
+    Outcomes = [Some ([], []); Some ([], [1093])] |};
+ {| Door = "Rooted.admit 0us 1us [1] |> Result.mapError id"
+    Outcomes = [Some ([], []); Some ([], [1093])] |};
+ {| Door =
+     "Positive.admit 1 |> Result.map (BibleAtlas.FSharp.Paging.PageCache<uint16, int, int>.Empty 0us)"
+    Outcomes = [Some ([], []); Some ([], [1093; 1093; 1093; 1093; 1093; 1093])] |};
+ {| Door =
+     "Positive.admit 1 |> Result.map (fun capacity -> (BibleAtlas.FSharp.Paging.PageCache<uint16, int, int>.Empty 0us capacity).Lookup 0)"
+    Outcomes = [Some ([], []); Some ([], [1093])] |};
+ {| Door = "ArrayIndices.admit 0"
+    Outcomes = [Some ([], []); Some ([], [1093])] |};
+ {| Door = "LineNumbers.admit 1L"
+    Outcomes = [Some ([], []); Some ([], [1093])] |};
+ {| Door = "ByteColumns.admit 1L"
+    Outcomes = [Some ([], []); Some ([], [1093])] |};
+ {| Door = "Latitudes.admit 0.0"
+    Outcomes = [Some ([], []); Some ([], [1093])] |};
+ {| Door = "Longitudes.admit 0.0"
+    Outcomes = [Some ([], []); Some ([], [1093])] |};
+ {| Door = "HttpUrls.admit "https://example.org/""
+    Outcomes = [Some ([], []); Some ([], [1093])] |}]
+Actual [{| Door = "Positive.admit 1"
+    Outcomes = [Some ([], []); Some ([], [1093])] |};
+ {| Door = "NonEmpty.admit [1]"
+    Outcomes = [Some ([], []); Some ([], [1093])] |};
+ {| Door = "Rooted.admit 0us 0us [1]"
+    Outcomes = [Some ([], []); Some ([], [1093])] |};
+ {| Door = "Rooted.admit 0us 1us [1] |> Result.mapError id"
+    Outcomes = [Some ([], []); Some ([], [])] |};
+ {| Door =
+     "Positive.admit 1 |> Result.map (BibleAtlas.FSharp.Paging.PageCache<uint16, int, int>.Empty 0us)"
+    Outcomes = [Some ([], []); Some ([], [1093; 1093; 1093; 1093; 1093; 1093])] |};
+ {| Door =
+     "Positive.admit 1 |> Result.map (fun capacity -> (BibleAtlas.FSharp.Paging.PageCache<uint16, int, int>.Empty 0us capacity).Lookup 0)"
+    Outcomes = [Some ([], []); Some ([], [])] |};
+ {| Door = "ArrayIndices.admit 0"
+    Outcomes = [Some ([], []); Some ([], [1093])] |};
+ {| Door = "LineNumbers.admit 1L"
+    Outcomes = [Some ([], []); Some ([], [1093])] |};
+ {| Door = "ByteColumns.admit 1L"
+    Outcomes = [Some ([], []); Some ([], [1093])] |};
+ {| Door = "Latitudes.admit 0.0"
+    Outcomes = [Some ([], []); Some ([], [1093])] |};
+ {| Door = "Longitudes.admit 0.0"
+    Outcomes = [Some ([], []); Some ([], [1093])] |};
+ {| Door = "HttpUrls.admit "https://example.org/""
+    Outcomes = [Some ([], []); Some ([], [1093])] |}]
+  Stack Trace:
+
+----- Inner Stack Trace -----
+   at BibleAtlas.FSharp.Tests.Domain.AdmissionSurfaceLaws.every private representation refuses direct construction while its own public door compiles(UInt16 suffix) in /home/donovan/w/CX-FSHARP/client-fsharp.Tests/Domain/AdmissionSurfaceLaws.fs:line 48
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeDirectByRefWithFewArgs(Object obj, Span`1 copyOfArgs, BindingFlags invokeAttr)
+--- End of stack trace from previous location ---
+   at FsCheck.Runner.invokeAndThrowInner@592-1.Invoke(Object[] o) in C:\Users\kurts\Projects\FsCheck\src\FsCheck\Runner.fs:line 595
+   at <StartupCode$FSharp-Core>.$Reflect.Invoke@1230.Invoke(T1 inp) in /__w/1/s/src/fsharp/src/FSharp.Core/reflect.fs:line 1230
+   at System.Lazy`1.ViaFactory(LazyThreadSafetyMode mode)
+   at System.Lazy`1.ExecutionAndPublication(LazyHelper executionAndPublication, Boolean useDefaultConstructor)
+   at System.Lazy`1.CreateValue()
+   at FsCheck.Testable.Prop.safeForce[a](Lazy`1 body) in C:\Users\kurts\Projects\FsCheck\src\FsCheck\Testable.fs:line 164
+
+Failed!  - Failed:     1, Passed:     0, Skipped:     0, Total:     1, Duration: 5 s - DomainLaws.dll (net10.0)
