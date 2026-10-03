@@ -34,6 +34,12 @@ hatch — and adding one to a previously-green scenario is classified
 
 ---
 
+- **0.27.0** (A-F39, the version root covers every table a section file holds, F-39) — **MINOR under the 0.x policy (MAJOR class: blessed fixtures moved).**
+  Each section's logical hash now also reads its compiled `label`, `edge_index` and `edge_count`
+  rows, so every logical hash and the version root move once; the section schema stays 26 (the file
+  format is unchanged). Re-blessed: every fixture carrying the version root; the http pact carries
+  them too. No scenario, projection or served value changed.
+
 - **0.26.0** (A-LICENSE-BOC, the served Book of Concord is the 1921 Triglot only, F-79) — **MINOR under the 0.x policy (MAJOR class: blessed fixtures moved).**
   The concord section no longer serves the vendored pages' non-Triglot material: 25 units leave
   (BoC 7.10.0-7.10.20, the © 1986 CPH "Christian Questions with Their Answers"; 2.1.4 and 2.1.5;
