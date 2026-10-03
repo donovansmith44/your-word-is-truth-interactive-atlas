@@ -1,0 +1,42 @@
+{
+  "scope": "author checkpoint; current full Core build remains red",
+  "producer_base": "da7e00d",
+  "source_parent": "88f0d26",
+  "carry_forward": "a3bb8c3",
+  "initial_red": {
+    "generator_failed": 3,
+    "generator_passed": 4,
+    "skipped": 0
+  },
+  "portable_green": {
+    "generator_properties": 7,
+    "identity_properties": 5,
+    "failed": 0,
+    "skipped": 0
+  },
+  "published_identities": 21,
+  "widenings": 26,
+  "csharp_generator_identity_count": 20,
+  "difference": "FSharp generates published ReadingReference; CSharp excludes it via ContractGeneration.Unread. Four additional declared/subset widenings are pinned explicitly.",
+  "external_compiler_checks": {
+    "per_sample": 25,
+    "samples": 2,
+    "total": 50,
+    "accepted": 2,
+    "private_refusals": 42,
+    "wrong_identity_refusals": 6
+  },
+  "normal_core_errors": 20,
+  "open_obligations": [
+    "existing consumer root/cursor/reference/provenance typing",
+    "normal Core/client tests/Debug WASM",
+    "whole source order",
+    "unused/dead islands",
+    "structured failures/frontier",
+    "owner whole-domain sign-off",
+    "100% parity"
+  ],
+  "input_sha256": "03a0002ba98f90d39b2a4bb64a4228e7e5dc37d78f1a83c84450c24d3108ec0f",
+  "generator_sha256": "a468f694ff99c66eb6d2547500f5e0b68aaeb31395abfff0b28a04ce5940d306",
+  "generated_untracked_sha256": "9d6fc7a66b7c168a6736352496f93ae4efd72d3f7cfd87f51c8207da44fa6521"
+}

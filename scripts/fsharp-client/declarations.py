@@ -36,7 +36,7 @@ with tempfile.TemporaryDirectory(prefix='atlas-declarations-') as temporary:
         arguments = [argument for argument in manifest[1]['arguments'] if argument.startswith('-')]
         arguments += [str(definitions), str(tests), str(caller)]
         manifest = [{'project': str(directory / 'Probe.fsproj'), 'arguments': arguments}]
-    source = Path(temporary) / 'projects.json' 
+    source = Path(temporary) / 'projects.json'
     source.write_text(json.dumps(manifest))
     result = subprocess.run(['dotnet', 'fsi', str(Path(__file__).with_suffix('.fsx')), str(source)], cwd=root, env=environment, timeout=120, capture_output=self_test, text=self_test)
     if self_test:

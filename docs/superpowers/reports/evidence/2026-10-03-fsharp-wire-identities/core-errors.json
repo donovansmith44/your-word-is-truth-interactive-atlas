@@ -1,0 +1,102 @@
+[
+  {
+    "site": "client-fsharp/Core/Admission/GraphRead.fs(14,110)",
+    "code": "FS0001",
+    "message": "Type mismatch. Expecting a\n    'ElementPageCursor option'    \nbut given a\n    'int option'    \nThe type 'ElementPageCursor' does not match the type 'int' [/home/donovan/w/CX-FSHARP-wire/client-fsharp/Core/BibleAtlas.FSharp.Core.fsproj]"
+  },
+  {
+    "site": "client-fsharp/Core/Admission/GraphRead.fs(14,86)",
+    "code": "FS0001",
+    "message": "Type mismatch. Expecting a\n    'PositionRef -> ElementId'    \nbut given a\n    'PositionRef -> NodeId'    \nThe type 'ElementId' does not match the type 'NodeId' [/home/donovan/w/CX-FSHARP-wire/client-fsharp/Core/BibleAtlas.FSharp.Core.fsproj]"
+  },
+  {
+    "site": "client-fsharp/Core/Admission/GraphRead.fs(19,38)",
+    "code": "FS0001",
+    "message": "This expression was expected to have type\n    'string'    \nbut here has type\n    'ArtifactRoot' [/home/donovan/w/CX-FSHARP-wire/client-fsharp/Core/BibleAtlas.FSharp.Core.fsproj]"
+  },
+  {
+    "site": "client-fsharp/Core/Admission/GraphRead.fs(19,87)",
+    "code": "FS0001",
+    "message": "This expression was expected to have type\n    'string'    \nbut here has type\n    'ArtifactRoot' [/home/donovan/w/CX-FSHARP-wire/client-fsharp/Core/BibleAtlas.FSharp.Core.fsproj]"
+  },
+  {
+    "site": "client-fsharp/Core/Admission/GraphRead.fs(21,30)",
+    "code": "FS0001",
+    "message": "This expression was expected to have type\n    'string'    \nbut here has type\n    'ArtifactRoot' [/home/donovan/w/CX-FSHARP-wire/client-fsharp/Core/BibleAtlas.FSharp.Core.fsproj]"
+  },
+  {
+    "site": "client-fsharp/Core/Admission/GraphRead.fs(29,102)",
+    "code": "FS0001",
+    "message": "This expression was expected to have type\n    'string'    \nbut here has type\n    'ArtifactRoot' [/home/donovan/w/CX-FSHARP-wire/client-fsharp/Core/BibleAtlas.FSharp.Core.fsproj]"
+  },
+  {
+    "site": "client-fsharp/Core/Admission/GraphRead.fs(29,82)",
+    "code": "FS0001",
+    "message": "This expression was expected to have type\n    'int'    \nbut here has type\n    'ElementPageCursor' [/home/donovan/w/CX-FSHARP-wire/client-fsharp/Core/BibleAtlas.FSharp.Core.fsproj]"
+  },
+  {
+    "site": "client-fsharp/Core/Admission/GraphRead.fs(37,34)",
+    "code": "FS0001",
+    "message": "This expression was expected to have type\n    'ArtifactRoot'    \nbut here has type\n    'string' [/home/donovan/w/CX-FSHARP-wire/client-fsharp/Core/BibleAtlas.FSharp.Core.fsproj]"
+  },
+  {
+    "site": "client-fsharp/Core/Domain/Position.fs(31,64)",
+    "code": "FS0001",
+    "message": "This expression was expected to have type\n    'string'    \nbut here has type\n    'ArtifactRoot' [/home/donovan/w/CX-FSHARP-wire/client-fsharp/Core/BibleAtlas.FSharp.Core.fsproj]"
+  },
+  {
+    "site": "client-fsharp/Core/Domain/Position.fs(32,38)",
+    "code": "FS0001",
+    "message": "This expression was expected to have type\n    'string'    \nbut here has type\n    'ArtifactRoot' [/home/donovan/w/CX-FSHARP-wire/client-fsharp/Core/BibleAtlas.FSharp.Core.fsproj]"
+  },
+  {
+    "site": "client-fsharp/Core/Domain/Position.fs(32,44)",
+    "code": "FS0001",
+    "message": "This expression was expected to have type\n    'string'    \nbut here has type\n    'ArtifactRoot' [/home/donovan/w/CX-FSHARP-wire/client-fsharp/Core/BibleAtlas.FSharp.Core.fsproj]"
+  },
+  {
+    "site": "client-fsharp/Core/Domain/Position.fs(33,50)",
+    "code": "FS0001",
+    "message": "This expression was expected to have type\n    'string'    \nbut here has type\n    'ArtifactRoot' [/home/donovan/w/CX-FSHARP-wire/client-fsharp/Core/BibleAtlas.FSharp.Core.fsproj]"
+  },
+  {
+    "site": "client-fsharp/Core/Domain/Position.fs(9,40)",
+    "code": "FS0001",
+    "message": "All branches of a pattern match expression must return values implicitly convertible to the type of the first branch, which here is 'NodeId'. This branch returns a value of type 'EdgeId'. [/home/donovan/w/CX-FSHARP-wire/client-fsharp/Core/BibleAtlas.FSharp.Core.fsproj]"
+  },
+  {
+    "site": "client-fsharp/Core/Model.fs(222,120)",
+    "code": "FS0001",
+    "message": "This expression was expected to have type\n    'TextWindowReference'    \nbut here has type\n    'UnitReference' [/home/donovan/w/CX-FSHARP-wire/client-fsharp/Core/BibleAtlas.FSharp.Core.fsproj]"
+  },
+  {
+    "site": "client-fsharp/Core/Model.fs(242,49)",
+    "code": "FS0001",
+    "message": "This expression was expected to have type\n    'TextWindowReference'    \nbut here has type\n    'string' [/home/donovan/w/CX-FSHARP-wire/client-fsharp/Core/BibleAtlas.FSharp.Core.fsproj]"
+  },
+  {
+    "site": "client-fsharp/Core/Model.fs(260,157)",
+    "code": "FS0001",
+    "message": "This expression was expected to have type\n    'string'    \nbut here has type\n    'ContentsReference' [/home/donovan/w/CX-FSHARP-wire/client-fsharp/Core/BibleAtlas.FSharp.Core.fsproj]"
+  },
+  {
+    "site": "client-fsharp/Core/Model.fs(265,75)",
+    "code": "FS0001",
+    "message": "This expression was expected to have type\n    'string'    \nbut here has type\n    'ContentsReference' [/home/donovan/w/CX-FSHARP-wire/client-fsharp/Core/BibleAtlas.FSharp.Core.fsproj]"
+  },
+  {
+    "site": "client-fsharp/Core/Model.fs(267,99)",
+    "code": "FS0001",
+    "message": "This expression was expected to have type\n    'string'    \nbut here has type\n    'ContentsReference' [/home/donovan/w/CX-FSHARP-wire/client-fsharp/Core/BibleAtlas.FSharp.Core.fsproj]"
+  },
+  {
+    "site": "client-fsharp/Core/Presentation.fs(28,66)",
+    "code": "FS0001",
+    "message": "This expression was expected to have type\n    'string'    \nbut here has type\n    'Provenance' [/home/donovan/w/CX-FSHARP-wire/client-fsharp/Core/BibleAtlas.FSharp.Core.fsproj]"
+  },
+  {
+    "site": "client-fsharp/Core/Presentation.fs(48,49)",
+    "code": "FS0001",
+    "message": "Type mismatch. Expecting a\n    'string option'    \nbut given a\n    'Provenance option'    \nThe type 'string' does not match the type 'Provenance' [/home/donovan/w/CX-FSHARP-wire/client-fsharp/Core/BibleAtlas.FSharp.Core.fsproj]"
+  }
+]

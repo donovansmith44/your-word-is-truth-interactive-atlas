@@ -1,0 +1,86 @@
+  Determining projects to restore...
+  Restored /home/donovan/w/CX-FSHARP-wire/client-fsharp.ContractGenerator/BibleAtlas.FSharp.ContractGenerator.fsproj (in 176 ms).
+  Restored /home/donovan/mut/codex-CX-FSHARP-wire-probe/GeneratorLaws.fsproj (in 199 ms).
+  BibleAtlas.FSharp.ContractGenerator -> /home/donovan/w/CX-FSHARP-wire/client-fsharp.ContractGenerator/bin/Debug/net10.0/BibleAtlas.FSharp.ContractGenerator.dll
+  GeneratorLaws -> /home/donovan/mut/codex-CX-FSHARP-wire-probe/bin/Debug/net10.0/GeneratorLaws.dll
+Test run for /home/donovan/mut/codex-CX-FSHARP-wire-probe/bin/Debug/net10.0/GeneratorLaws.dll (.NETCoreApp,Version=v10.0)
+A total of 1 test files matched the specified pattern.
+[xUnit.net 00:00:00.22]     BibleAtlas.FSharp.Tests.GeneratorTests.a named identity union has its own representation and a widening from its declared leaf [FAIL]
+[xUnit.net 00:00:00.25]     BibleAtlas.FSharp.Tests.GeneratorTests.a cursor default is exposed only as its own typed first value [FAIL]
+[xUnit.net 00:00:00.31]     BibleAtlas.FSharp.Tests.GeneratorTests.every schema in the current published contract generates without an untyped fallback [FAIL]
+  Failed BibleAtlas.FSharp.Tests.GeneratorTests.a named identity union has its own representation and a widening from its declared leaf [72 ms]
+  Error Message:
+   FsCheck.Xunit.PropertyFailedException :
+Falsifiable, after 1 test (1 shrink) (16732033106198669689,1115736643652536505).
+Last step was invoked with size of 2 and seed of (12829039909452462761,15216509071736375589):
+Original:
+2us
+Shrunk:
+0us
+
+---- Assert.Equal() Failure: Values differ
+Expected: Microsoft.FSharp.Core.FSharpResult`2[System.String,System.String]
+Actual:   Microsoft.FSharp.Core.FSharpResult`2[System.String,System.String]
+  Stack Trace:
+
+----- Inner Stack Trace -----
+   at BibleAtlas.FSharp.Tests.GeneratorTests.a named identity union has its own representation and a widening from its declared leaf(UInt16 suffix) in /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/GeneratorTests.fs:line 63
+   at InvokeStub_GeneratorTests.a named identity union has its own representation and a widening from its declared leaf(Object, Span`1)
+   at System.Reflection.MethodBaseInvoker.InvokeWithOneArg(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
+--- End of stack trace from previous location ---
+   at FsCheck.Runner.invokeAndThrowInner@592-1.Invoke(Object[] o) in C:\Users\kurts\Projects\FsCheck\src\FsCheck\Runner.fs:line 595
+   at <StartupCode$FSharp-Core>.$Reflect.Invoke@1230.Invoke(T1 inp) in /__w/1/s/src/fsharp/src/FSharp.Core/reflect.fs:line 1230
+   at System.Lazy`1.ViaFactory(LazyThreadSafetyMode mode)
+   at System.Lazy`1.ExecutionAndPublication(LazyHelper executionAndPublication, Boolean useDefaultConstructor)
+   at System.Lazy`1.CreateValue()
+   at FsCheck.Testable.Prop.safeForce[a](Lazy`1 body) in C:\Users\kurts\Projects\FsCheck\src\FsCheck\Testable.fs:line 164
+  Failed BibleAtlas.FSharp.Tests.GeneratorTests.a cursor default is exposed only as its own typed first value [28 ms]
+  Error Message:
+   FsCheck.Xunit.PropertyFailedException :
+Falsifiable, after 1 test (1 shrink) (10893441486434549996,18069153781978559217).
+Last step was invoked with size of 2 and seed of (9550838204625722651,10477337351967989377):
+Original:
+(0us, 151uy)
+Shrunk:
+(0us, 0uy)
+
+---- Assert.Equal() Failure: Values differ
+Expected: Microsoft.FSharp.Core.FSharpResult`2[System.String,System.String]
+Actual:   Microsoft.FSharp.Core.FSharpResult`2[System.String,System.String]
+  Stack Trace:
+
+----- Inner Stack Trace -----
+   at BibleAtlas.FSharp.Tests.GeneratorTests.a cursor default is exposed only as its own typed first value(UInt16 suffix, Byte start) in /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/GeneratorTests.fs:line 55
+   at InvokeStub_GeneratorTests.a cursor default is exposed only as its own typed first value(Object, Span`1)
+   at System.Reflection.MethodBaseInvoker.InvokeWithFewArgs(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
+--- End of stack trace from previous location ---
+   at FsCheck.Runner.invokeAndThrowInner@592-1.Invoke(Object[] o) in C:\Users\kurts\Projects\FsCheck\src\FsCheck\Runner.fs:line 595
+   at <StartupCode$FSharp-Core>.$Reflect.Invoke@1230.Invoke(T1 inp) in /__w/1/s/src/fsharp/src/FSharp.Core/reflect.fs:line 1230
+   at System.Lazy`1.ViaFactory(LazyThreadSafetyMode mode)
+   at System.Lazy`1.ExecutionAndPublication(LazyHelper executionAndPublication, Boolean useDefaultConstructor)
+   at System.Lazy`1.CreateValue()
+   at FsCheck.Testable.Prop.safeForce[a](Lazy`1 body) in C:\Users\kurts\Projects\FsCheck\src\FsCheck\Testable.fs:line 164
+  Failed BibleAtlas.FSharp.Tests.GeneratorTests.every schema in the current published contract generates without an untyped fallback [15 ms]
+  Error Message:
+   FsCheck.Xunit.PropertyFailedException :
+Falsifiable, after 1 test (0 shrinks) (3937312662294005698,14697754444187704633).
+Last step was invoked with size of 100 and seed of (612021065854637332,8124999741804097877):
+Original:
+<null>
+
+---- BibleReference: unsupported union { { oneOf, [ { { $ref, #/components/schemas/BookId } }, { { $ref, #/components/schemas/ChapterReference } }, { { $ref, #/components/schemas/VerseReference } }, { { $ref, #/components/schemas/PassageReference } } ] }, { description, Any reference into the Bible: a whole book, a chapter, a verse, or a run of verses within one chapter. } }
+  Stack Trace:
+
+----- Inner Stack Trace -----
+   at BibleAtlas.FSharp.Tests.GeneratorTests.every schema in the current published contract generates without an untyped fallback() in /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/GeneratorTests.fs:line 23
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+--- End of stack trace from previous location ---
+   at FsCheck.Runner.invokeAndThrowInner@592-1.Invoke(Object[] o) in C:\Users\kurts\Projects\FsCheck\src\FsCheck\Runner.fs:line 595
+   at <StartupCode$FSharp-Core>.$Reflect.Invoke@1230.Invoke(T1 inp) in /__w/1/s/src/fsharp/src/FSharp.Core/reflect.fs:line 1230
+   at System.Lazy`1.ViaFactory(LazyThreadSafetyMode mode)
+   at System.Lazy`1.ExecutionAndPublication(LazyHelper executionAndPublication, Boolean useDefaultConstructor)
+   at System.Lazy`1.CreateValue()
+   at FsCheck.Testable.Prop.safeForce[a](Lazy`1 body) in C:\Users\kurts\Projects\FsCheck\src\FsCheck\Testable.fs:line 164
+
+Failed!  - Failed:     3, Passed:     4, Skipped:     0, Total:     7, Duration: 212 ms - GeneratorLaws.dll (net10.0)

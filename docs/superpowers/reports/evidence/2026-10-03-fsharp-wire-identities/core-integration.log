@@ -1,0 +1,171 @@
+  Determining projects to restore...
+  Restored /home/donovan/w/CX-FSHARP-wire/client-fsharp/Core/BibleAtlas.FSharp.Core.fsproj (in 174 ms).
+  1 of 2 projects are up-to-date for restore.
+  BibleAtlas.FSharp.ContractGenerator -> /home/donovan/w/CX-FSHARP-wire/client-fsharp.ContractGenerator/bin/Debug/net10.0/BibleAtlas.FSharp.ContractGenerator.dll
+/home/donovan/w/CX-FSHARP-wire/client-fsharp/Core/Domain/Position.fs(9,40): error FS0001: All branches of a pattern match expression must return values implicitly convertible to the type of the first branch, which here is 'NodeId'. This branch returns a value of type 'EdgeId'. [/home/donovan/w/CX-FSHARP-wire/client-fsharp/Core/BibleAtlas.FSharp.Core.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp/Core/Domain/Position.fs(31,64): error FS0001: This expression was expected to have type
+    'string'
+but here has type
+    'ArtifactRoot' [/home/donovan/w/CX-FSHARP-wire/client-fsharp/Core/BibleAtlas.FSharp.Core.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp/Core/Domain/Position.fs(32,38): error FS0001: This expression was expected to have type
+    'string'
+but here has type
+    'ArtifactRoot' [/home/donovan/w/CX-FSHARP-wire/client-fsharp/Core/BibleAtlas.FSharp.Core.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp/Core/Domain/Position.fs(32,44): error FS0001: This expression was expected to have type
+    'string'
+but here has type
+    'ArtifactRoot' [/home/donovan/w/CX-FSHARP-wire/client-fsharp/Core/BibleAtlas.FSharp.Core.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp/Core/Domain/Position.fs(33,50): error FS0001: This expression was expected to have type
+    'string'
+but here has type
+    'ArtifactRoot' [/home/donovan/w/CX-FSHARP-wire/client-fsharp/Core/BibleAtlas.FSharp.Core.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp/Core/Presentation.fs(28,66): error FS0001: This expression was expected to have type
+    'string'
+but here has type
+    'Provenance' [/home/donovan/w/CX-FSHARP-wire/client-fsharp/Core/BibleAtlas.FSharp.Core.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp/Core/Presentation.fs(48,49): error FS0001: Type mismatch. Expecting a
+    'string option'
+but given a
+    'Provenance option'
+The type 'string' does not match the type 'Provenance' [/home/donovan/w/CX-FSHARP-wire/client-fsharp/Core/BibleAtlas.FSharp.Core.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp/Core/Admission/GraphRead.fs(14,86): error FS0001: Type mismatch. Expecting a
+    'PositionRef -> ElementId'
+but given a
+    'PositionRef -> NodeId'
+The type 'ElementId' does not match the type 'NodeId' [/home/donovan/w/CX-FSHARP-wire/client-fsharp/Core/BibleAtlas.FSharp.Core.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp/Core/Admission/GraphRead.fs(14,110): error FS0001: Type mismatch. Expecting a
+    'ElementPageCursor option'
+but given a
+    'int option'
+The type 'ElementPageCursor' does not match the type 'int' [/home/donovan/w/CX-FSHARP-wire/client-fsharp/Core/BibleAtlas.FSharp.Core.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp/Core/Admission/GraphRead.fs(19,38): error FS0001: This expression was expected to have type
+    'string'
+but here has type
+    'ArtifactRoot' [/home/donovan/w/CX-FSHARP-wire/client-fsharp/Core/BibleAtlas.FSharp.Core.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp/Core/Admission/GraphRead.fs(19,87): error FS0001: This expression was expected to have type
+    'string'
+but here has type
+    'ArtifactRoot' [/home/donovan/w/CX-FSHARP-wire/client-fsharp/Core/BibleAtlas.FSharp.Core.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp/Core/Admission/GraphRead.fs(21,30): error FS0001: This expression was expected to have type
+    'string'
+but here has type
+    'ArtifactRoot' [/home/donovan/w/CX-FSHARP-wire/client-fsharp/Core/BibleAtlas.FSharp.Core.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp/Core/Admission/GraphRead.fs(29,82): error FS0001: This expression was expected to have type
+    'int'
+but here has type
+    'ElementPageCursor' [/home/donovan/w/CX-FSHARP-wire/client-fsharp/Core/BibleAtlas.FSharp.Core.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp/Core/Admission/GraphRead.fs(29,102): error FS0001: This expression was expected to have type
+    'string'
+but here has type
+    'ArtifactRoot' [/home/donovan/w/CX-FSHARP-wire/client-fsharp/Core/BibleAtlas.FSharp.Core.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp/Core/Admission/GraphRead.fs(37,34): error FS0001: This expression was expected to have type
+    'ArtifactRoot'
+but here has type
+    'string' [/home/donovan/w/CX-FSHARP-wire/client-fsharp/Core/BibleAtlas.FSharp.Core.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp/Core/Model.fs(222,120): error FS0001: This expression was expected to have type
+    'TextWindowReference'
+but here has type
+    'UnitReference' [/home/donovan/w/CX-FSHARP-wire/client-fsharp/Core/BibleAtlas.FSharp.Core.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp/Core/Model.fs(242,49): error FS0001: This expression was expected to have type
+    'TextWindowReference'
+but here has type
+    'string' [/home/donovan/w/CX-FSHARP-wire/client-fsharp/Core/BibleAtlas.FSharp.Core.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp/Core/Model.fs(260,157): error FS0001: This expression was expected to have type
+    'string'
+but here has type
+    'ContentsReference' [/home/donovan/w/CX-FSHARP-wire/client-fsharp/Core/BibleAtlas.FSharp.Core.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp/Core/Model.fs(265,75): error FS0001: This expression was expected to have type
+    'string'
+but here has type
+    'ContentsReference' [/home/donovan/w/CX-FSHARP-wire/client-fsharp/Core/BibleAtlas.FSharp.Core.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp/Core/Model.fs(267,99): error FS0001: This expression was expected to have type
+    'string'
+but here has type
+    'ContentsReference' [/home/donovan/w/CX-FSHARP-wire/client-fsharp/Core/BibleAtlas.FSharp.Core.fsproj]
+
+Build FAILED.
+
+/home/donovan/w/CX-FSHARP-wire/client-fsharp/Core/Domain/Position.fs(9,40): error FS0001: All branches of a pattern match expression must return values implicitly convertible to the type of the first branch, which here is 'NodeId'. This branch returns a value of type 'EdgeId'. [/home/donovan/w/CX-FSHARP-wire/client-fsharp/Core/BibleAtlas.FSharp.Core.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp/Core/Domain/Position.fs(31,64): error FS0001: This expression was expected to have type
+    'string'
+but here has type
+    'ArtifactRoot' [/home/donovan/w/CX-FSHARP-wire/client-fsharp/Core/BibleAtlas.FSharp.Core.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp/Core/Domain/Position.fs(32,38): error FS0001: This expression was expected to have type
+    'string'
+but here has type
+    'ArtifactRoot' [/home/donovan/w/CX-FSHARP-wire/client-fsharp/Core/BibleAtlas.FSharp.Core.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp/Core/Domain/Position.fs(32,44): error FS0001: This expression was expected to have type
+    'string'
+but here has type
+    'ArtifactRoot' [/home/donovan/w/CX-FSHARP-wire/client-fsharp/Core/BibleAtlas.FSharp.Core.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp/Core/Domain/Position.fs(33,50): error FS0001: This expression was expected to have type
+    'string'
+but here has type
+    'ArtifactRoot' [/home/donovan/w/CX-FSHARP-wire/client-fsharp/Core/BibleAtlas.FSharp.Core.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp/Core/Presentation.fs(28,66): error FS0001: This expression was expected to have type
+    'string'
+but here has type
+    'Provenance' [/home/donovan/w/CX-FSHARP-wire/client-fsharp/Core/BibleAtlas.FSharp.Core.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp/Core/Presentation.fs(48,49): error FS0001: Type mismatch. Expecting a
+    'string option'
+but given a
+    'Provenance option'
+The type 'string' does not match the type 'Provenance' [/home/donovan/w/CX-FSHARP-wire/client-fsharp/Core/BibleAtlas.FSharp.Core.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp/Core/Admission/GraphRead.fs(14,86): error FS0001: Type mismatch. Expecting a
+    'PositionRef -> ElementId'
+but given a
+    'PositionRef -> NodeId'
+The type 'ElementId' does not match the type 'NodeId' [/home/donovan/w/CX-FSHARP-wire/client-fsharp/Core/BibleAtlas.FSharp.Core.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp/Core/Admission/GraphRead.fs(14,110): error FS0001: Type mismatch. Expecting a
+    'ElementPageCursor option'
+but given a
+    'int option'
+The type 'ElementPageCursor' does not match the type 'int' [/home/donovan/w/CX-FSHARP-wire/client-fsharp/Core/BibleAtlas.FSharp.Core.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp/Core/Admission/GraphRead.fs(19,38): error FS0001: This expression was expected to have type
+    'string'
+but here has type
+    'ArtifactRoot' [/home/donovan/w/CX-FSHARP-wire/client-fsharp/Core/BibleAtlas.FSharp.Core.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp/Core/Admission/GraphRead.fs(19,87): error FS0001: This expression was expected to have type
+    'string'
+but here has type
+    'ArtifactRoot' [/home/donovan/w/CX-FSHARP-wire/client-fsharp/Core/BibleAtlas.FSharp.Core.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp/Core/Admission/GraphRead.fs(21,30): error FS0001: This expression was expected to have type
+    'string'
+but here has type
+    'ArtifactRoot' [/home/donovan/w/CX-FSHARP-wire/client-fsharp/Core/BibleAtlas.FSharp.Core.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp/Core/Admission/GraphRead.fs(29,82): error FS0001: This expression was expected to have type
+    'int'
+but here has type
+    'ElementPageCursor' [/home/donovan/w/CX-FSHARP-wire/client-fsharp/Core/BibleAtlas.FSharp.Core.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp/Core/Admission/GraphRead.fs(29,102): error FS0001: This expression was expected to have type
+    'string'
+but here has type
+    'ArtifactRoot' [/home/donovan/w/CX-FSHARP-wire/client-fsharp/Core/BibleAtlas.FSharp.Core.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp/Core/Admission/GraphRead.fs(37,34): error FS0001: This expression was expected to have type
+    'ArtifactRoot'
+but here has type
+    'string' [/home/donovan/w/CX-FSHARP-wire/client-fsharp/Core/BibleAtlas.FSharp.Core.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp/Core/Model.fs(222,120): error FS0001: This expression was expected to have type
+    'TextWindowReference'
+but here has type
+    'UnitReference' [/home/donovan/w/CX-FSHARP-wire/client-fsharp/Core/BibleAtlas.FSharp.Core.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp/Core/Model.fs(242,49): error FS0001: This expression was expected to have type
+    'TextWindowReference'
+but here has type
+    'string' [/home/donovan/w/CX-FSHARP-wire/client-fsharp/Core/BibleAtlas.FSharp.Core.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp/Core/Model.fs(260,157): error FS0001: This expression was expected to have type
+    'string'
+but here has type
+    'ContentsReference' [/home/donovan/w/CX-FSHARP-wire/client-fsharp/Core/BibleAtlas.FSharp.Core.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp/Core/Model.fs(265,75): error FS0001: This expression was expected to have type
+    'string'
+but here has type
+    'ContentsReference' [/home/donovan/w/CX-FSHARP-wire/client-fsharp/Core/BibleAtlas.FSharp.Core.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp/Core/Model.fs(267,99): error FS0001: This expression was expected to have type
+    'string'
+but here has type
+    'ContentsReference' [/home/donovan/w/CX-FSHARP-wire/client-fsharp/Core/BibleAtlas.FSharp.Core.fsproj]
+    0 Warning(s)
+    20 Error(s)
+
+Time Elapsed 00:00:05.25

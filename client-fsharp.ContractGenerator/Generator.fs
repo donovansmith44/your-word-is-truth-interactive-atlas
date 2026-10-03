@@ -104,6 +104,35 @@ module rec Generator =
                 get "enum" node |> Option.isNone
                 && get "discriminator" node |> Option.isNone
                 && (get "type" node |> Option.exists (fun kind -> match kind with :? YamlScalarNode -> List.contains (scalar kind) ["string"; "integer"; "number"; "boolean"] | _ -> false))
+            let schemaMap = Map.ofList schemas
+            let referencedCases node =
+                get "oneOf" node |> Option.map values |> Option.defaultValue []
+                |> List.map (fun case -> get "$ref" case |> Option.map (scalar >> fun reference -> reference.Split('/') |> Array.last))
+            let rec primitive visited node =
+                match get "oneOf" node with
+                | Some _ ->
+                    let cases = referencedCases node
+                    let primitives = cases |> List.map (Option.bind (fun reference ->
+                        if Set.contains reference visited then None
+                        else Map.tryFind reference schemaMap |> Option.bind (primitive (Set.add reference visited))))
+                    if cases.IsEmpty || List.exists Option.isNone primitives then None
+                    else match primitives |> List.choose id |> List.distinct with [one] -> Some one | _ -> None
+                | None when get "enum" node |> Option.isSome ->
+                    if get "type" node |> Option.exists (scalar >> (=) "string") then Some "string" else None
+                | None when isScalarIdentity node -> Some (shape "identity" node)
+                | _ -> None
+            let identities = schemas |> List.choose (fun (typeName, node) ->
+                if get "enum" node |> Option.isSome || get "discriminator" node |> Option.isSome then None
+                else primitive (Set.singleton typeName) node |> Option.map (fun primitive -> typeName, node, primitive))
+            let identityShapes = identities |> List.map (fun (typeName, _, primitive) -> typeName, primitive) |> Map.ofList
+            let rec leaves visited typeName =
+                if Set.contains typeName visited then Set.empty
+                else
+                    match Map.tryFind typeName schemaMap with
+                    | Some node when get "oneOf" node |> Option.isSome ->
+                        referencedCases node |> List.choose id |> List.map (leaves (Set.add typeName visited)) |> Set.unionMany
+                    | Some _ -> Set.singleton typeName
+                    | None -> Set.empty
             let output = StringBuilder("// Generated from contracts/openapi.yaml.\nnamespace BibleAtlas.FSharp.Contract\n\nopen System.Text.Json.Serialization\n\n")
             let mutable index = 0
             while index < definitions.Count do
@@ -117,7 +146,7 @@ module rec Generator =
                         let property = get "propertyName" tag |> Option.map scalar |> Option.defaultWith (fun () -> invalidOp $"{typeName}: a discriminator has no propertyName")
                         $"[<RequireQualifiedAccess; JsonFSharpConverter(UnionEncoding = (JsonUnionEncoding.InternalTag ||| JsonUnionEncoding.UnwrapRecordCases ||| JsonUnionEncoding.AllowUnorderedTag), UnionTagName = {quote property})>]"
                     | None, Some _ -> "[<RequireQualifiedAccess; JsonFSharpConverter(UnionEncoding = JsonUnionEncoding.UnwrapFieldlessTags)>]"
-                    | None, None when isScalarIdentity node -> $"[<Struct; JsonConverter(typeof<{typeName}JsonConverter>)>]"
+                    | None, None when Map.containsKey typeName identityShapes -> $"[<Struct; JsonConverter(typeof<{typeName}JsonConverter>)>]"
                     | _ -> ""
                 if index = 0 then
                     if attributes <> "" then output.AppendLine(attributes) |> ignore
@@ -136,7 +165,7 @@ module rec Generator =
                 | _ ->
                     let properties = ownFields node |> List.collect (fun own -> get "properties" own |> Option.map (fun properties -> fields properties |> List.map (fun (wire, property) -> wire, property, own)) |> Option.defaultValue [])
                     match properties with
-                    | [] when attributes <> "" -> output.AppendLine($"    private | {typeName} of {shape typeName node}") |> ignore
+                    | [] when Map.containsKey typeName identityShapes -> output.AppendLine($"    private | {typeName} of {identityShapes[typeName]}") |> ignore
                     | [] -> output.AppendLine($"    {shape typeName node}") |> ignore
                     | properties ->
                         output.AppendLine("    {") |> ignore
@@ -147,10 +176,36 @@ module rec Generator =
                             output.AppendLine($"        [<JsonPropertyName({quote wire})>] {name wire}: {optional}") |> ignore
                         output.AppendLine("    }") |> ignore
                 index <- index + 1
-            for typeName, node in definitions |> Seq.filter (snd >> isScalarIdentity) do
-                let primitive = shape typeName node
+            for typeName, node, primitive in identities do
                 let nullMessage = quote (typeName + " cannot be null")
                 output.AppendLine($"and private {typeName}JsonConverter() =\n    inherit JsonConverter<{typeName}>()\n    override _.Read(reader: byref<System.Text.Json.Utf8JsonReader>, _, options) =\n        if reader.TokenType = System.Text.Json.JsonTokenType.Null then\n            raise (System.Text.Json.JsonException({nullMessage}))\n        {typeName}(System.Text.Json.JsonSerializer.Deserialize<{primitive}>(&reader, options))\n    override _.Write(writer, {typeName} value, options) =\n        System.Text.Json.JsonSerializer.Serialize<{primitive}>(writer, value, options)") |> ignore
+            for typeName, node, representation in identities do
+                let first = get "default" node
+                let widened =
+                    if get "oneOf" node |> Option.isNone then []
+                    else
+                        let accepted = leaves Set.empty typeName
+                        schemas |> List.choose (fun (memberName, memberNode) ->
+                            let memberLeaves = leaves Set.empty memberName
+                            if memberName = typeName || Set.isEmpty memberLeaves || not (Set.isSubset memberLeaves accepted) then None
+                            elif primitive (Set.singleton memberName) memberNode <> Some representation then None
+                            else Some (memberName, memberNode))
+                if first.IsSome || not widened.IsEmpty then
+                    output.AppendLine($"\nmodule {typeName} =") |> ignore
+                    match first with
+                    | Some first when representation = "int" || representation = "int64" ->
+                        let value = scalar first
+                        let suffix = if representation = "int64" then "L" else ""
+                        output.AppendLine($"    let first : {typeName} = {typeName} {value}{suffix}") |> ignore
+                    | Some _ -> invalidOp $"{typeName}: an identity default must be an integer cursor"
+                    | None -> ()
+                    for memberName, memberNode in widened do
+                        match get "enum" memberNode with
+                        | Some cases ->
+                            output.AppendLine($"    let of{memberName} (value: {memberName}) : {typeName} =\n        match value with") |> ignore
+                            for wire in values cases |> List.map scalar do
+                                output.AppendLine($"        | {memberName}.{name wire} -> {typeName} {quote wire}") |> ignore
+                        | None -> output.AppendLine($"    let of{memberName} ({memberName} value) : {typeName} = {typeName} value") |> ignore
             if not requests.IsEmpty then
                 output.AppendLine("\ntype Request<'a> = private Request of uri: string\n\nmodule Request =\n    let uri (Request uri) = uri\n\nmodule rec Reads =") |> ignore
                 for operation, path, response, parameters in requests do

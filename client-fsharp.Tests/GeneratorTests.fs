@@ -47,4 +47,22 @@ let ``named scalar schemas generate distinct immutable identities`` (suffix: uin
     let expected = $"// Generated from contracts/openapi.yaml.\nnamespace BibleAtlas.FSharp.Contract\n\nopen System.Text.Json.Serialization\n\n[<Struct; JsonConverter(typeof<{identity}JsonConverter>)>]\ntype {identity} =\n    private | {identity} of {primitive}\nand private {identity}JsonConverter() =\n    inherit JsonConverter<{identity}>()\n    override _.Read(reader: byref<System.Text.Json.Utf8JsonReader>, _, options) =\n        if reader.TokenType = System.Text.Json.JsonTokenType.Null then\n            raise (System.Text.Json.JsonException(\"{identity} cannot be null\"))\n        {identity}(System.Text.Json.JsonSerializer.Deserialize<{primitive}>(&reader, options))\n    override _.Write(writer, {identity} value, options) =\n        System.Text.Json.JsonSerializer.Serialize<{primitive}>(writer, value, options)\n"
     Assert.Equal(Ok expected, Generator.generate source)
 
+[<Property>]
+let ``a cursor default is exposed only as its own typed first value`` (suffix: uint16) (start: byte) (wide: bool) =
+    let identity = $"Cursor{suffix}"
+    let format = if wide then "      format: int64\n" else ""
+    let primitive = if wide then "int64" else "int"
+    let literal = string start + if wide then "L" else ""
+    let source = document $"    {identity}:\n      type: integer\n{format}      default: {int start}\n"
+    let expected = $"// Generated from contracts/openapi.yaml.\nnamespace BibleAtlas.FSharp.Contract\n\nopen System.Text.Json.Serialization\n\n[<Struct; JsonConverter(typeof<{identity}JsonConverter>)>]\ntype {identity} =\n    private | {identity} of {primitive}\nand private {identity}JsonConverter() =\n    inherit JsonConverter<{identity}>()\n    override _.Read(reader: byref<System.Text.Json.Utf8JsonReader>, _, options) =\n        if reader.TokenType = System.Text.Json.JsonTokenType.Null then\n            raise (System.Text.Json.JsonException(\"{identity} cannot be null\"))\n        {identity}(System.Text.Json.JsonSerializer.Deserialize<{primitive}>(&reader, options))\n    override _.Write(writer, {identity} value, options) =\n        System.Text.Json.JsonSerializer.Serialize<{primitive}>(writer, value, options)\n\nmodule {identity} =\n    let first : {identity} = {identity} {literal}\n"
+    Assert.Equal(Ok expected, Generator.generate source)
+
+[<Property>]
+let ``a named identity union has its own representation and a widening from its declared leaf`` (suffix: uint16) =
+    let leaf = $"Leaf{suffix}"
+    let union = $"Union{suffix}"
+    let source = document $"    {leaf}:\n      type: string\n    {union}:\n      oneOf: [{{$ref: '#/components/schemas/{leaf}'}}]\n"
+    let expected = $"// Generated from contracts/openapi.yaml.\nnamespace BibleAtlas.FSharp.Contract\n\nopen System.Text.Json.Serialization\n\n[<Struct; JsonConverter(typeof<{leaf}JsonConverter>)>]\ntype {leaf} =\n    private | {leaf} of string\nand [<Struct; JsonConverter(typeof<{union}JsonConverter>)>] {union} =\n    private | {union} of string\nand private {leaf}JsonConverter() =\n    inherit JsonConverter<{leaf}>()\n    override _.Read(reader: byref<System.Text.Json.Utf8JsonReader>, _, options) =\n        if reader.TokenType = System.Text.Json.JsonTokenType.Null then\n            raise (System.Text.Json.JsonException(\"{leaf} cannot be null\"))\n        {leaf}(System.Text.Json.JsonSerializer.Deserialize<string>(&reader, options))\n    override _.Write(writer, {leaf} value, options) =\n        System.Text.Json.JsonSerializer.Serialize<string>(writer, value, options)\nand private {union}JsonConverter() =\n    inherit JsonConverter<{union}>()\n    override _.Read(reader: byref<System.Text.Json.Utf8JsonReader>, _, options) =\n        if reader.TokenType = System.Text.Json.JsonTokenType.Null then\n            raise (System.Text.Json.JsonException(\"{union} cannot be null\"))\n        {union}(System.Text.Json.JsonSerializer.Deserialize<string>(&reader, options))\n    override _.Write(writer, {union} value, options) =\n        System.Text.Json.JsonSerializer.Serialize<string>(writer, value, options)\n\nmodule {union} =\n    let of{leaf} ({leaf} value) : {union} = {union} value\n"
+    Assert.Equal(Ok expected, Generator.generate source)
+
 let document schemas = "openapi: 3.1.0\ncomponents:\n  schemas:\n" + schemas

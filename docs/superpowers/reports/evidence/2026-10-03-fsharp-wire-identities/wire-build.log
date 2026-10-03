@@ -1,0 +1,9 @@
+  Determining projects to restore...
+  Restored /home/donovan/mut/codex-CX-FSHARP-wire-probe/WireOnly.fsproj (in 171 ms).
+  WireOnly -> /home/donovan/mut/codex-CX-FSHARP-wire-probe/bin/Debug/net10.0/WireOnly.dll
+
+Build succeeded.
+    0 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:03.77
