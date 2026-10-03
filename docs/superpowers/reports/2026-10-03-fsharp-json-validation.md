@@ -162,7 +162,10 @@ The final normal suite passed **190 properties** in **33.2684 seconds**;
 its compiled assembly gate requires every discovered test to be a property.
 The separate validator fit passed **9** in **2.3072 seconds** at the final tree.
 The whitespace-coordinate property is supplementary green evidence, not
-another independently executed production red.
+another independently executed production red. Saved logs normalize trailing
+whitespace; the manifest retains the original output hashes, and the original
+command outputs remain in the task-owned integration log directory. The patch
+is checked against original LF source files.
 
 Final declaration inventory: **271 unused / 59 pending / zero compiler errors**.
 Unused is still red and is not a root-aware dead-island proof. Newspaper-order
@@ -185,7 +188,7 @@ CX-I3 retains the owner's disk reminder: keep compact mutation outcomes,
 reports and equivalent decisions, then prune only obsolete stopped task-owned
 mutation results and unnecessary build output. Recheck both WSL and the Windows
 VHD-host volume before growth-heavy gates. Latest check: **786 GB WSL free**,
-Windows C: **3.2 GB / 100% used**. This continuation retains about 209 KB of
+Windows C: **3.2 GB / 100% used**. This continuation retains about 230 KB of
 compact evidence and uses small native/Debug output; no bulk deletion,
 automated retention, fresh Cargo/AOT target, raw/cache or other-agent deletion,
 or VHD compaction occurred.

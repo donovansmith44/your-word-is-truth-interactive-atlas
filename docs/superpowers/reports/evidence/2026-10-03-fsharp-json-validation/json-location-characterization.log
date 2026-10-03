@@ -8,14 +8,14 @@ A total of 1 test files matched the specified pattern.
 [xUnit.net 00:00:00.08]   Discovered:  DomainLaws
 [xUnit.net 00:00:00.10]   Starting:    DomainLaws
 [xUnit.net 00:00:00.34]     BibleAtlas.FSharp.Tests.Domain.JsonFailureLaws.a nested wrong kind retains its exact generated field path [FAIL]
-[xUnit.net 00:00:00.34]       FsCheck.Xunit.PropertyFailedException : 
-[xUnit.net 00:00:00.34]       Falsifiable, after 1 test (1 shrink) (1758683876455539129,127998174715355497). 
+[xUnit.net 00:00:00.34]       FsCheck.Xunit.PropertyFailedException :
+[xUnit.net 00:00:00.34]       Falsifiable, after 1 test (1 shrink) (1758683876455539129,127998174715355497).
 [xUnit.net 00:00:00.34]       Last step was invoked with size of 2 and seed of (6794586079925500610,17364956194385089637):
 [xUnit.net 00:00:00.34]       Original:
 [xUnit.net 00:00:00.34]       2us
 [xUnit.net 00:00:00.34]       Shrunk:
 [xUnit.net 00:00:00.34]       0us
-[xUnit.net 00:00:00.34]       
+[xUnit.net 00:00:00.34]
 [xUnit.net 00:00:00.34]       ---- Expected Error
 [xUnit.net 00:00:00.34]         (Read
 [xUnit.net 00:00:00.34]            (Terminal
@@ -28,7 +28,7 @@ A total of 1 test files matched the specified pattern.
 [xUnit.net 00:00:00.34]                                                  LineNumber = Some 0L
 [xUnit.net 00:00:00.34]                                                  BytePositionInLine = Some 1L }))))
 [xUnit.net 00:00:00.34]       Stack Trace:
-[xUnit.net 00:00:00.34]         
+[xUnit.net 00:00:00.34]
 [xUnit.net 00:00:00.34]         ----- Inner Stack Trace -----
 [xUnit.net 00:00:00.34]         /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/Domain/JsonFailureLaws.fs(45,0): at BibleAtlas.FSharp.Tests.Domain.JsonFailureLaws.a nested wrong kind retains its exact generated field path(UInt16 suffix)
 [xUnit.net 00:00:00.34]            at InvokeStub_JsonFailureLaws.a nested wrong kind retains its exact generated field path(Object, Span`1)
@@ -48,8 +48,8 @@ A total of 1 test files matched the specified pattern.
   Passed BibleAtlas.FSharp.Tests.Domain.JsonFailureLaws.malformed JSON retains its exact zero based line and byte position without prose [4 ms]
   Failed BibleAtlas.FSharp.Tests.Domain.JsonFailureLaws.a nested wrong kind retains its exact generated field path [20 ms]
   Error Message:
-   FsCheck.Xunit.PropertyFailedException : 
-Falsifiable, after 1 test (1 shrink) (1758683876455539129,127998174715355497). 
+   FsCheck.Xunit.PropertyFailedException :
+Falsifiable, after 1 test (1 shrink) (1758683876455539129,127998174715355497).
 Last step was invoked with size of 2 and seed of (6794586079925500610,17364956194385089637):
 Original:
 2us
@@ -68,7 +68,7 @@ Shrunk:
                                            LineNumber = Some 0L
                                            BytePositionInLine = Some 1L }))))
   Stack Trace:
-  
+
 ----- Inner Stack Trace -----
    at BibleAtlas.FSharp.Tests.Domain.JsonFailureLaws.a nested wrong kind retains its exact generated field path(UInt16 suffix) in /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/Domain/JsonFailureLaws.fs:line 45
    at InvokeStub_JsonFailureLaws.a nested wrong kind retains its exact generated field path(Object, Span`1)

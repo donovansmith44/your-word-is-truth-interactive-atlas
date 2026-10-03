@@ -2,38 +2,26 @@ diff --git a/src/Json.More/Json.More.csproj b/src/Json.More/Json.More.csproj
 index 231f503d..34e3c2b0 100644
 --- a/src/Json.More/Json.More.csproj
 +++ b/src/Json.More/Json.More.csproj
-@@ -40,7 +40,7 @@
- 
-   <ItemGroup>
+@@ -42,3 +42,3 @@
      <PackageReference Include="PolySharp" Version="1.15.0" PrivateAssets="all" />
 -  	<PackageReference Include="Microsoft.SourceLink.GitHub" Version="10.0.201" PrivateAssets="All" />
 +  	<PackageReference Include="Microsoft.SourceLink.GitHub" Version="10.0.401" PrivateAssets="All" />
    </ItemGroup>
- 
-   <ItemGroup>
 diff --git a/src/JsonPointer/JsonPointer.csproj b/src/JsonPointer/JsonPointer.csproj
 index 4f08a496..cda9ea26 100644
 --- a/src/JsonPointer/JsonPointer.csproj
 +++ b/src/JsonPointer/JsonPointer.csproj
-@@ -45,7 +45,7 @@
- 
-   <ItemGroup>
+@@ -47,3 +47,3 @@
      <PackageReference Include="PolySharp" Version="1.15.0" PrivateAssets="all" />
 -    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="10.0.201" PrivateAssets="All" />
 +    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="10.0.401" PrivateAssets="All" />
    </ItemGroup>
- 
-   <ItemGroup>
 diff --git a/src/JsonSchema/JsonSchema.csproj b/src/JsonSchema/JsonSchema.csproj
 index 5d84be11..f1ea0911 100644
 --- a/src/JsonSchema/JsonSchema.csproj
 +++ b/src/JsonSchema/JsonSchema.csproj
-@@ -47,7 +47,7 @@
- 
-   <ItemGroup>
+@@ -49,3 +49,3 @@
      <PackageReference Include="PolySharp" Version="1.15.0" PrivateAssets="all" />
 -    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="10.0.201" PrivateAssets="All" />
 +    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="10.0.401" PrivateAssets="All" />
    </ItemGroup>
- 
-   <PropertyGroup Condition="'$(ResourceLanguage)' == 'base'">

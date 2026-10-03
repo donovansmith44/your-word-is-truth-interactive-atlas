@@ -288,22 +288,22 @@
     "Vocabulary.g.fs": "70fa71de281c2f9f5dda56ccc35109364f82dfe378f98000233984863e507dca"
   },
   "evidence_sha256": {
-    "json-behavior-red-2.log": "c9fdc3cabe067b38e80a7d8ba633970e201d5ea7a54d02ee559c5f054081026f",
-    "json-binary-restore-compilation.log": "475ff83d9ccc276e5757a52cb9836636cdd14f693ef5801f79d27d015da27776",
-    "json-category-green.log": "b043b1a64419bc1cae736d4e2e8f197d93a44eb6753503771a239863dda821bc",
-    "json-category-red.log": "0c7b4bde1a6ec44a3f7a5fb9b303b9243bcb576423e52c4d6868131bd45d2138",
-    "json-declarations.err": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-    "json-declarations.json": "f011225b35b42ee9bc24e66b9b1a4245389083c264896e361e94ff9190c66366",
-    "json-everything-LICENSE.txt": "baebca0309090f4eca1b7a82c836cc91e48b2b92139c2280fb0ff69af922c2ae",
-    "json-full-green.log": "ed3c2fdb389af875c15edefc3f365ec4ac856f09bb2a688f4e2ca1bc649c4dbd",
-    "json-location-characterization.log": "b69e5154915e4cc2d6e30c2ab7377bd6a25e61f8e41909d1228f1cce1107de50",
-    "json-schema-fit-9.log": "d286e64213d6ad81c5e9b53af4497a4f6c9b4bd0a7cbeb3f8d913741b92b05d7",
     "json-schema-fit-final.log": "b9bff52f6952410fa761f037e6eadaaf1c36b9027e51122fcbd40e0363d02497",
+    "json-binary-restore-compilation.log": "475ff83d9ccc276e5757a52cb9836636cdd14f693ef5801f79d27d015da27776",
     "json-schema-fit-green.log": "595f34729c0fac2ba65057f1aaba9b6985e2823847aec3ed23113327067c37da",
+    "json-vocabulary-red.log": "a14719733566e426ee02128634116c2dc4e1172f61b687fbc927d37721205677",
+    "json-schema-fit-9.log": "ed69ca2e9a6ad9f5ddffb6df415b1b1858117008043d9fde440caa3f0272e70c",
+    "json-source-link.patch": "75023665352fc7dd3ecc66f2d7ef9441fda642cb7f9e191d04b59da1432c9c99",
+    "json-category-red.log": "6f6eefd6bef337601d25092f3bf8e06d885b5b0a89a397ef904e7de3c6555a21",
     "json-source-build-tool-warning.log": "47741de2595a3c452c9d71088e43d89c533c411537a1cb4fcfc7d7da72016aa5",
-    "json-source-link.patch": "a1229c63adcd537e9ce27b0feeb7ee7221be38e64f895879f7b4d3569e5872e2",
-    "json-vocabulary-red.log": "d2c6b6f584c670fffd75e753a1aa82dd055356000811aaf8d9ff1668670e810b",
-    "json-wasm-debug.log": "bb50f6b1df299d0e2d22d1d8ec153210d72e2d6a92bcf7b9851c63854c0b8103"
+    "json-declarations.err": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "json-full-green.log": "ed3c2fdb389af875c15edefc3f365ec4ac856f09bb2a688f4e2ca1bc649c4dbd",
+    "json-location-characterization.log": "04e55e2da97ad7b201499a725fc6a388fbc27042ebb314dcb8e5f2b3b63cac16",
+    "json-declarations.json": "f011225b35b42ee9bc24e66b9b1a4245389083c264896e361e94ff9190c66366",
+    "json-wasm-debug.log": "bb50f6b1df299d0e2d22d1d8ec153210d72e2d6a92bcf7b9851c63854c0b8103",
+    "json-behavior-red-2.log": "6be087d637195a8933c6d09b4d6a07d2690f1e157cfedeef0b4c15d2214c511e",
+    "json-category-green.log": "b043b1a64419bc1cae736d4e2e8f197d93a44eb6753503771a239863dda821bc",
+    "json-everything-LICENSE.txt": "baebca0309090f4eca1b7a82c836cc91e48b2b92139c2280fb0ff69af922c2ae"
   },
   "source_project_packages": [
     {
@@ -809,5 +809,20 @@
       "nuspec_sha256": "1622819b0864bc1d80fbc100dcb4fbd1161d0b6ac6de7c34474e87aa93aa8322",
       "license_sha256": "5c805ac94dfdb4a3be55547f04a2f4b9f1bb87d7e9ee6d6fe54b0e72093900c3"
     }
-  ]
+  ],
+  "raw_log_sha256": {
+    "json-schema-fit-final.log": "b9bff52f6952410fa761f037e6eadaaf1c36b9027e51122fcbd40e0363d02497",
+    "json-binary-restore-compilation.log": "475ff83d9ccc276e5757a52cb9836636cdd14f693ef5801f79d27d015da27776",
+    "json-schema-fit-green.log": "595f34729c0fac2ba65057f1aaba9b6985e2823847aec3ed23113327067c37da",
+    "json-vocabulary-red.log": "d2c6b6f584c670fffd75e753a1aa82dd055356000811aaf8d9ff1668670e810b",
+    "json-schema-fit-9.log": "d286e64213d6ad81c5e9b53af4497a4f6c9b4bd0a7cbeb3f8d913741b92b05d7",
+    "json-category-red.log": "0c7b4bde1a6ec44a3f7a5fb9b303b9243bcb576423e52c4d6868131bd45d2138",
+    "json-source-build-tool-warning.log": "47741de2595a3c452c9d71088e43d89c533c411537a1cb4fcfc7d7da72016aa5",
+    "json-full-green.log": "ed3c2fdb389af875c15edefc3f365ec4ac856f09bb2a688f4e2ca1bc649c4dbd",
+    "json-location-characterization.log": "b69e5154915e4cc2d6e30c2ab7377bd6a25e61f8e41909d1228f1cce1107de50",
+    "json-wasm-debug.log": "bb50f6b1df299d0e2d22d1d8ec153210d72e2d6a92bcf7b9851c63854c0b8103",
+    "json-behavior-red-2.log": "c9fdc3cabe067b38e80a7d8ba633970e201d5ea7a54d02ee559c5f054081026f",
+    "json-category-green.log": "b043b1a64419bc1cae736d4e2e8f197d93a44eb6753503771a239863dda821bc"
+  },
+  "saved_log_normalization": "Trailing whitespace removed; raw pre-normalization hashes retained. Original command output remains in task-owned integration logs."
 }

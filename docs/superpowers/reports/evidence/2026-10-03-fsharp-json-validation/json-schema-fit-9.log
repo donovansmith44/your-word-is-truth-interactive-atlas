@@ -9,19 +9,19 @@ A total of 1 test files matched the specified pattern.
 [xUnit.net 00:00:00.08]   Discovered:  SchemaSpike
 [xUnit.net 00:00:00.09]   Starting:    SchemaSpike
 [xUnit.net 00:00:00.41]     BibleAtlas.FSharp.Tests.SchemaSpike.SchemaLaws.the sole validator rejects a discriminator branch with missing concrete required fields [FAIL]
-[xUnit.net 00:00:00.41]       FsCheck.Xunit.PropertyFailedException : 
-[xUnit.net 00:00:00.41]       Falsifiable, after 1 test (1 shrink) (5985263262896411551,7497577835318619189). 
+[xUnit.net 00:00:00.41]       FsCheck.Xunit.PropertyFailedException :
+[xUnit.net 00:00:00.41]       Falsifiable, after 1 test (1 shrink) (5985263262896411551,7497577835318619189).
 [xUnit.net 00:00:00.41]       Last step was invoked with size of 2 and seed of (6032162694150288782,13847919525128587727):
 [xUnit.net 00:00:00.41]       Original:
 [xUnit.net 00:00:00.41]       1us
 [xUnit.net 00:00:00.41]       Shrunk:
 [xUnit.net 00:00:00.41]       0us
-[xUnit.net 00:00:00.41]       
+[xUnit.net 00:00:00.41]
 [xUnit.net 00:00:00.41]       ---- Assert.Equal() Failure: Values differ
 [xUnit.net 00:00:00.41]       Expected: False
 [xUnit.net 00:00:00.41]       Actual:   True
 [xUnit.net 00:00:00.41]       Stack Trace:
-[xUnit.net 00:00:00.41]         
+[xUnit.net 00:00:00.41]
 [xUnit.net 00:00:00.41]         ----- Inner Stack Trace -----
 [xUnit.net 00:00:00.41]         /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/SchemaSpike/SchemaLaws.fs(72,0): at BibleAtlas.FSharp.Tests.SchemaSpike.SchemaLaws.the sole validator rejects a discriminator branch with missing concrete required fields(UInt16 suffix)
 [xUnit.net 00:00:00.41]            at InvokeStub_SchemaLaws.the sole validator rejects a discriminator branch with missing concrete required fields(Object, Span`1)
@@ -37,8 +37,8 @@ A total of 1 test files matched the specified pattern.
   Passed BibleAtlas.FSharp.Tests.SchemaSpike.SchemaLaws.closed records reject extra properties through the original additionalProperties keyword [238 ms]
   Failed BibleAtlas.FSharp.Tests.SchemaSpike.SchemaLaws.the sole validator rejects a discriminator branch with missing concrete required fields [7 ms]
   Error Message:
-   FsCheck.Xunit.PropertyFailedException : 
-Falsifiable, after 1 test (1 shrink) (5985263262896411551,7497577835318619189). 
+   FsCheck.Xunit.PropertyFailedException :
+Falsifiable, after 1 test (1 shrink) (5985263262896411551,7497577835318619189).
 Last step was invoked with size of 2 and seed of (6032162694150288782,13847919525128587727):
 Original:
 1us
@@ -49,7 +49,7 @@ Shrunk:
 Expected: False
 Actual:   True
   Stack Trace:
-  
+
 ----- Inner Stack Trace -----
    at BibleAtlas.FSharp.Tests.SchemaSpike.SchemaLaws.the sole validator rejects a discriminator branch with missing concrete required fields(UInt16 suffix) in /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/SchemaSpike/SchemaLaws.fs:line 72
    at InvokeStub_SchemaLaws.the sole validator rejects a discriminator branch with missing concrete required fields(Object, Span`1)
@@ -64,17 +64,17 @@ Actual:   True
   Passed BibleAtlas.FSharp.Tests.SchemaSpike.SchemaLaws.the original approved OpenAPI builds and accepts every recorded query answer without schema edits [232 ms]
   Passed BibleAtlas.FSharp.Tests.SchemaSpike.SchemaLaws.both published element identity branches accept exactly their declared opaque wire shapes [33 ms]
 [xUnit.net 00:00:01.95]     BibleAtlas.FSharp.Tests.SchemaSpike.SchemaLaws.structured evaluation retains the exact failing instance location and keyword without reading message text [FAIL]
-[xUnit.net 00:00:01.95]       FsCheck.Xunit.PropertyFailedException : 
-[xUnit.net 00:00:01.95]       Falsifiable, after 1 test (1 shrink) (9352052550033332268,4436835652306448981). 
+[xUnit.net 00:00:01.95]       FsCheck.Xunit.PropertyFailedException :
+[xUnit.net 00:00:01.95]       Falsifiable, after 1 test (1 shrink) (9352052550033332268,4436835652306448981).
 [xUnit.net 00:00:01.95]       Last step was invoked with size of 2 and seed of (12716141494706057924,11134981164842920581):
 [xUnit.net 00:00:01.95]       Original:
 [xUnit.net 00:00:01.95]       2us
 [xUnit.net 00:00:01.95]       Shrunk:
 [xUnit.net 00:00:01.95]       0us
-[xUnit.net 00:00:01.95]       
+[xUnit.net 00:00:01.95]
 [xUnit.net 00:00:01.95]       ---- Expected (false, [("/id", "pattern")]); actual (false, [("", "properties"); ("/id", "pattern")])
 [xUnit.net 00:00:01.95]       Stack Trace:
-[xUnit.net 00:00:01.95]         
+[xUnit.net 00:00:01.95]
 [xUnit.net 00:00:01.95]         ----- Inner Stack Trace -----
 [xUnit.net 00:00:01.95]         /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/SchemaSpike/SchemaLaws.fs(56,0): at BibleAtlas.FSharp.Tests.SchemaSpike.SchemaLaws.structured evaluation retains the exact failing instance location and keyword without reading message text(UInt16 suffix)
 [xUnit.net 00:00:01.95]            at InvokeStub_SchemaLaws.structured evaluation retains the exact failing instance location and keyword without reading message text(Object, Span`1)
@@ -91,8 +91,8 @@ Actual:   True
   Passed BibleAtlas.FSharp.Tests.SchemaSpike.SchemaLaws.all required node fields reject omission and null and the full record accepts its generated label [28 ms]
   Failed BibleAtlas.FSharp.Tests.SchemaSpike.SchemaLaws.structured evaluation retains the exact failing instance location and keyword without reading message text [13 ms]
   Error Message:
-   FsCheck.Xunit.PropertyFailedException : 
-Falsifiable, after 1 test (1 shrink) (9352052550033332268,4436835652306448981). 
+   FsCheck.Xunit.PropertyFailedException :
+Falsifiable, after 1 test (1 shrink) (9352052550033332268,4436835652306448981).
 Last step was invoked with size of 2 and seed of (12716141494706057924,11134981164842920581):
 Original:
 2us
@@ -101,7 +101,7 @@ Shrunk:
 
 ---- Expected (false, [("/id", "pattern")]); actual (false, [("", "properties"); ("/id", "pattern")])
   Stack Trace:
-  
+
 ----- Inner Stack Trace -----
    at BibleAtlas.FSharp.Tests.SchemaSpike.SchemaLaws.structured evaluation retains the exact failing instance location and keyword without reading message text(UInt16 suffix) in /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/SchemaSpike/SchemaLaws.fs:line 56
    at InvokeStub_SchemaLaws.structured evaluation retains the exact failing instance location and keyword without reading message text(Object, Span`1)
