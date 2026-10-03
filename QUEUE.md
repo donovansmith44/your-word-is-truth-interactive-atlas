@@ -1,5 +1,7 @@
 # QUEUE: the one list of work
 
+> **STANDING RULE #1 (owner, 2026-10-03), binds every agent and every item: use tools that exist; do not hand-roll.** Before writing any parser, decoder, codec, serializer, validator, file/format handling, combinator set or other general-purpose machinery, search for maintained, permissively licensed libraries and tools that already do it, and record the survey (candidates, licence, maintenance, fit, choice and why) in the spec or plan. Hand-rolling needs a written reason every candidate was rejected. Library errors map into our closed domain types at one door per library. Existing hand-rolled machinery is replaced wherever a surveyed library fits. Owner: "we shouldn't handroll all this for json, yaml and files"; "codex also needs to not be stupid and neglect to search for good libraries"; "we use tools that exist rather than handrolling wherever possible".
+
 Protocol: `AGENTS.md`. Plan: `docs/superpowers/plans/2026-09-30-v1-roadmap.md`.
 
 - **Statuses:** `proposed` · `ready` · `claimed:<agent>:<time>` · `blocked:owner` · `blocked:<item>` · `review:<commit range>` · `done`
@@ -7,13 +9,11 @@ Protocol: `AGENTS.md`. Plan: `docs/superpowers/plans/2026-09-30-v1-roadmap.md`.
 - **Repos:** `atlas` = this repo · `mapgen` = `map-generator`. On the owner's machine they are siblings: `~/src/bible-atlas` and `~/src/map-generator`.
 
 ## STATUS (the controller rewrites this at every landing)
-- **As of** 2026-10-02. **FOCUS-1 and FOCUS-6 LANDED** on `worktree-bible-atlas-m1` at `b3d7cfa` (28 squashed task commits `0887c03..b3d7cfa`; Codex approved the reviewed tree at `ea0ba5d`, report 78cb9f6; the landed tree equals `ea0ba5d` plus trunk's docs). Gates at the reviewed head: workspace 1,489/0, client 733, contract 55, graph-types 133, contract gate PASSED, timing 11/11, Playwright 456 pass / 3 skip / 5 fail (3 carried: density smoke, C3-M1, VIEWSTATE-1; 2 F-55 hover flakes). AQC 0.21.0.
-- **The base for every new item is `b3d7cfa`.**
+- **As of** 2026-10-03. Trunk `worktree-bible-atlas-m1` at `25203b8`: FOCUS-2 + A-FSTYLE (`e558f07`), A-NOBLURB (`a7d9930`), A-LICENSE-BOC (`25203b8`) landed on top of `b3d7cfa`. **The base for every new item is `25203b8`.**
+- **The C# client is FROZEN** (owner, 2026-10-03): the F# client (CX-FSHARP) replaces it. Claude does server, data and contract work and specs; client work goes to the F# backlog. The F# client is gated on the owner's sign-off of its domain, data structures and algebras.
+- **In flight (Claude):** A-F39 (changes requested, F-85, fixing) → A-PROVENANCE (server/data half) → A-WIRE-IDENTITIES (signed off) → FOCUS-3 v2 (`lane/claude/F3-v2`) → F-36 → FOCUS-4/5 server/data (`lane/claude/YEAR-spec`) → Year.
+- **Owner to do:** make the GitHub repo private (O-HISTORY 28).
 - **Mutation:** owed, deferred to the owner's window after Nov 4.
-- **Next for Claude:** FOCUS-2 (claimed; the plan re-anchored on `b3d7cfa`), then FOCUS-3 when the owner answers its OPEN. Plans being written: FOCUS-5, FOCUS-7.
-- **Next for Codex:** CX-M0 (O-M0-LIMB approved) · FOCUS-4 when the owner answers its OPEN · CX-R* analyses.
-
-- **DISK (owner, 2026-10-03): "we ran out of space on wsl so make sure we clear mutation test output and other space hogging crap we dont need periodically".** Claude runs `~/bin/atlas-tidy.sh` every 10 min (mutants.out/StrykerOutput, Playwright results older than 12 h, gate logs older than a day, stale incremental caches) and removes its own worktrees and `~/mut` targets at landing. **Codex:** remove your finished review worktrees and their `~/mut/codex-*` targets: `~/w/A-F1-*review` (7, ~4.7 GB), `~/w/A-F2-review` (4.8 GB), `~/w/A-NOBLURB-review` (4.8 GB), `~/w/CX-R2-scratch`, `~/w/CX-R3-scratch`, after the 0-symlink check. Note: WSL's virtual disk does not shrink by itself on the Windows side; reclaiming host space needs `wsl --manage <distro> --set-sparse true` or an Optimize-VHD pass, which only the owner can run.
 
 ## OWNER QUESTIONS (answer in one line each; agents append)
 
