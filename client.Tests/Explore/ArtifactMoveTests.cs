@@ -12,8 +12,8 @@ namespace BibleAtlas.Client.Tests;
 
 public sealed class ArtifactMoveTests
 {
-    private const string RootA = "root-a";
-    private const string RootB = "root-b";
+    private static readonly ArtifactRoot RootA = Wire.Root("root-a");
+    private static readonly ArtifactRoot RootB = Wire.Root("root-b");
     private const int Children = 25;
     private const int RenewingRead = 1;
 
@@ -124,7 +124,7 @@ public sealed class ArtifactMoveTests
         return (popover.FindAll("[data-testid='could-not-load']").Count, WholeValue.Of(popover.FindAll(".focus-child").Select(child => child.GetAttribute("data-testid"))));
     }
 
-    private static NodeRef[] Moved(string id) => [ServedGraph.Ref(NodeKind.Person, $"Person:{id}-moved", "Moved")];
+    private static NodeRef[] Moved(ElementId id) => [ServedGraph.Ref(NodeKind.Person, $"Person:{id}-moved", "Moved")];
 
     private static NodeRef[] Original(int from, int to) =>
         Enumerable.Range(from, to - from).Select(n => ServedGraph.Ref(NodeKind.Person, $"Person:{n}", $"Person {n}")).ToArray();
@@ -140,7 +140,7 @@ public sealed class ArtifactMoveTests
             .Serving(id, EdgeKind.Shows, clamp, ServedGraph.Page(EdgeKind.Shows, null, Original(clamp, Children)));
     }
 
-    private static IEnumerable<string> Roots(Outcome<(Explorable Value, Exploration Trail)> outcome) =>
+    private static IEnumerable<ArtifactRoot> Roots(Outcome<(Explorable Value, Exploration Trail)> outcome) =>
         outcome.Match(
             arrived: walked => walked.Trail.Steps.Select(step => step.Target.Root).Prepend(walked.Trail.Start.Root).ToList(),
             failed: () => [],

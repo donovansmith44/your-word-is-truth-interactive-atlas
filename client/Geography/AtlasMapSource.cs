@@ -16,7 +16,7 @@ public sealed class AtlasMapSource(AtlasClient atlas) : IMapSource
     }
 
     public async Task<MapLayers> For(string scriptureRef) =>
-        new(await atlas.SceneScripture(scriptureRef), []);
+        new(await atlas.SceneScripture(LegacyNodeIds.Read<BibleReference>(scriptureRef)), []);
 
     public async Task<IReadOnlyList<Polity>> Roster() =>
         (await atlas.Polities(TimelineStart, TimelineEnd)).All;

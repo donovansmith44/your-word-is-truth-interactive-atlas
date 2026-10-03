@@ -22,7 +22,7 @@ macro_rules! vocabulary {
         impl $name {
             pub const ALL: [$name; [$($wire),+].len()] = [$($name::$member),+];
 
-            pub fn name(self) -> &'static str {
+            pub const fn name(self) -> &'static str {
                 match self { $($name::$member => $wire),+ }
             }
 

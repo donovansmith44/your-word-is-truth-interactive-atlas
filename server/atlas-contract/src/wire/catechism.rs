@@ -37,7 +37,7 @@ pub struct CatechismItem {
 #[serde(deny_unknown_fields)]
 #[schema(description = "One proof verse of a catechism item, carrying the verse in full rather than a preview.")]
 pub struct CatechismProofVerse {
-    pub vref: String,
+    pub vref: atlas_core::refs::VerseId,
     pub text: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub question: Option<String>,

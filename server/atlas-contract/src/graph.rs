@@ -31,10 +31,11 @@ use atlas_graph_types::store::GraphQuery;
 use atlas_graph_types::text::{BibleLocusRange, ConcordRef, Locus, TokenSpan, VerseRef};
 
 use crate::error::{ApiError, ElementRefusals, NeighbourRefusals, ReadingWindowRefusals, ReferenceRefusals};
-use crate::graph_wire::{describe_nodes, describe_positions, edge_ref, encode_node_id, labelled_positions, node_ref, UnreferencedUnit};
+use crate::graph_wire::{describe_nodes, describe_positions, edge_ref, labelled_positions, node_ref};
+use atlas_core::identity::{ArtifactRoot, ConcordReference, EdgePageCursor, ElementId, ElementPageCursor, NodeId, ReadingReference, TextWindowReference, UnitReference, UnreferencedUnit};
 use atlas_graph_types::canon::ids::any_node_id_str;
 use crate::query::{self, AsGiven, Contract, ContractParams};
-use crate::reference::{AskedElement, ConcordParagraphReference, ElementId, ElementIds, NodeReference, PositionReference, ReadingReference, Reference};
+use crate::reference::{AskedElement, ElementIds, ElementPosition, NodeReference, PositionReference, Reference};
 use crate::wire;
 
 /// One node of the graph at a glance: what it is, what to call it, where it came from, and how many neighbours it has of each kind.
@@ -44,7 +45,7 @@ use crate::wire;
 /// Scripture and `text-unit:BoC PART.ARTICLE.PARAGRAPH` for a paragraph of the
 /// Book of Concord. An id of no recognised kind is `bad_ref`; one that names no
 /// node is `not_found`.
-#[utoipa::path(get, path = "/api/node/{id}", params(("id" = String, Path)), responses((status = 200, body = wire::NodeRecord), ReferenceRefusals), tag = "graph")]
+#[utoipa::path(get, path = "/api/node/{id}", params(("id" = NodeId, Path)), responses((status = 200, body = wire::NodeRecord), ReferenceRefusals), tag = "graph")]
 pub async fn node_record(
     State(data): State<Arc<AtlasData>>,
     State(graph): State<Arc<GraphService>>,
@@ -85,12 +86,12 @@ fn read_node_record(node_id: &AnyNodeId, data: &AtlasData, graph: &GraphService,
     };
 
     Ok(Some(wire::NodeRecord {
-        id: encode_node_id(node_id, snap)?,
+        id: NodeId::encoded_one(node_id, snap)?,
         kind: node_id.kind,
         label,
         provenance: crate::provenance::titled(&node.provenance, data)?,
         edge_summary,
-        version: atlas_graph::version_hex(graph.version()),
+        version: ArtifactRoot::of(graph.version()),
         person,
         description,
         event: atlas_graph::legacy::event_from_node(node_id, snap, &graph.chronology.chrono).map(|event| event_detail(&event)),
@@ -117,7 +118,7 @@ fn read_edge_record(id: &EdgeId, data: &AtlasData, snap: &impl GraphQuery) -> Re
         .map_err(|_| ApiError::internal("three positions were asked for and three labels were not answered"))?;
     let (votes, narrative, parentage) = recorded(&record.meta);
     Ok(Some(wire::EdgeRecord {
-        id: id.0.clone(),
+        id: id.clone(),
         kind: record.kind,
         label,
         subject: described_as(&record.subject, subject, snap)?,
@@ -132,7 +133,7 @@ fn read_edge_record(id: &EdgeId, data: &AtlasData, snap: &impl GraphQuery) -> Re
 
 fn described_as(at: &Position, label: String, snap: &impl GraphQuery) -> Result<wire::PositionRef, ApiError> {
     match at {
-        Position::Node(id) => Ok(wire::PositionRef::Node { node: wire::NodeRef { id: encode_node_id(id, snap)?, kind: id.kind, label } }),
+        Position::Node(id) => Ok(wire::PositionRef::Node { node: wire::NodeRef { id: NodeId::encoded_one(id, snap)?, kind: id.kind, label } }),
         Position::Edge(id) => edge_ref(id, label).map(|edge| wire::PositionRef::Edge { edge }),
     }
 }
@@ -155,8 +156,8 @@ pub fn read_elements(data: &AtlasData, graph: &GraphService, snap: &impl GraphQu
         .iter()
         .map(|element| {
             let read = match &element.id {
-                ElementId::Node(node) => read_node_record(node, data, graph, snap)?.map(|node| wire::Element::Node { node }),
-                ElementId::Edge(edge) => read_edge_record(edge, data, snap)?.map(|edge| wire::Element::Edge { edge }),
+                ElementPosition::Node(node) => read_node_record(node, data, graph, snap)?.map(|node| wire::Element::Node { node }),
+                ElementPosition::Edge(edge) => read_edge_record(edge, data, snap)?.map(|edge| wire::Element::Edge { edge }),
             };
             Ok(read.unwrap_or_else(|| wire::Element::Missing { id: element.asked.clone() }))
         })
@@ -182,18 +183,18 @@ pub async fn elements(
     let from = cursor.0.min(asked.ids.0.len());
     let to = from.saturating_add(LARGEST_PAGE).min(asked.ids.0.len());
     let elements = read_elements(&data, &graph, &snap, &asked.ids.0[from..to])?;
-    let next = (to < asked.ids.0.len()).then_some(to);
-    let previous = cursor.previous(from, LARGEST_PAGE, |back| Cursor(from - back.get())).map(|before| before.0);
-    Ok(Json(wire::ElementPage { elements, previous, next, version: atlas_graph::version_hex(graph.version()) }))
+    let next = (to < asked.ids.0.len()).then_some(ElementPageCursor::at(Cursor(to)));
+    let previous = cursor.previous(from, LARGEST_PAGE, |back| Cursor(from - back.get())).map(ElementPageCursor::at);
+    Ok(Json(wire::ElementPage { elements, previous, next, version: ArtifactRoot::of(graph.version()) }))
 }
 
 #[derive(Debug, Deserialize, IntoParams)]
 #[into_params(parameter_in = Query)]
 pub struct ElementsQuery {
-    #[param(value_type = Vec<String>, style = Form, explode = false, min_items = 1)]
+    #[param(value_type = Vec<ElementId>, style = Form, explode = false, min_items = 1)]
     pub ids: ElementIds,
     #[serde(default)]
-    #[param(value_type = Option<usize>, default = json!(Cursor::FIRST.0))]
+    #[param(value_type = Option<ElementPageCursor>)]
     pub cursor: AsGiven<usize>,
 }
 
@@ -289,7 +290,7 @@ fn node_description(id: &AnyNodeId, q: &impl GraphQuery) -> Option<String> {
     path = "/api/node/{id}/edges",
     summary = "One page of the neighbours of a node or of an edge, of a single kind, each with the edge that joins them.",
     description = "`{id}` takes the same form `/api/node/{id}` does, or an edge's id as an edge page carries it. The required `kind` is an edge label such as `cites` or `cited-by`; anything else is `bad_kind`, an unrecognised id is `bad_ref`, and an id naming nothing is `not_found`. `limit` defaults to 20 and is clamped to the server's largest page; pass the response's `next` back as `cursor` for the following page, and its absence is the last page; its `previous` is absent on the first page alone, which has no page before it, and every other page names the `cursor` of the page of the same `limit` before it, the second page naming the first page's own `cursor`, 0. Leaving `cursor` out reads at 0: both are the first page, one page under two spellings. A `limit` or `cursor` that does not read as a whole number is not refused: it leaves its default standing.",
-    params(("id" = String, Path), EdgePageQuery),
+    params(("id" = ElementId, Path), EdgePageQuery),
     responses((status = 200, body = wire::EdgePage), NeighbourRefusals),
     tag = "graph"
 )]
@@ -301,8 +302,8 @@ pub async fn node_edges(
 ) -> Result<Json<wire::EdgePage>, ApiError> {
     let snap = graph.snapshot();
     let at = match asked_at {
-        ElementId::Node(node_id) => snap.node(&node_id).map(|_| Position::Node(node_id)).ok_or_else(|| ApiError::not_found("node"))?,
-        ElementId::Edge(edge_id) => snap.edge(&edge_id).map(|_| Position::Edge(edge_id)).ok_or_else(|| ApiError::not_found("edge"))?,
+        ElementPosition::Node(node_id) => snap.node(&node_id).map(|_| Position::Node(node_id)).ok_or_else(|| ApiError::not_found("node"))?,
+        ElementPosition::Edge(edge_id) => snap.edge(&edge_id).map(|_| Position::Edge(edge_id)).ok_or_else(|| ApiError::not_found("edge"))?,
     };
 
     let page = snap.edges(&at, &asked.page());
@@ -333,7 +334,7 @@ pub async fn node_edges(
         entries.push(wire::EdgeEntry { edge: edge_ref(&e.edge, edge_label)?, neighbour, votes, narrative, loci, note, parentage });
     }
 
-    Ok(Json(wire::EdgePage { kind: asked.kind, entries, previous: page.previous.map(|before| before.0), next: page.next.map(|after| after.0), version: atlas_graph::version_hex(graph.version()) }))
+    Ok(Json(wire::EdgePage { kind: asked.kind, entries, previous: page.previous.map(EdgePageCursor::at), next: page.next.map(EdgePageCursor::at), version: ArtifactRoot::of(graph.version()) }))
 }
 
 #[derive(Default)]
@@ -412,7 +413,7 @@ fn account_verses(account: &Account) -> Vec<VerseRef> {
 pub struct EdgePageQuery {
     pub kind: EdgeKind,
     #[serde(default)]
-    #[param(value_type = Option<usize>, default = json!(Cursor::FIRST.0))]
+    #[param(value_type = Option<EdgePageCursor>)]
     pub cursor: AsGiven<usize>,
     #[serde(default)]
     #[param(value_type = Option<usize>)]
@@ -466,7 +467,7 @@ pub async fn text_window(
     headers: HeaderMap,
     Contract(asked): Contract<TextWindowQuery>,
 ) -> Result<Response, ApiError> {
-    let etag = format!("\"{}\"", atlas_graph::version_hex(graph.version()));
+    let etag = format!("\"{}\"", ArtifactRoot::of(graph.version()));
     if headers.get(header::IF_NONE_MATCH).and_then(|v| v.to_str().ok()) == Some(etag.as_str()) {
         return Ok((StatusCode::NOT_MODIFIED, [(header::ETAG, etag)]).into_response());
     }
@@ -490,7 +491,7 @@ pub async fn text_window(
     let snap = graph.snapshot();
 
     if corpus == wire::Corpus::Concord {
-        let asked_for: ConcordParagraphReference = raw_ref.parse().map_err(|_| ApiError::bad_ref(raw_ref))?;
+        let asked_for: ConcordReference = raw_ref.parse().map_err(|_| ApiError::bad_ref(raw_ref))?;
         let start = graph.concord_position_of(asked_for.part, asked_for.article, asked_for.paragraph).ok_or_else(|| ApiError::not_found("concord paragraph"))?;
         let n = asked.units();
 
@@ -498,17 +499,17 @@ pub async fn text_window(
         let units = text_units(&graph, &snap, &ids)?;
         let next = next_reference(&snap, corpus, start, n, units.len(), dir)?;
 
-        let body = Json(wire::TextWindow { units, next, version: atlas_graph::version_hex(graph.version()) });
+        let body = Json(wire::TextWindow { units, next, version: ArtifactRoot::of(graph.version()) });
         return Ok(([(header::ETAG, etag)], body).into_response());
     }
 
     let asked_for: ReadingReference = raw_ref.parse().map_err(|_| ApiError::bad_ref(raw_ref))?;
-    let (book, chapter) = (asked_for.chapter.book.0, asked_for.chapter.chapter);
+    let (book, chapter) = (asked_for.chapter().book.0, asked_for.chapter().chapter);
 
     let (start, n) = if scope == wire::TextScope::Chapter {
         graph.chapter_span(book, chapter).ok_or_else(|| ApiError::not_found("chapter"))?
     } else {
-        let verse = asked_for.verse.ok_or_else(|| ApiError::bad_ref(raw_ref))?;
+        let verse = asked_for.verse().ok_or_else(|| ApiError::bad_ref(raw_ref))?;
         let start = graph.position_of(book, chapter, verse).ok_or_else(|| ApiError::not_found("verse"))?;
         (start, asked.units())
     };
@@ -517,17 +518,21 @@ pub async fn text_window(
     let units = text_units(&graph, &snap, &ids)?;
     let next = next_reference(&snap, corpus, start, n, units.len(), dir)?;
 
-    let body = Json(wire::TextWindow { units, next, version: atlas_graph::version_hex(graph.version()) });
+    let body = Json(wire::TextWindow { units, next, version: ArtifactRoot::of(graph.version()) });
     Ok(([(header::ETAG, etag)], body).into_response())
 }
 
-fn next_reference(snap: &impl GraphQuery, corpus: wire::Corpus, start: usize, n: usize, read: usize, dir: WindowDir) -> Result<Option<String>, ApiError> {
+fn next_reference(snap: &impl GraphQuery, corpus: wire::Corpus, start: usize, n: usize, read: usize, dir: WindowDir) -> Result<Option<UnitReference>, ApiError> {
     let after = match dir {
         WindowDir::Onward => Some(start + read),
         WindowDir::Backward => window::resolved_start(start, n, dir).checked_sub(1),
     };
     let Some(unit) = after.and_then(|at| snap.reading_window(corpus.name(), at, 1).into_iter().next()) else { return Ok(None) };
-    references_of(snap, std::slice::from_ref(&unit)).map(|mut references| references.pop())
+    references_of(snap, std::slice::from_ref(&unit))?.pop().map(|reference| unit_reference(&reference)).transpose()
+}
+
+fn unit_reference(compiled: &str) -> Result<UnitReference, ApiError> {
+    compiled.parse().map_err(|_| ApiError::internal(&format!("the compiled reference {compiled} names no verse and no paragraph")))
 }
 
 fn references_of(snap: &impl GraphQuery, units: &[AnyNodeId]) -> Result<Vec<String>, ApiError> {
@@ -538,6 +543,7 @@ fn references_of(snap: &impl GraphQuery, units: &[AnyNodeId]) -> Result<Vec<Stri
 #[derive(Debug, Deserialize, IntoParams)]
 #[into_params(parameter_in = Query)]
 pub struct TextWindowQuery {
+    #[param(value_type = TextWindowReference)]
     pub r#ref: String,
     #[serde(default)]
     #[param(value_type = Option<usize>)]
@@ -602,7 +608,7 @@ pub fn text_units(graph: &GraphService, snap: &impl GraphQuery, ids: &[AnyNodeId
         .map(|((id, r#ref), body)| {
             let heading = graph.heading_index.get(&r#ref).map(|heading| unit_heading(heading, snap)).transpose()?;
             let node = nodes.get(id).cloned().ok_or_else(|| ApiError::internal(&format!("{} was described and no reference to it was answered", any_node_id_str(id))))?;
-            Ok(wire::TextUnit { r#ref, node, body, heading, edge_summary: unit_edge_summary(snap, id) })
+            Ok(wire::TextUnit { r#ref: unit_reference(&r#ref)?, node, body, heading, edge_summary: unit_edge_summary(snap, id) })
         })
         .collect()
 }
@@ -745,7 +751,7 @@ mod tests {
     fn a_word_span_past_its_units_compiled_words_is_a_graph_defect_not_an_anchor() {
         // Arrange
         let past_the_end = tokens::span(atlas_graph::kjv_adapter::KJV_TRANSLATION, 9, 10).unwrap();
-        let hazor = wire::NodeRef { id: "Place:hazor-1".to_string(), kind: NodeKind::Place, label: "Hazor 1".to_string() };
+        let hazor = wire::NodeRef { id: wire::NodeId::asked("Place:hazor-1"), kind: NodeKind::Place, label: "Hazor 1".to_string() };
         let in_the = [Token { ord: 0, char_start: 0, char_end: 2 }, Token { ord: 1, char_start: 3, char_end: 6 }];
 
         // Act

@@ -1,5 +1,6 @@
 #[cfg(feature = "serde")]
 mod serialize {
+    use crate::edge::EdgeId;
     use crate::id::{KindTag, NodeId};
     use crate::EdgeKind;
     use core::marker::PhantomData;
@@ -32,6 +33,12 @@ mod serialize {
         }
     }
 
+    impl Serialize for EdgeId {
+        fn serialize<S: Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
+            s.serialize_str(&self.0)
+        }
+    }
+
     impl Serialize for EdgeKind {
         fn serialize<S: Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
             s.serialize_str(self.label())
@@ -61,7 +68,8 @@ mod serialize {
 
 #[cfg(feature = "openapi")]
 mod schema {
-    use crate::id::{KindTag, NodeId};
+    use crate::edge::{EdgeId, RelationId, SymRelationId};
+    use crate::id::{ContentHash, KindTag, NodeId};
     use crate::vocabulary::string_enum;
     use crate::EdgeKind;
     use std::borrow::Cow;
@@ -79,6 +87,21 @@ mod schema {
 
     impl ToSchema for EdgeKind {}
 
+    const EDGE_ID: &str = "The id of one edge of the graph: the relation it is recorded in, a colon, and its content address. Either end's neighbour page and the element read carry the same id for the same connection.";
+
+    impl PartialSchema for EdgeId {
+        fn schema() -> RefOr<Schema> {
+            ObjectBuilder::new().schema_type(SchemaType::Type(Type::String)).description(Some(EDGE_ID)).pattern(Some(edge_id_pattern())).into()
+        }
+    }
+
+    impl ToSchema for EdgeId {}
+
+    fn edge_id_pattern() -> String {
+        let relations: Vec<&str> = RelationId::ALL.iter().map(|relation| relation.name()).chain(SymRelationId::ALL.iter().map(|relation| relation.name())).collect();
+        format!("^(?:{}):[0-9a-f]{{{}}}$", relations.join("|"), ContentHash::HEX_WIDTH)
+    }
+
     impl<K: KindTag> PartialSchema for NodeId<K> {
         fn schema() -> RefOr<Schema> {
             ObjectBuilder::new().schema_type(SchemaType::Type(Type::String)).description(Some(format!("The {}.", super::node_id_noun(K::KIND)))).into()
@@ -94,5 +117,5 @@ mod schema {
 
 #[cfg(any(feature = "serde", feature = "openapi"))]
 fn node_id_noun(kind: crate::id::NodeKind) -> String {
-    format!("id of one {} node", kind.name())
+    format!("local name of one {} node, without its kind", kind.name())
 }

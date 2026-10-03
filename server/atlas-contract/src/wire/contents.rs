@@ -7,7 +7,7 @@ use atlas_core::canon::Testament;
 #[schema(description = "One corpus's contents, as a tree two levels deep.")]
 pub struct Contents {
     pub corpus: Corpus,
-    pub version: String,
+    pub version: super::ArtifactRoot,
     pub roots: Vec<ContentsRoot>,
 }
 
@@ -15,12 +15,12 @@ pub struct Contents {
 #[serde(deny_unknown_fields)]
 #[schema(description = "A top-level entry: a book of the Bible, or a document of the Book of Concord.")]
 pub struct ContentsRoot {
-    pub id: String,
+    pub id: super::NodeId,
     pub title: String,
     pub kind: ContentsRootKind,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub group: Option<Testament>,
-    pub r#ref: String,
+    pub r#ref: super::ContentsReference,
     pub locus: super::TextRef,
     pub children: Vec<ContentsChild>,
 }
@@ -29,15 +29,16 @@ pub struct ContentsRoot {
 #[serde(deny_unknown_fields)]
 #[schema(description = "A second-level entry: a chapter of a book, or an article of a document.")]
 pub struct ContentsChild {
-    pub id: String,
+    pub id: super::NodeId,
     pub title: String,
     pub kind: ContentsChildKind,
-    pub r#ref: String,
+    pub r#ref: super::ContentsReference,
     pub locus: super::TextRef,
     pub count: usize,
 }
 
 atlas_graph_types::vocabulary! {
+    #[doc = "Which corpus of text something belongs to: the Bible or the Book of Concord."]
     Corpus {
         Bible => atlas_graph::kjv_adapter::BIBLE_CORPUS,
         Concord => atlas_graph::concord_adapter::CONCORD_CORPUS,

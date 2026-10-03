@@ -163,9 +163,9 @@ public sealed class ExploreTests
     public async Task Links_from_a_cursor_read_the_page_the_cursor_names()
     {
         // Arrange
-        const int SecondPage = 1;
+        var SecondPage = Wire.EdgeCursor(1);
         var (graph, explorer, from) = Served();
-        graph.Serving(Genesis1Ref.Id, EdgeKind.FollowsIn, SecondPage, ServedGraph.Page(EdgeKind.FollowsIn, null, Genesis3Ref));
+        graph.Serving(Genesis1Ref.Id, EdgeKind.FollowsIn, SecondPage.Value, ServedGraph.Page(EdgeKind.FollowsIn, null, Genesis3Ref));
 
         // Act
         var outcome = await Explore.Links(EdgeKind.FollowsIn, SecondPage).Run(explorer, from);

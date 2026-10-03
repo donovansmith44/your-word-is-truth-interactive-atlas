@@ -5,7 +5,7 @@
 {
     @if (piece.Anchor?.Node is { Kind: NodeKind.Place } place)
     {
-        var placeId = NodeIds.LocalPart(place);
+        var placeId = LegacyNodeIds.LocalPart(place);
         <span class="@ClassPrefix" data-testid="@($"{ClassPrefix}-{Verse}-{placeId}{TestIdSuffix}")"
               tabindex="0" role="button" aria-label="@($"Explore {piece.Text}")"
               @onpointerenter="() => Blink(placeId, true)" @onpointerleave="() => Blink(placeId, false)"
@@ -15,7 +15,7 @@
     }
     else if (piece.Anchor?.Node is { Kind: NodeKind.Person } person)
     {
-        <span class="@ClassPrefix @($"{ClassPrefix}-person")" data-testid="@($"{ClassPrefix}-person-{Verse}-{NodeIds.LocalPart(person)}{TestIdSuffix}")"
+        <span class="@ClassPrefix @($"{ClassPrefix}-person")" data-testid="@($"{ClassPrefix}-person-{Verse}-{LegacyNodeIds.LocalPart(person)}{TestIdSuffix}")"
               tabindex="0" role="button" aria-label="@($"Explore {person.Label}")"
               @onclick="@(e => Open(e, new PopoverOpening.Legacy(new PersonNode(person.Id, person.Label)), person))" @onclick:stopPropagation="true"
               @onkeydown="@(e => OnKeyDown(e, new PopoverOpening.Legacy(new PersonNode(person.Id, person.Label))))" @onkeydown:stopPropagation="true">@piece.Text</span>

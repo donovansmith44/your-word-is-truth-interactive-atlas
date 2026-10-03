@@ -89,7 +89,7 @@ fn first_verse_of_target(target: &str) -> Option<VerseId> {
     if let Ok(v) = VerseId::parse_canonical(target) {
         return Some(v);
     }
-    if let Ok(ScriptureRef::Passage { book, chapter, from_verse, .. }) = ScriptureRef::parse(target) {
+    if let Ok(ScriptureRef::Passage(atlas_core::identity::PassageReference { book, chapter, from_verse, .. })) = ScriptureRef::parse(target) {
         return Some(VerseId { book, chapter, verse: from_verse });
     }
     let (left, _right) = target.split_once('-')?;

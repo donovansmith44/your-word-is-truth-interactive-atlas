@@ -24,7 +24,7 @@ public sealed class ChipTests
             pushes.AddRange((await author.ExploreAsync(api))
                 .Select(chip => chip.Target)
                 .OfType<ChipTarget.Push>()
-                .Select(push => (author.GetType().Name, push.Next.Title, push.Next.Identity.Id, push.Via)));
+                .Select(push => (author.GetType().Name, push.Next.Title, push.Next.Identity.Id.ToString(), push.Via)));
         }
         // Assert
         Assert.Equal(

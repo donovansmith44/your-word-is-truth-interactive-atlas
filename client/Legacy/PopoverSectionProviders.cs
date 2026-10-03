@@ -162,7 +162,7 @@ public sealed class PassageTextSection : IPopoverSectionProvider
         var (book, chapter, focalFrom) = CanonRef.ParseVerse(CanonRef.FirstVerseOf(p.Title));
         var dash = p.Title.LastIndexOf('-');
         var focalTo = dash >= 0 && int.TryParse(p.Title[(dash + 1)..], out var toVerse) ? toVerse : focalFrom;
-        var focalVerses = (await api.ChapterText(book, chapter)).Between(focalFrom, focalTo);
+        var focalVerses = (await api.ChapterText(LegacyNodeIds.Chapter(book, chapter))).Between(focalFrom, focalTo);
 
         RenderFragment fragment = builder =>
         {
@@ -264,7 +264,7 @@ public sealed class PassageCrossRefsSection : IPopoverSectionProvider
         // e.g. GEN.1.1 carries 61 -- and the popover only ever shows a few before "reveal
         // more"); targets beyond that keep their full identity and are resolved lazily via
         // ResolveUnits on first reveal, never narrowed to a single-verse preview.
-        var spans = xrefs.Select(x => (Xref: x, Span: CanonRef.TargetSpan(x.Target))).ToList();
+        var spans = xrefs.Select(x => (Xref: x, Span: CanonRef.TargetSpan(x.Target.ToString()))).ToList();
         var eagerSpans = spans.Take(XrefsShown).ToList();
         var lazySpans = spans.Skip(XrefsShown).ToList();
         var units = await ResolveUnits(api, eagerSpans);
@@ -300,7 +300,7 @@ public sealed class PassageCrossRefsSection : IPopoverSectionProvider
     {
         var chapterKeys = targets.Where(t => t.Span is not null).Select(t => (t.Span!.Value.Book, t.Span.Value.Chapter)).Distinct().ToList();
         var chapters = new Dictionary<(string, int), ChapterText>();
-        var fetched = await Task.WhenAll(chapterKeys.Select(k => api.ChapterText(k.Item1, k.Item2)));
+        var fetched = await Task.WhenAll(chapterKeys.Select(k => api.ChapterText(LegacyNodeIds.Chapter(k.Item1, k.Item2))));
         foreach (var (key, chapter) in chapterKeys.Zip(fetched))
         {
             chapters[key] = chapter;
@@ -318,7 +318,7 @@ public sealed class PassageCrossRefsSection : IPopoverSectionProvider
                     continue;
                 }
             }
-            units.Add(new PassageSourceUnit(new[] { new PassageListVerse(CanonRef.FirstVerseOf(x.Target), x.Preview) }));
+            units.Add(new PassageSourceUnit(new[] { new PassageListVerse(CanonRef.FirstVerseOf(x.Target.ToString()), x.Preview) }));
         }
         return units;
     }
@@ -484,11 +484,11 @@ public sealed class CatechismScripturesSection : IPopoverSectionProvider
         }
 
         var servedText = new Dictionary<string, TextUnit>();
-        var chapterKeys = detail.Verses.Select(v => CanonRef.ParseVerse(v.Vref)).Select(p => (p.Book, p.Chapter)).Distinct().ToList();
-        var fetched = await Task.WhenAll(chapterKeys.Select(k => api.ChapterText(k.Book, k.Chapter)));
+        var chapterKeys = detail.Verses.Select(v => CanonRef.ParseVerse(v.Vref.ToString())).Select(p => (p.Book, p.Chapter)).Distinct().ToList();
+        var fetched = await Task.WhenAll(chapterKeys.Select(k => api.ChapterText(LegacyNodeIds.Chapter(k.Book, k.Chapter))));
         foreach (var unit in fetched.SelectMany(chapterText => chapterText.Units))
         {
-            servedText[unit.Ref] = unit;
+            servedText[unit.Ref.ToString()] = unit;
         }
 
         var units = new List<PassageSourceUnit>();
@@ -505,7 +505,7 @@ public sealed class CatechismScripturesSection : IPopoverSectionProvider
                 currentGroup = new List<PassageListVerse>();
                 currentQuestion = v.Question;
             }
-            currentGroup.Add(servedText.TryGetValue(v.Vref, out var unit) ? PassageListVerse.Of(unit) : new PassageListVerse(v.Vref, v.Text));
+            currentGroup.Add(servedText.TryGetValue(v.Vref.ToString(), out var unit) ? PassageListVerse.Of(unit) : new PassageListVerse(v.Vref.ToString(), v.Text));
         }
         if (currentGroup is not null)
         {
@@ -720,7 +720,7 @@ public sealed class EventMentionsSection : IPopoverSectionProvider
             return null;
         }
 
-        var refs = mentions.Select(v => new Components.RefsList.RefDescriptor(v, LegacyTextUnits.Opening(v))).ToList();
+        var refs = mentions.Select(verse => verse.ToString()).Select(v => new Components.RefsList.RefDescriptor(v, LegacyTextUnits.Opening(v))).ToList();
 
         var registry = await FrontierProvenance.Registry(api);
 
@@ -1041,8 +1041,8 @@ public sealed class CatechismInConcordSection : IPopoverSectionProvider
         }
 
         List<NodeRef> units;
-        units = (await CatechismLinks.AllTargetsAsync(ctx.Graph, NodeIds.Of(NodeKind.CatechismItem, item.Id)))
-            .Where(n => n.Kind == NodeKind.TextUnit && NodeIds.LocalPart(n).StartsWith("BoC ", StringComparison.Ordinal))
+        units = (await CatechismLinks.AllTargetsAsync(ctx.Graph, LegacyNodeIds.Of(NodeKind.CatechismItem, item.Id)))
+            .Where(n => n.Kind == NodeKind.TextUnit && LegacyNodeIds.LocalPart(n).StartsWith("BoC ", StringComparison.Ordinal))
             .ToList();
 
         if (units.Count == 0)
@@ -1070,7 +1070,7 @@ public sealed class CatechismInConcordSection : IPopoverSectionProvider
 
 internal static class CatechismLinks
 {
-    public static async Task<List<NodeRef>> AllTargetsAsync(IExplorableClient graph, string nodeId) =>
+    public static async Task<List<NodeRef>> AllTargetsAsync(IExplorableClient graph, NodeId nodeId) =>
         (await Paging.Whole(graph, nodeId, EdgeKind.CatechismLink)).Nodes().ToList();
 }
 
@@ -1187,7 +1187,7 @@ public sealed class PersonEventsSection : IPopoverSectionProvider
         RenderFragment body = builder =>
         {
             var seq = PersonSectionRendering.Heading(builder, 0, $"EVENTS ({events.Count})", "person-events-heading");
-            PersonSectionRendering.Chips(builder, seq, "person-event", events.Select(e => (NodeIds.LocalPart(e), e.Label, (PopoverOpening)new PopoverOpening.Legacy(new EventNode(NodeIds.LocalPart(e), e.Label)))), ctx, EdgeKind.ParticipatesIn);
+            PersonSectionRendering.Chips(builder, seq, "person-event", events.Select(e => (LegacyNodeIds.LocalPart(e), e.Label, (PopoverOpening)new PopoverOpening.Legacy(new EventNode(LegacyNodeIds.LocalPart(e), e.Label)))), ctx, EdgeKind.ParticipatesIn);
         };
         return new PopoverSection("person-events", body);
     }
@@ -1239,7 +1239,7 @@ public sealed class PersonFamilySection : IPopoverSectionProvider
                 builder.AddAttribute(seq++, "data-testid", $"person-family-{group.TestId}");
                 builder.AddContent(seq++, group.Heading);
                 builder.CloseElement();
-                seq = PersonSectionRendering.Chips(builder, seq, $"person-{group.TestId}", group.People.Select(p => (NodeIds.LocalPart(p), p.Label, (PopoverOpening)new PopoverOpening.Legacy(new PersonNode(p.Id, p.Label)))), ctx, group.Via);
+                seq = PersonSectionRendering.Chips(builder, seq, $"person-{group.TestId}", group.People.Select(p => (LegacyNodeIds.LocalPart(p), p.Label, (PopoverOpening)new PopoverOpening.Legacy(new PersonNode(p.Id, p.Label)))), ctx, group.Via);
             }
         };
         return new PopoverSection("person-family", body);

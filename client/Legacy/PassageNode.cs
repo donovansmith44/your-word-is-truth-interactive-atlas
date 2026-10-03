@@ -19,7 +19,7 @@ public sealed class PassageNode : IExplorable
 
     public string Title => _sref;
     public string Kind => "Passage";
-    public NodeRef Identity => new(id: NodeIds.Of(NodeKind.TextUnit, CanonRef.FirstVerseOf(_sref)), kind: NodeKind.TextUnit, label: _sref);
+    public NodeRef Identity => new(id: LegacyNodeIds.Of(NodeKind.TextUnit, CanonRef.FirstVerseOf(_sref)), kind: NodeKind.TextUnit, label: _sref);
 
     public string Text => _text;
 
@@ -38,9 +38,9 @@ public sealed class PassageNode : IExplorable
 
     // AsyncMemo-backed rather than a value-memoizing `??= await`: the latter races when
     // ExplorerPopover.LoadCurrent's concurrent Task.WhenAll dispatch calls this more than once.
-    public Task<IReadOnlyList<CrossRef>> XrefsAsync(AtlasClient api) => _xrefs.Get(() => api.Xrefs(_sref));
+    public Task<IReadOnlyList<CrossRef>> XrefsAsync(AtlasClient api) => _xrefs.Get(() => api.Xrefs(LegacyNodeIds.Read<VerseSpanReference>(_sref)));
 
-    public Task<IReadOnlyList<CatechismRef>> CatechismAsync(AtlasClient api) => _catechism.Get(() => api.Catechism(_sref));
+    public Task<IReadOnlyList<CatechismRef>> CatechismAsync(AtlasClient api) => _catechism.Get(() => api.Catechism(LegacyNodeIds.Read<VerseSpanReference>(_sref)));
 
     public Task<RenderFragment> BodyAsync(AtlasClient api)
     {

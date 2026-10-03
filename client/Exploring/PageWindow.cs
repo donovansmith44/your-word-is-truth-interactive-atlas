@@ -1,3 +1,4 @@
+using BibleAtlas.Client.Contract;
 namespace BibleAtlas.Client.Exploring;
 
 public sealed record PagePosition(int From, int To, int Total, bool Less, bool More)
@@ -40,7 +41,7 @@ public sealed class PageWindow<T>
 
     public IEnumerable<T> Shown => _blocks.SelectMany(block => block.Read.Kept);
 
-    public IEnumerable<int?> CursorsHeld => _blocks.SelectMany(block => new[] { block.Read.Previous, block.Read.Next });
+    public IEnumerable<EdgePageCursor?> CursorsHeld => _blocks.SelectMany(block => new[] { block.Read.Previous, block.Read.Next });
 
     public PagePosition Position(int total) =>
         new(_entriesBefore + 1, _entriesBefore + _blocks.Sum(block => block.Read.Read), total, Revealed > 1, !_blocks[^1].Read.Ended);
@@ -130,7 +131,7 @@ public sealed class PageWindow<T>
 
     private sealed record Block(Paging<T> Read)
     {
-        public static async Task<Block> At(PageRead<T> read, Func<T, bool> keep, int step, int? start) =>
+        public static async Task<Block> At(PageRead<T> read, Func<T, bool> keep, int step, EdgePageCursor? start) =>
             new(await Paging.From(read, start, step, keep));
     }
 }

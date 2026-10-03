@@ -30,7 +30,7 @@ public sealed class IdentityEqualityLawTests
         {
             ("NodeRef", Same(Moses, MosesRelabelled), Same(Moses, Aaron), Same(Moses, MosesAsPlace)),
             ("node PositionRef", Same(At(Moses), At(MosesRelabelled)), Same(At(Moses), At(Aaron)), Same(At(Moses), At(MosesAsPlace))),
-            ("edge PositionRef", Same(ServedGraph.AtEdge(Mention), ServedGraph.AtEdge(MentionRelabelled)), Same(ServedGraph.AtEdge(Mention), ServedGraph.AtEdge(Mention with { Id = "Mentions:00ff" })), Same(ServedGraph.AtEdge(Mention), ServedGraph.AtEdge(Mention with { Kind = EdgeKind.Cites }))),
+            ("edge PositionRef", Same(ServedGraph.AtEdge(Mention), ServedGraph.AtEdge(MentionRelabelled)), Same(ServedGraph.AtEdge(Mention), ServedGraph.AtEdge(Mention with { Id = Wire.Edge("Mentions:00ff") })), Same(ServedGraph.AtEdge(Mention), ServedGraph.AtEdge(Mention with { Kind = EdgeKind.Cites }))),
             ("Explorable", Same(relabelled.First, relabelled.Second), Same(other.First, other.Second), Same(rekinded.First, rekinded.Second)),
             ("Link", Same(new Link(EdgeKind.Mentions, At(Moses)), new Link(EdgeKind.Mentions, At(MosesRelabelled))), Same(new Link(EdgeKind.Mentions, At(Moses)), new Link(EdgeKind.Mentions, At(Aaron))), Same(new Link(EdgeKind.Mentions, At(Moses)), new Link(EdgeKind.Mentions, At(MosesAsPlace)))),
             ("Step", Same(new Step(EdgeKind.Mentions, relabelled.First), new Step(EdgeKind.Mentions, relabelled.Second)), Same(new Step(EdgeKind.Mentions, other.First), new Step(EdgeKind.Mentions, other.Second)), Same(new Step(EdgeKind.Mentions, rekinded.First), new Step(EdgeKind.Mentions, rekinded.Second))),

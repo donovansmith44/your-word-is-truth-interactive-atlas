@@ -19,7 +19,7 @@ public static class Explore
 
     public static Explore<Explorable> Here { get; } = new((_, trail) => Arrived(trail));
 
-    public static Explore<Page<Link>> Links(EdgeKind kind, int? cursor = null) =>
+    public static Explore<Page<Link>> Links(EdgeKind kind, EdgePageCursor? cursor = null) =>
         RenewingWhenMoved(Asking((_, trail) => Paging.Links(trail.Current, kind, cursor), (_, trail) => trail));
 
     public static Explore<Explorable> Follow(Link link) =>

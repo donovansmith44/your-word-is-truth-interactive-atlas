@@ -138,7 +138,7 @@ public sealed class GeographyPresentationTests
         // Assert
         Assert.Equal(
             ["Map:bare", "Era:bare", "Place:bare", "Polity:bare"],
-            breaches.Select(breach => bare.Select(served => served.Element.Id).Single(breach.Message.Contains)).ToArray());
+            breaches.Select(breach => bare.Select(served => served.Element.Id.ToString()).Single(breach.Message.Contains)).ToArray());
     }
 
     [Fact]

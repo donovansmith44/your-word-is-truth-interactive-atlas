@@ -932,7 +932,7 @@ fn polities_transition_with_real_verses_passes_validation() {
         "T",
         -1000,
         -500,
-        PolityDelta { event: "T rises".into(), verses: vec!["GEN.1.1".into()], ref_note: "fixture".into(), for_era_from: -1000 },
+        PolityDelta { event: "T rises".into(), verses: vec![atlas_core::refs::VerseId::parse_canonical("GEN.1.1").unwrap()], ref_note: "fixture".into(), for_era_from: -1000 },
     );
     assert!(atlas_etl::validate::run_polities(&[polity], &test_bbox(), &test_verses()).is_ok());
 }
@@ -970,23 +970,17 @@ fn polities_transition_verse_not_in_compiled_kjv_fails_validation() {
         "T",
         -1000,
         -500,
-        PolityDelta { event: "T rises".into(), verses: vec!["GEN.99.99".into()], ref_note: "fixture".into(), for_era_from: -1000 },
+        PolityDelta { event: "T rises".into(), verses: vec![atlas_core::refs::VerseId::parse_canonical("GEN.99.99").unwrap()], ref_note: "fixture".into(), for_era_from: -1000 },
     );
     let err = atlas_etl::validate::run_polities(&[polity], &test_bbox(), &test_verses()).unwrap_err();
     assert!(err.to_string().contains("does not exist in the compiled KJV text"), "{err}");
 }
 
 #[test]
-fn polities_transition_malformed_verse_fails_validation() {
-    let polity = one_era_polity_with_transition(
-        "t",
-        "T",
-        -1000,
-        -500,
-        PolityDelta { event: "T rises".into(), verses: vec!["not a ref".into()], ref_note: "fixture".into(), for_era_from: -1000 },
-    );
-    let err = atlas_etl::validate::run_polities(&[polity], &test_bbox(), &test_verses()).unwrap_err();
-    assert!(err.to_string().contains("not a canonical single-verse ref"), "{err}");
+fn polities_transition_malformed_verse_fails_to_parse() {
+    let toml = include_str!("fixtures/polities-sample.toml").replace("\"GEN.1.1\"", "\"not a ref\"");
+    let err = atlas_etl::curated::parse_polity(&toml).unwrap_err();
+    assert!(format!("{err:#}").contains("not a canonical single-verse ref"), "{err:#}");
 }
 
 #[test]

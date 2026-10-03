@@ -28,7 +28,7 @@ public static class EventAccounts
     public static async Task<IReadOnlyList<EventAccount>> ReadAsync(IExplorableClient graph, string eventId)
     {
         var accounts = new List<EventAccount>();
-        foreach (var entry in await Paging.Whole(graph, NodeIds.Of(NodeKind.Event, eventId), EdgeKind.AttestedIn))
+        foreach (var entry in await Paging.Whole(graph, LegacyNodeIds.Of(NodeKind.Event, eventId), EdgeKind.AttestedIn))
         {
             if (entry.Loci is { Count: > 0 } runs && !accounts.Any(account => account.Runs.SequenceEqual(runs)))
             {

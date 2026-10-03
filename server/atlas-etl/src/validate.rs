@@ -234,7 +234,7 @@ pub fn run_polities(polities: &[Polity], bbox: &Bbox, verses: &HashMap<String, S
             errors.push(format!("{ctx}: ref_note is empty (citation-integrity rule -- name the source actually consulted)"));
         }
         for v in &delta.verses {
-            check_verse(v, ctx, errors);
+            check_verse(&v.to_string(), ctx, errors);
         }
         if delta.for_era_from != era_from {
             errors.push(format!(

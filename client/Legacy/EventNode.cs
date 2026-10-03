@@ -24,7 +24,7 @@ public sealed class EventNode : IExplorable, INarrativeAware
     public string EventId { get; }
     public string Title { get; }
     public string Kind => "Event";
-    public NodeRef Identity => new(id: NodeIds.Of(NodeKind.Event, EventId), kind: NodeKind.Event, label: Title);
+    public NodeRef Identity => new(id: LegacyNodeIds.Of(NodeKind.Event, EventId), kind: NodeKind.Event, label: Title);
 
     public async Task<IReadOnlyList<Chip>> ExploreAsync(AtlasClient api)
     {

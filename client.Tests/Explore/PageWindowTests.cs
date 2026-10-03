@@ -390,12 +390,12 @@ public sealed class PageWindowTests
             foreach (var cardinality in Cardinalities)
             {
                 var reads = 0;
-                Task<Page<int>> Read(int? cursor, int limit)
+                Task<Page<int>> Read(EdgePageCursor? cursor, int limit)
                 {
                     reads++;
-                    var from = cursor ?? 0;
+                    var from = cursor?.Value ?? 0;
                     var to = Math.Min(from + limit, cardinality);
-                    return Task.FromResult(new Page<int>(Enumerable.Range(from, to - from).ToList(), ServedGraph.PageBefore(from, limit), to < cardinality ? to : null));
+                    return Task.FromResult(new Page<int>(Enumerable.Range(from, to - from).ToList(), ServedGraph.PageBefore(from, limit), Wire.EdgeCursor(to < cardinality ? to : null)));
                 }
 
                 var window = await PageWindow<int>.Opened(Read, Paging.Everything, Step, () => false);
@@ -496,23 +496,23 @@ public sealed class PageWindowTests
     {
         public int Asked { get; private set; }
 
-        public Task<NodeRecord> Card(string id) => throw new NotSupportedException();
+        public Task<NodeRecord> Card(NodeId id) => throw new NotSupportedException();
 
-        public Task<ElementPage> Elements(IReadOnlyList<string> ids) =>
+        public Task<ElementPage> Elements(IReadOnlyList<ElementId> ids) =>
             Task.FromResult(new ElementPage(
                 elements: ids.Select(id => ServedGraph.ElementOf(id, ServedGraph.Card(NodeKind.Person, Positions.Of(Subject).Id, Positions.Of(Subject).Label, new FrontierGroup(EdgeKind.MentionedIn, size)))).ToList(),
-                next: null, previous: null, version: ServedGraph.Version));
+                next: null, previous: null, version: Wire.Root(ServedGraph.Version)));
 
-        public Task<EdgePage> Edges(string positionId, EdgeKind kind, int? cursor = null, int limit = BibleAtlas.Client.Exploring.Affordances.PageSize)
+        public Task<EdgePage> Edges(ElementId positionId, EdgeKind kind, EdgePageCursor? cursor = null, int limit = BibleAtlas.Client.Exploring.Affordances.PageSize)
         {
             Asked++;
-            var from = cursor ?? 0;
+            var from = cursor?.Value ?? 0;
             var to = Math.Min(from + limit, size);
             var verses = Enumerable.Range(from, to - from).Select(n => ServedGraph.Ref(NodeKind.TextUnit, $"text-unit:GEN.1.{n}", $"GEN.1.{n}")).ToArray();
             return Task.FromResult(ServedGraph.Page(kind, to < size ? to : null, verses) with { Previous = ServedGraph.PageBefore(from, limit) });
         }
 
-        public Task<TextWindow> Reading(string fromRef, int n, WindowDir dir = WindowDir.Onward, Corpus corpus = Corpus.Bible) =>
+        public Task<TextWindow> Reading(TextWindowReference fromRef, int n, WindowDir dir = WindowDir.Onward, Corpus corpus = Corpus.Bible) =>
             throw new NotSupportedException();
     }
 
@@ -524,12 +524,12 @@ public sealed class PageWindowTests
 
         public List<(Page<int> Page, TaskCompletionSource<Page<int>> Answer)> Pending { get; } = [];
 
-        public Task<Page<int>> Read(int? cursor, int limit)
+        public Task<Page<int>> Read(EdgePageCursor? cursor, int limit)
         {
-            Asked.Add(cursor);
-            var from = cursor ?? 0;
+            Asked.Add(cursor?.Value);
+            var from = cursor?.Value ?? 0;
             var to = Math.Min(from + limit, size);
-            var page = new Page<int>(Enumerable.Range(from, to - from).ToList(), ServedGraph.PageBefore(from, limit), to < size ? to : null);
+            var page = new Page<int>(Enumerable.Range(from, to - from).ToList(), ServedGraph.PageBefore(from, limit), Wire.EdgeCursor(to < size ? to : null));
             if (!Held || cursor is null)
             {
                 return Task.FromResult(page);

@@ -11,7 +11,7 @@ public sealed class IdentityTests
         // Arrange
         var nodes = LegacyViews.Every();
         // Act
-        var identities = nodes.Select(n => (n.Identity.Kind, n.Identity.Id, n.Identity.Label)).ToList();
+        var identities = nodes.Select(n => (n.Identity.Kind, n.Identity.Id.ToString(), n.Identity.Label)).ToList();
         // Assert
         Assert.Equal(
             [

@@ -39,10 +39,10 @@ fn built() -> Built {
 
             let mut store = MemStore::default();
             let version = store.publish(graph).unwrap();
-            let actual_hex = atlas_graph::version_hex(version);
+            let actual_hex = atlas_core::identity::ArtifactRoot::of(version).to_string();
 
             let svc = sources.build_service(&atlas.eras);
-            let expected_hex = atlas_graph::version_hex(svc.version());
+            let expected_hex = atlas_core::identity::ArtifactRoot::of(svc.version()).to_string();
 
             Built { gazetteer, events, spans, anchors, order_len, actual_hex, expected_hex }
         })
@@ -112,7 +112,7 @@ fn export_hash_1_atlas_version_root_does_not_change_when_only_a_dated_events_own
 
     let mut store = MemStore::default();
     let version = store.publish(graph).unwrap();
-    let root_hex = atlas_graph::version_hex(version);
+    let root_hex = atlas_core::identity::ArtifactRoot::of(version).to_string();
 
     let export_before = exports::ChronologyExport { format_version: exports::CHRONOLOGY_FORMAT_VERSION, atlas_version_root: root_hex.clone(), events: events_before, spans: vec![], anchors: vec![] };
     let export_after = exports::ChronologyExport { format_version: exports::CHRONOLOGY_FORMAT_VERSION, atlas_version_root: root_hex, events: events_after, spans: vec![], anchors: vec![] };

@@ -223,10 +223,10 @@ pub fn cross_refs_for_span(conn: &Connection, span: &ScriptureRef) -> Result<Has
     let base = "SELECT from_a, from_b, from_c, target_display, votes FROM kjv.cross_refs";
     let (sql, params): (String, Vec<i64>) = match span {
         ScriptureRef::Book(b) => (format!("{base} WHERE from_a = ?1 ORDER BY ord"), vec![b.0 as i64]),
-        ScriptureRef::Chapter { book, chapter } => {
+        ScriptureRef::Chapter(atlas_core::identity::ChapterReference { book, chapter }) => {
             (format!("{base} WHERE from_a = ?1 AND from_b = ?2 ORDER BY ord"), vec![book.0 as i64, *chapter as i64])
         }
-        ScriptureRef::Passage { book, chapter, from_verse, to_verse } => (
+        ScriptureRef::Passage(atlas_core::identity::PassageReference { book, chapter, from_verse, to_verse }) => (
             format!("{base} WHERE from_a = ?1 AND from_b = ?2 AND from_c BETWEEN ?3 AND ?4 ORDER BY ord"),
             vec![book.0 as i64, *chapter as i64, *from_verse as i64, *to_verse as i64],
         ),

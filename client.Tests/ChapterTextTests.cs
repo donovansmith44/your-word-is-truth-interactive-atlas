@@ -20,8 +20,8 @@ public sealed class ChapterTextTests
         body: new UnitText(anchors: [], locus: new BibleRef(BookId.GEN, 1, 2), text: "And the earth was without form, and void.", wordsOfChrist: []),
         edgeSummary: [],
         heading: null,
-        node: new NodeRef(id: "text-unit:GEN.1.2", kind: NodeKind.TextUnit, label: "GEN.1.2"),
-        @ref: "GEN.1.2");
+        node: new NodeRef(id: Wire.Node("text-unit:GEN.1.2"), kind: NodeKind.TextUnit, label: "GEN.1.2"),
+        @ref: Wire.Read<UnitReference>("GEN.1.2"));
 
     [Fact]
     public async Task A_chapters_text_is_its_served_chapter_window_read_verse_by_verse()
@@ -30,7 +30,7 @@ public sealed class ChapterTextTests
         var atlas = new StubbedAtlas(Genesis1Opening);
 
         // Act
-        var text = await atlas.Client().ChapterText("GEN", 1);
+        var text = await atlas.Client().ChapterText(Wire.Read<ChapterReference>("GEN.1"));
 
         // Assert
         Assert.Equivalent((Genesis1Verse2, "/api/text?ref=GEN.1&scope=chapter"), (text.Verse(2), string.Join(" ", atlas.Asked)), strict: true);
@@ -44,8 +44,8 @@ public sealed class ChapterTextTests
         var client = atlas.Client();
 
         // Act
-        await client.ChapterText("GEN", 1);
-        await client.ChapterText("GEN", 1);
+        await client.ChapterText(Wire.Read<ChapterReference>("GEN.1"));
+        await client.ChapterText(Wire.Read<ChapterReference>("GEN.1"));
 
         // Assert
         Assert.Equal(["/api/text?ref=GEN.1&scope=chapter"], atlas.Asked);
@@ -56,7 +56,7 @@ public sealed class ChapterTextTests
     {
         // Arrange
         var atlas = new StubbedAtlas(Genesis1Opening);
-        var god = new Anchor(end: 20, kind: EdgeKind.Mentions, node: new NodeRef(id: "Person:god_1324", kind: NodeKind.Person, label: "God"), start: 17);
+        var god = new Anchor(end: 20, kind: EdgeKind.Mentions, node: new NodeRef(id: Wire.Node("Person:god_1324"), kind: NodeKind.Person, label: "God"), start: 17);
 
         // Act
         var verses = await VerseTextResolver.ResolveAsync(atlas.Client(), ["GEN.1.1"]);

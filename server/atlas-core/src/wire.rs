@@ -1,6 +1,8 @@
 use serde::{Deserialize, Serialize};
 
+use crate::identity::NodeId;
 use crate::label::{TimeRange, Year};
+use crate::refs::{ScriptureRef, VerseId};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, utoipa::ToSchema)]
 #[serde(deny_unknown_fields)]
@@ -10,7 +12,7 @@ pub struct Scene {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub window: Option<TimeRange>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub r#ref: Option<String>,
+    pub r#ref: Option<ScriptureRef>,
     pub places: Vec<ScenePlace>,
     pub quiet_places: Vec<QuietPlace>,
     pub arrows: Vec<SceneArrow>,
@@ -28,7 +30,7 @@ atlas_graph_types::vocabulary! {
 #[serde(deny_unknown_fields)]
 #[schema(description = "A reference to a node: enough to show it, and the id to fetch it with.")]
 pub struct NodeRef {
-    pub id: String,
+    pub id: NodeId,
     pub kind: atlas_graph_types::id::NodeKind,
     pub label: String,
 }
@@ -88,7 +90,7 @@ pub struct SceneEvent {
 pub struct VerseGroup {
     pub book: String,
     pub chapter: u16,
-    pub verses: Vec<String>,
+    pub verses: Vec<VerseId>,
     pub count: u32,
 }
 
@@ -136,7 +138,7 @@ mod tests {
         let scene = Scene {
             mode: SceneMode::Scripture,
             window: None,
-            r#ref: Some("GEN.1.1".into()),
+            r#ref: Some(ScriptureRef::parse("GEN.1.1").unwrap()),
             places: vec![],
             quiet_places: vec![],
             arrows: vec![],

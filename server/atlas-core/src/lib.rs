@@ -4,6 +4,7 @@ pub mod chronology;
 pub mod data;
 pub mod event_merge;
 pub mod history;
+pub mod identity;
 pub mod label;
 pub mod merge;
 pub mod narrative;

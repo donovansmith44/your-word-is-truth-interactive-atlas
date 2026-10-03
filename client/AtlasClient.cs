@@ -1,3 +1,4 @@
+#pragma warning disable ATLASWIRE
 using System.Net.Http;
 using BibleAtlas.Client.Contract;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
@@ -54,8 +55,9 @@ public sealed class AtlasClient
         return scene;
     }
 
-    public async Task<Scene> SceneScripture(string sref)
+    public async Task<Scene> SceneScripture(BibleReference passage)
     {
+        var sref = passage.Value;
         var key = $"scripture:{sref}";
         if (_sceneCache.TryGet(key, out var cached))
         {
@@ -71,9 +73,9 @@ public sealed class AtlasClient
 
     public Task<List<Era>> Eras() => _erasCache.Get(() => _http.GetRequired<List<Era>>("api/eras"));
 
-    public async Task<Chapter> Chapter(string book, int chapter)
+    public async Task<Chapter> Chapter(ChapterReference chapter)
     {
-        var key = $"{book}.{chapter}";
+        var key = chapter.Value;
         if (_chapterCache.TryGet(key, out var cached))
         {
             return cached;
@@ -84,9 +86,9 @@ public sealed class AtlasClient
         return result;
     }
 
-    public async Task<Exploring.ChapterText> ChapterText(string book, int chapter)
+    public async Task<Exploring.ChapterText> ChapterText(ChapterReference chapter)
     {
-        var key = $"{book}.{chapter}";
+        var key = chapter.Value;
         if (_chapterTextCache.TryGet(key, out var cached))
         {
             return cached;
@@ -100,11 +102,12 @@ public sealed class AtlasClient
     // No cache here (unlike Chapter): Kretzmann re-fetches fresh on every locus change by design
     // (LoadCommentaryAsync's own request-id guard discards stale in-flight responses), so a
     // curator-added commentary unit is visible on the very next chapter visit.
-    public Task<KretzmannChapter> KretzmannChapter(string book, int chapter) =>
-        _http.GetRequired<KretzmannChapter>($"api/kretzmann/chapter/{book}.{chapter}");
+    public Task<KretzmannChapter> KretzmannChapter(ChapterReference chapter) =>
+        _http.GetRequired<KretzmannChapter>($"api/kretzmann/chapter/{chapter.Value}");
 
-    public async Task<IReadOnlyList<CrossRef>> Xrefs(string sref)
+    public async Task<IReadOnlyList<CrossRef>> Xrefs(VerseSpanReference span)
     {
+        var sref = span.Value;
         if (_xrefsCache.TryGet(sref, out var cached))
         {
             return cached;
@@ -115,8 +118,9 @@ public sealed class AtlasClient
         return result;
     }
 
-    public async Task<IReadOnlyList<CatechismRef>> Catechism(string sref)
+    public async Task<IReadOnlyList<CatechismRef>> Catechism(VerseSpanReference span)
     {
+        var sref = span.Value;
         if (_catechismSpanCache.TryGet(sref, out var cached))
         {
             return cached;
@@ -158,8 +162,8 @@ public sealed class AtlasClient
 
     public Task<SourcesDocument> Sources() => _sourcesCache.Get(() => _http.GetRequired<SourcesDocument>("api/sources"));
 
-    public Task<NodeRecord> NodeRecord(string nodeId) =>
-        _http.GetRequired<NodeRecord>($"api/node/{Uri.EscapeDataString(nodeId)}");
+    public Task<NodeRecord> NodeRecord(NodeId id) =>
+        _http.GetRequired<NodeRecord>($"api/node/{Uri.EscapeDataString(id.Value)}");
 
     public Task<Contract.Contents> Contents(Corpus corpus)
     {

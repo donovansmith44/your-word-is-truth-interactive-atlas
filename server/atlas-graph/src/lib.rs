@@ -51,9 +51,3 @@ pub use pipeline::{pipeline as compiler_pipeline, BuildCtx, Pass};
 pub use service::GraphService;
 pub use window::WindowDir;
 
-/// The wire/ETag form of a `GraphVersion`: fixed-width lowercase hex, so equal stamps compare
-/// byte-identical as `If-None-Match` strings. The width follows `ContentHash`, which the
-/// `canon-ids` feature widens, so it is never spelled out here.
-pub fn version_hex(v: atlas_graph_types::store::GraphVersion) -> String {
-    v.0.hex()
-}

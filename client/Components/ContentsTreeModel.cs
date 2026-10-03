@@ -24,7 +24,7 @@ public sealed class ContentsTreeModel
 
     public static ContentsTreeModel From(Contract.Contents contents) =>
         new(contents.Roots
-            .Select(r => new Root(r.Id, r.Title, r.Ref, r.Locus, r.Kind, r.Children.Select(c => new Child(c.Id, c.Title, c.Ref, c.Locus, c.Kind, c.Count)).ToList()))
+            .Select(r => new Root(r.Id.ToString(), r.Title, r.Ref.ToString(), r.Locus, r.Kind, r.Children.Select(c => new Child(c.Id.ToString(), c.Title, c.Ref.ToString(), c.Locus, c.Kind, c.Count)).ToList()))
             .ToList());
 
     public IReadOnlyCollection<string> ExpandedIds => _expanded;

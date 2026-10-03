@@ -82,7 +82,7 @@ pub fn target_display(cites: &BibleLocusRange) -> String {
     let reference = if cites.from == cites.to {
         ScriptureRef::Verse(first)
     } else {
-        ScriptureRef::Passage { book: first.book, chapter: first.chapter, from_verse: first.verse, to_verse: cites.to.unit.verse }
+        ScriptureRef::Passage(atlas_core::identity::PassageReference { book: first.book, chapter: first.chapter, from_verse: first.verse, to_verse: cites.to.unit.verse })
     };
     reference.to_string()
 }

@@ -111,7 +111,7 @@ fn chapter_window_completes_within_smoke_threshold() {
     let (_source, graph) = real_scene_source_and_graph();
     let snap = graph.snapshot();
     let book = match ScriptureRef::parse("JHN.3").unwrap() {
-        ScriptureRef::Chapter { book, .. } => book,
+        ScriptureRef::Chapter(atlas_core::identity::ChapterReference { book, .. }) => book,
         _ => unreachable!(),
     };
     let elapsed = median_of(7, || {
@@ -174,7 +174,8 @@ const ELEMENT_READ_BUDGET: Duration = Duration::from_millis(100);
 #[test]
 #[ignore = "wall-clock gate: run serialized via scripts/timing-gates.sh (CONTENTION-1)"]
 fn an_element_read_at_the_cap_answers_inside_the_read_budget() {
-    use atlas_contract::reference::{AskedElement, ElementId};
+    use atlas_contract::reference::{AskedElement, ElementIds, ELEMENT_ID_SEPARATOR};
+    use atlas_contract::wire::NodeId;
     use atlas_graph_types::adjacency::{Cursor, EdgeQuery};
     use atlas_graph_types::id::{NodeKind, Position};
     use atlas_graph_types::store::GraphQuery;
@@ -184,15 +185,16 @@ fn an_element_read_at_the_cap_answers_inside_the_read_budget() {
     let snap = graph.snapshot();
     let half = atlas_contract::graph::LARGEST_PAGE / 2;
     let verses = snap.nodes_of_kind(NodeKind::TextUnit, None, half).ids;
-    let edges: Vec<ElementId> = verses
+    let edges: Vec<String> = verses
         .iter()
         .flat_map(|verse| {
             let at = Position::Node(verse.clone());
-            snap.edge_summary(&at).into_keys().flat_map(|kind| snap.edges(&at, &EdgeQuery { kind, cursor: Cursor::FIRST, limit: 1 }).entries).map(|entry| ElementId::Edge(entry.edge)).collect::<Vec<_>>()
+            snap.edge_summary(&at).into_keys().flat_map(|kind| snap.edges(&at, &EdgeQuery { kind, cursor: Cursor::FIRST, limit: 1 }).entries).map(|entry| entry.edge.to_string()).collect::<Vec<_>>()
         })
         .take(half)
         .collect();
-    let ids: Vec<AskedElement> = verses.into_iter().map(ElementId::Node).chain(edges).map(|id| AskedElement { asked: String::new(), id }).collect();
+    let asked: Vec<String> = NodeId::encoded(&verses, &snap).expect("every verse carries its compiled reference").iter().map(ToString::to_string).chain(edges).collect();
+    let ids: Vec<AskedElement> = asked.join(&ELEMENT_ID_SEPARATOR.to_string()).parse::<ElementIds>().expect("every id the graph hands back reads").0;
 
     // Act
     let elapsed = median_of(7, || {

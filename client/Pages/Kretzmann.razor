@@ -416,7 +416,7 @@
         _loadedBook = null;
         _loadedChapterNum = null;
 
-        (await request.Fetch(() => Atlas.Chapter(book, chapterNum), () => Atlas.ChapterText(book, chapterNum), () => Atlas.KretzmannChapter(book, chapterNum))).Match(
+        (await request.Fetch(() => Atlas.Chapter(LegacyNodeIds.Chapter(book, chapterNum)), () => Atlas.ChapterText(LegacyNodeIds.Chapter(book, chapterNum)), () => Atlas.KretzmannChapter(LegacyNodeIds.Chapter(book, chapterNum)))).Match(
             arrived: loaded => ShowChapter(book, chapterNum, loaded),
             failed: () =>
             {
@@ -441,7 +441,7 @@
                 var heading = item.Heading ?? "Commentary";
                 var isSectionStart = heading != lastHeading;
                 lastHeading = heading;
-                items.Add(new CommentaryItemRow(item.Id, heading, null, [], isSectionStart));
+                items.Add(new CommentaryItemRow(item.Id.ToString(), heading, null, [], isSectionStart));
             }
             commentaryByVerse[v.Verse] = items;
         }
@@ -475,7 +475,7 @@
                 return;
             }
 
-            (await request.Fetch(() => Graph.Card(itemId))).Match(
+            (await request.Fetch(() => Graph.Card(LegacyNodeIds.Read<NodeId>(itemId)))).Match(
                 arrived: card => ShowItemText(itemId, card.Description),
                 failed: () => ShowItemText(itemId, null),
                 superseded: () => { });
@@ -504,7 +504,7 @@
     private CommentaryItemRow ProseOf(CommentaryItemRow item, string prose) =>
         item with { Text = prose, Citations = KretzmannCitationScan.Anchors(prose, _toc ?? EmptyToc) };
 
-    private void OnExplore(CommentaryItemRow item) => _opening = new PopoverOpening.Legacy(new CommentaryItemNode(NodeIds.LocalPart(item.Id), item.Heading));
+    private void OnExplore(CommentaryItemRow item) => _opening = new PopoverOpening.Legacy(new CommentaryItemNode(LegacyNodeIds.LocalPart(item.Id), item.Heading));
 
     private void OnItemKeyDown(KeyboardEventArgs e, CommentaryItemRow item)
     {

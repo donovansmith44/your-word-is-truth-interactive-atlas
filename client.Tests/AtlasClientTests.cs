@@ -140,8 +140,8 @@ public sealed class AtlasClientTests
         // Arrange
         var (client, handler) = MakeClient("""{"places":[],"events":[],"narratives":[],"arrows":[],"polities":[],"landmarks":[],"version":"v"}""");
         // Act
-        var first = await client.SceneScripture("JHN.3.16");
-        var second = await client.SceneScripture("JHN.3.16");
+        var first = await client.SceneScripture(Wire.Read<BibleReference>("JHN.3.16"));
+        var second = await client.SceneScripture(Wire.Read<BibleReference>("JHN.3.16"));
         // Assert
         Assert.Equal("/api/scene/scripture", handler.RequestedUris[0].AbsolutePath);
         Assert.Equal("?ref=JHN.3.16", handler.RequestedUris[0].Query);
@@ -157,8 +157,8 @@ public sealed class AtlasClientTests
             """{"places":[],"events":[],"narratives":[],"arrows":[],"polities":[],"landmarks":[],"version":"a"}""",
             """{"places":[],"events":[],"narratives":[],"arrows":[],"polities":[],"landmarks":[],"version":"b"}""");
         // Act
-        await client.SceneScripture("JHN.3.16");
-        await client.SceneScripture("GEN.1.1");
+        await client.SceneScripture(Wire.Read<BibleReference>("JHN.3.16"));
+        await client.SceneScripture(Wire.Read<BibleReference>("GEN.1.1"));
         // Assert
         Assert.Equal(2, handler.RequestedUris.Count);
         Assert.Equal("?ref=GEN.1.1", handler.RequestedUris[1].Query);
@@ -192,8 +192,8 @@ public sealed class AtlasClientTests
         // Arrange
         var (client, handler) = MakeClient("""{"book":"John","chapter":3,"ref":"JHN.3","verses":[]}""");
         // Act
-        var first = await client.Chapter("John", 3);
-        var second = await client.Chapter("John", 3);
+        var first = await client.Chapter(Wire.Read<ChapterReference>("John.3"));
+        var second = await client.Chapter(Wire.Read<ChapterReference>("John.3"));
         // Assert
         Assert.Equal("/api/chapter/John.3", handler.RequestedUris[0].AbsolutePath);
         Assert.Same(first, second);
@@ -208,8 +208,8 @@ public sealed class AtlasClientTests
             """{"book":"John","chapter":3,"ref":"JHN.3","verses":[]}""",
             """{"book":"John","chapter":4,"ref":"JHN.4","verses":[]}""");
         // Act
-        await client.Chapter("John", 3);
-        await client.Chapter("John", 4);
+        await client.Chapter(Wire.Read<ChapterReference>("John.3"));
+        await client.Chapter(Wire.Read<ChapterReference>("John.4"));
         // Assert
         Assert.Equal(2, handler.RequestedUris.Count);
         Assert.Equal("/api/chapter/John.4", handler.RequestedUris[1].AbsolutePath);
@@ -221,8 +221,8 @@ public sealed class AtlasClientTests
         // Arrange
         var (client, handler) = MakeClient("{}", "{}");
         // Act
-        await client.KretzmannChapter("John", 3);
-        await client.KretzmannChapter("John", 3);
+        await client.KretzmannChapter(Wire.Read<ChapterReference>("John.3"));
+        await client.KretzmannChapter(Wire.Read<ChapterReference>("John.3"));
         // Assert
         Assert.All(handler.RequestedUris, uri => Assert.Equal("/api/kretzmann/chapter/John.3", uri.AbsolutePath));
         Assert.Equal(2, handler.RequestedUris.Count);
@@ -234,8 +234,8 @@ public sealed class AtlasClientTests
         // Arrange
         var (client, handler) = MakeClient("[]");
         // Act
-        var first = await client.Xrefs("JHN.3.16");
-        var second = await client.Xrefs("JHN.3.16");
+        var first = await client.Xrefs(Wire.Read<VerseSpanReference>("JHN.3.16"));
+        var second = await client.Xrefs(Wire.Read<VerseSpanReference>("JHN.3.16"));
         // Assert
         Assert.Equal("/api/xrefs/JHN.3.16", handler.RequestedUris[0].AbsolutePath);
         Assert.Same(first, second);
@@ -248,8 +248,8 @@ public sealed class AtlasClientTests
         // Arrange
         var (client, handler) = MakeClient("[]", "[]");
         // Act
-        await client.Xrefs("JHN.3.16");
-        await client.Xrefs("GEN.1.1");
+        await client.Xrefs(Wire.Read<VerseSpanReference>("JHN.3.16"));
+        await client.Xrefs(Wire.Read<VerseSpanReference>("GEN.1.1"));
         // Assert
         Assert.Equal(2, handler.RequestedUris.Count);
         Assert.Equal("/api/xrefs/GEN.1.1", handler.RequestedUris[1].AbsolutePath);
@@ -261,8 +261,8 @@ public sealed class AtlasClientTests
         // Arrange
         var (client, handler) = MakeClient("[]");
         // Act
-        var first = await client.Catechism("JHN.3.16");
-        var second = await client.Catechism("JHN.3.16");
+        var first = await client.Catechism(Wire.Read<VerseSpanReference>("JHN.3.16"));
+        var second = await client.Catechism(Wire.Read<VerseSpanReference>("JHN.3.16"));
         // Assert
         Assert.Equal("/api/catechism/JHN.3.16", handler.RequestedUris[0].AbsolutePath);
         Assert.Same(first, second);
@@ -275,8 +275,8 @@ public sealed class AtlasClientTests
         // Arrange
         var (client, handler) = MakeClient("[]", "[]");
         // Act
-        await client.Catechism("JHN.3.16");
-        await client.Catechism("GEN.1.1");
+        await client.Catechism(Wire.Read<VerseSpanReference>("JHN.3.16"));
+        await client.Catechism(Wire.Read<VerseSpanReference>("GEN.1.1"));
         // Assert
         Assert.Equal(2, handler.RequestedUris.Count);
         Assert.Equal("/api/catechism/GEN.1.1", handler.RequestedUris[1].AbsolutePath);
@@ -393,7 +393,7 @@ public sealed class AtlasClientTests
         // Arrange
         var (client, handler) = MakeClient("""{"id":"text-unit:JHN.3.16","kind":"TextUnit","label":"JHN.3.16","provenance":{"id":"kjv","title":"The King James Version"},"edge_summary":[],"version":"v"}""");
         // Act
-        await client.NodeRecord("text-unit:JHN.3.16");
+        await client.NodeRecord(Wire.Node("text-unit:JHN.3.16"));
         // Assert
         Assert.Equal("/api/node/text-unit:JHN.3.16", Uri.UnescapeDataString(handler.RequestedUris[0].AbsolutePath));
     }

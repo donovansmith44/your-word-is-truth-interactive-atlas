@@ -6,17 +6,17 @@ namespace BibleAtlas.Client.Legacy;
 
 public sealed class PersonNode : IExplorable
 {
-    private readonly string _personId;
+    private readonly NodeId _personId;
     private readonly string _label;
     private readonly AsyncMemo<NodeRecord> _card = new();
 
-    public PersonNode(string personId, string label)
+    public PersonNode(NodeId personId, string label)
     {
         _personId = personId;
         _label = label;
     }
 
-    public string PersonId => _personId;
+    public NodeId PersonId => _personId;
     public string Title => _label;
     public string Kind => "Person";
     public NodeRef Identity => new(id: _personId, kind: NodeKind.Person, label: _label);

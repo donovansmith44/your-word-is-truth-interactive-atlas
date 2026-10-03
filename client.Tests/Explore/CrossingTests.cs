@@ -135,7 +135,7 @@ public sealed class CrossingTests
         // Act
         await conquest.Entries(EdgeKind.FollowsIn);
         await conquest.Entries(EdgeKind.FollowsIn, limit: Limit);
-        await conquest.Entries(EdgeKind.FollowsIn, cursor: Limit);
+        await conquest.Entries(EdgeKind.FollowsIn, cursor: Wire.EdgeCursor(Limit));
 
         // Assert
         Assert.Equal(3, graph.NeighbourReads);

@@ -43,7 +43,7 @@ fn render_verse_line(snap: &impl GraphQuery, id: &AnyNodeId, chapter_ref: &str, 
 /// chapter-shaped, `not_found` on a well-shaped book/chapter that is absent.
 fn resolve_span(graph: &GraphService, ref_raw: &str) -> Result<(usize, usize), CliError> {
     let (book, chapter) = match ScriptureRef::parse(ref_raw) {
-        Ok(ScriptureRef::Chapter { book, chapter }) => (book, chapter),
+        Ok(ScriptureRef::Chapter(atlas_core::identity::ChapterReference { book, chapter })) => (book, chapter),
         _ => {
             return Err(CliError::bad_ref(
                 format!("'{ref_raw}' is not a valid chapter reference"),

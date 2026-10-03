@@ -23,8 +23,8 @@ public sealed class KretzmannCitationScanTests
         // Assert
         Assert.Equal(
             [
-                new Anchor(end: 27, kind: EdgeKind.Cites, node: new NodeRef(id: "text-unit:ROM.3.23", kind: NodeKind.TextUnit, label: "ROM.3.23"), start: 17),
-                new Anchor(end: 70, kind: EdgeKind.Cites, node: new NodeRef(id: "text-unit:JHN.3.16", kind: NodeKind.TextUnit, label: "JHN.3.16"), start: 57),
+                new Anchor(end: 27, kind: EdgeKind.Cites, node: new NodeRef(id: Wire.Node("text-unit:ROM.3.23"), kind: NodeKind.TextUnit, label: "ROM.3.23"), start: 17),
+                new Anchor(end: 70, kind: EdgeKind.Cites, node: new NodeRef(id: Wire.Node("text-unit:JHN.3.16"), kind: NodeKind.TextUnit, label: "JHN.3.16"), start: 57),
             ],
             anchors);
     }
@@ -46,6 +46,6 @@ public sealed class KretzmannCitationScanTests
         var anchors = KretzmannCitationScan.Anchors("\U0001D4D6 Rom. 3, 23", Toc);
 
         // Assert
-        Assert.Equal([new Anchor(end: 12, kind: EdgeKind.Cites, node: new NodeRef(id: "text-unit:ROM.3.23", kind: NodeKind.TextUnit, label: "ROM.3.23"), start: 2)], anchors);
+        Assert.Equal([new Anchor(end: 12, kind: EdgeKind.Cites, node: new NodeRef(id: Wire.Node("text-unit:ROM.3.23"), kind: NodeKind.TextUnit, label: "ROM.3.23"), start: 2)], anchors);
     }
 }

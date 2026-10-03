@@ -204,7 +204,7 @@
                       MoreTestId="@($"{handle}-more")" LessTestId="@($"{handle}-collapse")" PositionTestId="@($"{handle}-position")" />
     };
 
-    private static string Id(Link link) => Positions.Of(link.Target).Id;
+    private static string Id(Link link) => Positions.Of(link.Target).Id.ToString();
 
     private static string Label(Link link) => Positions.Of(link.Target).Label;
 

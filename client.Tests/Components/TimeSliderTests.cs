@@ -16,11 +16,11 @@ public sealed class TimeSliderTests : BunitContext
 
     private static readonly List<Era> Eras = new()
     {
-        new(fromYear: -2166, id: "b", name: "B", node: new NodeRef(id: "Era:b", kind: NodeKind.Era, label: "B"), toYear: -1877, window: Unread),
-        new(fromYear: -1876, id: "c", name: "C", node: new NodeRef(id: "Era:c", kind: NodeKind.Era, label: "C"), toYear: -1407, window: Unread),
-        new(fromYear: -1406, id: "d", name: "D", node: new NodeRef(id: "Era:d", kind: NodeKind.Era, label: "D"), toYear: -1051, window: Unread),
-        new(fromYear: -1050, id: "e", name: "E", node: new NodeRef(id: "Era:e", kind: NodeKind.Era, label: "E"), toYear: -932, window: Unread),
-        new(fromYear: -931, id: "f", name: "F", node: new NodeRef(id: "Era:f", kind: NodeKind.Era, label: "F"), toYear: -587, window: Unread),
+        new(fromYear: -2166, id: Wire.Read<EraId>("b"), name: "B", node: new NodeRef(id: Wire.Node("Era:b"), kind: NodeKind.Era, label: "B"), toYear: -1877, window: Unread),
+        new(fromYear: -1876, id: Wire.Read<EraId>("c"), name: "C", node: new NodeRef(id: Wire.Node("Era:c"), kind: NodeKind.Era, label: "C"), toYear: -1407, window: Unread),
+        new(fromYear: -1406, id: Wire.Read<EraId>("d"), name: "D", node: new NodeRef(id: Wire.Node("Era:d"), kind: NodeKind.Era, label: "D"), toYear: -1051, window: Unread),
+        new(fromYear: -1050, id: Wire.Read<EraId>("e"), name: "E", node: new NodeRef(id: Wire.Node("Era:e"), kind: NodeKind.Era, label: "E"), toYear: -932, window: Unread),
+        new(fromYear: -931, id: Wire.Read<EraId>("f"), name: "F", node: new NodeRef(id: Wire.Node("Era:f"), kind: NodeKind.Era, label: "F"), toYear: -587, window: Unread),
     };
 
     private static TimeRange Range(int from, int to) =>

@@ -18,3 +18,9 @@ pub use map::*;
 pub use meta::*;
 pub use reading::*;
 pub use time::*;
+
+pub use atlas_core::identity::{
+    ArtifactRoot, ChapterReference, ConcordReference, ContentsReference, CrossReferenceTarget, EdgePageCursor, ElementId, ElementPageCursor, NodeId, PassageReference, ReadingReference, TextWindowReference,
+    UnitReference, VerseRangeReference, VerseSpanReference,
+};
+pub use atlas_graph_types::edge::EdgeId;

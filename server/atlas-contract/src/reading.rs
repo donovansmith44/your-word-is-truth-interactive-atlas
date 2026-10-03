@@ -16,7 +16,8 @@ use atlas_graph_types::store::GraphQuery;
 use atlas_graph_types::text::VerseRef;
 
 use crate::error::{ApiError, ReferenceRefusals};
-use crate::reference::{ChapterReference, Reference, VerseSpan};
+use crate::reference::Reference;
+use atlas_core::identity::{ArtifactRoot, ChapterReference, NodeId, VerseSpanReference};
 use crate::wire;
 
 /// The books of the canon in order, each with the verse count of every one of its chapters.
@@ -30,12 +31,13 @@ pub async fn books(State(data): State<Arc<AtlasData>>) -> Json<Vec<CanonBook>> {
 /// `{cref}` is `BOOK.CHAPTER`, such as `EXO.14`; a book-only or verse-shaped
 /// segment is `bad_ref`. A chapter number past the end of the book is not an
 /// error -- the response carries an empty `verses` list.
-#[utoipa::path(get, path = "/api/chapter/{cref}", params(("cref" = String, Path)), responses((status = 200, body = wire::Chapter), ReferenceRefusals), tag = "reading")]
+#[utoipa::path(get, path = "/api/chapter/{cref}", params(("cref" = ChapterReference, Path)), responses((status = 200, body = wire::Chapter), ReferenceRefusals), tag = "reading")]
 pub async fn chapter(
     State(data): State<Arc<AtlasData>>,
     State(graph): State<Arc<GraphService>>,
-    Reference(ChapterReference { book, chapter }): Reference<ChapterReference>,
+    Reference(asked): Reference<ChapterReference>,
 ) -> Result<Json<wire::Chapter>, ApiError> {
+    let ChapterReference { book, chapter } = asked;
     let code = book.code();
 
     let verse_count = data.canon.verses_in(book, chapter).unwrap_or(0);
@@ -79,7 +81,7 @@ pub async fn chapter(
         }
     }
 
-    Ok(Json(wire::Chapter { r#ref: format!("{code}.{chapter}"), book: book.name().to_string(), chapter, verses }))
+    Ok(Json(wire::Chapter { r#ref: asked, book: book.name().to_string(), chapter, verses }))
 }
 
 /// Kretzmann's commentary for one chapter: the items on each verse that has any, in document order.
@@ -87,7 +89,7 @@ pub async fn chapter(
 /// `{cref}` is `BOOK.CHAPTER`, such as `PSA.119`; a book-only or verse-shaped
 /// segment is `bad_ref`. A chapter with no commentary answers an empty `verses`
 /// list. Each item's `id` fetches its prose from `/api/node/{id}`.
-#[utoipa::path(get, path = "/api/kretzmann/chapter/{cref}", params(("cref" = String, Path)), responses((status = 200, body = wire::KretzmannChapter), ReferenceRefusals), tag = "reading")]
+#[utoipa::path(get, path = "/api/kretzmann/chapter/{cref}", params(("cref" = ChapterReference, Path)), responses((status = 200, body = wire::KretzmannChapter), ReferenceRefusals), tag = "reading")]
 pub async fn kretzmann_chapter(
     State(data): State<Arc<AtlasData>>,
     State(graph): State<Arc<GraphService>>,
@@ -100,14 +102,14 @@ pub async fn kretzmann_chapter(
 
     let mut verses: Vec<wire::KretzmannChapterVerse> = Vec::new();
     for row in rows {
-        let item = wire::KretzmannChapterItem { id: crate::graph_wire::encode_node_id(&row.item_id, &snap)?, heading: row.heading };
+        let item = wire::KretzmannChapterItem { id: NodeId::encoded_one(&row.item_id, &snap)?, heading: row.heading };
         match verses.last_mut() {
             Some(v) if v.verse == row.verse => v.items.push(item),
             _ => verses.push(wire::KretzmannChapterVerse { verse: row.verse, items: vec![item] }),
         }
     }
 
-    Ok(Json(wire::KretzmannChapter { verses, version: atlas_graph::version_hex(graph.version()) }))
+    Ok(Json(wire::KretzmannChapter { verses, version: ArtifactRoot::of(graph.version()) }))
 }
 
 /// The cross references of a verse or a span, strongest first: each target, how strongly it is attested, and a preview of the text it points at.
@@ -115,8 +117,9 @@ pub async fn kretzmann_chapter(
 /// `{sref}` is `BOOK.CHAPTER.VERSE` or a same-chapter span such as `GEN.1.1-5`;
 /// a book-only or chapter-only reference is `bad_ref`. A reference with no
 /// recorded cross references answers an empty list.
-#[utoipa::path(get, path = "/api/xrefs/{sref}", params(("sref" = String, Path)), responses((status = 200, body = Vec<wire::CrossRef>), ReferenceRefusals), tag = "reading")]
-pub async fn xrefs(State(data): State<Arc<AtlasData>>, State(graph): State<Arc<GraphService>>, Reference(VerseSpan(span)): Reference<VerseSpan>) -> Result<Json<Vec<wire::CrossRef>>, ApiError> {
+#[utoipa::path(get, path = "/api/xrefs/{sref}", params(("sref" = VerseSpanReference, Path)), responses((status = 200, body = Vec<wire::CrossRef>), ReferenceRefusals), tag = "reading")]
+pub async fn xrefs(State(data): State<Arc<AtlasData>>, State(graph): State<Arc<GraphService>>, Reference(asked): Reference<VerseSpanReference>) -> Result<Json<Vec<wire::CrossRef>>, ApiError> {
+    let span = asked.scripture();
     let by_from = graph.cross_refs_for_span(&span);
     let aggregated = aggregate_span_xrefs(&span, &by_from, |key| {
         let v = VerseId::parse_canonical(key).ok()?;

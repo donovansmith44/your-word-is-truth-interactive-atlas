@@ -10,6 +10,7 @@
   -->
 
   <PropertyGroup>
+    <NoWarn>$(NoWarn);ATLASWIRE</NoWarn>
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
@@ -41,6 +42,7 @@
   <ItemGroup>
     <ProjectReference Include="..\client\BibleAtlas.Client.csproj" />
     <ProjectReference Include="..\client\Exploring\BibleAtlas.Client.Exploring.csproj" />
+    <ProjectReference Include="..\client.ContractGenerator\BibleAtlas.Client.ContractGenerator.csproj" />
   </ItemGroup>
 
   <!--

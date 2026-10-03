@@ -130,7 +130,7 @@ public class PopoverSectionRegistryTests
         Assert.True(IndexOfProvider<PersonLifeSection>() < IndexOfProvider<PersonEventsSection>());
         Assert.True(IndexOfProvider<PersonEventsSection>() < IndexOfProvider<PersonFamilySection>());
         Assert.True(IndexOfProvider<PersonFamilySection>() < IndexOfProvider<PersonCardAndMentionsSection>());
-        var person = new PersonNode("abraham_1", "Abraham");
+        var person = new PersonNode(Wire.Node("abraham_1"), "Abraham");
         Assert.True(new PersonLifeSection().AppliesTo(person) && new PersonFamilySection().AppliesTo(person));
         Assert.False(new PersonLifeSection().AppliesTo(new CatechismNode("commandment-1", "The First Commandment")));
     }

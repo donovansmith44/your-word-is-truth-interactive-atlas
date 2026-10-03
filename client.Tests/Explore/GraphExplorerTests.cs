@@ -13,7 +13,7 @@ public sealed class GraphExplorerTests
     private const string SourceLabel = "Ussher";
     private const string AbsentId = "Event:nowhere";
     private const string CitedWords = "Thus saith the LORD, which maketh a way in the sea";
-    private const string MovedRoot = "moved";
+    private static readonly ArtifactRoot MovedRoot = Wire.Root("moved");
 
     private static readonly NodeRef ExodusEvent = ServedGraph.Ref(NodeKind.Event, "Event:red_sea", "The Red Sea parted");
     private static readonly NodeRef Exodus14 = ServedGraph.Ref(NodeKind.TextUnit, "text-unit:EXO.14.21", "Exodus 14:21");
@@ -34,7 +34,7 @@ public sealed class GraphExplorerTests
 
         // Assert
         Assert.Equal(
-            (new ElementKind.Node(NodeKind.Container) as ElementKind, Genesis1Id, "Genesis 1", new FrontierGroup(EdgeKind.MemberOf, 1)),
+            (new ElementKind.Node(NodeKind.Container) as ElementKind, Wire.Element(Genesis1Id), "Genesis 1", new FrontierGroup(EdgeKind.MemberOf, 1)),
             (genesis1.Kind, genesis1.Id, genesis1.Label, genesis1.Groups.Single()));
     }
 
@@ -49,7 +49,7 @@ public sealed class GraphExplorerTests
         var genesis2 = await new GraphExplorer(graph).BeginAt(genesis2Reference);
 
         // Assert
-        Assert.Equal((new ElementKind.Node(NodeKind.Container) as ElementKind, Genesis2Id, ServedGenesis2Label), (genesis2.Kind, genesis2.Id, genesis2.Label));
+        Assert.Equal((new ElementKind.Node(NodeKind.Container) as ElementKind, Wire.Element(Genesis2Id), ServedGenesis2Label), (genesis2.Kind, genesis2.Id, genesis2.Label));
     }
 
     [Fact]
@@ -180,7 +180,7 @@ public sealed class GraphExplorerTests
         var moved = await Assert.ThrowsAsync<ArtifactMoved>(() => verse.Entries(EdgeKind.Cites));
 
         // Assert
-        Assert.Equal((new ArtifactMoved(ServedGraph.Version, MovedRoot).Message, true), (moved.Message, verse.Moved));
+        Assert.Equal((new ArtifactMoved(Wire.Root(ServedGraph.Version), MovedRoot).Message, true), (moved.Message, verse.Moved));
     }
 
     [Fact]

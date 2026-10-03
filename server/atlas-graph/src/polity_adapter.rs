@@ -20,7 +20,7 @@ pub fn polity_node_id(id: &str) -> atlas_graph_types::id::AnyNodeId {
 }
 
 fn delta_payload(d: &atlas_core::data::PolityDelta) -> atlas_graph_types::node::PolityDeltaPayload {
-    atlas_graph_types::node::PolityDeltaPayload { event: d.event.clone(), verses: d.verses.clone(), ref_note: d.ref_note.clone() }
+    atlas_graph_types::node::PolityDeltaPayload { event: d.event.clone(), verses: d.verses.iter().map(ToString::to_string).collect(), ref_note: d.ref_note.clone() }
 }
 
 fn polity_node(p: &atlas_core::data::Polity) -> Node {

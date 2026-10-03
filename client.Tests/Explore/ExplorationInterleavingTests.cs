@@ -82,18 +82,18 @@ public sealed class ExplorationInterleavingTests
 
         public void Open() => _gate.SetResult();
 
-        public Task<NodeRecord> Card(string id) => graph.Card(id);
+        public Task<NodeRecord> Card(NodeId id) => graph.Card(id);
 
-        public async Task<ElementPage> Elements(IReadOnlyList<string> ids)
+        public async Task<ElementPage> Elements(IReadOnlyList<ElementId> ids)
         {
             await _gate.Task;
             return await graph.Elements(ids);
         }
 
-        public Task<EdgePage> Edges(string positionId, EdgeKind kind, int? cursor = null, int limit = BibleAtlas.Client.Exploring.Affordances.PageSize) =>
+        public Task<EdgePage> Edges(ElementId positionId, EdgeKind kind, EdgePageCursor? cursor = null, int limit = BibleAtlas.Client.Exploring.Affordances.PageSize) =>
             graph.Edges(positionId, kind, cursor, limit);
 
-        public Task<TextWindow> Reading(string fromRef, int n, WindowDir dir = WindowDir.Onward, Corpus corpus = Corpus.Bible) =>
+        public Task<TextWindow> Reading(TextWindowReference fromRef, int n, WindowDir dir = WindowDir.Onward, Corpus corpus = Corpus.Bible) =>
             graph.Reading(fromRef, n, dir, corpus);
     }
 }

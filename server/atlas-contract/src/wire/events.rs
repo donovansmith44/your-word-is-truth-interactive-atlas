@@ -51,7 +51,7 @@ pub struct EventPage {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ref_note: Option<String>,
     #[serde(skip_serializing_if = "Vec::is_empty")]
-    pub mentioned_in: Vec<String>,
+    pub mentioned_in: Vec<atlas_core::refs::VerseId>,
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub analogues: Vec<EventAnalogue>,
     pub provenance: super::Provenance,

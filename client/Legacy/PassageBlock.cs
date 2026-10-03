@@ -5,7 +5,7 @@ namespace BibleAtlas.Client.Legacy;
 
 public sealed record PassageListVerse(string Vref, string Text, int? GroupCount = null, IReadOnlyList<Anchor>? Anchors = null, IReadOnlyList<WordsOfChristSpan>? WordsOfChrist = null)
 {
-    public static PassageListVerse Of(TextUnit unit) => new(unit.Ref, unit.Body.Text, Anchors: unit.Body.Anchors, WordsOfChrist: unit.Body.WordsOfChrist);
+    public static PassageListVerse Of(TextUnit unit) => new(unit.Ref.ToString(), unit.Body.Text, Anchors: unit.Body.Anchors, WordsOfChrist: unit.Body.WordsOfChrist);
 }
 
 public record PassageSourceUnit(IReadOnlyList<PassageListVerse> Verses, string? Caption = null);
@@ -25,7 +25,7 @@ public static class VerseTextResolver
     {
         var pairs = vrefs.Select(CanonRef.ParseVerse).Select(p => (p.Book, p.Chapter)).Distinct().ToList();
         var chapters = new Dictionary<(string, int), ChapterText>();
-        var fetched = await Task.WhenAll(pairs.Select(p => api.ChapterText(p.Book, p.Chapter)));
+        var fetched = await Task.WhenAll(pairs.Select(p => api.ChapterText(LegacyNodeIds.Chapter(p.Book, p.Chapter))));
         foreach (var (pair, chapter) in pairs.Zip(fetched))
         {
             chapters[pair] = chapter;
@@ -47,7 +47,7 @@ public static class VerseTextResolver
     {
         var chapters = spans.SelectMany(ChaptersOf).Distinct().ToList();
         Dictionary<(BookId Book, int Chapter), ChapterText> text;
-        var fetched = await Task.WhenAll(chapters.Select(c => api.ChapterText(c.Book.WireName(), c.Chapter)));
+        var fetched = await Task.WhenAll(chapters.Select(c => api.ChapterText(LegacyNodeIds.Chapter(c.Book.WireName(), c.Chapter))));
         text = chapters.Zip(fetched).ToDictionary(pair => pair.First, pair => pair.Second);
 
         return spans
@@ -69,10 +69,10 @@ public static class VerseTextResolver
         {
             foreach (var v in g.Verses)
             {
-                countByVref[v] = g.Count;
+                countByVref[v.ToString()] = g.Count;
             }
         }
-        var resolved = await ResolveAsync(api, groups.SelectMany(g => g.Verses).ToList());
+        var resolved = await ResolveAsync(api, groups.SelectMany(g => g.Verses).Select(verse => verse.ToString()).ToList());
         return resolved.Select(v => v with { GroupCount = countByVref.TryGetValue(v.Vref, out var c) ? c : null }).ToList();
     }
 }

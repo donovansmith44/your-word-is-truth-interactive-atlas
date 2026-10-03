@@ -9,7 +9,8 @@ use atlas_graph::GraphService;
 use atlas_graph_types::text::VerseRef;
 
 use crate::error::{ApiError, NoRefusals, ReferenceRefusals};
-use crate::reference::{Reference, VerseSpan};
+use crate::reference::Reference;
+use atlas_core::identity::VerseSpanReference;
 use crate::wire;
 
 /// The catechism items that cite a verse or a span, each named and tied to the question it was cited under.
@@ -18,12 +19,13 @@ use crate::wire;
 /// a book-only or chapter-only reference is `bad_ref`. A reference no item cites
 /// answers an empty list, and each `id` fetches the whole item from
 /// `/api/catechism/item/{id}`.
-#[utoipa::path(get, path = "/api/catechism/{sref}", params(("sref" = String, Path)), responses((status = 200, body = Vec<wire::CatechismRef>), ReferenceRefusals), tag = "catechism")]
+#[utoipa::path(get, path = "/api/catechism/{sref}", params(("sref" = VerseSpanReference, Path)), responses((status = 200, body = Vec<wire::CatechismRef>), ReferenceRefusals), tag = "catechism")]
 pub async fn catechism_for_span(
     State(data): State<Arc<AtlasData>>,
     State(graph): State<Arc<GraphService>>,
-    Reference(VerseSpan(span)): Reference<VerseSpan>,
+    Reference(asked): Reference<VerseSpanReference>,
 ) -> Result<Json<Vec<wire::CatechismRef>>, ApiError> {
+    let span = asked.scripture();
     let provenance = crate::provenance::all_titled(&graph.provenance.by_family(atlas_graph::provenance::family::CATECHISM), &data)?;
     let out = data.catechism_items_for_span(&span).into_iter().map(|c| wire::CatechismRef::attributed(c, &provenance)).collect();
     Ok(Json(out))
@@ -41,9 +43,9 @@ pub async fn catechism_item(
 ) -> Result<Json<wire::CatechismItem>, ApiError> {
     let (part, item) = data.catechism_item_by_id(&id).ok_or_else(|| ApiError::not_found("catechism item"))?;
 
-    let text_of = |v: &str| -> Option<String> {
+    let text_of = |v: &str| -> Option<(VerseId, String)> {
         let vid = VerseId::parse_canonical(v).ok()?;
-        graph.verse_text_of(&VerseRef { book: vid.book.0, chapter: vid.chapter, verse: vid.verse })
+        graph.verse_text_of(&VerseRef { book: vid.book.0, chapter: vid.chapter, verse: vid.verse }).map(|text| (vid, text))
     };
 
     // Keyed by (verse, question) rather than by verse: the same verse cited once
@@ -54,8 +56,8 @@ pub async fn catechism_item(
         if !seen.insert((v.clone(), None)) {
             continue;
         }
-        if let Some(text) = text_of(v) {
-            verses.push(wire::CatechismProofVerse { vref: v.clone(), text, question: None });
+        if let Some((vref, text)) = text_of(v) {
+            verses.push(wire::CatechismProofVerse { vref, text, question: None });
         }
     }
     for q in &item.questions {
@@ -63,8 +65,8 @@ pub async fn catechism_item(
             if !seen.insert((v.clone(), Some(q.title.clone()))) {
                 continue;
             }
-            if let Some(text) = text_of(v) {
-                verses.push(wire::CatechismProofVerse { vref: v.clone(), text, question: Some(q.title.clone()) });
+            if let Some((vref, text)) = text_of(v) {
+                verses.push(wire::CatechismProofVerse { vref, text, question: Some(q.title.clone()) });
             }
         }
     }

@@ -72,6 +72,9 @@ futures = "0.3"
 # server/Cargo.toml's own STANDING COUNTING PROCEDURE comment and this
 # crate's `benches/queries.rs`).
 criterion = "0.5"
+# A-WIRE-IDENTITIES: the identity laws check every served value against the
+# pattern the published document gives its shape.
+regex = "1"
 
 [[bench]]
 name = "queries"

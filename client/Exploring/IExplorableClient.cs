@@ -4,11 +4,11 @@ namespace BibleAtlas.Client;
 
 public interface IExplorableClient
 {
-    Task<NodeRecord> Card(string id);
+    Task<NodeRecord> Card(NodeId id);
 
-    Task<ElementPage> Elements(IReadOnlyList<string> ids);
+    Task<ElementPage> Elements(IReadOnlyList<ElementId> ids);
 
-    Task<EdgePage> Edges(string positionId, EdgeKind kind, int? cursor = null, int limit = Exploring.Affordances.PageSize);
+    Task<EdgePage> Edges(ElementId position, EdgeKind kind, EdgePageCursor? cursor = null, int limit = Exploring.Affordances.PageSize);
 
-    Task<TextWindow> Reading(string fromRef, int n, WindowDir dir = WindowDir.Onward, Corpus corpus = Corpus.Bible);
+    Task<TextWindow> Reading(TextWindowReference from, int n, WindowDir dir = WindowDir.Onward, Corpus corpus = Corpus.Bible);
 }

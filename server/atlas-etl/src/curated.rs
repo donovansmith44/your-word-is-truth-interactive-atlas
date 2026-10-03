@@ -143,7 +143,7 @@ struct EventsFile {
 pub fn expand_verse_ref(raw: &str, context: &str, out: &mut Vec<String>) -> Result<()> {
     match ScriptureRef::parse(raw) {
         Ok(ScriptureRef::Verse(v)) => out.push(format!("{}.{}.{}", v.book.code(), v.chapter, v.verse)),
-        Ok(ScriptureRef::Passage { book, chapter, from_verse, to_verse }) => {
+        Ok(ScriptureRef::Passage(atlas_core::identity::PassageReference { book, chapter, from_verse, to_verse })) => {
             for verse in from_verse..=to_verse {
                 out.push(format!("{}.{}.{}", book.code(), chapter, verse));
             }
@@ -660,17 +660,28 @@ pub fn parse_polity(input: &str) -> Result<Polity> {
     let eras = f
         .eras
         .into_iter()
-        .map(|e| PolityEra {
-            name: e.name,
-            from: e.from,
-            to: e.to,
-            ref_note: e.ref_note,
-            rings: e.rings,
-            transition: e.transition.map(|d| PolityDelta { event: d.event, verses: d.verses, ref_note: d.ref_note, for_era_from: d.for_era_from }),
-            fall: e.fall.map(|d| PolityDelta { event: d.event, verses: d.verses, ref_note: d.ref_note, for_era_from: d.for_era_from }),
+        .map(|e| {
+            Ok(PolityEra {
+                name: e.name,
+                from: e.from,
+                to: e.to,
+                ref_note: e.ref_note,
+                rings: e.rings,
+                transition: e.transition.map(polity_delta).transpose()?,
+                fall: e.fall.map(polity_delta).transpose()?,
+            })
         })
-        .collect();
+        .collect::<Result<Vec<_>>>()?;
     Ok(Polity { id: f.id, color_key: 0, eras })
+}
+
+fn polity_delta(d: PolityDeltaToml) -> Result<PolityDelta> {
+    let verses = d
+        .verses
+        .iter()
+        .map(|v| atlas_core::refs::VerseId::parse_canonical(v).with_context(|| format!("polity TOML: verse '{v}' is not a canonical single-verse ref")))
+        .collect::<Result<Vec<_>>>()?;
+    Ok(PolityDelta { event: d.event, verses, ref_note: d.ref_note, for_era_from: d.for_era_from })
 }
 
 #[derive(Deserialize)]
@@ -925,13 +936,13 @@ mod tests {
 
         let transition = polity.eras[1].transition.as_ref().expect("second era carries a transition in the fixture");
         assert_eq!(transition.event, "Testland expands");
-        assert_eq!(transition.verses, vec!["GEN.1.1".to_string()]);
+        assert_eq!(transition.verses, vec![atlas_core::refs::VerseId::parse_canonical("GEN.1.1").unwrap()]);
         assert_eq!(transition.ref_note, "synthetic fixture, not a real citation");
         assert_eq!(transition.for_era_from, -1499, "fix round 1 (I1): echoes the SAME era's own from it's actually attached to");
 
         let fall = polity.eras[1].fall.as_ref().expect("second era carries a fall in the fixture");
         assert_eq!(fall.event, "Greater Testland falls");
-        assert_eq!(fall.verses, vec!["GEN.1.2".to_string(), "GEN.1.3".to_string()]);
+        assert_eq!(fall.verses, vec![atlas_core::refs::VerseId::parse_canonical("GEN.1.2").unwrap(), atlas_core::refs::VerseId::parse_canonical("GEN.1.3").unwrap()]);
         assert_eq!(fall.for_era_from, -1499);
 
         assert_eq!(polity.color_key, 0);

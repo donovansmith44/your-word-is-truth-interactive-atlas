@@ -8,7 +8,7 @@ use atlas_graph::heading::Heading;
 #[serde(deny_unknown_fields)]
 #[schema(description = "One chapter of Scripture, verse by verse.")]
 pub struct Chapter {
-    pub r#ref: String,
+    pub r#ref: super::ChapterReference,
     pub book: String,
     pub chapter: u16,
     pub verses: Vec<Verse>,
@@ -58,7 +58,7 @@ pub struct WordsOfChristSpan {
 #[schema(description = "Every verse of one chapter that carries commentary, in canon order.")]
 pub struct KretzmannChapter {
     pub verses: Vec<KretzmannChapterVerse>,
-    pub version: String,
+    pub version: super::ArtifactRoot,
 }
 
 #[derive(Debug, Serialize, utoipa::ToSchema)]
@@ -73,7 +73,7 @@ pub struct KretzmannChapterVerse {
 #[serde(deny_unknown_fields)]
 #[schema(description = "One commentary item: the id that fetches its prose, and its heading.")]
 pub struct KretzmannChapterItem {
-    pub id: String,
+    pub id: super::NodeId,
     pub heading: Option<String>,
 }
 
@@ -81,7 +81,7 @@ pub struct KretzmannChapterItem {
 #[serde(deny_unknown_fields)]
 #[schema(description = "One cross reference: where it points, how strongly it is attested, and a look at the text there.")]
 pub struct CrossRef {
-    pub target: String,
+    pub target: super::CrossReferenceTarget,
     pub votes: i32,
     pub preview: String,
     pub provenance: Vec<super::Provenance>,

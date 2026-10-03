@@ -70,16 +70,14 @@ pub fn compose_scripture_scene(d: &dyn SceneSource, r: &ScriptureRef) -> Scene {
     let narratives = legend(d, &span, Some(r), &arrows);
 
     // No window here to resolve "not yet active" against, so the array is always empty.
-    Scene { mode: SceneMode::Scripture, window: None, r#ref: Some(r.to_string()), places, quiet_places: vec![], arrows, narratives }
+    Scene { mode: SceneMode::Scripture, window: None, r#ref: Some(r.clone()), places, quiet_places: vec![], arrows, narratives }
 }
 
 pub fn ref_contains(r: &ScriptureRef, v: &VerseId) -> bool {
     match r {
         ScriptureRef::Book(b) => *b == v.book,
-        ScriptureRef::Chapter { book, chapter } => *book == v.book && *chapter == v.chapter,
-        ScriptureRef::Passage { book, chapter, from_verse, to_verse } => {
-            *book == v.book && *chapter == v.chapter && *from_verse <= v.verse && v.verse <= *to_verse
-        }
+        ScriptureRef::Chapter(chapter) => chapter.book == v.book && chapter.chapter == v.chapter,
+        ScriptureRef::Passage(passage) => passage.book == v.book && passage.chapter == v.chapter && passage.from_verse <= v.verse && v.verse <= passage.to_verse,
         ScriptureRef::Verse(vid) => *vid == *v,
     }
 }
@@ -246,34 +244,30 @@ pub fn accounts_of(e: &Event) -> Vec<Account> {
 }
 
 fn verse_groups_for(verses: &[String], r: Option<&ScriptureRef>) -> Vec<VerseGroup> {
-    let mut groups: HashMap<(String, u16), Vec<(u16, String)>> = HashMap::new();
+    let mut groups: HashMap<(String, u16), Vec<VerseId>> = HashMap::new();
     for v in verses {
         let vid = VerseId::parse_canonical(v).expect("etl-validated verse id");
-        groups.entry((vid.book.code().to_string(), vid.chapter)).or_default().push((vid.verse, v.clone()));
+        groups.entry((vid.book.code().to_string(), vid.chapter)).or_default().push(vid);
     }
     let mut out: Vec<VerseGroup> = groups
         .into_iter()
         .map(|((book, chapter), mut vs)| {
-            vs.sort_by_key(|(vnum, _)| *vnum);
+            vs.sort_by_key(|vid| vid.verse);
             let count = vs.len() as u32;
-            let capped: Vec<(u16, String)> = match r {
+            let verses: Vec<VerseId> = match r {
                 Some(r) => {
-                    let (mut matched, mut rest): (Vec<(u16, String)>, Vec<(u16, String)>) =
-                        vs.into_iter().partition(|(_, v)| {
-                            ref_contains(r, &VerseId::parse_canonical(v).expect("etl-validated verse id"))
-                        });
+                    let (mut matched, mut rest): (Vec<VerseId>, Vec<VerseId>) = vs.into_iter().partition(|vid| ref_contains(r, vid));
                     if matched.len() < 20 {
                         rest.truncate(20 - matched.len());
                         matched.extend(rest);
                     } else {
                         matched.truncate(20);
                     }
-                    matched.sort_by_key(|(vnum, _)| *vnum);
+                    matched.sort_by_key(|vid| vid.verse);
                     matched
                 }
                 None => vs.into_iter().take(20).collect(),
             };
-            let verses: Vec<String> = capped.into_iter().map(|(_, s)| s).collect();
             VerseGroup { book, chapter, verses, count }
         })
         .collect();
@@ -339,7 +333,7 @@ mod tests {
                 verse_groups: vec![VerseGroup {
                     book: "MRK".into(),
                     chapter: 1,
-                    verses: vec!["MRK.1.40".into(), "MRK.1.41".into()],
+                    verses: vec![VerseId::parse_canonical("MRK.1.40").unwrap(), VerseId::parse_canonical("MRK.1.41").unwrap()],
                     count: 2,
                 }],
                 ref_note: None,
@@ -399,7 +393,7 @@ mod tests {
             scene.places,
             vec![ScenePlace {
                 id: "hebron".into(),
-                node: crate::wire::NodeRef { id: "Place:hebron".into(), kind: atlas_graph_types::id::NodeKind::Place, label: "Hebron".into() },
+                node: crate::wire::NodeRef { id: crate::identity::NodeId::of_place(&atlas_graph_types::id::PlaceId::new("hebron")), kind: atlas_graph_types::id::NodeKind::Place, label: "Hebron".into() },
                 name: "Hebron".into(),
                 display_name: "Hebron".into(),
                 lat: 31.5326,
@@ -413,7 +407,7 @@ mod tests {
                         to: label::Year { value: SARAH_BURIED, label: "2000 BC".into() },
                         label: "2000 BC".into(),
                     },
-                    verse_groups: vec![VerseGroup { book: "GEN".into(), chapter: 23, verses: vec!["GEN.23.1".into(), "GEN.23.19".into()], count: 2 }],
+                    verse_groups: vec![VerseGroup { book: "GEN".into(), chapter: 23, verses: vec![VerseId::parse_canonical("GEN.23.1").unwrap(), VerseId::parse_canonical("GEN.23.19").unwrap()], count: 2 }],
                 }],
                 existence_from: Some(label::Year { value: KIRJATH_ARBA_NAMED, label: "4004 BC".into() }),
                 existence_to: None,
@@ -496,7 +490,7 @@ mod tests {
         assert_eq!(mention.verse_groups.len(), 1);
         assert_eq!(mention.verse_groups[0].book, "GEN");
         assert_eq!(mention.verse_groups[0].chapter, 13);
-        assert!(mention.verse_groups[0].verses.contains(&"GEN.13.18".to_string()));
+        assert!(mention.verse_groups[0].verses.contains(&VerseId::parse_canonical("GEN.13.18").unwrap()));
         assert_eq!(mention.verse_groups[0].count, 1);
     }
 
@@ -553,7 +547,7 @@ mod tests {
     fn ref_contains_chapter_matches_book_and_chapter_only() {
         let gen = crate::canon::resolve_alias("GEN").unwrap();
         let exo = crate::canon::resolve_alias("EXO").unwrap();
-        let r = ScriptureRef::Chapter { book: gen, chapter: 13 };
+        let r = ScriptureRef::Chapter(crate::identity::ChapterReference { book: gen, chapter: 13 });
         assert!(ref_contains(&r, &VerseId { book: gen, chapter: 13, verse: 1 }));
         assert!(ref_contains(&r, &VerseId { book: gen, chapter: 13, verse: 18 }));
         assert!(!ref_contains(&r, &VerseId { book: gen, chapter: 12, verse: 18 }));
@@ -564,7 +558,7 @@ mod tests {
     #[test]
     fn ref_contains_passage_boundaries_inclusive() {
         let jos = crate::canon::resolve_alias("JOS").unwrap();
-        let r = ScriptureRef::Passage { book: jos, chapter: 6, from_verse: 2, to_verse: 5 };
+        let r = ScriptureRef::Passage(crate::identity::PassageReference { book: jos, chapter: 6, from_verse: 2, to_verse: 5 });
         assert!(ref_contains(&r, &VerseId { book: jos, chapter: 6, verse: 2 }));
         assert!(ref_contains(&r, &VerseId { book: jos, chapter: 6, verse: 5 }));
         assert!(ref_contains(&r, &VerseId { book: jos, chapter: 6, verse: 3 }));
@@ -619,7 +613,7 @@ mod tests {
         assert_eq!(g.chapter, 10);
         assert_eq!(g.count, 25);
         assert_eq!(g.verses.len(), 20);
-        let expected: Vec<String> = (1..=20).map(|v| format!("JOS.10.{v}")).collect();
+        let expected: Vec<VerseId> = (1..=20).map(|v| VerseId::parse_canonical(&format!("JOS.10.{v}")).unwrap()).collect();
         assert_eq!(g.verses, expected);
     }
 
@@ -674,15 +668,15 @@ mod tests {
         assert_eq!(g_a.count, 25);
         assert_eq!(g_a.verses.len(), 20);
         assert!(
-            g_a.verses.contains(&"JOS.10.25".to_string()),
+            g_a.verses.contains(&VerseId::parse_canonical("JOS.10.25").unwrap()),
             "the ref-matching verse must survive the cap: {:?}",
             g_a.verses
         );
         let mut sorted_a = g_a.verses.clone();
-        sorted_a.sort_by_key(|v| v.rsplit('.').next().unwrap().parse::<u16>().unwrap());
+        sorted_a.sort_by_key(|v| v.verse);
         assert_eq!(g_a.verses, sorted_a, "rendered verses must stay ascending-sorted");
 
-        let ref_b = ScriptureRef::Passage { book: jos, chapter: 11, from_verse: 5, to_verse: 30 };
+        let ref_b = ScriptureRef::Passage(crate::identity::PassageReference { book: jos, chapter: 11, from_verse: 5, to_verse: 30 });
         let s_b = compose_scripture_scene(&d, &ref_b);
         assert_eq!(s_b.places.len(), 1);
         let place_b = s_b.places.iter().find(|p| p.id == "place-b").expect("place-b lit by JOS.11.5-30");
@@ -692,7 +686,7 @@ mod tests {
         assert_eq!(g_b.count, 30);
         assert_eq!(g_b.verses.len(), 20);
         for v in &g_b.verses {
-            let vn: u16 = v.rsplit('.').next().unwrap().parse().unwrap();
+            let vn: u16 = v.verse;
             assert!((5..=30).contains(&vn), "every rendered verse must satisfy the ref, got {v}");
         }
     }

@@ -4,18 +4,18 @@ namespace BibleAtlas.Client.Tests;
 
 public class SliderScaleTests {
     static readonly TimeRange WindowSliderScaleNeverReads = new(from: new Year(label: "AD 1", value: 1), label: "AD 1", to: new Year(label: "AD 1", value: 1));
-    static readonly NodeRef NodeSliderScaleNeverReads = new(id: "Era:a", kind: NodeKind.Era, label: "A");
+    static readonly NodeRef NodeSliderScaleNeverReads = new(id: Wire.Node("Era:a"), kind: NodeKind.Era, label: "A");
     static readonly List<Era> Eras = new() {
-        new(fromYear: -4004, id: "a", name: "A", toYear: -2167, window: WindowSliderScaleNeverReads, node: NodeSliderScaleNeverReads),
-        new(fromYear: -2166, id: "b", name: "B", toYear: -1877, window: WindowSliderScaleNeverReads, node: NodeSliderScaleNeverReads),
-        new(fromYear: -1876, id: "c", name: "C", toYear: -1407, window: WindowSliderScaleNeverReads, node: NodeSliderScaleNeverReads),
-        new(fromYear: -1406, id: "d", name: "D", toYear: -1051, window: WindowSliderScaleNeverReads, node: NodeSliderScaleNeverReads),
-        new(fromYear: -1050, id: "e", name: "E", toYear: -932, window: WindowSliderScaleNeverReads, node: NodeSliderScaleNeverReads),
-        new(fromYear: -931, id: "f", name: "F", toYear: -587, window: WindowSliderScaleNeverReads, node: NodeSliderScaleNeverReads),
-        new(fromYear: -586, id: "g", name: "G", toYear: -539, window: WindowSliderScaleNeverReads, node: NodeSliderScaleNeverReads),
-        new(fromYear: -538, id: "h", name: "H", toYear: -6, window: WindowSliderScaleNeverReads, node: NodeSliderScaleNeverReads),
-        new(fromYear: -5, id: "i", name: "I", toYear: 29, window: WindowSliderScaleNeverReads, node: NodeSliderScaleNeverReads),
-        new(fromYear: 30, id: "j", name: "J", toYear: 100, window: WindowSliderScaleNeverReads, node: NodeSliderScaleNeverReads) };
+        new(fromYear: -4004, id: Wire.Read<EraId>("a"), name: "A", toYear: -2167, window: WindowSliderScaleNeverReads, node: NodeSliderScaleNeverReads),
+        new(fromYear: -2166, id: Wire.Read<EraId>("b"), name: "B", toYear: -1877, window: WindowSliderScaleNeverReads, node: NodeSliderScaleNeverReads),
+        new(fromYear: -1876, id: Wire.Read<EraId>("c"), name: "C", toYear: -1407, window: WindowSliderScaleNeverReads, node: NodeSliderScaleNeverReads),
+        new(fromYear: -1406, id: Wire.Read<EraId>("d"), name: "D", toYear: -1051, window: WindowSliderScaleNeverReads, node: NodeSliderScaleNeverReads),
+        new(fromYear: -1050, id: Wire.Read<EraId>("e"), name: "E", toYear: -932, window: WindowSliderScaleNeverReads, node: NodeSliderScaleNeverReads),
+        new(fromYear: -931, id: Wire.Read<EraId>("f"), name: "F", toYear: -587, window: WindowSliderScaleNeverReads, node: NodeSliderScaleNeverReads),
+        new(fromYear: -586, id: Wire.Read<EraId>("g"), name: "G", toYear: -539, window: WindowSliderScaleNeverReads, node: NodeSliderScaleNeverReads),
+        new(fromYear: -538, id: Wire.Read<EraId>("h"), name: "H", toYear: -6, window: WindowSliderScaleNeverReads, node: NodeSliderScaleNeverReads),
+        new(fromYear: -5, id: Wire.Read<EraId>("i"), name: "I", toYear: 29, window: WindowSliderScaleNeverReads, node: NodeSliderScaleNeverReads),
+        new(fromYear: 30, id: Wire.Read<EraId>("j"), name: "J", toYear: 100, window: WindowSliderScaleNeverReads, node: NodeSliderScaleNeverReads) };
 
     [Fact]
     public void RoundTripEveryYearInSpan() {

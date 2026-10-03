@@ -389,7 +389,7 @@ pub struct PolityDelta {
     pub event: String,
     #[serde(default)]
     #[schema(required = true)]
-    pub verses: Vec<String>,
+    pub verses: Vec<crate::refs::VerseId>,
     pub ref_note: String,
     #[serde(skip_serializing)]
     pub for_era_from: Year,
@@ -835,9 +835,8 @@ impl crate::scene_source::SceneSource for AtlasData {
     }
 
     fn place_node(&self, id: &str) -> crate::wire::NodeRef {
-        let kind = atlas_graph_types::id::NodeKind::Place;
         let label = AtlasData::place_by_id(self, id).map(|place| place.name.clone()).unwrap_or_default();
-        crate::wire::NodeRef { id: format!("{kind:?}:{id}"), kind, label }
+        crate::wire::NodeRef { id: crate::identity::NodeId::of_place(&atlas_graph_types::id::PlaceId::new(id)), kind: atlas_graph_types::id::NodeKind::Place, label }
     }
 }
 

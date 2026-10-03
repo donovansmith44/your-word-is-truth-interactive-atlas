@@ -6,7 +6,8 @@ use atlas_graph::window;
 use atlas_graph::GraphService;
 use atlas_graph_types::id::{AnyNodeId, NodeKind};
 use atlas_graph_types::store::GraphQuery;
-use atlas_contract::graph_wire::{decode_node_id, encode_node_id};
+use atlas_contract::graph_wire::decode_node_id;
+use atlas_contract::wire::NodeId;
 
 use crate::error::CliError;
 
@@ -18,7 +19,7 @@ struct Attached {
 }
 
 fn attached(kind: NodeKind, raw: &str, label: impl Into<String>, snap: &impl GraphQuery) -> Result<Attached, CliError> {
-    let id = encode_node_id(&AnyNodeId { kind, raw: raw.to_string() }, snap).map_err(|unreferenced| CliError::unlabelled(unreferenced.into()))?;
+    let id = NodeId::encoded_one(&AnyNodeId { kind, raw: raw.to_string() }, snap).map(|id| id.to_string()).map_err(|unreferenced| CliError::unlabelled(unreferenced.into()))?;
     Ok(Attached { id, label: label.into() })
 }
 

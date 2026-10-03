@@ -21,7 +21,7 @@ public sealed class PositionIdentity : IEqualityComparer<PositionRef>, IEquality
 
     private static NodePosition? At(NodeRef? node) => node is null ? null : new NodePosition(node);
 
-    private static (ElementKind Kind, string Id) Named(PositionRef position)
+    private static (ElementKind Kind, ElementId Id) Named(PositionRef position)
     {
         var (kind, id, _) = Positions.Of(position);
         return (kind, id);
