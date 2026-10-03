@@ -16,7 +16,7 @@ fn the_sections_read_back_into_the_graph_that_wrote_them() {
         let ms = snap.manifest().sections.iter().find(|m| m.name == s.name()).unwrap();
         assert_eq!(hash, ms.logical, "{s:?}: the read-back dump is the section's own");
     }
-    assert_eq!(g.nodes.len(), 6263 + 32357 + 3972 + 50602 + 13548 + MAPS + CORPUS_ROOTS);
+    assert_eq!(g.nodes.len(), 6263 + 32357 + 3946 + 50602 + 13548 + MAPS + CORPUS_ROOTS);
     assert_eq!(g.cross_refs.len(), 343558 + CONCORD_CITATIONS);
     assert_eq!(g.reading["bible"].order.len(), 31102);
     assert_eq!(g.occurs.len(), 431_280, "LEX-1: one Occurs row per aligned token");

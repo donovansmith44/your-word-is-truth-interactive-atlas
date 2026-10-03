@@ -18,12 +18,11 @@
 # Bible-locus links work: one row per cited verse).
 #
 # ARTICLE NUMBERS below are the Concord parser's own 1-based position
-# WITHIN the small-catechism document, AFTER the two non-confessional
-# site-furniture articles are excluded (see `server/atlas-etl/src/
-# concord.rs`'s own `is_skipped_article`): 1=preface, 2=ten-commandments,
-# 3=the-creed, 4=the-lords-prayer, 5=the-sacrament-of-holy-baptism,
-# 6=how-christians-confess, 7=the-sacrament-of-the-altar. (daily-prayers=8,
-# table-of-duties=9, christian-questions-and-answers=10 carry no
+# WITHIN the small-catechism document, AFTER the three non-Triglot
+# articles on `concord-exclusions.toml` are excluded: 1=preface,
+# 2=ten-commandments, 3=the-creed, 4=the-lords-prayer,
+# 5=the-sacrament-of-holy-baptism, 6=how-christians-confess,
+# 7=the-sacrament-of-the-altar. (daily-prayers=8, table-of-duties=9 carry no
 # CatechismItem counterpart at all -- `catechism.toml`'s own documented
 # scope is "the six chief parts... Daily Prayers/Table of Duties are out
 # of scope," so those two Concord articles are simply unmatched, disclosed

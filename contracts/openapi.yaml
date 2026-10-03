@@ -3,7 +3,7 @@ openapi: 3.1.0
 info:
   title: Bible Atlas API
   description: The Bible Atlas HTTP API, generated from the Rust that serves it. The `x-atlas-relations` extension lists every relation this atlas joins two nodes by, each with the label its forward and its inverse neighbours are asked for and the words each is displayed by, so a consumer builds its own vocabulary from that list rather than writing one out.
-  version: 0.26.0
+  version: 0.27.0
 paths:
   /api/books:
     get:

@@ -22,7 +22,7 @@ file is the detailed version of record.
 | Leaflet ([leafletjs.com](https://leafletjs.com)) | BSD-2-Clause | Vendored AND COMMITTED at `client/wwwroot/vendor/leaflet/` (v1.9.4, upstream copyright banner retained in the files per BSD-2's notice condition) — committed so a fresh clone runs without any fetch step; `data/fetch-raw.ps1` can still refresh it |
 | All curated data — historical polity borders, the land mask, landmarks, narratives, eras, `events-extra.toml`, `event-witnesses.toml` (Batch T), and future short blurbs of ours (e.g. era/place descriptions) | **CC0 1.0 Universal** (public domain dedication) | Ours. Everything under `data/curated/` and everything compiled purely from it (`narratives.json`, `eras.json`, `books-meta.json`, `landmarks.json`, `polities.json`, `land-mask.json`) |
 | Luther's Small Catechism, English (1921 Bente–Dau translation, *Triglot Concordia / Concordia Triglotta*) | Public domain (published 1921, USA) | Redistributed — compiled into `catechism.json`; provenance and verification below |
-| The Book of Concord, English (1921 Bente–Dau translation, *Triglot Concordia / Concordia Triglotta*), via [bookofconcord.org](https://bookofconcord.org) | Public domain (published 1921, USA) | Redistributed — compiled into the graph artifact (`graph.bin`) as the "concord" corpus's TextUnit paragraphs; provenance and verification below |
+| The Book of Concord, English (1921 Bente–Dau translation, *Triglot Concordia / Concordia Triglotta*), via [bookofconcord.org](https://bookofconcord.org) | Public domain (published 1921, USA) — the served text is the 1921 Triglot only | Redistributed — compiled into the graph artifact (the `concord` section) as the "concord" corpus's TextUnit paragraphs. The vendored HTML's non-Triglot material (the © 1986 Concordia Publishing House "Christian Questions with Their Answers", bookofconcord.org's editorial notes, and site furniture) is excluded at compile through `data/curated/concord-exclusions.toml` and never served; see "Non-Triglot material, excluded at compile" below and the [F-79 report](docs/superpowers/reports/2026-10-03-f79-concord-licensing.md) |
 | Catechism verse mapping ([brain-fuel/catechism](https://github.com/brain-fuel/catechism)) | No license file — used by the project owner's explicit direction (see "Batch F2" below) | Redistributed — canonicalized and compiled into `catechism.json` (`CatechismItem.questions`) |
 | A.T. Robertson, *A Harmony of the Gospels for Students of the Life of Christ* (1922) | Public domain (published 1922, USA; copyright notice reads "COPYRIGHT, 1922, BY HARPER & BROTHERS") | Not redistributed as text — section titles/numbers and parallel-account groupings consulted as PROVENANCE for our own curated `event-witnesses.toml`/`events-extra.toml` fields (`robertson_section`, `ref_note`); every displayed event title/date/verse citation is independently authored (CC0) or Theographic-credited, per the mapping below |
 | William Day Crockett, *A Harmony of the Books of Samuel, Kings and Chronicles* (1897) | Public domain (published 1897, USA; title page reads "Copyright, 1897, William Day Crockett") | Not redistributed as text — section numbers/titles and parallel-account groupings (Samuel/Kings/Chronicles, plus the book's own Appendix of cross-references to Genesis, Joshua, Ruth, Ezra, Nehemiah, Psalms, Isaiah, Jeremiah, Matthew, and Luke) consulted as PROVENANCE for our own curated `event-witnesses.toml` witness rows (Batch W2); every displayed event title/date/verse citation is independently authored (CC0), Theographic-credited, or the compiled KJV text itself, per "Crockett's Harmony of Samuel, Kings, and Chronicles" below |
@@ -33,6 +33,17 @@ file is the detailed version of record.
 | KJV red-letter (words-of-Christ) markup, via [seven1m/open-bibles](https://github.com/seven1m/open-bibles) (eBible.org's own KJV OSIS distribution) | Public domain (the file's own embedded OSIS header states it plainly; see "KJV red-letter markup" below for the full CrossWire-substitution reasoning) | Redistributed — the SOURCE FILE itself is not shipped, but the FACT it encodes (which verses/sub-verse spans are Christ's own words) is: compiled into `graph.bin` as `spoken_by`/`spoken_at` edges (verse-granular) and into `data/compiled/red-letter-spans.json` (KJV sub-verse char-offset spans, compiled-data-side); provenance and verification below |
 | STEPBible TAGNT / TAHOT / TBESG ([STEPBible](https://github.com/STEPBible), Tyndale House Cambridge) — per-word lemma, morphology, Strong's numbers and English glosses for the Greek NT and Hebrew OT, via [brain-fuel/bible](https://github.com/brain-fuel/bible)'s `morph/` and `lexicon/` | **CC BY 4.0** (attribution required) | Redistributed with credit — compiled into the `lexicon` section (`data/compiled/sections/`): the `Occurs` rows (every aligned original-language word -> its lexicon entry), the `token` inventory, and the Greek entries' brief glosses. "Credit STEPBible and link to https://github.com/STEPBible" — done here, in `data/raw/README.md`, and on the Sources page. No English word is tagged: the alignment is by original-language word only. See "STEPBible / Strong's — the lexicon section (LEX-1)" below |
 | Strong's Exhaustive Concordance Greek and Hebrew dictionaries (James Strong, 1890; XML encoding by Ulrik Petersen / [openscriptures/strongs](https://github.com/openscriptures/strongs)), via brain-fuel/bible's `lexicon/` | Public domain (1890) | Redistributed — the 13,548 `LexiconEntry` nodes (number, lemma, transliteration, part of speech, the 1890 definition as the first gloss, root link), ingested as upstream publishes them (upstream's own "Yahweh" normalisation of the PD gloss text is upstream's build policy; the KJV column is never edited — the seven "Jehovah" verses stand) |
+
+## Bundled client assets
+
+Presentation, not ingested data: nothing in the graph or the compiled
+artifact derives from these. They sit outside the per-source table above,
+whose rows `atlas_etl::sources::validate_against_licenses` reconciles 1:1
+with the Sources page's `data/curated/sources.toml`; that law does not read
+this table.
+
+| Asset | License | How it's used |
+|---|---|---|
 | Overpass typeface ([RedHatOfficial/Overpass](https://github.com/RedHatOfficial/Overpass)), Copyright 2021 The Overpass Project Authors, via [@fontsource/overpass](https://www.npmjs.com/package/@fontsource/overpass) 5.3.0 | SIL Open Font License 1.1 | Bundled, unmodified — the Latin-subset woff2 files for weights 400, 600 and 700 at `client/wwwroot/fonts/overpass/`, with the license text as `OFL.txt` beside them. The heading typeface. See "Bundled fonts — owner exception" below |
 | Atkinson Hyperlegible typeface, Copyright 2020 Braille Institute of America, Inc., via [@fontsource/atkinson-hyperlegible](https://www.npmjs.com/package/@fontsource/atkinson-hyperlegible) 5.3.0 | SIL Open Font License 1.1 | Bundled, unmodified — the Latin-subset woff2 files for 400, 700, 400 italic and 700 italic at `client/wwwroot/fonts/atkinson-hyperlegible/`, with the license text as `OFL.txt` beside them. The body typeface. See "Bundled fonts — owner exception" below |
 
@@ -324,6 +335,32 @@ no inline paragraph numbers at all, and the Small Catechism's own
 Prefatory Notes/Preface/"in PDF" sections, likewise unnumbered) are in
 `batch-corp2a-report.md`, per the batch brief's own disclosure
 requirement — never force-fit to the triple.
+
+**Non-Triglot material, excluded at compile (F-79, 2026-10-03).** The
+vendored pages are not all Triglot. Checked against the public-domain
+Internet Archive OCR of the 1921 *Concordia Triglotta*, they also carry:
+
+- the Small Catechism's "Christian Questions with Their Answers", which the
+  Triglot does not print: the vendored text is the © 1986 Concordia
+  Publishing House translation, "All rights reserved" (served as BoC
+  7.10.0–7.10.20, 21 units, until 2026-10-03);
+- bookofconcord.org's own editorial notes (the Apostles' Creed "catholic"
+  note and its mark, the Confession authorship note and its mark, the
+  Apology IV "Readers Edition" note), under the site's "Original Content
+  Copyright 1998–2024";
+- site furniture: a link line under the Apostles' Creed, the Apology XVIII
+  link residue, and stray Markdown `**`.
+
+`data/curated/concord-exclusions.toml` names every piece with its kind and
+the Triglot check that rules it out; the ETL drops each excluded article and
+unit and strips each excluded fragment before the corpus is compiled, and
+fails the compile if any entry matches nothing. Two compile laws run on
+every build: no excluded piece is served, and no served Concord text or
+title carries a non-Triglot marker (`©`, `bookofconcord`, `http`,
+`Readers Edition`, `*`). The served text is the 1921 Triglot only. Dropping
+the Apology XVIII link residue before numbering restores that article's
+Triglot paragraph numbers (¶67–76). Full evidence:
+[docs/superpowers/reports/2026-10-03-f79-concord-licensing.md](docs/superpowers/reports/2026-10-03-f79-concord-licensing.md).
 
 **Dedication of our own additions.** The parser's own document/article
 part-and-article numbering (`ConcordRef.part`/`.article`), the "concord"

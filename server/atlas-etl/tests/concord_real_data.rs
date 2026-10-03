@@ -17,12 +17,12 @@ fn ten_documents_parse_clean_with_the_expected_per_document_paragraph_counts() {
 
     let expected: Vec<(u8, &str, usize, usize)> = vec![
         (1, "preface", 1, 25),
-        (2, "ecumenical-creeds", 3, 13),
+        (2, "ecumenical-creeds", 3, 11),
         (3, "augsburg-confession", 30, 451),
-        (4, "defense", 26, 1164),
+        (4, "defense", 26, 1162),
         (5, "smalcald-articles", 28, 222),
         (6, "power-and-primacy", 3, 114),
-        (7, "small-catechism", 10, 91),
+        (7, "small-catechism", 9, 70),
         (8, "large-catechism", 7, 748),
         (9, "epitome", 13, 265),
         (10, "solid-declaration", 14, 734),
@@ -32,7 +32,7 @@ fn ten_documents_parse_clean_with_the_expected_per_document_paragraph_counts() {
     let total_paragraphs: usize = counts.iter().map(|(_, _, _, p)| p).sum();
     assert_eq!(c.stats.paragraphs, total_paragraphs);
     assert_eq!(c.stats.documents, 10);
-    assert_eq!(c.stats.skipped_articles, 2, "the two Small Catechism site-furniture articles (prefatory notes + PDF plug)");
+    assert_eq!(c.stats.skipped_articles, 3, "the three non-Triglot Small Catechism articles on concord-exclusions.toml");
 }
 
 #[test]
@@ -101,7 +101,7 @@ fn smalcald_articles_extras_are_spliced_after_their_own_part_blurb_in_toc_order(
     assert!(of_sin.paragraphs[0].text.starts_with("Here we must confess, as Paul says in Rom. 5:12, that sin originated"));
 }
 
-const SMALL_CATECHISM_TITLES_AS_SERVED: [&str; 10] = [
+const SMALL_CATECHISM_TITLES_AS_SERVED: [&str; 9] = [
     "Luther's Preface to the Small Catechism",
     "I. The Ten Commandments",
     "II. The Creed",
@@ -111,7 +111,6 @@ const SMALL_CATECHISM_TITLES_AS_SERVED: [&str; 10] = [
     "VI. The Sacrament of the Altar",
     "Daily Prayers",
     "Table of Duties",
-    "Christian Questions and their Answers",
 ];
 
 #[test]
@@ -122,4 +121,36 @@ fn the_small_catechism_articles_are_numbered_by_chief_part_and_the_appendices_ar
     let titles: Vec<&str> = c.documents.iter().find(|d| d.key == "small-catechism").unwrap().articles.iter().map(|a| a.title.as_str()).collect();
     // Assert
     assert_eq!(titles, SMALL_CATECHISM_TITLES_AS_SERVED);
+}
+
+#[test]
+fn the_served_concord_is_triglot_only_no_excluded_piece_and_no_non_triglot_marker_is_served() {
+    // Arrange
+    let exclusions = concord::parse_concord_exclusions(&std::fs::read_to_string(curated_dir().join("concord-exclusions.toml")).unwrap()).unwrap();
+    // Act
+    let c = corpus();
+    // Assert
+    concord::no_excluded_material_is_served(&c, &exclusions).unwrap();
+    concord::no_served_text_carries_a_non_triglot_marker(&c, &exclusions.markers).unwrap();
+}
+
+#[test]
+fn apology_xviii_serves_the_triglot_paragraphs_67_to_76_each_under_its_own_source_number() {
+    // Arrange
+    let c = corpus();
+    // Act
+    let of_free_will: Vec<(u16, String)> = c.documents.iter().find(|d| d.key == "defense").unwrap().articles.iter().find(|a| a.slug == "/defense/of-free-will/").unwrap().paragraphs.iter().map(|p| (p.paragraph, p.source_label.clone())).collect();
+    // Assert
+    assert_eq!(of_free_will, (67..=76).map(|n| (n, n.to_string())).collect::<Vec<_>>());
+}
+
+#[test]
+fn the_apostles_creed_serves_its_three_triglot_paragraphs_and_no_note() {
+    // Arrange
+    let c = corpus();
+    // Act
+    let creed: Vec<String> = c.documents.iter().find(|d| d.key == "ecumenical-creeds").unwrap().articles[0].paragraphs.iter().map(|p| p.text.clone()).collect();
+    // Assert
+    assert_eq!(creed.len(), 3);
+    assert_eq!(creed[2], "I believe in the Holy Ghost; the holy catholic Church, the communion of saints; the forgiveness of sins; the resurrection of the body; and the life everlasting. Amen.");
 }
