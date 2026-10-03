@@ -229,7 +229,7 @@ module View =
 
     let private anchoredText body decorate : Node =
         concat {
-            forEach (AnchoredText.runs body) <| function
+            forEach (TextRuns.runs body) <| function
                 | [] -> Node.Empty()
                 | first :: remaining ->
                     let pieces = concat { forEach (first :: remaining) decorate }
@@ -282,10 +282,10 @@ module View =
         cond state <| function
             | FocusState.Closed -> Node.Empty()
             | FocusState.Opening(_, position) -> popover position None (p { attr.``class`` "popover-meta"; "Loading…" }) dispatch
-            | FocusState.Opened trail -> popover (Resolved.position (Trail.current trail)) (Some trail) (presentation (Trail.current trail) dispatch) dispatch
-            | FocusState.Walking(_, trail, _) -> popover (Resolved.position (Trail.current trail)) (Some trail) (p { attr.``class`` "popover-meta"; "Loading…" }) dispatch
+            | FocusState.Opened trail -> popover (Explorable.position (Trail.current trail)) (Some trail) (presentation (Trail.current trail) dispatch) dispatch
+            | FocusState.Walking(_, trail, _) -> popover (Explorable.position (Trail.current trail)) (Some trail) (p { attr.``class`` "popover-meta"; "Loading…" }) dispatch
             | FocusState.CouldNotOpen(position, _) -> popover position None (failed RetryFocus dispatch) dispatch
-            | FocusState.CouldNotWalk(trail, _, _) -> popover (Resolved.position (Trail.current trail)) (Some trail) (failed RetryFocus dispatch) dispatch
+            | FocusState.CouldNotWalk(trail, _, _) -> popover (Explorable.position (Trail.current trail)) (Some trail) (failed RetryFocus dispatch) dispatch
 
     let private popover position trail body dispatch : Node =
         let title =
@@ -337,7 +337,7 @@ module View =
         }
 
     let private presentation element dispatch : Node =
-        cond (Presenter.popover element) <| function
+        cond (Presenter.popover (Focus.on element)) <| function
             | Error _ -> failed (Traverse Traversal.Renew) dispatch
             | Ok(PopoverPresentation.Card card) ->
                 div {

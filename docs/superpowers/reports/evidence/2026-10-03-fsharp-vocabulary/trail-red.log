@@ -1,0 +1,186 @@
+  BibleAtlas.FSharp.ContractGenerator -> /home/donovan/w/CX-FSHARP/client-fsharp.ContractGenerator/bin/Debug/net10.0/BibleAtlas.FSharp.ContractGenerator.dll
+  BibleAtlas.FSharp.Core -> /home/donovan/w/CX-FSHARP/client-fsharp/Core/bin/Debug/net10.0/BibleAtlas.FSharp.Core.dll
+  BibleAtlas.FSharp.Client -> /home/donovan/w/CX-FSHARP/client-fsharp/bin/Debug/net10.0/BibleAtlas.FSharp.Client.dll
+  BibleAtlas.FSharp.Client (Blazor output) -> /home/donovan/w/CX-FSHARP/client-fsharp/bin/Debug/net10.0/wwwroot
+  BibleAtlas.FSharp.Tests -> /home/donovan/w/CX-FSHARP/client-fsharp.Tests/bin/Debug/net10.0/BibleAtlas.FSharp.Tests.dll
+Test run for /home/donovan/w/CX-FSHARP/client-fsharp.Tests/bin/Debug/net10.0/BibleAtlas.FSharp.Tests.dll (.NETCoreApp,Version=v10.0)
+A total of 1 test files matched the specified pattern.
+[xUnit.net 00:00:00.32]     BibleAtlas.FSharp.Tests.ExploreLaws.the trail retains only its most recent budgeted steps and the source of that suffix [FAIL]
+  Failed BibleAtlas.FSharp.Tests.ExploreLaws.the trail retains only its most recent budgeted steps and the source of that suffix [27 ms]
+  Error Message:
+   FsCheck.Xunit.PropertyFailedException : 
+Falsifiable, after 1 test (1 shrink) (4327568720880814,12351764402789522853). 
+Last step was invoked with size of 2 and seed of (2276091409287056135,11105196818085741441):
+Original:
+1us
+Shrunk:
+0us
+
+---- Assert.Equal() Failure: Collections differ
+Expected: [NodeExplorable ("root", { Book = None
+                          Catechism = None
+                          Description = None
+                          EdgeSummary = []
+                          Era = None
+                          Event = None
+                          Id = "Person:1"
+                          Kind = Person
+                          Label = "Person:1"
+                          Map = None
+                          Person = None
+                          Place = None
+                          Polity = None
+                          Provenance = "test"
+                          Text = None
+                          Version = "root" }), NodeExplorable ("root", { Book = None
+                          Catechism = None
+                          Description = None
+                          EdgeSummary = []
+                          Era = None
+                          Event = None
+                          Id = "Person:2"
+                          Kind = Person
+                          Label = "Person:2"
+                          Map = None
+                          Person = None
+                          Place = None
+                          Polity = None
+                          Provenance = "test"
+                          Text = None
+                          Version = "root" }), NodeExplorable ("root", { Book = None
+                          Catechism = None
+                          Description = None
+                          EdgeSummary = []
+                          Era = None
+                          Event = None
+                          Id = "Person:3"
+                          Kind = Person
+                          Label = "Person:3"
+                          Map = None
+                          Person = None
+                          Place = None
+                          Polity = None
+                          Provenance = "test"
+                          Text = None
+                          Version = "root" }), NodeExplorable ("root", { Book = None
+                          Catechism = None
+                          Description = None
+                          EdgeSummary = []
+                          Era = None
+                          Event = None
+                          Id = "Person:4"
+                          Kind = Person
+                          Label = "Person:4"
+                          Map = None
+                          Person = None
+                          Place = None
+                          Polity = None
+                          Provenance = "test"
+                          Text = None
+                          Version = "root" }), NodeExplorable ("root", { Book = None
+                          Catechism = None
+                          Description = None
+                          EdgeSummary = []
+                          Era = None
+                          Event = None
+                          Id = "Person:5"
+                          Kind = Person
+                          Label = "Person:5"
+                          Map = None
+                          Person = None
+                          Place = None
+                          Polity = None
+                          Provenance = "test"
+                          Text = None
+                          Version = "root" }), ···]
+Actual:   [NodeExplorable ("root", { Book = None
+                          Catechism = None
+                          Description = None
+                          EdgeSummary = []
+                          Era = None
+                          Event = None
+                          Id = "Person:start"
+                          Kind = Person
+                          Label = "Person:start"
+                          Map = None
+                          Person = None
+                          Place = None
+                          Polity = None
+                          Provenance = "test"
+                          Text = None
+                          Version = "root" }), NodeExplorable ("root", { Book = None
+                          Catechism = None
+                          Description = None
+                          EdgeSummary = []
+                          Era = None
+                          Event = None
+                          Id = "Person:1"
+                          Kind = Person
+                          Label = "Person:1"
+                          Map = None
+                          Person = None
+                          Place = None
+                          Polity = None
+                          Provenance = "test"
+                          Text = None
+                          Version = "root" }), NodeExplorable ("root", { Book = None
+                          Catechism = None
+                          Description = None
+                          EdgeSummary = []
+                          Era = None
+                          Event = None
+                          Id = "Person:2"
+                          Kind = Person
+                          Label = "Person:2"
+                          Map = None
+                          Person = None
+                          Place = None
+                          Polity = None
+                          Provenance = "test"
+                          Text = None
+                          Version = "root" }), NodeExplorable ("root", { Book = None
+                          Catechism = None
+                          Description = None
+                          EdgeSummary = []
+                          Era = None
+                          Event = None
+                          Id = "Person:3"
+                          Kind = Person
+                          Label = "Person:3"
+                          Map = None
+                          Person = None
+                          Place = None
+                          Polity = None
+                          Provenance = "test"
+                          Text = None
+                          Version = "root" }), NodeExplorable ("root", { Book = None
+                          Catechism = None
+                          Description = None
+                          EdgeSummary = []
+                          Era = None
+                          Event = None
+                          Id = "Person:4"
+                          Kind = Person
+                          Label = "Person:4"
+                          Map = None
+                          Person = None
+                          Place = None
+                          Polity = None
+                          Provenance = "test"
+                          Text = None
+                          Version = "root" }), ···]
+  Stack Trace:
+  
+----- Inner Stack Trace -----
+   at BibleAtlas.FSharp.Tests.ExploreLaws.the trail retains only its most recent budgeted steps and the source of that suffix(UInt16 extra) in /home/donovan/w/CX-FSHARP/client-fsharp.Tests/ExploreLaws.fs:line 56
+   at InvokeStub_ExploreLaws.the trail retains only its most recent budgeted steps and the source of that suffix(Object, Span`1)
+   at System.Reflection.MethodBaseInvoker.InvokeWithOneArg(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
+--- End of stack trace from previous location ---
+   at FsCheck.Runner.invokeAndThrowInner@592-1.Invoke(Object[] o) in C:\Users\kurts\Projects\FsCheck\src\FsCheck\Runner.fs:line 595
+   at <StartupCode$FSharp-Core>.$Reflect.Invoke@1230.Invoke(T1 inp) in /__w/1/s/src/fsharp/src/FSharp.Core/reflect.fs:line 1230
+   at System.Lazy`1.ViaFactory(LazyThreadSafetyMode mode)
+   at System.Lazy`1.ExecutionAndPublication(LazyHelper executionAndPublication, Boolean useDefaultConstructor)
+   at System.Lazy`1.CreateValue()
+   at FsCheck.Testable.Prop.safeForce[a](Lazy`1 body) in C:\Users\kurts\Projects\FsCheck\src\FsCheck\Testable.fs:line 164
+
+Failed!  - Failed:     1, Passed:     5, Skipped:     0, Total:     6, Duration: 188 ms - BibleAtlas.FSharp.Tests.dll (net10.0)

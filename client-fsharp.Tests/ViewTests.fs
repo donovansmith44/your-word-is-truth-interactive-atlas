@@ -143,7 +143,7 @@ let ``closing a visible focus dispatches CloseFocus`` () =
 [<Fact>]
 let ``a failed focus retries its own request rather than the underlying page`` () =
     let model, _ = Model.init Route.Sources
-    let model = { model with Focus = FocusState.CouldNotOpen(Resolved.position ExplorationTests.start, Transport "offline") }
+    let model = { model with Focus = FocusState.CouldNotOpen(Explorable.position ExplorationTests.start, Transport "offline") }
     let mutable messages = []
     use context = new BunitContext()
     let view = render context model (fun message -> messages <- messages @ [message])

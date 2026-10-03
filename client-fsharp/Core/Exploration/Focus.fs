@@ -1,32 +1,32 @@
-namespace BibleAtlas.FSharp.Exploring
+namespace BibleAtlas.FSharp
 
+open BibleAtlas.FSharp.Contract
 open BibleAtlas.FSharp.Domain
 open BibleAtlas.FSharp.Paging
 
+type Focus = private Focus of Explorable
+
 type FrontierCapacity = private FrontierCapacity of Positive
 
-type Frontier<'root, 'position, 'cursor, 'edge> =
+type Frontier<'cursor> =
     private
-        { Capacity: FrontierCapacity
-          Windows: Map<RelationDirection, NeighbourWindow<'root, 'position, 'cursor, 'edge>> }
-
-type Focus<'root, 'position, 'value, 'cursor, 'edge> =
-    private
-        { Current: Resolved<'root, 'position, 'value>
-          Frontier: Frontier<'root, 'position, 'cursor, 'edge> }
+        { At: Focus
+          Capacity: FrontierCapacity
+          Windows: Map<RelationDirection, NeighbourWindow<string, PositionRef, 'cursor, EdgeRecord>> }
 
 [<RequireQualifiedAccess>]
-type FocusFailure<'root> = WrongPosition | ChangedRoot of RootMismatch<'root> | OversizedFrontier
+type FrontierFailure = WrongPosition | ChangedRoot of RootMismatch<string> | OversizedFrontier
 
-module Focuses =
+module Focus =
+    let on (explorable: Explorable) : Focus = Focus explorable
+    let explorable (Focus explorable) : Explorable = explorable
+
+module Frontiers =
     let capacity (entries: Positive) : FrontierCapacity = FrontierCapacity entries
-    let beginAt (capacity: FrontierCapacity) (resolved: Resolved<'root, 'position, 'value>) : Focus<'root, 'position, 'value, 'cursor, 'edge> =
-        { Current = resolved; Frontier = { Capacity = capacity; Windows = Map.empty } }
-    let change (resolved: Resolved<'root, 'position, 'value>) (focus: Focus<'root, 'position, 'value, 'cursor, 'edge>) : Focus<'root, 'position, 'value, 'cursor, 'edge> =
-        DomainSkeleton.pending "Focuses.change"
-    let showNeighbours (window: NeighbourWindow<'root, 'position, 'cursor, 'edge>) (focus: Focus<'root, 'position, 'value, 'cursor, 'edge>) : Result<Focus<'root, 'position, 'value, 'cursor, 'edge>, FocusFailure<'root>> =
-        DomainSkeleton.pending "Focuses.showNeighbours"
-    let current (focus: Focus<'root, 'position, 'value, 'cursor, 'edge>) : Resolved<'root, 'position, 'value> = focus.Current
-    let frontier (focus: Focus<'root, 'position, 'value, 'cursor, 'edge>) : Frontier<'root, 'position, 'cursor, 'edge> = focus.Frontier
-    let windows (frontier: Frontier<'root, 'position, 'cursor, 'edge>) : NeighbourWindow<'root, 'position, 'cursor, 'edge> list =
+    let empty (capacity: FrontierCapacity) (focus: Focus) : Frontier<'cursor> =
+        { At = focus; Capacity = capacity; Windows = Map.empty }
+    let showNeighbours (window: NeighbourWindow<string, PositionRef, 'cursor, EdgeRecord>) (frontier: Frontier<'cursor>) : Result<Frontier<'cursor>, FrontierFailure> =
+        DomainSkeleton.pending "Frontiers.showNeighbours"
+    let focus (frontier: Frontier<'cursor>) : Focus = frontier.At
+    let windows (frontier: Frontier<'cursor>) : NeighbourWindow<string, PositionRef, 'cursor, EdgeRecord> list =
         frontier.Windows |> Map.toList |> List.map snd

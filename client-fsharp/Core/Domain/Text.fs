@@ -12,10 +12,10 @@ type TextBody<'nodeId, 'partRole> = private TextBody of TextPart<'nodeId, 'partR
 
 type TextHeading<'nodeId> = private { Event: 'nodeId; Label: string; IsContinuation: bool }
 
-type TextUnit<'nodeId, 'reference, 'partRole> =
+type TextUnit<'nodeId, 'partRole> =
     private
         { Id: 'nodeId
-          Reference: 'reference
+          Reference: TextRef
           Label: string
           Body: TextBody<'nodeId, 'partRole>
           Headings: TextHeading<'nodeId> list
@@ -29,12 +29,6 @@ type TextPartFailure = AnchorOutsidePart
 
 [<RequireQualifiedAccess>]
 type TextUnitFailure = NotATextUnit | NegativeEdgeCount
-
-module References =
-    let compareBible (servedOrder: 'reference -> 'reference -> int) (left: 'reference) (right: 'reference) : int =
-        servedOrder left right
-    let compareConcord (servedOrder: 'reference -> 'reference -> int) (left: 'reference) (right: 'reference) : int =
-        servedOrder left right
 
 module TextAnchors =
     let admit (text: string) (start: int) (finish: int) (target: 'nodeId) (kind: EdgeKind) : Result<TextAnchor<'nodeId>, TextAnchorFailure> =
@@ -53,13 +47,13 @@ module TextBodies =
     let anchors (part: TextPart<'nodeId, 'partRole>) : TextAnchor<'nodeId> list = part.Anchors
 
 module TextUnits =
-    let admit (id: 'nodeId) (kind: NodeKind) (reference: 'reference) (label: string) (body: TextBody<'nodeId, 'partRole>) (headings: TextHeading<'nodeId> list) (summary: Map<EdgeKind, int>) : Result<TextUnit<'nodeId, 'reference, 'partRole>, TextUnitFailure> =
+    let admit (id: 'nodeId) (kind: NodeKind) (reference: TextRef) (label: string) (body: TextBody<'nodeId, 'partRole>) (headings: TextHeading<'nodeId> list) (summary: Map<EdgeKind, int>) : Result<TextUnit<'nodeId, 'partRole>, TextUnitFailure> =
         DomainSkeleton.pending "TextUnits.admit"
     let heading (event: 'nodeId) (label: string) (isContinuation: bool) : TextHeading<'nodeId> =
         { Event = event; Label = label; IsContinuation = isContinuation }
-    let id (unit: TextUnit<'nodeId, 'reference, 'partRole>) : 'nodeId = unit.Id
-    let reference (unit: TextUnit<'nodeId, 'reference, 'partRole>) : 'reference = unit.Reference
-    let label (unit: TextUnit<'nodeId, 'reference, 'partRole>) : string = unit.Label
-    let body (unit: TextUnit<'nodeId, 'reference, 'partRole>) : TextBody<'nodeId, 'partRole> = unit.Body
-    let headings (unit: TextUnit<'nodeId, 'reference, 'partRole>) : TextHeading<'nodeId> list = unit.Headings
-    let summary (unit: TextUnit<'nodeId, 'reference, 'partRole>) : Map<EdgeKind, int> = unit.Summary
+    let id (unit: TextUnit<'nodeId, 'partRole>) : 'nodeId = unit.Id
+    let reference (unit: TextUnit<'nodeId, 'partRole>) : TextRef = unit.Reference
+    let label (unit: TextUnit<'nodeId, 'partRole>) : string = unit.Label
+    let body (unit: TextUnit<'nodeId, 'partRole>) : TextBody<'nodeId, 'partRole> = unit.Body
+    let headings (unit: TextUnit<'nodeId, 'partRole>) : TextHeading<'nodeId> list = unit.Headings
+    let summary (unit: TextUnit<'nodeId, 'partRole>) : Map<EdgeKind, int> = unit.Summary

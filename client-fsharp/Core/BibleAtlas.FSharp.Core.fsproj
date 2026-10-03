@@ -13,12 +13,9 @@
     <Compile Include="Domain/Graph.fs" />
     <Compile Include="Domain/History.fs" />
     <Compile Include="Domain/YearReading.fs" />
-    <Compile Include="Domain/Position.fs" />
     <Compile Include="Paging/ReadingWindow.fs" />
     <Compile Include="Paging/NeighbourWindow.fs" />
     <Compile Include="Paging/PageCache.fs" />
-    <Compile Include="Exploration/Trail.fs" />
-    <Compile Include="Exploration/Focus.fs" />
     <Compile Include="Admission/ArrayIndex.fs" />
     <Compile Include="Admission/DocumentPosition.fs" />
     <Compile Include="Admission/Coordinates.fs" />
@@ -28,11 +25,15 @@
     <Compile Include="Admission/Paths.fs" />
     <Compile Include="Admission/WireFailure.fs" />
     <Compile Include="Admission/ReadFailure.fs" />
+    <Compile Include="Admission/Failure.fs" />
+    <Compile Include="Domain/Position.fs" />
+    <Compile Include="Exploration/Focus.fs" />
+    <Compile Include="Exploration/Trail.fs" />
+    <Compile Include="Exploration/Explore.fs" />
     <Compile Include="Loading.fs" />
-    <Compile Include="Json.fs" /><Compile Include="AnchoredText.fs" />
-    <Compile Include="Exploration.fs" />
+    <Compile Include="Admission/Json.fs" />
     <Compile Include="Presentation.fs" />
-    <Compile Include="Api.fs" /><Compile Include="Graph.fs" />
+    <Compile Include="Api.fs" /><Compile Include="Admission/GraphRead.fs" />
     <Compile Include="Model.fs" />
   </ItemGroup>
   <ItemGroup>

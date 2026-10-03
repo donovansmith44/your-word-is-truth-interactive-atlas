@@ -23,9 +23,9 @@ type ReadingWindow<'root, 'nodeId, 'cursor, 'unit> =
           Pages: Rooted<'root, ReadingPage<'nodeId, 'cursor, 'unit>> list }
 
 [<RequireQualifiedAccess>]
-type ReadingExtent<'root, 'nodeId, 'cursor, 'reference, 'partRole> =
-    | Paged of ReadingWindow<'root, 'nodeId, 'cursor, TextUnit<'nodeId, 'reference, 'partRole>>
-    | Whole of Rooted<'root, WholeChapter<'nodeId, 'reference, 'partRole>>
+type ReadingExtent<'root, 'nodeId, 'cursor, 'partRole> =
+    | Paged of ReadingWindow<'root, 'nodeId, 'cursor, TextUnit<'nodeId, 'partRole>>
+    | Whole of Rooted<'root, WholeChapter<'nodeId, 'partRole>>
 
 [<RequireQualifiedAccess>]
 type PageAdmissionFailure = OversizedPage | EmptyContinuation

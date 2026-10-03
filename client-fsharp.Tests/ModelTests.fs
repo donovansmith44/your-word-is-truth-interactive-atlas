@@ -200,7 +200,7 @@ let ``a current source completion installs the whole served answer without start
 [<Property>]
 let ``opening a focus has a new identity and resolves only its requested position`` (steps: byte) =
     let model, _ = seedModel Route.Sources steps
-    let position = Resolved.position ExplorationTests.start
+    let position = Explorable.position ExplorationTests.start
     let actual, effects = Model.update (OpenPosition position) model
     let request = RequestId.next model.Serial
     Assert.Equal({ model with Serial = request; Focus = FocusState.Opening(request, position) }, actual)
@@ -209,7 +209,7 @@ let ``opening a focus has a new identity and resolves only its requested positio
 [<Property>]
 let ``closing focus refuses a late successful opening`` (steps: byte) =
     let model, _ = seedModel Route.Sources steps
-    let opening, _ = Model.update (OpenPosition(Resolved.position ExplorationTests.start)) model
+    let opening, _ = Model.update (OpenPosition(Explorable.position ExplorationTests.start)) model
     let closed, _ = Model.update CloseFocus opening
     let actual, effects = Model.update (FocusLoaded(opening.Serial, Ok ExplorationTests.trail)) closed
     Assert.Equal({ opening with Serial = RequestId.next opening.Serial; Focus = FocusState.Closed }, actual)
@@ -219,7 +219,7 @@ let ``closing focus refuses a late successful opening`` (steps: byte) =
 let ``following preserves the current trail while its replacement is in flight`` (steps: byte) =
     let model, _ = seedModel Route.Sources steps
     let model = { model with Focus = FocusState.Opened ExplorationTests.trail }
-    let link: Link = { Kind = EdgeKind.Contains; Target = Resolved.position (ExplorationTests.node "Person:target" "root") }
+    let link: Link = { Kind = EdgeKind.Contains; Target = Explorable.position (ExplorationTests.node "Person:target" "root") }
     let actual, effects = Model.update (Traverse(Traversal.Follow link)) model
     let request = RequestId.next model.Serial
     Assert.Equal({ model with Serial = request; Focus = FocusState.Walking(request, ExplorationTests.trail, Traversal.Follow link) }, actual)
@@ -238,7 +238,7 @@ let ``a superseded focus completion cannot replace a later traversal`` (steps: b
 [<Property>]
 let ``a failed opening retains exactly the position needed by Retry`` (steps: byte) =
     let model, _ = seedModel Route.Sources steps
-    let position = Resolved.position ExplorationTests.start
+    let position = Explorable.position ExplorationTests.start
     let opening, _ = Model.update (OpenPosition position) model
     let failed, _ = Model.update (FocusLoaded(opening.Serial, Error(Transport "offline"))) opening
     Assert.Equal({ opening with Focus = FocusState.CouldNotOpen(position, Transport "offline") }, failed)

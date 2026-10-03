@@ -13,7 +13,7 @@ type TextPresentation = { Unit: UnitText; Fields: PresentationField list }
 type PopoverPresentation = Card of CardPresentation | Text of TextPresentation
 
 module rec Presenter =
-    let popover (element: Resolved) : Result<PopoverPresentation, Failure> = Resolved.fold node edge element
+    let popover (focus: Focus) : Result<PopoverPresentation, Failure> = Focus.explorable focus |> Explorable.fold node edge
 
     let caption (name: FieldName) : string =
         match name with

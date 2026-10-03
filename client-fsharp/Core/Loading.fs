@@ -2,11 +2,6 @@ namespace BibleAtlas.FSharp
 
 open BibleAtlas.FSharp.Contract
 
-type Failure =
-    | Transport of string
-    | Contract of string
-    | ArtifactMoved of resolved: string * serving: string
-
 type RequestId = private RequestId of int64
 
 module RequestId =

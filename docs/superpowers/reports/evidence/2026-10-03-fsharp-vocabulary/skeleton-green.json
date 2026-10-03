@@ -1,0 +1,91 @@
+{
+  "pending_count": 61,
+  "pending": {
+    "Domain/Time.fs": [
+      "Years.admit",
+      "Years.compare",
+      "Years.singleton",
+      "Years.between",
+      "Years.contains",
+      "Years.cover",
+      "Years.overlaps",
+      "Years.meet",
+      "Years.within",
+      "Years.adjacent",
+      "Years.years"
+    ],
+    "Domain/Text.fs": [
+      "TextAnchors.admit",
+      "TextBodies.part",
+      "TextUnits.admit"
+    ],
+    "Domain/Containers.fs": [
+      "Passages.admit",
+      "Passages.contains",
+      "BibleContainers.admit",
+      "BibleContainers.navigation",
+      "ConcordContainers.admit",
+      "ConcordContainers.navigation",
+      "WholeChapters.admit"
+    ],
+    "Domain/Graph.fs": [
+      "Relations.admit",
+      "Relations.dual",
+      "Nodes.admitEntity",
+      "Nodes.id",
+      "Nodes.label",
+      "Nodes.entityKinds",
+      "Nodes.relations",
+      "Edges.admit"
+    ],
+    "Domain/History.fs": [
+      "History.admitEventId",
+      "History.admitStoryId",
+      "History.admitAccount",
+      "History.admitChronology"
+    ],
+    "Domain/YearReading.fs": [
+      "YearReadings.admitYear",
+      "YearReadings.admitSpan"
+    ],
+    "Paging/ReadingWindow.fs": [
+      "ReadingPages.admit",
+      "ReadingWindows.defaultBounds",
+      "ReadingWindows.openAt",
+      "ReadingWindows.append",
+      "ReadingWindows.prepend",
+      "ReadingWindows.units",
+      "ReadingWindows.before",
+      "ReadingWindows.after"
+    ],
+    "Paging/NeighbourWindow.fs": [
+      "NeighbourPages.admit",
+      "Neighbours.capacity",
+      "Neighbours.openAt",
+      "Neighbours.append",
+      "Neighbours.prepend",
+      "Neighbours.entries",
+      "Neighbours.before",
+      "Neighbours.after"
+    ],
+    "Admission/Scalars.fs": [
+      "Colors.admit",
+      "RefusalStatuses.client",
+      "RefusalStatuses.server"
+    ],
+    "Admission/TextSpans.fs": [
+      "TextSpans.scalarOffset",
+      "TextSpans.utf16Offset",
+      "TextSpans.scalarSpan",
+      "TextSpans.utf16Span",
+      "TextSpans.inText"
+    ],
+    "Exploration/Focus.fs": [
+      "Frontiers.showNeighbours"
+    ],
+    "Exploration/Explore.fs": [
+      "Explore.links"
+    ]
+  },
+  "failures": []
+}

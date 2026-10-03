@@ -1,0 +1,1770 @@
+{
+  "errors": [],
+  "pending_bodies": 61,
+  "unused": [
+    {
+      "column": 7,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Admission/ArrayIndex.fs",
+      "line": 8,
+      "name": "ArrayIndices"
+    },
+    {
+      "column": 8,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Admission/ArrayIndex.fs",
+      "line": 9,
+      "name": "admit"
+    },
+    {
+      "column": 8,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Admission/ArrayIndex.fs",
+      "line": 12,
+      "name": "value"
+    },
+    {
+      "column": 7,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Admission/Coordinates.fs",
+      "line": 15,
+      "name": "Latitudes"
+    },
+    {
+      "column": 8,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Admission/Coordinates.fs",
+      "line": 16,
+      "name": "admit"
+    },
+    {
+      "column": 8,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Admission/Coordinates.fs",
+      "line": 22,
+      "name": "value"
+    },
+    {
+      "column": 7,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Admission/Coordinates.fs",
+      "line": 24,
+      "name": "Longitudes"
+    },
+    {
+      "column": 8,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Admission/Coordinates.fs",
+      "line": 25,
+      "name": "admit"
+    },
+    {
+      "column": 8,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Admission/Coordinates.fs",
+      "line": 31,
+      "name": "value"
+    },
+    {
+      "column": 22,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Admission/DocumentPosition.fs",
+      "line": 13,
+      "name": "Line"
+    },
+    {
+      "column": 40,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Admission/DocumentPosition.fs",
+      "line": 13,
+      "name": "Column"
+    },
+    {
+      "column": 7,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Admission/DocumentPosition.fs",
+      "line": 15,
+      "name": "LineNumbers"
+    },
+    {
+      "column": 8,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Admission/DocumentPosition.fs",
+      "line": 16,
+      "name": "admit"
+    },
+    {
+      "column": 8,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Admission/DocumentPosition.fs",
+      "line": 19,
+      "name": "value"
+    },
+    {
+      "column": 7,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Admission/DocumentPosition.fs",
+      "line": 21,
+      "name": "ByteColumns"
+    },
+    {
+      "column": 8,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Admission/DocumentPosition.fs",
+      "line": 22,
+      "name": "admit"
+    },
+    {
+      "column": 8,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Admission/DocumentPosition.fs",
+      "line": 25,
+      "name": "value"
+    },
+    {
+      "column": 7,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Admission/HttpUrl.fs",
+      "line": 10,
+      "name": "HttpUrls"
+    },
+    {
+      "column": 8,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Admission/HttpUrl.fs",
+      "line": 11,
+      "name": "admit"
+    },
+    {
+      "column": 8,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Admission/HttpUrl.fs",
+      "line": 17,
+      "name": "text"
+    },
+    {
+      "column": 16,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Admission/Paths.fs",
+      "line": 6,
+      "name": "Property"
+    },
+    {
+      "column": 37,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Admission/Paths.fs",
+      "line": 6,
+      "name": "Index"
+    },
+    {
+      "column": 7,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Admission/Paths.fs",
+      "line": 10,
+      "name": "Paths"
+    },
+    {
+      "column": 8,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Admission/Paths.fs",
+      "line": 11,
+      "name": "root"
+    },
+    {
+      "column": 8,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Admission/Paths.fs",
+      "line": 12,
+      "name": "append"
+    },
+    {
+      "column": 8,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Admission/Paths.fs",
+      "line": 13,
+      "name": "steps"
+    },
+    {
+      "column": 24,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Admission/ReadFailure.fs",
+      "line": 6,
+      "name": "Unreachable"
+    },
+    {
+      "column": 38,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Admission/ReadFailure.fs",
+      "line": 6,
+      "name": "ServerRefusal"
+    },
+    {
+      "column": 23,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Admission/ReadFailure.fs",
+      "line": 9,
+      "name": "ClientRefusal"
+    },
+    {
+      "column": 74,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Admission/ReadFailure.fs",
+      "line": 9,
+      "name": "InvalidAnswer"
+    },
+    {
+      "column": 7,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Admission/ReadFailure.fs",
+      "line": 14,
+      "name": "ReadFailures"
+    },
+    {
+      "column": 8,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Admission/ReadFailure.fs",
+      "line": 15,
+      "name": "retryable"
+    },
+    {
+      "column": 20,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Admission/Scalars.fs",
+      "line": 12,
+      "name": "UnlistedColor"
+    },
+    {
+      "column": 27,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Admission/Scalars.fs",
+      "line": 15,
+      "name": "NotClientRefusal"
+    },
+    {
+      "column": 27,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Admission/Scalars.fs",
+      "line": 18,
+      "name": "NotServerRefusal"
+    },
+    {
+      "column": 7,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Admission/Scalars.fs",
+      "line": 20,
+      "name": "Colors"
+    },
+    {
+      "column": 8,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Admission/Scalars.fs",
+      "line": 23,
+      "name": "text"
+    },
+    {
+      "column": 7,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Admission/Scalars.fs",
+      "line": 25,
+      "name": "RefusalStatuses"
+    },
+    {
+      "column": 8,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Admission/Scalars.fs",
+      "line": 30,
+      "name": "clientValue"
+    },
+    {
+      "column": 8,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Admission/Scalars.fs",
+      "line": 31,
+      "name": "serverValue"
+    },
+    {
+      "column": 27,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Admission/TextSpans.fs",
+      "line": 14,
+      "name": "NegativeScalarOffset"
+    },
+    {
+      "column": 26,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Admission/TextSpans.fs",
+      "line": 17,
+      "name": "NegativeUtf16Offset"
+    },
+    {
+      "column": 25,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Admission/TextSpans.fs",
+      "line": 20,
+      "name": "ReversedScalarSpan"
+    },
+    {
+      "column": 24,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Admission/TextSpans.fs",
+      "line": 23,
+      "name": "ReversedUtf16Span"
+    },
+    {
+      "column": 23,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Admission/TextSpans.fs",
+      "line": 26,
+      "name": "SpanOutsideText"
+    },
+    {
+      "column": 7,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Admission/TextSpans.fs",
+      "line": 28,
+      "name": "TextSpans"
+    },
+    {
+      "column": 8,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Admission/TextSpans.fs",
+      "line": 39,
+      "name": "scalarValue"
+    },
+    {
+      "column": 8,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Admission/TextSpans.fs",
+      "line": 40,
+      "name": "utf16Value"
+    },
+    {
+      "column": 8,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Admission/TextSpans.fs",
+      "line": 41,
+      "name": "scalarEnds"
+    },
+    {
+      "column": 8,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Admission/TextSpans.fs",
+      "line": 42,
+      "name": "utf16Ends"
+    },
+    {
+      "column": 16,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Admission/WireFailure.fs",
+      "line": 4,
+      "name": "Object"
+    },
+    {
+      "column": 25,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Admission/WireFailure.fs",
+      "line": 4,
+      "name": "Array"
+    },
+    {
+      "column": 33,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Admission/WireFailure.fs",
+      "line": 4,
+      "name": "String"
+    },
+    {
+      "column": 42,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Admission/WireFailure.fs",
+      "line": 4,
+      "name": "Number"
+    },
+    {
+      "column": 51,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Admission/WireFailure.fs",
+      "line": 4,
+      "name": "Boolean"
+    },
+    {
+      "column": 61,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Admission/WireFailure.fs",
+      "line": 4,
+      "name": "Null"
+    },
+    {
+      "column": 23,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Admission/WireFailure.fs",
+      "line": 7,
+      "name": "BlankIdentity"
+    },
+    {
+      "column": 39,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Admission/WireFailure.fs",
+      "line": 7,
+      "name": "WrongShape"
+    },
+    {
+      "column": 52,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Admission/WireFailure.fs",
+      "line": 7,
+      "name": "WrongKind"
+    },
+    {
+      "column": 64,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Admission/WireFailure.fs",
+      "line": 7,
+      "name": "UnknownIdentity"
+    },
+    {
+      "column": 6,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Admission/WireFailure.fs",
+      "line": 11,
+      "name": "NotJson"
+    },
+    {
+      "column": 6,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Admission/WireFailure.fs",
+      "line": 12,
+      "name": "NullAnswer"
+    },
+    {
+      "column": 6,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Admission/WireFailure.fs",
+      "line": 13,
+      "name": "MissingField"
+    },
+    {
+      "column": 6,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Admission/WireFailure.fs",
+      "line": 14,
+      "name": "WrongKind"
+    },
+    {
+      "column": 6,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Admission/WireFailure.fs",
+      "line": 15,
+      "name": "UnknownCase"
+    },
+    {
+      "column": 6,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Admission/WireFailure.fs",
+      "line": 16,
+      "name": "UnknownTag"
+    },
+    {
+      "column": 6,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Admission/WireFailure.fs",
+      "line": 17,
+      "name": "OutOfBounds"
+    },
+    {
+      "column": 6,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Admission/WireFailure.fs",
+      "line": 18,
+      "name": "InvalidIdentity"
+    },
+    {
+      "column": 10,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/Containers.fs",
+      "line": 11,
+      "name": "Children"
+    },
+    {
+      "column": 34,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/Containers.fs",
+      "line": 11,
+      "name": "Previous"
+    },
+    {
+      "column": 60,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/Containers.fs",
+      "line": 11,
+      "name": "Next"
+    },
+    {
+      "column": 10,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/Containers.fs",
+      "line": 16,
+      "name": "Children"
+    },
+    {
+      "column": 34,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/Containers.fs",
+      "line": 16,
+      "name": "Previous"
+    },
+    {
+      "column": 60,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/Containers.fs",
+      "line": 16,
+      "name": "Next"
+    },
+    {
+      "column": 6,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/Containers.fs",
+      "line": 20,
+      "name": "Bible"
+    },
+    {
+      "column": 6,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/Containers.fs",
+      "line": 21,
+      "name": "Concord"
+    },
+    {
+      "column": 34,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/Containers.fs",
+      "line": 23,
+      "name": "WholeRead"
+    },
+    {
+      "column": 6,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/Containers.fs",
+      "line": 26,
+      "name": "Children"
+    },
+    {
+      "column": 6,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/Containers.fs",
+      "line": 27,
+      "name": "Previous"
+    },
+    {
+      "column": 6,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/Containers.fs",
+      "line": 28,
+      "name": "Next"
+    },
+    {
+      "column": 6,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/Containers.fs",
+      "line": 29,
+      "name": "WholeRead"
+    },
+    {
+      "column": 22,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/Containers.fs",
+      "line": 35,
+      "name": "OneUnit"
+    },
+    {
+      "column": 32,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/Containers.fs",
+      "line": 35,
+      "name": "ReversedUnits"
+    },
+    {
+      "column": 24,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/Containers.fs",
+      "line": 38,
+      "name": "NotAContainer"
+    },
+    {
+      "column": 40,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/Containers.fs",
+      "line": 38,
+      "name": "WrongCorpus"
+    },
+    {
+      "column": 27,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/Containers.fs",
+      "line": 41,
+      "name": "EmptyRead"
+    },
+    {
+      "column": 39,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/Containers.fs",
+      "line": 41,
+      "name": "IncompleteRead"
+    },
+    {
+      "column": 7,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/Containers.fs",
+      "line": 43,
+      "name": "Passages"
+    },
+    {
+      "column": 8,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/Containers.fs",
+      "line": 48,
+      "name": "id"
+    },
+    {
+      "column": 8,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/Containers.fs",
+      "line": 49,
+      "name": "span"
+    },
+    {
+      "column": 8,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/Containers.fs",
+      "line": 50,
+      "name": "mark"
+    },
+    {
+      "column": 8,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/Containers.fs",
+      "line": 51,
+      "name": "label"
+    },
+    {
+      "column": 7,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/Containers.fs",
+      "line": 53,
+      "name": "BibleContainers"
+    },
+    {
+      "column": 8,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/Containers.fs",
+      "line": 58,
+      "name": "id"
+    },
+    {
+      "column": 8,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/Containers.fs",
+      "line": 59,
+      "name": "reference"
+    },
+    {
+      "column": 8,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/Containers.fs",
+      "line": 60,
+      "name": "level"
+    },
+    {
+      "column": 8,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/Containers.fs",
+      "line": 61,
+      "name": "label"
+    },
+    {
+      "column": 7,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/Containers.fs",
+      "line": 63,
+      "name": "ConcordContainers"
+    },
+    {
+      "column": 8,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/Containers.fs",
+      "line": 68,
+      "name": "id"
+    },
+    {
+      "column": 8,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/Containers.fs",
+      "line": 69,
+      "name": "reference"
+    },
+    {
+      "column": 8,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/Containers.fs",
+      "line": 70,
+      "name": "level"
+    },
+    {
+      "column": 8,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/Containers.fs",
+      "line": 71,
+      "name": "label"
+    },
+    {
+      "column": 7,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/Containers.fs",
+      "line": 73,
+      "name": "WholeChapters"
+    },
+    {
+      "column": 8,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/Containers.fs",
+      "line": 76,
+      "name": "container"
+    },
+    {
+      "column": 8,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/Containers.fs",
+      "line": 77,
+      "name": "units"
+    },
+    {
+      "column": 17,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/Graph.fs",
+      "line": 6,
+      "name": "Forward"
+    },
+    {
+      "column": 27,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/Graph.fs",
+      "line": 6,
+      "name": "Reverse"
+    },
+    {
+      "column": 33,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/Graph.fs",
+      "line": 10,
+      "name": "Id"
+    },
+    {
+      "column": 62,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/Graph.fs",
+      "line": 10,
+      "name": "Label"
+    },
+    {
+      "column": 77,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/Graph.fs",
+      "line": 10,
+      "name": "Summary"
+    },
+    {
+      "column": 6,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/Graph.fs",
+      "line": 14,
+      "name": "Entity"
+    },
+    {
+      "column": 6,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/Graph.fs",
+      "line": 15,
+      "name": "TextUnit"
+    },
+    {
+      "column": 6,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/Graph.fs",
+      "line": 16,
+      "name": "Container"
+    },
+    {
+      "column": 6,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/Graph.fs",
+      "line": 17,
+      "name": "Passage"
+    },
+    {
+      "column": 27,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/Graph.fs",
+      "line": 19,
+      "name": "Subject"
+    },
+    {
+      "column": 45,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/Graph.fs",
+      "line": 19,
+      "name": "Object"
+    },
+    {
+      "column": 45,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/Graph.fs",
+      "line": 21,
+      "name": "Subject"
+    },
+    {
+      "column": 63,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/Graph.fs",
+      "line": 21,
+      "name": "Evidence"
+    },
+    {
+      "column": 6,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/Graph.fs",
+      "line": 25,
+      "name": "Nodes"
+    },
+    {
+      "column": 6,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/Graph.fs",
+      "line": 26,
+      "name": "Justification"
+    },
+    {
+      "column": 6,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/Graph.fs",
+      "line": 42,
+      "name": "Node"
+    },
+    {
+      "column": 6,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/Graph.fs",
+      "line": 43,
+      "name": "Edge"
+    },
+    {
+      "column": 21,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/Graph.fs",
+      "line": 46,
+      "name": "SpecializedNodeKind"
+    },
+    {
+      "column": 43,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/Graph.fs",
+      "line": 46,
+      "name": "NegativeEdgeCount"
+    },
+    {
+      "column": 19,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/Graph.fs",
+      "line": 49,
+      "name": "IllegalEdgeEndpoint"
+    },
+    {
+      "column": 41,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/Graph.fs",
+      "line": 49,
+      "name": "NegativeEdgeCount"
+    },
+    {
+      "column": 7,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/Graph.fs",
+      "line": 51,
+      "name": "Relations"
+    },
+    {
+      "column": 8,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/Graph.fs",
+      "line": 56,
+      "name": "kind"
+    },
+    {
+      "column": 8,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/Graph.fs",
+      "line": 58,
+      "name": "direction"
+    },
+    {
+      "column": 7,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/Graph.fs",
+      "line": 61,
+      "name": "Nodes"
+    },
+    {
+      "column": 8,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/Graph.fs",
+      "line": 72,
+      "name": "kind"
+    },
+    {
+      "column": 7,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/Graph.fs",
+      "line": 74,
+      "name": "Edges"
+    },
+    {
+      "column": 8,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/Graph.fs",
+      "line": 77,
+      "name": "id"
+    },
+    {
+      "column": 8,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/Graph.fs",
+      "line": 78,
+      "name": "kind"
+    },
+    {
+      "column": 8,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/Graph.fs",
+      "line": 79,
+      "name": "ends"
+    },
+    {
+      "column": 8,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/Graph.fs",
+      "line": 80,
+      "name": "label"
+    },
+    {
+      "column": 8,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/Graph.fs",
+      "line": 81,
+      "name": "parentage"
+    },
+    {
+      "column": 8,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/Graph.fs",
+      "line": 82,
+      "name": "votes"
+    },
+    {
+      "column": 8,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/Graph.fs",
+      "line": 83,
+      "name": "narrative"
+    },
+    {
+      "column": 8,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/Graph.fs",
+      "line": 84,
+      "name": "provenance"
+    },
+    {
+      "column": 8,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/Graph.fs",
+      "line": 85,
+      "name": "summary"
+    },
+    {
+      "column": 6,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/History.fs",
+      "line": 11,
+      "name": "Verse"
+    },
+    {
+      "column": 6,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/History.fs",
+      "line": 12,
+      "name": "Passage"
+    },
+    {
+      "column": 6,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/History.fs",
+      "line": 25,
+      "name": "Undated"
+    },
+    {
+      "column": 6,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/History.fs",
+      "line": 26,
+      "name": "Dated"
+    },
+    {
+      "column": 28,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/History.fs",
+      "line": 42,
+      "name": "NotAnEvent"
+    },
+    {
+      "column": 28,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/History.fs",
+      "line": 45,
+      "name": "NotAStory"
+    },
+    {
+      "column": 32,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/History.fs",
+      "line": 48,
+      "name": "DoesNotRecordHistory"
+    },
+    {
+      "column": 25,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/History.fs",
+      "line": 51,
+      "name": "SelfLink"
+    },
+    {
+      "column": 36,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/History.fs",
+      "line": 51,
+      "name": "RepeatedConcurrentEvent"
+    },
+    {
+      "column": 62,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/History.fs",
+      "line": 51,
+      "name": "OrderedAndConcurrent"
+    },
+    {
+      "column": 7,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/History.fs",
+      "line": 53,
+      "name": "History"
+    },
+    {
+      "column": 8,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/History.fs",
+      "line": 62,
+      "name": "event"
+    },
+    {
+      "column": 8,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/History.fs",
+      "line": 64,
+      "name": "storyStep"
+    },
+    {
+      "column": 8,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/History.fs",
+      "line": 66,
+      "name": "eventContext"
+    },
+    {
+      "column": 8,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/History.fs",
+      "line": 68,
+      "name": "accountRun"
+    },
+    {
+      "column": 8,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/History.fs",
+      "line": 69,
+      "name": "accounts"
+    },
+    {
+      "column": 8,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/History.fs",
+      "line": 70,
+      "name": "concurrent"
+    },
+    {
+      "column": 8,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/History.fs",
+      "line": 71,
+      "name": "previous"
+    },
+    {
+      "column": 8,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/History.fs",
+      "line": 72,
+      "name": "next"
+    },
+    {
+      "column": 8,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/History.fs",
+      "line": 73,
+      "name": "node"
+    },
+    {
+      "column": 8,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/History.fs",
+      "line": 74,
+      "name": "storyNode"
+    },
+    {
+      "column": 8,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/History.fs",
+      "line": 75,
+      "name": "dating"
+    },
+    {
+      "column": 8,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/History.fs",
+      "line": 76,
+      "name": "context"
+    },
+    {
+      "column": 8,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/History.fs",
+      "line": 77,
+      "name": "stories"
+    },
+    {
+      "column": 7,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/NonEmpty.fs",
+      "line": 10,
+      "name": "NonEmpty"
+    },
+    {
+      "column": 8,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/NonEmpty.fs",
+      "line": 11,
+      "name": "admit"
+    },
+    {
+      "column": 8,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/NonEmpty.fs",
+      "line": 15,
+      "name": "singleton"
+    },
+    {
+      "column": 8,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/NonEmpty.fs",
+      "line": 16,
+      "name": "create"
+    },
+    {
+      "column": 8,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/NonEmpty.fs",
+      "line": 17,
+      "name": "append"
+    },
+    {
+      "column": 8,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/NonEmpty.fs",
+      "line": 18,
+      "name": "map"
+    },
+    {
+      "column": 8,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/NonEmpty.fs",
+      "line": 19,
+      "name": "toList"
+    },
+    {
+      "column": 8,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/Position.fs",
+      "line": 40,
+      "name": "element"
+    },
+    {
+      "column": 8,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/Positive.fs",
+      "line": 9,
+      "name": "admit"
+    },
+    {
+      "column": 20,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/Rooted.fs",
+      "line": 7,
+      "name": "Expected"
+    },
+    {
+      "column": 20,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/Rooted.fs",
+      "line": 8,
+      "name": "Observed"
+    },
+    {
+      "column": 8,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/Rooted.fs",
+      "line": 17,
+      "name": "map"
+    },
+    {
+      "column": 8,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/Rooted.fs",
+      "line": 19,
+      "name": "map2"
+    },
+    {
+      "column": 8,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/Rooted.fs",
+      "line": 24,
+      "name": "value"
+    },
+    {
+      "column": 25,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/Text.fs",
+      "line": 25,
+      "name": "NegativeOffset"
+    },
+    {
+      "column": 42,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/Text.fs",
+      "line": 25,
+      "name": "ReversedSpan"
+    },
+    {
+      "column": 57,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/Text.fs",
+      "line": 25,
+      "name": "OutsideText"
+    },
+    {
+      "column": 23,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/Text.fs",
+      "line": 28,
+      "name": "AnchorOutsidePart"
+    },
+    {
+      "column": 23,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/Text.fs",
+      "line": 31,
+      "name": "NotATextUnit"
+    },
+    {
+      "column": 38,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/Text.fs",
+      "line": 31,
+      "name": "NegativeEdgeCount"
+    },
+    {
+      "column": 7,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/Text.fs",
+      "line": 33,
+      "name": "TextAnchors"
+    },
+    {
+      "column": 8,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/Text.fs",
+      "line": 36,
+      "name": "target"
+    },
+    {
+      "column": 8,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/Text.fs",
+      "line": 37,
+      "name": "span"
+    },
+    {
+      "column": 8,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/Text.fs",
+      "line": 38,
+      "name": "kind"
+    },
+    {
+      "column": 7,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/Text.fs",
+      "line": 40,
+      "name": "TextBodies"
+    },
+    {
+      "column": 8,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/Text.fs",
+      "line": 43,
+      "name": "body"
+    },
+    {
+      "column": 8,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/Text.fs",
+      "line": 44,
+      "name": "parts"
+    },
+    {
+      "column": 8,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/Text.fs",
+      "line": 45,
+      "name": "text"
+    },
+    {
+      "column": 8,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/Text.fs",
+      "line": 46,
+      "name": "role"
+    },
+    {
+      "column": 8,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/Text.fs",
+      "line": 47,
+      "name": "anchors"
+    },
+    {
+      "column": 7,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/Text.fs",
+      "line": 49,
+      "name": "TextUnits"
+    },
+    {
+      "column": 8,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/Text.fs",
+      "line": 52,
+      "name": "heading"
+    },
+    {
+      "column": 8,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/Text.fs",
+      "line": 54,
+      "name": "id"
+    },
+    {
+      "column": 8,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/Text.fs",
+      "line": 55,
+      "name": "reference"
+    },
+    {
+      "column": 8,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/Text.fs",
+      "line": 56,
+      "name": "label"
+    },
+    {
+      "column": 8,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/Text.fs",
+      "line": 57,
+      "name": "body"
+    },
+    {
+      "column": 8,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/Text.fs",
+      "line": 58,
+      "name": "headings"
+    },
+    {
+      "column": 8,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/Text.fs",
+      "line": 59,
+      "name": "summary"
+    },
+    {
+      "column": 17,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/Time.fs",
+      "line": 10,
+      "name": "Exact"
+    },
+    {
+      "column": 25,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/Time.fs",
+      "line": 10,
+      "name": "Circa"
+    },
+    {
+      "column": 19,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/Time.fs",
+      "line": 15,
+      "name": "YearZero"
+    },
+    {
+      "column": 30,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/Time.fs",
+      "line": 15,
+      "name": "OutsideAtlas"
+    },
+    {
+      "column": 23,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/Time.fs",
+      "line": 18,
+      "name": "ReversedYears"
+    },
+    {
+      "column": 7,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/Time.fs",
+      "line": 20,
+      "name": "Years"
+    },
+    {
+      "column": 8,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/Time.fs",
+      "line": 43,
+      "name": "endpoints"
+    },
+    {
+      "column": 8,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/Time.fs",
+      "line": 44,
+      "name": "node"
+    },
+    {
+      "column": 8,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/Time.fs",
+      "line": 45,
+      "name": "value"
+    },
+    {
+      "column": 8,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/Time.fs",
+      "line": 46,
+      "name": "label"
+    },
+    {
+      "column": 7,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/Time.fs",
+      "line": 48,
+      "name": "Dates"
+    },
+    {
+      "column": 8,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/Time.fs",
+      "line": 49,
+      "name": "dated"
+    },
+    {
+      "column": 8,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/Time.fs",
+      "line": 51,
+      "name": "span"
+    },
+    {
+      "column": 8,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/Time.fs",
+      "line": 52,
+      "name": "precision"
+    },
+    {
+      "column": 25,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/YearReading.fs",
+      "line": 13,
+      "name": "NegativeFacetCount"
+    },
+    {
+      "column": 26,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/YearReading.fs",
+      "line": 16,
+      "name": "YearOutsideSpan"
+    },
+    {
+      "column": 44,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/YearReading.fs",
+      "line": 16,
+      "name": "UnorderedYears"
+    },
+    {
+      "column": 61,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/YearReading.fs",
+      "line": 16,
+      "name": "RepeatedYear"
+    },
+    {
+      "column": 7,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/YearReading.fs",
+      "line": 18,
+      "name": "YearReadings"
+    },
+    {
+      "column": 8,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/YearReading.fs",
+      "line": 23,
+      "name": "officeTerm"
+    },
+    {
+      "column": 8,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/YearReading.fs",
+      "line": 25,
+      "name": "year"
+    },
+    {
+      "column": 8,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/YearReading.fs",
+      "line": 26,
+      "name": "counts"
+    },
+    {
+      "column": 8,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/YearReading.fs",
+      "line": 27,
+      "name": "span"
+    },
+    {
+      "column": 8,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/YearReading.fs",
+      "line": 28,
+      "name": "years"
+    },
+    {
+      "column": 8,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/YearReading.fs",
+      "line": 29,
+      "name": "person"
+    },
+    {
+      "column": 8,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/YearReading.fs",
+      "line": 30,
+      "name": "office"
+    },
+    {
+      "column": 8,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Exploration/Explore.fs",
+      "line": 17,
+      "name": "map"
+    },
+    {
+      "column": 13,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Exploration/Explore.fs",
+      "line": 60,
+      "name": "Return"
+    },
+    {
+      "column": 23,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Exploration/Focus.fs",
+      "line": 18,
+      "name": "WrongPosition"
+    },
+    {
+      "column": 39,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Exploration/Focus.fs",
+      "line": 18,
+      "name": "ChangedRoot"
+    },
+    {
+      "column": 77,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Exploration/Focus.fs",
+      "line": 18,
+      "name": "OversizedFrontier"
+    },
+    {
+      "column": 7,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Exploration/Focus.fs",
+      "line": 24,
+      "name": "Frontiers"
+    },
+    {
+      "column": 8,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Exploration/Focus.fs",
+      "line": 25,
+      "name": "capacity"
+    },
+    {
+      "column": 8,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Exploration/Focus.fs",
+      "line": 26,
+      "name": "empty"
+    },
+    {
+      "column": 8,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Exploration/Focus.fs",
+      "line": 30,
+      "name": "focus"
+    },
+    {
+      "column": 8,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Exploration/Focus.fs",
+      "line": 31,
+      "name": "windows"
+    },
+    {
+      "column": 42,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Paging/NeighbourWindow.fs",
+      "line": 9,
+      "name": "Edge"
+    },
+    {
+      "column": 55,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Paging/NeighbourWindow.fs",
+      "line": 9,
+      "name": "Position"
+    },
+    {
+      "column": 10,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Paging/NeighbourWindow.fs",
+      "line": 14,
+      "name": "Entries"
+    },
+    {
+      "column": 10,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Paging/NeighbourWindow.fs",
+      "line": 15,
+      "name": "Previous"
+    },
+    {
+      "column": 10,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Paging/NeighbourWindow.fs",
+      "line": 16,
+      "name": "Next"
+    },
+    {
+      "column": 35,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Paging/NeighbourWindow.fs",
+      "line": 18,
+      "name": "PageSize"
+    },
+    {
+      "column": 55,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Paging/NeighbourWindow.fs",
+      "line": 18,
+      "name": "WindowSize"
+    },
+    {
+      "column": 32,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Paging/NeighbourWindow.fs",
+      "line": 28,
+      "name": "WindowSmallerThanPage"
+    },
+    {
+      "column": 7,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Paging/NeighbourWindow.fs",
+      "line": 30,
+      "name": "NeighbourPages"
+    },
+    {
+      "column": 8,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Paging/NeighbourWindow.fs",
+      "line": 33,
+      "name": "key"
+    },
+    {
+      "column": 8,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Paging/NeighbourWindow.fs",
+      "line": 34,
+      "name": "cacheKey"
+    },
+    {
+      "column": 7,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Paging/NeighbourWindow.fs",
+      "line": 36,
+      "name": "Neighbours"
+    },
+    {
+      "column": 8,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Paging/NeighbourWindow.fs",
+      "line": 39,
+      "name": "empty"
+    },
+    {
+      "column": 8,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Paging/NeighbourWindow.fs",
+      "line": 53,
+      "name": "key"
+    },
+    {
+      "column": 8,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Paging/NeighbourWindow.fs",
+      "line": 54,
+      "name": "root"
+    },
+    {
+      "column": 7,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Paging/NeighbourWindow.fs",
+      "line": 56,
+      "name": "NeighbourKeys"
+    },
+    {
+      "column": 8,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Paging/NeighbourWindow.fs",
+      "line": 57,
+      "name": "at"
+    },
+    {
+      "column": 8,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Paging/NeighbourWindow.fs",
+      "line": 59,
+      "name": "page"
+    },
+    {
+      "column": 6,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Paging/PageCache.fs",
+      "line": 7,
+      "name": "Reading"
+    },
+    {
+      "column": 6,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Paging/PageCache.fs",
+      "line": 8,
+      "name": "Neighbours"
+    },
+    {
+      "column": 6,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Paging/PageCache.fs",
+      "line": 12,
+      "name": "Reading"
+    },
+    {
+      "column": 6,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Paging/PageCache.fs",
+      "line": 13,
+      "name": "Neighbours"
+    },
+    {
+      "column": 17,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Paging/PageCache.fs",
+      "line": 24,
+      "name": "Put"
+    },
+    {
+      "column": 17,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Paging/PageCache.fs",
+      "line": 28,
+      "name": "Lookup"
+    },
+    {
+      "column": 17,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Paging/PageCache.fs",
+      "line": 33,
+      "name": "Rebase"
+    },
+    {
+      "column": 17,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Paging/PageCache.fs",
+      "line": 37,
+      "name": "Root"
+    },
+    {
+      "column": 17,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Paging/PageCache.fs",
+      "line": 38,
+      "name": "Capacity"
+    },
+    {
+      "column": 17,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Paging/PageCache.fs",
+      "line": 39,
+      "name": "Entries"
+    },
+    {
+      "column": 18,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Paging/PageCache.fs",
+      "line": 52,
+      "name": "Page"
+    },
+    {
+      "column": 18,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Paging/PageCache.fs",
+      "line": 53,
+      "name": "Cache"
+    },
+    {
+      "column": 6,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Paging/ReadingWindow.fs",
+      "line": 27,
+      "name": "Paged"
+    },
+    {
+      "column": 6,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Paging/ReadingWindow.fs",
+      "line": 28,
+      "name": "Whole"
+    },
+    {
+      "column": 28,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Paging/ReadingWindow.fs",
+      "line": 31,
+      "name": "OversizedPage"
+    },
+    {
+      "column": 44,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Paging/ReadingWindow.fs",
+      "line": 31,
+      "name": "EmptyContinuation"
+    },
+    {
+      "column": 6,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Paging/ReadingWindow.fs",
+      "line": 35,
+      "name": "WrongQuery"
+    },
+    {
+      "column": 6,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Paging/ReadingWindow.fs",
+      "line": 36,
+      "name": "WrongCursor"
+    },
+    {
+      "column": 6,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Paging/ReadingWindow.fs",
+      "line": 37,
+      "name": "OversizedPage"
+    },
+    {
+      "column": 6,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Paging/ReadingWindow.fs",
+      "line": 38,
+      "name": "EmptyContinuation"
+    },
+    {
+      "column": 6,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Paging/ReadingWindow.fs",
+      "line": 39,
+      "name": "ChangedRoot"
+    },
+    {
+      "column": 7,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Paging/ReadingWindow.fs",
+      "line": 41,
+      "name": "ReadingPages"
+    },
+    {
+      "column": 8,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Paging/ReadingWindow.fs",
+      "line": 44,
+      "name": "key"
+    },
+    {
+      "column": 8,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Paging/ReadingWindow.fs",
+      "line": 45,
+      "name": "cacheKey"
+    },
+    {
+      "column": 8,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Paging/ReadingWindow.fs",
+      "line": 46,
+      "name": "units"
+    },
+    {
+      "column": 8,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Paging/ReadingWindow.fs",
+      "line": 47,
+      "name": "before"
+    },
+    {
+      "column": 8,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Paging/ReadingWindow.fs",
+      "line": 48,
+      "name": "after"
+    },
+    {
+      "column": 7,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Paging/ReadingWindow.fs",
+      "line": 50,
+      "name": "ReadingWindows"
+    },
+    {
+      "column": 8,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Paging/ReadingWindow.fs",
+      "line": 53,
+      "name": "empty"
+    },
+    {
+      "column": 8,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Paging/ReadingWindow.fs",
+      "line": 67,
+      "name": "key"
+    },
+    {
+      "column": 8,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Paging/ReadingWindow.fs",
+      "line": 68,
+      "name": "root"
+    },
+    {
+      "column": 8,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Paging/ReadingWindow.fs",
+      "line": 69,
+      "name": "pageSize"
+    },
+    {
+      "column": 8,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Paging/ReadingWindow.fs",
+      "line": 70,
+      "name": "windowSize"
+    },
+    {
+      "column": 7,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Paging/ReadingWindow.fs",
+      "line": 72,
+      "name": "ReadingKeys"
+    },
+    {
+      "column": 8,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Paging/ReadingWindow.fs",
+      "line": 73,
+      "name": "container"
+    },
+    {
+      "column": 8,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Paging/ReadingWindow.fs",
+      "line": 74,
+      "name": "page"
+    },
+    {
+      "column": 5,
+      "file": "/home/donovan/w/CX-FSHARP/client-fsharp/View.fs",
+      "line": 8,
+      "name": "AppView"
+    }
+  ]
+}

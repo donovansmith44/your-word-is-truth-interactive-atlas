@@ -16,7 +16,7 @@ module rec Runtime =
         | ReadText(corpus, request, read) -> Cmd.OfAsync.perform (Api.read http CancellationToken.None) read (fun answer -> readingMessage corpus (ReadingMessage.TextLoaded(request, answer)))
         | ReadSources request -> Cmd.OfAsync.perform (Api.read http CancellationToken.None) (Reads.sources()) (fun answer -> Page(SurfaceMessage.Sources(SourcesMessage.Loaded(request, answer))))
         | ReadOpening(request, position) ->
-            Cmd.OfAsync.perform (Explore.beginAt (Graph.explorer http)) position (fun answer -> FocusLoaded(request, answer))
+            Cmd.OfAsync.perform (fun position -> Explore.resume (GraphRead.explorer http) position []) position (fun answer -> FocusLoaded(request, answer))
         | WalkFocus(request, trail, traversal) ->
             Cmd.OfAsync.perform (walk http trail) traversal (fun answer -> FocusLoaded(request, answer))
 
@@ -26,7 +26,11 @@ module rec Runtime =
             | Traversal.Follow link -> Explore.follow link
             | Traversal.Back -> Explore.back
             | Traversal.Renew -> Explore.renew
-        let! answer = Explore.run (Graph.explorer http) trail action
+        let composed = explore {
+            let! _ = action
+            return! Explore.here
+        }
+        let! answer = Explore.run (GraphRead.explorer http) trail composed
         return answer |> Result.map snd
     }
 

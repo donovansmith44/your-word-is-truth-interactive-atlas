@@ -2,23 +2,23 @@ namespace BibleAtlas.FSharp.Domain
 
 open BibleAtlas.FSharp.Contract
 
-type Passage<'nodeId, 'reference, 'mark> =
-    private { Id: 'nodeId; Span: Endpoints<'reference>; Mark: 'mark; Label: string }
+type Passage<'nodeId, 'mark> =
+    private { Id: 'nodeId; Span: Endpoints<BibleRef>; Mark: 'mark; Label: string }
 
-type BibleContainer<'nodeId, 'reference, 'level> =
+type BibleContainer<'nodeId, 'level> =
     private
-        { Id: 'nodeId; Level: 'level; Label: string; Reference: 'reference
+        { Id: 'nodeId; Level: 'level; Label: string; Reference: BibleRef
           Children: 'nodeId list; Previous: 'nodeId option; Next: 'nodeId option }
 
-type ConcordContainer<'nodeId, 'reference, 'level> =
+type ConcordContainer<'nodeId, 'level> =
     private
-        { Id: 'nodeId; Level: 'level; Label: string; Reference: 'reference
+        { Id: 'nodeId; Level: 'level; Label: string; Reference: ConcordRef
           Children: 'nodeId list; Previous: 'nodeId option; Next: 'nodeId option }
 
 [<RequireQualifiedAccess>]
-type Container<'nodeId, 'reference, 'level> =
-    | Bible of BibleContainer<'nodeId, 'reference, 'level>
-    | Concord of ConcordContainer<'nodeId, 'reference, 'level>
+type Container<'nodeId, 'level> =
+    | Bible of BibleContainer<'nodeId, 'level>
+    | Concord of ConcordContainer<'nodeId, 'level>
 
 type WholeRead<'nodeId> = private WholeRead of container: 'nodeId
 
@@ -28,8 +28,8 @@ type ContainerNavigation<'container, 'nodeId> =
       Next: 'container -> 'nodeId option
       WholeRead: 'container -> WholeRead<'nodeId> option }
 
-type WholeChapter<'nodeId, 'reference, 'partRole> =
-    private { Container: 'nodeId; Units: NonEmpty<TextUnit<'nodeId, 'reference, 'partRole>> }
+type WholeChapter<'nodeId, 'partRole> =
+    private { Container: 'nodeId; Units: NonEmpty<TextUnit<'nodeId, 'partRole>> }
 
 [<RequireQualifiedAccess>]
 type PassageFailure = OneUnit | ReversedUnits
@@ -41,37 +41,37 @@ type ContainerFailure = NotAContainer | WrongCorpus
 type WholeChapterFailure = EmptyRead | IncompleteRead
 
 module Passages =
-    let admit (id: 'nodeId) (span: Endpoints<'reference>) (mark: 'mark) (label: string) (servedOrder: 'reference -> 'reference -> int) : Result<Passage<'nodeId, 'reference, 'mark>, PassageFailure> =
+    let admit (id: 'nodeId) (span: Endpoints<BibleRef>) (mark: 'mark) (label: string) (servedOrder: BibleRef -> BibleRef -> int) : Result<Passage<'nodeId, 'mark>, PassageFailure> =
         DomainSkeleton.pending "Passages.admit"
-    let contains (servedOrder: 'reference -> 'reference -> int) (passage: Passage<'nodeId, 'reference, 'mark>) (reference: 'reference) : bool =
+    let contains (servedOrder: BibleRef -> BibleRef -> int) (passage: Passage<'nodeId, 'mark>) (reference: BibleRef) : bool =
         DomainSkeleton.pending "Passages.contains"
-    let id (passage: Passage<'nodeId, 'reference, 'mark>) : 'nodeId = passage.Id
-    let span (passage: Passage<'nodeId, 'reference, 'mark>) : Endpoints<'reference> = passage.Span
-    let mark (passage: Passage<'nodeId, 'reference, 'mark>) : 'mark = passage.Mark
-    let label (passage: Passage<'nodeId, 'reference, 'mark>) : string = passage.Label
+    let id (passage: Passage<'nodeId, 'mark>) : 'nodeId = passage.Id
+    let span (passage: Passage<'nodeId, 'mark>) : Endpoints<BibleRef> = passage.Span
+    let mark (passage: Passage<'nodeId, 'mark>) : 'mark = passage.Mark
+    let label (passage: Passage<'nodeId, 'mark>) : string = passage.Label
 
 module BibleContainers =
-    let admit (kind: NodeKind) (corpus: Corpus) (id: 'nodeId) (reference: 'reference) (level: 'level) (label: string) (children: 'nodeId list) (previous: 'nodeId option) (next: 'nodeId option) : Result<BibleContainer<'nodeId, 'reference, 'level>, ContainerFailure> =
+    let admit (kind: NodeKind) (corpus: Corpus) (id: 'nodeId) (reference: BibleRef) (level: 'level) (label: string) (children: 'nodeId list) (previous: 'nodeId option) (next: 'nodeId option) : Result<BibleContainer<'nodeId, 'level>, ContainerFailure> =
         DomainSkeleton.pending "BibleContainers.admit"
-    let navigation () : ContainerNavigation<BibleContainer<'nodeId, 'reference, 'level>, 'nodeId> =
+    let navigation () : ContainerNavigation<BibleContainer<'nodeId, 'level>, 'nodeId> =
         DomainSkeleton.pending "BibleContainers.navigation"
-    let id (container: BibleContainer<'nodeId, 'reference, 'level>) : 'nodeId = container.Id
-    let reference (container: BibleContainer<'nodeId, 'reference, 'level>) : 'reference = container.Reference
-    let level (container: BibleContainer<'nodeId, 'reference, 'level>) : 'level = container.Level
-    let label (container: BibleContainer<'nodeId, 'reference, 'level>) : string = container.Label
+    let id (container: BibleContainer<'nodeId, 'level>) : 'nodeId = container.Id
+    let reference (container: BibleContainer<'nodeId, 'level>) : BibleRef = container.Reference
+    let level (container: BibleContainer<'nodeId, 'level>) : 'level = container.Level
+    let label (container: BibleContainer<'nodeId, 'level>) : string = container.Label
 
 module ConcordContainers =
-    let admit (kind: NodeKind) (corpus: Corpus) (id: 'nodeId) (reference: 'reference) (level: 'level) (label: string) (children: 'nodeId list) (previous: 'nodeId option) (next: 'nodeId option) : Result<ConcordContainer<'nodeId, 'reference, 'level>, ContainerFailure> =
+    let admit (kind: NodeKind) (corpus: Corpus) (id: 'nodeId) (reference: ConcordRef) (level: 'level) (label: string) (children: 'nodeId list) (previous: 'nodeId option) (next: 'nodeId option) : Result<ConcordContainer<'nodeId, 'level>, ContainerFailure> =
         DomainSkeleton.pending "ConcordContainers.admit"
-    let navigation () : ContainerNavigation<ConcordContainer<'nodeId, 'reference, 'level>, 'nodeId> =
+    let navigation () : ContainerNavigation<ConcordContainer<'nodeId, 'level>, 'nodeId> =
         DomainSkeleton.pending "ConcordContainers.navigation"
-    let id (container: ConcordContainer<'nodeId, 'reference, 'level>) : 'nodeId = container.Id
-    let reference (container: ConcordContainer<'nodeId, 'reference, 'level>) : 'reference = container.Reference
-    let level (container: ConcordContainer<'nodeId, 'reference, 'level>) : 'level = container.Level
-    let label (container: ConcordContainer<'nodeId, 'reference, 'level>) : string = container.Label
+    let id (container: ConcordContainer<'nodeId, 'level>) : 'nodeId = container.Id
+    let reference (container: ConcordContainer<'nodeId, 'level>) : ConcordRef = container.Reference
+    let level (container: ConcordContainer<'nodeId, 'level>) : 'level = container.Level
+    let label (container: ConcordContainer<'nodeId, 'level>) : string = container.Label
 
 module WholeChapters =
-    let admit (container: 'nodeId) (units: TextUnit<'nodeId, 'reference, 'partRole> list) (complete: bool) : Result<WholeChapter<'nodeId, 'reference, 'partRole>, WholeChapterFailure> =
+    let admit (container: 'nodeId) (units: TextUnit<'nodeId, 'partRole> list) (complete: bool) : Result<WholeChapter<'nodeId, 'partRole>, WholeChapterFailure> =
         DomainSkeleton.pending "WholeChapters.admit"
-    let container (whole: WholeChapter<'nodeId, 'reference, 'partRole>) : 'nodeId = whole.Container
-    let units (whole: WholeChapter<'nodeId, 'reference, 'partRole>) : NonEmpty<TextUnit<'nodeId, 'reference, 'partRole>> = whole.Units
+    let container (whole: WholeChapter<'nodeId, 'partRole>) : 'nodeId = whole.Container
+    let units (whole: WholeChapter<'nodeId, 'partRole>) : NonEmpty<TextUnit<'nodeId, 'partRole>> = whole.Units

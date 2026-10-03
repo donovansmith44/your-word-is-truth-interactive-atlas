@@ -10,11 +10,11 @@ type RelationDirection = private Directed of EdgeKind * Direction | Symmetric of
 type Entity<'nodeId> = private { Id: 'nodeId; Kind: NodeKind; Label: string; Summary: Map<EdgeKind, int> }
 
 [<RequireQualifiedAccess>]
-type Node<'nodeId, 'reference, 'partRole, 'level, 'mark> =
+type Node<'nodeId, 'partRole, 'level, 'mark> =
     | Entity of Entity<'nodeId>
-    | TextUnit of TextUnit<'nodeId, 'reference, 'partRole>
-    | Container of Container<'nodeId, 'reference, 'level>
-    | Passage of Passage<'nodeId, 'reference, 'mark>
+    | TextUnit of TextUnit<'nodeId, 'partRole>
+    | Container of Container<'nodeId, 'level>
+    | Passage of Passage<'nodeId, 'mark>
 
 type NodeEnds<'nodeId> = { Subject: 'nodeId; Object: 'nodeId }
 
@@ -25,7 +25,7 @@ type EdgeEnds<'nodeId, 'edgeId> =
     | Nodes of NodeEnds<'nodeId>
     | Justification of JustificationEnds<'nodeId, 'edgeId>
 
-type Edge<'nodeId, 'edgeId, 'provenance> =
+type Edge<'nodeId, 'edgeId> =
     private
         { Id: 'edgeId
           Kind: EdgeKind
@@ -34,13 +34,13 @@ type Edge<'nodeId, 'edgeId, 'provenance> =
           Parentage: Parentage option
           Votes: int option
           Narrative: NarrativeId option
-          Provenance: 'provenance option
+          Provenance: string option
           Summary: Map<EdgeKind, int> }
 
 [<RequireQualifiedAccess>]
-type Element<'nodeId, 'edgeId, 'reference, 'partRole, 'level, 'mark, 'provenance> =
-    | Node of Node<'nodeId, 'reference, 'partRole, 'level, 'mark>
-    | Edge of Edge<'nodeId, 'edgeId, 'provenance>
+type Element<'nodeId, 'edgeId, 'partRole, 'level, 'mark> =
+    | Node of Node<'nodeId, 'partRole, 'level, 'mark>
+    | Edge of Edge<'nodeId, 'edgeId>
 
 [<RequireQualifiedAccess>]
 type EntityFailure = SpecializedNodeKind | NegativeEdgeCount
@@ -61,9 +61,9 @@ module Relations =
 module Nodes =
     let admitEntity (id: 'nodeId) (kind: NodeKind) (label: string) (summary: Map<EdgeKind, int>) : Result<Entity<'nodeId>, EntityFailure> =
         DomainSkeleton.pending "Nodes.admitEntity"
-    let id (node: Node<'nodeId, 'reference, 'partRole, 'level, 'mark>) : 'nodeId =
+    let id (node: Node<'nodeId, 'partRole, 'level, 'mark>) : 'nodeId =
         DomainSkeleton.pending "Nodes.id"
-    let label (node: Node<'nodeId, 'reference, 'partRole, 'level, 'mark>) : string =
+    let label (node: Node<'nodeId, 'partRole, 'level, 'mark>) : string =
         DomainSkeleton.pending "Nodes.label"
     let entityKinds () : NonEmpty<NodeKind> =
         DomainSkeleton.pending "Nodes.entityKinds"
@@ -72,14 +72,14 @@ module Nodes =
     let kind (entity: Entity<'nodeId>) : NodeKind = entity.Kind
 
 module Edges =
-    let admit (id: 'edgeId) (kind: EdgeKind) (ends: EdgeEnds<'nodeId, 'edgeId>) (label: string) (parentage: Parentage option) (votes: int option) (narrative: NarrativeId option) (provenance: 'provenance option) (summary: Map<EdgeKind, int>) : Result<Edge<'nodeId, 'edgeId, 'provenance>, EdgeFailure> =
+    let admit (id: 'edgeId) (kind: EdgeKind) (ends: EdgeEnds<'nodeId, 'edgeId>) (label: string) (parentage: Parentage option) (votes: int option) (narrative: NarrativeId option) (provenance: string option) (summary: Map<EdgeKind, int>) : Result<Edge<'nodeId, 'edgeId>, EdgeFailure> =
         DomainSkeleton.pending "Edges.admit"
-    let id (edge: Edge<'nodeId, 'edgeId, 'provenance>) : 'edgeId = edge.Id
-    let kind (edge: Edge<'nodeId, 'edgeId, 'provenance>) : EdgeKind = edge.Kind
-    let ends (edge: Edge<'nodeId, 'edgeId, 'provenance>) : EdgeEnds<'nodeId, 'edgeId> = edge.Ends
-    let label (edge: Edge<'nodeId, 'edgeId, 'provenance>) : string = edge.Label
-    let parentage (edge: Edge<'nodeId, 'edgeId, 'provenance>) : Parentage option = edge.Parentage
-    let votes (edge: Edge<'nodeId, 'edgeId, 'provenance>) : int option = edge.Votes
-    let narrative (edge: Edge<'nodeId, 'edgeId, 'provenance>) : NarrativeId option = edge.Narrative
-    let provenance (edge: Edge<'nodeId, 'edgeId, 'provenance>) : 'provenance option = edge.Provenance
-    let summary (edge: Edge<'nodeId, 'edgeId, 'provenance>) : Map<EdgeKind, int> = edge.Summary
+    let id (edge: Edge<'nodeId, 'edgeId>) : 'edgeId = edge.Id
+    let kind (edge: Edge<'nodeId, 'edgeId>) : EdgeKind = edge.Kind
+    let ends (edge: Edge<'nodeId, 'edgeId>) : EdgeEnds<'nodeId, 'edgeId> = edge.Ends
+    let label (edge: Edge<'nodeId, 'edgeId>) : string = edge.Label
+    let parentage (edge: Edge<'nodeId, 'edgeId>) : Parentage option = edge.Parentage
+    let votes (edge: Edge<'nodeId, 'edgeId>) : int option = edge.Votes
+    let narrative (edge: Edge<'nodeId, 'edgeId>) : NarrativeId option = edge.Narrative
+    let provenance (edge: Edge<'nodeId, 'edgeId>) : string option = edge.Provenance
+    let summary (edge: Edge<'nodeId, 'edgeId>) : Map<EdgeKind, int> = edge.Summary

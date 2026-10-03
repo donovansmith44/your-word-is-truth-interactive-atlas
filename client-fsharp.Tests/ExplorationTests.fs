@@ -35,7 +35,7 @@ let ``the exploration computation expression composes reads without losing the t
 
 [<Fact>]
 let ``an exploration failure short circuits later reads and preserves no false arrival`` () =
-    let action = Explore.follow { Kind = EdgeKind.Contains; Target = Resolved.position start } |> Explore.bind (fun _ -> Explore.result 7)
+    let action = Explore.follow { Kind = EdgeKind.Contains; Target = Explorable.position start } |> Explore.bind (fun _ -> Explore.result 7)
     Assert.Equal(Error(Contract "unexpected read"), run action)
 
 [<Fact>]
@@ -46,17 +46,17 @@ let ``Back records the dual step while cancelling the visible breadcrumb`` () =
     let expectedTrail = outward |> Trail.follow { Kind = EdgeKind.MemberOf; Target = start }
     Assert.Equal(Ok(start, expectedTrail), actual)
     Assert.Equal<Step list>([], Trail.breadcrumb expectedTrail)
-    Assert.Equal<Resolved list>([start; target; start], Trail.walked expectedTrail)
+    Assert.Equal<Explorable list>([start; target; start], Trail.walked expectedTrail)
 
 [<Fact>]
 let ``Resume resolves the entire saved journey in one read and retains step kinds`` () =
     let target = node "Person:target" "root"
     let mutable calls = []
     let resolver = { Resolve = fun asked -> async { calls <- asked :: calls; return Ok [start; target] } }
-    let saved: Link list = [{ Kind = EdgeKind.Contains; Target = Resolved.position target }]
-    let actual = Explore.resume resolver (Resolved.position start) saved |> Async.RunSynchronously
+    let saved: Link list = [{ Kind = EdgeKind.Contains; Target = Explorable.position target }]
+    let actual = Explore.resume resolver (Explorable.position start) saved |> Async.RunSynchronously
     Assert.Equal(Ok(Trail.beginAt start |> Trail.follow { Kind = EdgeKind.Contains; Target = target }), actual)
-    Assert.Equal<PositionRef list list>([[Resolved.position start; Resolved.position target]], List.rev calls)
+    Assert.Equal<PositionRef list list>([[Explorable.position start; Explorable.position target]], List.rev calls)
 
 [<Fact>]
 let ``a resumed journey refuses wrong cardinality and mixed artifact roots`` () =
@@ -66,7 +66,7 @@ let ``a resumed journey refuses wrong cardinality and mixed artifact roots`` () 
 
 [<Fact>]
 let ``a missing element cannot become a resolved position`` () =
-    Assert.Equal(Error(Contract "the element read names nothing for Person:absent"), Resolved.ofElement "root" (Element.Missing { Id = "Person:absent" }))
+    Assert.Equal(Error(Contract "the element read names nothing for Person:absent"), Explorable.ofElement "root" (Element.Missing { Id = "Person:absent" }))
 
 [<Fact>]
 let ``every generated edge kind has a dual and duality is involutive`` () =
@@ -80,13 +80,13 @@ let ``every generated edge kind has a dual and duality is involutive`` () =
 
 [<Fact>]
 let ``a node record cannot be stamped with a different element page root`` () =
-    let served = Resolved.element start
-    Assert.Equal(Error(ArtifactMoved("page-root", "root")), Resolved.ofElement "page-root" served)
+    let served = Explorable.element start
+    Assert.Equal(Error(ArtifactMoved("page-root", "root")), Explorable.ofElement "page-root" served)
 let run<'a> (action: Explore<'a>) : Result<'a * Trail, Failure> = Explore.run explorer trail action |> Async.RunSynchronously
 let explorer = { Resolve = fun _ -> async { return Error(Contract "unexpected read") } }
-let node (id: string) (root: string) : Resolved =
+let node (id: string) (root: string) : Explorable =
     let record = { Id = id; Kind = NodeKind.Person; Label = id; Provenance = "test"; EdgeSummary = []; Version = root; Book = None; Catechism = None; Description = None; Era = None; Event = None; Map = None; Person = None; Place = None; Polity = None; Text = None }
-    match Resolved.ofElement root (Element.Node { Node = record }) with
+    match Explorable.ofElement root (Element.Node { Node = record }) with
     | Ok node -> node
     | Error failure -> failwithf "%A" failure
 

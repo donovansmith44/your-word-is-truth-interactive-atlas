@@ -10,13 +10,14 @@ required = [
     'Domain/Positive.fs', 'Domain/NonEmpty.fs', 'Domain/Rooted.fs',
     'Domain/Skeleton.fs', 'Domain/Time.fs', 'Domain/Text.fs',
     'Domain/Containers.fs', 'Domain/Graph.fs', 'Domain/History.fs',
-    'Domain/YearReading.fs', 'Domain/Position.fs',
+    'Domain/YearReading.fs',
     'Paging/ReadingWindow.fs', 'Paging/NeighbourWindow.fs', 'Paging/PageCache.fs',
-    'Exploration/Trail.fs', 'Exploration/Focus.fs',
     'Admission/ArrayIndex.fs', 'Admission/DocumentPosition.fs',
     'Admission/Coordinates.fs', 'Admission/HttpUrl.fs', 'Admission/Scalars.fs',
     'Admission/TextSpans.fs', 'Admission/Paths.fs', 'Admission/WireFailure.fs',
-    'Admission/ReadFailure.fs',
+    'Admission/ReadFailure.fs', 'Admission/Failure.fs',
+    'Domain/Position.fs', 'Exploration/Focus.fs', 'Exploration/Trail.fs',
+    'Exploration/Explore.fs', 'Admission/Json.fs', 'Admission/GraphRead.fs',
 ]
 compile_files = [item.attrib['Include'] for item in ET.parse(core / 'BibleAtlas.FSharp.Core.fsproj').iter('Compile')]
 failures = []
