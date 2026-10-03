@@ -227,7 +227,6 @@ fn place_detail(place: &Place, node_id: &AnyNodeId, data: &AtlasData, graph: &Gr
         lon: place.lon,
         display_name: default.display_name.clone(),
         canonical_name: default.canonical_name.clone(),
-        blurb: default.blurb.clone(),
         established: history.and_then(|h| h.established.as_ref()).map(|claim| date_claim(claim, snap)).transpose()?,
         destroyed: history.and_then(|h| h.destroyed.as_ref()).map(|claim| date_claim(claim, snap)).transpose()?,
     })

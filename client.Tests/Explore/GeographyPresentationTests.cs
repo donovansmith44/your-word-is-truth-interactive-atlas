@@ -16,7 +16,6 @@ public sealed class GeographyPresentationTests
     private const string Bethel = "Place:bethel-1";
     private const string BethelLabel = "Bethel";
     private const string BethelCanonical = "Bethel 1";
-    private const string BethelBlurb = "Where Jacob dreamed of a ladder.";
     private const double BethelLat = 31.93;
     private const double BethelLon = 35.22;
     private const string Philistia = "Polity:philistia";
@@ -143,12 +142,12 @@ public sealed class GeographyPresentationTests
     }
 
     [Fact]
-    public async Task A_place_card_has_no_blurb()
+    public async Task A_place_card_lists_only_the_served_fields()
     {
         // Arrange
         var (presenter, bethel) = Serve(ServedGraph.Card(NodeKind.Place, Bethel, BethelLabel) with
         {
-            Place = ServedGraph.PlaceAt(BethelLabel, BethelLat, BethelLon) with { CanonicalName = BethelCanonical, Blurb = BethelBlurb },
+            Place = ServedGraph.PlaceAt(BethelLabel, BethelLat, BethelLon) with { CanonicalName = BethelCanonical },
         });
 
         // Act

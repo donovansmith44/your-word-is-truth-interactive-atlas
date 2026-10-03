@@ -34,6 +34,12 @@ hatch — and adding one to a previously-green scenario is classified
 
 ---
 
+- **0.25.0** (A-NOBLURB, a place has no blurb) — **MINOR under the 0.x policy (MAJOR class: blessed fixtures moved).**
+  The served place record carries no blurb and the artifact compiles none (core loses
+  `place_history_blurb` and `place_default.blurb`). Re-blessed: `contract` and `graph-vocabulary`
+  (`section_schema_version` 24 -> 25), and every fixture carrying the version root; the http and cli
+  pacts carry them too. No scenario or projection changed.
+
 - **0.24.0** (FOCUS-2 Task 6, `/api/verse` is gone) — **MINOR under the 0.x policy (MAJOR class: a scenario removed).**
   The `detail-routes` scenario "a verse" (`GET /api/verse/JHN.3.16`) and its fixture `verse-jhn-3-16`
   are removed with the route: a verse is read as an element (`/api/node/{id}` carries its text) and its

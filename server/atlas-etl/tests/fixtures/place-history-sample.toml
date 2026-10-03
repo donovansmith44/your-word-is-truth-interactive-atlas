@@ -13,12 +13,6 @@ id = "bethel-1"
   to = 100
   verses = ["GEN.28.19"]
 
-  [[place.blurb]]
-  text = "A patriarchal altar site."
-  from = -2091
-  to = -1877
-  breadth = "era"
-
 [[place]]
 id = "jerusalem"
 

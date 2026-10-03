@@ -120,7 +120,7 @@ internal sealed class ServedGraph : IExplorableClient
     public static PolityDetail Reign(TimeRange reign) => new(reign: reign);
 
     public static PlaceDetail PlaceAt(string displayName, double lat, double lon) =>
-        new(blurb: null, canonicalName: null, destroyed: null, displayName: displayName, established: null, lat: lat, lon: lon);
+        new(canonicalName: null, destroyed: null, displayName: displayName, established: null, lat: lat, lon: lon);
 
     public static TimeRange Range(Year from, Year to, string label) => new(from: from, label: label, to: to);
 

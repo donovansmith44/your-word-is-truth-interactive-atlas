@@ -47,7 +47,6 @@ fn the_real_sidecars_fold_losslessly_into_twenty_one_tables() {
     );
     assert_eq!(n("place_history"), sc.atlas.place_history.len());
     assert_eq!(n("place_history_name"), sc.atlas.place_history.values().map(|h| h.names.len()).sum::<usize>());
-    assert_eq!(n("place_history_blurb"), sc.atlas.place_history.values().map(|h| h.blurbs.len()).sum::<usize>());
     let claim_verses = |c: &Option<atlas_core::data::PlaceDateClaim>| c.as_ref().map(|c| c.verses.len()).unwrap_or(0);
     assert_eq!(
         n("place_history_verse"),

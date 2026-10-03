@@ -429,25 +429,6 @@ pub fn run_place_history(history: &[PlaceHistory], place_ids: &HashSet<&str>, ve
             }
         }
 
-        let mut blurb_ranges_by_breadth: HashMap<&str, Vec<atlas_core::time::TimeRange>> = HashMap::new();
-        for b in &h.blurbs {
-            let ctx = format!("place-history '{}' blurb ({})", h.id, b.breadth);
-            check_bounds(b.when.from_year, b.when.to_year, &ctx, &mut errors);
-            if b.breadth != "era" && b.breadth != "broad" {
-                errors.push(format!("{ctx}: invalid breadth '{}' (expected 'era' or 'broad')", b.breadth));
-            }
-            blurb_ranges_by_breadth.entry(b.breadth.as_str()).or_default().push(b.when);
-        }
-        for (breadth, ranges) in &blurb_ranges_by_breadth {
-            for i in 0..ranges.len() {
-                for j in (i + 1)..ranges.len() {
-                    if ranges[i].intersects(&ranges[j]) {
-                        errors.push(format!("place-history '{}': two '{breadth}' blurb ranges overlap", h.id));
-                    }
-                }
-            }
-        }
-
         for (label, claim) in [("established", &h.established), ("destroyed", &h.destroyed)] {
             let Some(claim) = claim else { continue };
             let ctx = format!("place-history '{}' {label}", h.id);

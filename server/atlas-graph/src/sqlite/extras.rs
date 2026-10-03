@@ -52,7 +52,7 @@ pub static POLITY_ERA: TableSpec =
     TableSpec { name: "polity_era", columns: &["node_id", "ord", "name", "from_year", "to_year"], pk: &["node_id", "ord"] };
 pub static POLITY_REIGN: TableSpec = TableSpec { name: "polity_reign", columns: &["polity_id", "from_year", "to_year"], pk: &["polity_id"] };
 pub static PLACE_DEFAULT: TableSpec =
-    TableSpec { name: "place_default", columns: &["place_id", "display_name", "canonical_name", "blurb"], pk: &["place_id"] };
+    TableSpec { name: "place_default", columns: &["place_id", "display_name", "canonical_name"], pk: &["place_id"] };
 pub static EVENT_DATE: TableSpec = TableSpec {
     name: "event_date",
     columns: &["event_id", "from_year", "to_year", "from_month", "from_day", "to_month", "to_day", "seq", "basis", "meta_to_year", "order_key"],
@@ -105,7 +105,7 @@ pub static TOKEN: TableSpec = TableSpec {
     pk: &["book", "chapter", "verse", "layer", "ord"],
 };
 
-static CORE_SPECS: [&TableSpec; 28] = [
+static CORE_SPECS: [&TableSpec; 27] = [
     &PLACE,
     &ERA,
     &POLITY_ERA,
@@ -127,7 +127,6 @@ static CORE_SPECS: [&TableSpec; 28] = [
     &super::sidecars::CATECHISM_QUESTION_VERSE,
     &super::sidecars::PLACE_HISTORY,
     &super::sidecars::PLACE_HISTORY_NAME,
-    &super::sidecars::PLACE_HISTORY_BLURB,
     &super::sidecars::PLACE_HISTORY_VERSE,
     &super::sidecars::PLACE_NAME_ALIAS,
     &super::sidecars::PLACE_NAME_ALIAS_VERSE,

@@ -344,13 +344,6 @@ pub struct PlaceNameEntry {
     pub verses: Vec<String>,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct PlaceBlurbEntry {
-    pub text: String,
-    pub when: TimeRange,
-    pub breadth: String,
-}
-
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, utoipa::ToSchema)]
 #[schema(description = "A date this atlas claims for a place, with the verses it rests on.")]
 pub struct PlaceDateClaim {
@@ -366,8 +359,6 @@ pub struct PlaceHistory {
     pub id: String,
     #[serde(default)]
     pub names: Vec<PlaceNameEntry>,
-    #[serde(default)]
-    pub blurbs: Vec<PlaceBlurbEntry>,
     pub established: Option<PlaceDateClaim>,
     pub destroyed: Option<PlaceDateClaim>,
 }
@@ -1005,11 +996,6 @@ pub fn demo_fixture() -> AtlasData {
             names: vec![
                 PlaceNameEntry { name: "Kirjath-arba".into(), when: TimeRange::new(-4004, -2001).unwrap(), verses: vec!["GEN.23.2".into()] },
             ],
-            blurbs: vec![PlaceBlurbEntry {
-                text: "Abraham buried Sarah in the cave of Machpelah here.".into(),
-                when: TimeRange::new(-2166, -1877).unwrap(),
-                breadth: "era".into(),
-            }],
             established: Some(PlaceDateClaim {
                 when: TimeRange::new(-2000, -2000).unwrap(),
                 verses: vec!["GEN.23.19".into()],
