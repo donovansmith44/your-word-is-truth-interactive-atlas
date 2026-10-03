@@ -2,7 +2,7 @@
 //! manifest carries.
 
 use atlas_graph_types::canon::ids::any_node_id_str;
-use atlas_graph_types::canon::{encode_row_in_family, Canon};
+use atlas_graph_types::canon::Canon;
 use atlas_graph_types::node::Node;
 use rusqlite::Connection;
 
@@ -14,7 +14,7 @@ use rusqlite::types::ValueRef;
 use super::partition::node_kind_ordinal;
 use super::rows::read_rows;
 use super::{hash_bytes, hash_from_bytes, SqliteError};
-pub use crate::sections::spine_line_body;
+pub use crate::sections::{row_line_body, spine_line_body};
 use crate::sections::{has_spine, logical_table_order, Section};
 
 fn line(out: &mut Vec<u8>, table: &str, body: &[u8]) {
@@ -106,8 +106,8 @@ pub fn logical_dump_of_db(conn: &Connection, section: Section) -> Result<Vec<u8>
                     .copied()
                     .find(|f| f.name() == family_table)
                     .ok_or_else(|| SqliteError(format!("{family_table} is not a row family table")))?;
-                for (_ord, row) in read_rows(conn, family)? {
-                    line(&mut out, family_table, &encode_row_in_family(family, row.to_value()));
+                for (ord, row) in read_rows(conn, family)? {
+                    line(&mut out, family_table, &row_line_body(family, ord, row.to_value()));
                 }
             }
         }

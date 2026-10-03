@@ -3763,7 +3763,7 @@
             "verse": 31
           }
         ],
-        "version": "0a2a868cb9b062c6727b9423378e5b0a"
+        "version": "bdc28d5488646977d7a74e76b6e26d7e"
       },
       "status": 200
     },
@@ -5054,7 +5054,7 @@
         "kind": "Event",
         "label": "Terah's family leaves Ur",
         "provenance": "curated",
-        "version": "0a2a868cb9b062c6727b9423378e5b0a"
+        "version": "bdc28d5488646977d7a74e76b6e26d7e"
       },
       "status": 200
     },
@@ -5084,7 +5084,7 @@
           "lon": 35.569167
         },
         "provenance": "curated-places",
-        "version": "0a2a868cb9b062c6727b9423378e5b0a"
+        "version": "bdc28d5488646977d7a74e76b6e26d7e"
       },
       "status": 200
     },
@@ -5125,7 +5125,7 @@
         "kind": "site-of",
         "next": null,
         "previous": null,
-        "version": "0a2a868cb9b062c6727b9423378e5b0a"
+        "version": "bdc28d5488646977d7a74e76b6e26d7e"
       },
       "status": 200
     },
