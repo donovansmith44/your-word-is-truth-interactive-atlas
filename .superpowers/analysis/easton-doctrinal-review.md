@@ -1,6 +1,6 @@
 # Easton doctrinal review — CX-R2 working inventory
 
-**Status: in progress.** The artifact mapping and broad source screening are complete; this is not yet the finished “every doctrinal entry” review required by the brief. 50 passages below have specific review notes; 129 complete source fragments also have explicit contextual dispositions in the coverage ledger. The remaining candidate inventory is mechanically selected and still needs contextual review; unselected entries are not certified doctrinally neutral. No entry has been approved, suppressed or rewritten. Donovan and the Pastor make the rulings.
+**Status: in progress.** The artifact mapping and broad source screening are complete; this is not yet the finished “every doctrinal entry” review required by the brief. 51 passages below have specific review notes; 185 complete source fragments also have explicit contextual dispositions in the coverage ledger. The remaining candidate inventory is mechanically selected and still needs contextual review; unselected entries are not certified doctrinally neutral. No entry has been approved, suppressed or rewritten. Donovan and the Pastor make the rulings.
 
 ## Scope and provenance
 
@@ -157,6 +157,16 @@ At length he came forth into public life, and great multitudes from “every qua
 ```
 
 Review whether this account’s summary of John as a practical moral preacher adequately distinguishes repentance and the promise of forgiveness; AC XII and FC SD V are the comparison points. This is a scope/emphasis flag, not a finding that John did not preach repentance. [Confessional comparison](https://bookofconcord.org/augsburg-confession/of-repentance/).
+
+### Dan 1 — degree 71
+
+Source `recxDlVubG4fKephU` · family `d-p23.2` · served text: `Person:dan_973` (71).
+
+```text
+“But like Lot under a similar temptation, they seem to have succumbed to the evil influences around them, and to have sunk down into a condition of semi-heathenism from which they never emerged. The mounds of ruins which mark the site of the city show that it covered a considerable extent of ground. But there remains no record of any noble deed wrought by the degenerate tribe. Their name disappears from the roll-book of the natural and the spiritual Israel.”, Manning’s Those Holy Fields.
+```
+
+Review what the categorical disappearance from both natural and spiritual Israel means. Revelation 7:4–8 omits Dan from that particular list, while Ezekiel 48:1–2 explicitly names Dan’s portion. An omitted tribal name does not itself establish exclusion of every member from salvation. Compare FC SD XI’s direction to election in Christ and the revealed promise. This is a question about the quoted inference, not a decision about the interpretation of either prophetic list. KJV passages and the confession checked on 2026-10-03: [Revelation 7:4–8](https://www.biblegateway.com/passage/?search=Revelation%207%3A4-8&version=KJV), [Ezekiel 48:1–2](https://www.biblegateway.com/passage/?search=Ezekiel%2048%3A1-2&version=KJV). [Confessional comparison](https://bookofconcord.org/solid-declaration/election/).
 
 ### Adoption 3 — degree 0
 
@@ -530,7 +540,7 @@ The entry explicitly rejects perfection in this life. Preserve that qualificatio
 
 ## Contextual coverage ledger — continued 2026-10-03
 
-These 129 complete fragments were read in context, including numbered siblings and the Effectual call cross-reference. A disposition of no specific conflict is a review observation, not pastoral approval. The remaining rows still require examination. Confessional comparison links were checked against the published texts on 2026-10-01; the new FC SD V, rule/norm, AC III and AC IX links, plus Matthew 12:40, Acts 22:16 and Judges 18:30, were checked on 2026-10-03.
+These 185 complete fragments were read in context, including numbered siblings and the Effectual call cross-reference. A disposition of no specific conflict is a review observation, not pastoral approval. The remaining rows still require examination. Confessional comparison links were checked against the published texts on 2026-10-01; the new FC SD V, rule/norm, AC III and AC IX links, plus Matthew 12:40, Acts 22:16, Judges 18:30, Revelation 7:4–8 and Ezekiel 48:1–2, were checked on 2026-10-03; FC SD XI was rechecked for the Dan question.
 
 | Source | Heading | Contextual disposition |
 |---|---|---|
@@ -565,25 +575,71 @@ These 129 complete fragments were read in context, including numbered siblings a
 | `rec7FCSm1R9DdPP1K` | Emmaus | Complete entry read. Resurrection-day meeting in a disputed-site discussion; no specific Christian doctrinal conflict identified. |
 | `rec78MHu2L6oVYLIx` | Isaac 1 | Complete numbered fragment read. Covenant promise and cited New Testament contrasts are narrative/typological context, without a general decree of reprobation asserted. |
 | `recknbdRCHWXB90eg` | Jeremiah 6 | Prophetic calling, preservation of his writings and judgment narrated; no distinctive conflicting doctrine identified. Historical chronology is outside this doctrinal disposition. |
+| `rechCngecnzOZkN0z` | Samuel | Read complete call, repentance, prayer, judgment and royal-anointing biography. The divine call and deliverance are attributed to God; no specific Lutheran conflict identified. Easton’s evaluation of Eli’s inward trust is an interpretation, not an assertion established by the quoted reply alone. |
 | `recSN841yUh6SeiCL` | Hezekiah 1 | Idolatry removed, prayer, divine deliverance and miraculous recovery narrated; no specific Lutheran contradiction identified. |
 | `recqyVJZLlX3ISveq` | Decapolis | Geographical inventory and historical Christian migration; no doctrinal claim identified. |
 | `reclkBpMyD0E2VpDz` | Dalmanutha | Geographical Gospel-site identification; no doctrinal claim identified. |
 | `rec4RGiIIqQbRvH2A` | Gennesaret 1 | Historical town/plain description; no doctrinal claim identified. |
 | `recLVuF3Cyx42nwko` | Manasseh 1 | Adoption, census and tribal allotments narrated; not a claim about spiritual adoption or election. No doctrinal contradiction identified. |
+| `recYp0yPP4DRjd5VY` | Elijah 1 | Read complete miracle, prophetic-call, Carmel worship, prayer, translation and Baptist/transfiguration account. Reports God’s action and prophetic office; no specific Lutheran conflict identified. The quoted expectation of Elijah’s return is described as a historical belief, not imposed as Christian doctrine. |
+| `rec2Q3riD2ypyxTif` | Nebuchadnezzar | Read entire conquest, inscriptions, Daniel judgment and recovery account. Divine punishment for pride and fulfillment of prophecy are explicit theological applications, but no specific Lutheran contradiction identified. Easton’s proposed diagnosis and archaeological confirmations remain the author’s historical claims, not new verified findings. |
 | `recR8lknnsLLlvBhF` | Ahab 1 | Idolatry, prophets and judgment narrated; no distinctive conflicting doctrinal claim identified. |
+| `recUfyWSyg9bdA5f4` | Jeroboam 1 | Read full royal biography, calf worship, prophetic warning and restored hand. Condemns idolatry rather than endorsing the calves as legitimate worship; no specific Lutheran conflict identified. |
+| `recqYkw8naScyT6Et` | Chaldea | Read geography, patriarchal setting and the explicit Kasdim/Chaldees translation criticism. No specific Lutheran doctrine conflict identified; the translation and historical identifications are the author’s claims, not settled by this doctrinal screen. |
+| `recAIwzCUP3QWbugr` | Reuben | Read entire sinful-conduct, Joseph-rescue and Benjamin-pledge biography. Historical sin and paternal judgment are described without an argument about earning salvation; no specific Lutheran conflict identified. |
+| `recNsv5uyuDUNx5pR` | Hebron 1 | Read full names, patriarchal residence/burial, refuge/Levitical status, kingship and modern-site traditions. Historical sanctuary and burial references do not assert a means of grace; no specific Lutheran conflict identified. |
+| `recdanrJpXhM9Fpsx` | Jehoshaphat 5 | Read full anti-idolatry, teaching of the law, alliances, prayer and deliverance biography. Attributes the victory to God and records both fidelity and failures; no specific Lutheran conflict identified. The historical blessings are not presented as a general guarantee of prosperity for Christians. |
+| `recetiimjyhTymvUe` | Bethel 1 | Read complete patriarchal revelation, ark, judicial circuit and calf-worship history. Explicitly distinguishes God’s speaking to Jacob from the later condemned idolatry; no specific Lutheran conflict identified. |
+| `rectXd7qs0zqKqfm6` | Bethlehem 1 | Read the whole patriarchal/Davidic setting, Christ’s birth, Herod’s killing and later church/cave traditions. Messianic birth is directly doctrinal; no specific Lutheran conflict identified. The cave is qualified as a reported tradition, not made an object or means of saving faith. |
+| `recro2Ns7YWnLDcEn` | Damascus | Read full city history, prophecy-fulfillment application and Saul’s conversion/preaching. No alternative cause of conversion or denial of baptism is argued in this place entry; no specific Lutheran conflict identified. Present-day language belongs to Easton’s publication period. |
+| `recxDlVubG4fKephU` | Dan 1 | Read the complete tribal and migration history, including Manning’s categorical natural/spiritual-Israel disappearance claim. The literal passage-specific pastoral question above distinguishes tribal lists from claims about exclusion from salvation; no ruling on the tribe’s salvation is made. |
+| `recSdSPUiugtVefAS` | Gad 1 | Read complete patriarchal/tribal geography, military history and explicit alternate rendering of the birth saying. A translation opinion and historical tribal account, not a doctrine of conversion or election; no specific Lutheran conflict identified. |
+| `rec82uqofYy76lHjy` | Eleazar 1 | Read full priestly succession, land distribution, burial and competing location/rendering traditions. Old Testament high-priestly genealogy is not imposed as Christian church polity; no specific Lutheran conflict identified. |
+| `recTmFMJqa8qVREZl` | Noah | Read complete flood, covenant, sacrifice, sin and namesake-daughter fragment. Direct covenant/typology claims merit pastoral attention, but no specific Lutheran contradiction identified. The Noah-as-rest typology is qualified as a received interpretation; the patriarchal covenant is not stated as salvation earned by Noah’s works. |
+| `recwiHxPWqq9eVp0D` | Sodom | Read entire divine-judgment and competing site-location account. Condemns sin and reports judgment; no specific Lutheran conflict identified. The ending remains a nineteenth-century archaeological opinion, not a modern map ruling. |
+| `recEMx7IhY6ritvR7` | Balaam | Read complete constrained prophecy, attempted curse and temptation to sin account. Describes the condemned doctrine of Balaam as seduction into sin, not teaching Christians should follow; no specific Lutheran conflict identified. |
+| `rec6lEB4bDltuyEab` | Josiah | Read full reform, rediscovered law, covenant/Passover, continuing judgment and death account. Does not claim the reforms earned forgiveness or canceled every temporal consequence; no specific Lutheran conflict identified. The original-Mosaic-copy identification is expressly probable, not proved by this review. |
+| `recPuDZQgiMGVCjFG` | Asa | Read the complete worship/idolatry and final illness account. The reported failure to seek the Lord is historical; the text does not state that every use of physicians is forbidden. No specific Lutheran conflict identified. |
+| `recLWS04KPcL6KJDl` | Isaiah 1 | Read entire prophet’s call, firmness, Assyrian crises and uncertain death account. Exhorts trust in the Lord and reports judgment; no specific Lutheran conflict identified. Alternative interpretations of “prophetess” and martyrdom tradition remain qualified. |
+| `recrEkHWph0Ye2wft` | Haman | Read complete office, proposed Agagite ancestry and punishment account. Historical enmity and judgment only, no specific Lutheran conflict identified; proposed ancestry remains an interpretation. |
+| `recLGxQRfSOJut4mb` | Lebanon | Read complete geography, scriptural imagery, assigned-but-unconquered land and publication-period population account. No specific Lutheran doctrine conflict identified; national geography is not equated with election to salvation. |
+| `recbSLtSRoELo4rZa` | Pilate, Pontius | Read entire office, trial/Passion and later punishment/tradition narrative. Christ’s innocence and suffering are explicit; no specific Lutheran contradiction identified. The narrative’s historical claims and rhetoric are not adopted as authority beyond Scripture by this review. |
+| `recFgVNZ0thrWiVoc` | Satan | Read full personal adversary, temptation, deception and death-power account. Explicitly denies that Satan is lord over death and reports Christ’s victory; no specific Lutheran contradiction identified. The executioner wording is an interpretive summary, not a second divine lordship. |
+| `recror0RxDUytLWlX` | Asher | Read full patriarchal/tribal inheritance and Anna identification. Tribal history and prophetic ancestry only, no specific Lutheran conflict identified. |
+| `recui5O3vzyPJq61V` | Elisha | Read full prophetic call, miracles, judgment, succession and posthumous revival narrative. No specific Lutheran conflict identified. Reporting the biblical revival at the grave does not by itself command relic invocation or establish relics as a promised means of grace. |
+| `recJRI5mZAuXTy54x` | Rehoboam | Read complete kingdom division, prophetic restraint, Egyptian invasion and spiritual-decay account. The quoted divine purpose does not develop a doctrine that God authors sin; no specific Lutheran conflict identified. |
+| `recrCDMhdfx2e3hv0` | Shiloh | Read both the messianic-title interpretations and the sanctuary/place history. The Messianic reading and scriptural alternatives are shown openly; no specific Lutheran conflict identified. Sanctuary geography is not presented as an independent means of grace. |
+| `recj926YN5intN3aY` | Dan | Read complete name gloss “A judge”; no doctrinal proposition supplied. |
 | `recwNJZnKaFjnRShm` | Joseph 4 | Foster-father biography, including a qualified death inference; no specific Christological contradiction identified. |
+| `recLDPzqIqCcOC0il` | Jeroboam 2 | Read full reign, prosperity, calf worship and contemporary-prophet account with Jeroboam 1. Distinguishes material prosperity from moral faithfulness; no specific Lutheran conflict identified. |
+| `recICtHN8ZV3cmuA9` | Gad 2 | Read complete prophetic advice, census judgment, historical writing and worship arrangement account. Describes prophetic office and divine punishment, not a Christian merit or polity scheme; no specific Lutheran conflict identified. |
+| `recBblnKBmIUb8Pi5` | Hebron 2 | Read complete Kohathite identification; genealogical information only, no specific doctrinal conflict identified. |
+| `rec8Qm7h425BYpWZT` | Hebron 3 | Read the complete two-verse citation-only fragment; no doctrinal proposition beyond its scriptural reference supplied. |
 | `recyXsfPAttNL3DpD` | Joseph 5 | Christ’s actual death and burial narrated; no specific Lutheran contradiction identified. |
+| `recxyLW249Nw70XiX` | Jehoshaphat 3 | Read complete annalist/state-officer identification; civil office, not a teaching about the church’s ministry. |
 | `recEVTygvYxkRHTCJ` | Bethsaida 1 | Complete family fragment read with opening and fragment 2; apostles/ministry and site description, no specific doctrinal conflict identified. |
+| `recC8SCHj3sHsnYPC` | Eleazar 5 | Read complete Merarite-Levite identification; genealogical information only, no specific doctrinal conflict identified. |
+| `reczmVGPF9PGwi3Ur` | Jehoshaphat 6 | Read complete Jehu-parentage identification; genealogical information only, no specific doctrinal conflict identified. |
 | `recrRozb7znbN0vtd` | Jeremiah | Name etymology only; no doctrinal claim. |
 | `rec7StbiZY9CvxFx0` | Jeremiah 5 | Historical family identification; no doctrinal claim. |
 | `recALFJf6A4HEzHxQ` | Saul 1 | Historical identification of an Edomite king; no doctrinal claim. |
 | `recEevTdwXAPW9MMa` | Ahab 2 | False-prophet identification; no independent doctrinal assertion. |
+| `rec1u7PVJdJEdllHq` | Eleazar | Read complete name gloss “God has helped”; no independent doctrinal argument supplied. |
+| `rec730hnGWGlZCrx0` | Eleazar 3 | Read complete Davidic-hero identification and water episode; biographical information only, no specific doctrinal conflict identified. |
 | `reckaKL1qn3LwpXxU` | Hezekiah | Name etymology only; no doctrinal claim. |
 | `reclWWU1ZOmjG9RHk` | Joseph | Name etymology only; no doctrinal claim. |
 | `recEqPDWb5lCFTLnj` | Joseph 2 | Historical identification of an Asaphite musician; no doctrinal claim. |
 | `reci7kZFYCoLD21U9` | Joseph 3 | Genealogical names in Luke; no doctrinal controversy stated. |
+| `recd297kQwArNfr2A` | Eleazar 2 | Read complete ark-custodian consecration and touching restriction. Describes an Old Testament charge, not a doctrine of sanctification or an unrestricted rule for Christian ministry; no specific Lutheran conflict identified. |
+| `recYA8ZN2EyKgVv3X` | Eleazar 4 | Read complete returning priest/sacred-vessel identification; historical office only, no specific doctrinal conflict identified. |
+| `reclbasBQnKWtTkkF` | Isaiah 4 | Read complete Ezra citation-only fragment; no doctrinal proposition beyond the reference supplied. |
+| `recvl9v67459bmeME` | Jehoshaphat 4 | Read complete royal-purveyor identification; civil administration only, no specific doctrinal conflict identified. |
 | `recrIKiqirin2Q6Qe` | Joseph 6 | Historical apostolic candidate identification; no independent ministry doctrine stated. |
 | `recjcXTfzIB18LkZj` | Manasseh | Name etymology and Genesis citation; no doctrinal claim identified. |
+| `recWs49mLuV5s65aH` | Bethel 2 | Read complete district identification and two citations; geography only, no specific doctrinal conflict identified. |
+| `recLlbrb7X5AqDPvL` | Bethel 3 | Read complete town identification and two citations; geography only, no specific doctrinal conflict identified. |
+| `rectUuVx5okbQ9khC` | Bethlehem 2 | Read complete Zebulun-town identification and location; geography only, no specific doctrinal conflict identified. |
+| `recRgQ2haO7c8ZiFp` | Jehoshaphat 2 | Read complete priest/ark-removal identification; historical office only, no argument about the Christian ministry supplied. |
 | `recBjgvEZ6rn1Qjag` | Jeremiah 1 | Historical warrior identification; no doctrinal claim. |
 | `recRMp6OyahoylMnU` | Jeremiah 2 | Historical warrior identification; no doctrinal claim. |
 | `recBNApH88e2PdJCo` | Jeremiah 3 | Historical warrior identification; no doctrinal claim. |
@@ -600,6 +656,8 @@ These 129 complete fragments were read in context, including numbered siblings a
 | `recd4jkCMKpeHouiB` | Baptism of Christ | Christological; added qualified substitution/office note. |
 | `rectZZHERX5H3EIto` | Baptism, Christian | Complete entry reread, including mode and infant-membership argument; existing sacramental-symbolism note retained. |
 | `recoet7kzsK8KZ6q7` | Baptism, John’s | Doctrinal/exegetical; added faith/rebaptism question. |
+| `recba19nxqlhB3INt` | Bethel | Read complete name gloss “House of God”; no teaching about the church or means of grace supplied. |
+| `recgpxFF2Ix1Nsp1T` | Bethlehem | Read complete name gloss “House of bread”; no sacramental proposition supplied. |
 | `recDDez3mBBSsonOn` | Bethsaida | Complete family opening read with fragments 1–2; name etymology only, no doctrinal claim. |
 | `recG0BvuVUyiHBdge` | Bishop | Added note avoiding an unwarranted Presbyterian-versus-Lutheran inference. |
 | `recZ2WiMrsL0tCKo2` | Call 1 | Calling on the Lord/prayer sense; no specific conflict identified. |
@@ -617,11 +675,14 @@ These 129 complete fragments were read in context, including numbered siblings a
 | `recx17NtOmuvNJHjG` | Confession | Profession-of-faith definition; no specific conflict identified. |
 | `recewjlxkNCH22KnY` | Confession 1 | Doctrinal; added private-absolution completeness question. |
 | `recoVyvNuq0asPLsw` | Conversion | Added qualified means-of-grace question. |
+| `rec4mDjf6z6BoxLxs` | Dan 2 | Read complete alternative Vedan/Aden rendering and commercial-city identification with Dan 1. This is an explicit translation/identification opinion, not a doctrine of salvation or election. |
 | `recAGqbU5IjTcDc6J` | Decrees of God | Both efficacious and permissive distinctions read; existing all-events decree question retained. |
 | `rec9BjJ4ElCVhG2Kt` | Effectual call | Cross-reference only; target Call 2 now read and flagged. |
 | `recnDgY2nXn1vl9h2` | Effectual prayer | Prayer efficacy gloss, not an independent conversion theory. |
 | `recDyhhcfSdfrx20R` | Elder | Complete entry reread; existing sole-essential-office question retained. |
 | `recMi4LwuD2vkYNjc` | Election of Grace | All office/national/salvation senses read; existing qualified election note retained. |
+| `recQ7QtTzOTn4Doc9` | Elijah 2 | Read the competing historical identifications and chronology of the letter to Jehoram with Elijah 1. The alternatives are explicitly conjectural; no specific Lutheran conflict identified and no claim of a second Elijah established by this review. |
+| `recJm027ie1tah129` | Gad | Read complete fortune/luck name gloss; describes a name, not permission to trust luck as a rival to God. |
 | `recUPDGwmRiUleB76` | Gennesaret | Name etymology only; no doctrinal claim. |
 | `recVdz7Ipz2MDsnVJ` | Gennesaret 2 | Lake-name cross-reference; no doctrinal claim. |
 | `recRjKTwmy52Z8ZFF` | Grace 1 | Lexical form/person sense; no soteriological claim. |
@@ -633,7 +694,12 @@ These 129 complete fragments were read in context, including numbered siblings a
 | `recyfs4VfwvE1gACx` | Grace 7 | Future-glory sense; no specific conflict identified. |
 | `recg0CBYukCLBhKXi` | Grace, means of | Doctrinal; added prayer/means distinction question. |
 | `recIdEtc1nCEEsgoL` | Grace, means of 1 | Doctrinal usage; added parent-context note. |
+| `recaSruZnuQIQRw9a` | Hebron 4 | Read complete Asher-border town identification; geographical information only, no specific doctrinal conflict identified. |
 | `reco4rtmn0kykl3vj` | Isaac | Complete family opening read with fragment 1; geographical/national sense of the name, no personal predestination claim. |
+| `recif88cYF7bzxbQc` | Isaiah 2 | Read complete singer/Jeshaiah identification; historical name and office only, no specific doctrinal conflict identified. |
+| `reclEMLYOKTSQ9nGM` | Isaiah 3 | Read complete Levite identification; genealogical information only, no specific doctrinal conflict identified. |
+| `reclXGK5Inp06sLwh` | Isaiah 5 | Read complete Nehemiah citation-only fragment; no doctrinal proposition beyond the reference supplied. |
+| `recpMMzU2wqLqikzH` | Jehoshaphat 1 | Read complete bodyguard identification; biographical information only, no specific doctrinal conflict identified. |
 | `rectzeVDTWlR4migx` | Jordan | Complete family opening read with fragments 1–6. River etymology/source geography; no specific doctrinal claim in this fragment. |
 | `recn7LP0BQecYCnwS` | Jordan 1 | Complete family fragment read with opening and 2–6. Spring/source geography only; no specific doctrinal claim in this fragment. |
 | `reccPlR5WBvvewj1C` | Jordan 2 | Complete family fragment read with opening, 1 and 3–6. Spring/source geography only; no specific doctrinal claim in this fragment. |
@@ -664,7 +730,7 @@ These 129 complete fragments were read in context, including numbered siblings a
 | `recg6sNo5SuVX2cmY` | Saul | Name etymology only; no doctrinal claim. |
 | `recWa74xqz5F3gbGF` | Saul 3 | Apostolic name and cross-reference; read together with the complete Paul entry. |
 
-Coverage: 137 distinct source rows have a specific note or contextual disposition; 1,932 screened candidates remain without either. Of the original 4,313 nonempty unselected rows, 4,291 remain without a contextual disposition and still require the separate semantic sweep.
+Coverage: 193 distinct source rows have a specific note or contextual disposition; 1,900 screened candidates remain without either. Of the original 4,313 nonempty unselected rows, 4,267 remain without a contextual disposition and still require the separate semantic sweep.
 
 ## Broad screening inventory — contextual review pending
 
