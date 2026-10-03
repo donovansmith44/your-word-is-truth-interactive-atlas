@@ -227,7 +227,7 @@ fn every_admitted_provenance_is_titled_by_the_source_it_names_whatever_locator_i
     let named = |p: &atlas_core::sources::ProvenanceEntry| doc.sources.iter().find(|s| s.id == p.source).map(|s| s.title.as_str());
 
     // Act
-    let titles = admitted.provenance_titles();
+    let titles = admitted.provenance_titles().expect("an admitted registry titles each provenance once");
 
     // Assert
     let expected: Vec<(Option<&str>, Option<&str>)> = doc.provenances.iter().map(|p| (named(p), named(p))).collect();

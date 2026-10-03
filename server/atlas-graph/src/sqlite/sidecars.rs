@@ -9,7 +9,7 @@ use atlas_core::data::{
     ChronologyAnchor, Landmark, LandmarkKind, LandmarkSize, PlaceDateClaim, PlaceHistory,
     PlaceNameAlias, PlaceNameEntry,
 };
-use atlas_core::sources::{Confidence, ProvenanceEntry, SourceCategory, SourceEntry, SourcesDocument};
+use atlas_core::sources::{Confidence, ProvenanceEntry, ProvenanceTitles, SourceCategory, SourceEntry, SourcesDocument};
 use atlas_core::time::TimeRange;
 use atlas_graph_types::canon::{serialize, Value};
 use rusqlite::Connection;
@@ -585,6 +585,6 @@ pub fn unfold(conn: &Connection) -> Result<(AtlasData, SourcesDocument), SqliteE
     atlas.catechism = catechism;
     atlas.chronology_anchors = chronology_anchors;
     atlas.book_narration_windows = book_narration_windows;
-    atlas.provenance_titles = provenance_titles.into_iter().collect();
+    atlas.provenance_titles = ProvenanceTitles::from_rows(provenance_titles).map_err(|e| SqliteError(format!("provenance_title: {e}")))?;
     Ok((atlas, sources))
 }
