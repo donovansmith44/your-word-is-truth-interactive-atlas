@@ -637,7 +637,8 @@ fn every_family_round_trips_through_its_columns_with_identical_canon_bytes() {
 }
 
 use atlas_graph::sqlite::manifest::{read_manifest, root_of, write_manifest, Manifest, ManifestSection};
-use atlas_graph::sqlite::partition::{edge_row_map, partition};
+use atlas_graph::sqlite::partition::partition;
+use atlas_graph_types::section_index::edge_row_map;
 use atlas_graph::sqlite::writer::write_sections;
 
 #[test]
@@ -646,7 +647,7 @@ fn every_index_entry_of_the_specimen_lands_in_exactly_one_section_and_names_its_
     g.build_indexes();
     atlas_graph::event_world::add_justified_by(&mut g);
     let parts = partition(&g).unwrap();
-    let total: usize = parts.iter().map(|p| p.edges.len()).sum();
+    let total: usize = parts.iter().map(|p| p.index.entries.len()).sum();
     let justified = g
         .indexes
         .get(&atlas_graph_types::edge::RelationId::JustifiedBy)
@@ -661,7 +662,7 @@ fn every_index_entry_of_the_specimen_lands_in_exactly_one_section_and_names_its_
         .unwrap() as i64;
     let mut saw_justified = false;
     for p in &parts {
-        for e in &p.edges {
+        for e in &p.index.entries {
             if e.rel != justified_code {
                 assert!(map[&e.edge_id].contains(&(e.row_family, e.row_id)), "entry {:?} names a row that does not mint its id", (e.row_family, e.row_id));
                 assert_eq!(atlas_graph::sections::section_of_row(&g, e.row_family, e.row_id as usize), p.section);
@@ -768,7 +769,7 @@ fn the_logical_dump_recomputed_from_each_written_file_equals_the_partitions_dump
     let (m, written) = write_sections(&g, &Extras::default(), "test", &layout_under(&dir)).unwrap();
     let parts = partition(&g).unwrap();
     for (p, w) in parts.iter().zip(&written) {
-        let from_mem = logical_dump_section(&g, p.section);
+        let from_mem = logical_dump_section(&g, &p.index).unwrap();
         let conn = open_read_only(&w.path).unwrap();
         let from_db = logical_dump_of_db(&conn, p.section).unwrap();
         assert_eq!(String::from_utf8_lossy(&from_db), String::from_utf8_lossy(&from_mem), "{:?}", p.section);
@@ -838,7 +839,7 @@ fn the_sqlite_snapshot_answers_every_port_question_exactly_as_the_specimen_graph
         assert_eq!(back.entries[0].entry.node, entry);
         assert_eq!(snap.nodes_of_kind(NodeKind::LexiconEntry, None, 5).ids.len(), 2);
     }
-    assert_eq!(snap.version().0, atlas_graph_types::sections::version_root(&g), "SqliteSnapshot::version is the manifest root = the in-memory root");
+    assert_eq!(snap.version().0, atlas_graph_types::sections::version_root(&g).unwrap(), "SqliteSnapshot::version is the manifest root = the in-memory root");
 }
 
 #[test]
@@ -1059,7 +1060,7 @@ fn the_sqlite_snapshots_version_is_the_manifest_root_and_equals_the_in_memory_ro
     let (m, _) = write_sections(&g, &Extras::default(), "test", &layout_under(&dir)).unwrap();
     let snap = open_written(&dir).unwrap();
     assert_eq!(snap.version().0.hex(), m.root, "SqliteSnapshot::version IS the manifest root");
-    assert_eq!(snap.version().0, atlas_graph_types::sections::version_root(&g), "and equals the in-memory root (one root, spec 3.4)");
+    assert_eq!(snap.version().0, atlas_graph_types::sections::version_root(&g).unwrap(), "and equals the in-memory root (one root, spec 3.4)");
 }
 
 #[test]
@@ -1072,7 +1073,7 @@ fn mem_store_stamps_the_same_root_the_sections_carry() {
     let _ = std::fs::remove_dir_all(&dir);
     let (m, _) = write_sections(&g, &Extras::default(), "test", &layout_under(&dir)).unwrap();
     let mut store = MemStore::default();
-    let v = store.publish(g);
+    let v = store.publish(g).unwrap();
     assert_eq!(v.0.hex(), m.root, "what MemStore stamps is what the manifest says");
 }
 
@@ -1650,4 +1651,93 @@ fn only_the_first_page_has_no_previous_and_every_other_previous_reads_the_page_b
 
     // Assert
     assert_eq!((walked > 100, three_with_a_partial_final > 0, offenders), (true, true, Vec::<String>::new()));
+}
+
+#[test]
+fn every_cell_of_every_table_a_section_file_holds_but_meta_is_under_its_logical_hash() {
+    // Arrange
+    let mut g = every_end_held(specimen_graph());
+    let atlas = atlas_core::data::AtlasData::default();
+    let geography = atlas_graph::geography::Geography::compile(&g, &atlas);
+    atlas_graph::labels::compile(&mut g, &atlas_graph::labels::ReaderNames::of(&geography, &atlas));
+    atlas_graph::references::compile(&mut g);
+    let no_chronology = atlas_graph::event_world::ChronologyDerivation {
+        order: Vec::new(),
+        placements: std::collections::HashMap::new(),
+        resolved: std::collections::HashMap::new(),
+        source_meta: std::collections::HashMap::new(),
+    };
+    let extras = Extras::graph_derived(&g, &no_chronology, &std::collections::HashMap::new()).unwrap();
+    extras.attach(&mut g);
+    let dir = std::env::temp_dir().join(format!("f39-every-cell-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&dir);
+    let (_, written) = write_sections(&g, &extras, "test", &layout_under(&dir)).unwrap();
+
+    // Act
+    let mut unhashed: Vec<String> = Vec::new();
+    let mut unproven: BTreeSet<String> = BTreeSet::new();
+    let mut proven: BTreeSet<String> = BTreeSet::new();
+    for w in &written {
+        let probe = dir.join(format!("probe-{}.sqlite", w.section.name()));
+        std::fs::copy(&w.path, &probe).unwrap();
+        let conn = rusqlite::Connection::open(&probe).unwrap();
+        let dumped = logical_table_order(w.section);
+        for (table, column, key) in cells_of(&conn) {
+            conn.execute_batch("BEGIN").unwrap();
+            let changed = conn.execute(&perturb_one_cell(&table, &column, &key), []).unwrap();
+            let moved = logical_dump_of_db(&conn, w.section).map_or(true, |dump| logical_hash(&dump) != w.logical);
+            conn.execute_batch("ROLLBACK").unwrap();
+            match (changed, moved) {
+                (0, _) if !dumped.contains(&table.as_str()) => {
+                    unproven.insert(table);
+                }
+                (0, _) => {}
+                (_, false) => unhashed.push(format!("{}.{table}.{column}", w.section.name())),
+                _ => {
+                    proven.insert(table);
+                }
+            }
+        }
+    }
+    let unreached: Vec<String> = unproven.difference(&proven).cloned().collect();
+
+    // Assert
+    assert_eq!((unhashed, unreached), (Vec::<String>::new(), Vec::<String>::new()));
+}
+
+fn cells_of(conn: &rusqlite::Connection) -> Vec<(String, String, Vec<String>)> {
+    let tables: Vec<String> = conn
+        .prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name != 'meta' ORDER BY name")
+        .unwrap()
+        .query_map([], |r| r.get(0))
+        .unwrap()
+        .map(Result::unwrap)
+        .collect();
+    let mut cells = Vec::new();
+    for table in tables {
+        let columns: Vec<(String, i64)> = conn
+            .prepare(&format!("SELECT name, pk FROM pragma_table_info('{table}') ORDER BY cid"))
+            .unwrap()
+            .query_map([], |r| Ok((r.get(0)?, r.get(1)?)))
+            .unwrap()
+            .map(Result::unwrap)
+            .collect();
+        let mut key: Vec<(i64, String)> = columns.iter().filter(|(_, pk)| *pk > 0).map(|(name, pk)| (*pk, name.clone())).collect();
+        key.sort();
+        let key: Vec<String> = key.into_iter().map(|(_, name)| name).collect();
+        for (column, _) in &columns {
+            cells.push((table.clone(), column.clone(), key.clone()));
+        }
+    }
+    cells
+}
+
+fn perturb_one_cell(table: &str, column: &str, key: &[String]) -> String {
+    let key = key.join(", ");
+    format!(
+        "UPDATE {table} SET {column} = CASE typeof({column}) \
+           WHEN 'integer' THEN {column} + 1000003 WHEN 'real' THEN {column} + 0.5 WHEN 'text' THEN {column} || '~' \
+           ELSE randomblob(length({column})) END \
+         WHERE ({key}) = (SELECT {key} FROM {table} WHERE {column} IS NOT NULL ORDER BY {key} LIMIT 1)"
+    )
 }

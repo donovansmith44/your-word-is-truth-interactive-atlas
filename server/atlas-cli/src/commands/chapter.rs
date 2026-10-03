@@ -109,7 +109,7 @@ mod tests {
         g.nodes.insert(id, node);
         g.build_indexes();
         let mut store = MemStore::default();
-        let v = store.publish(g);
+        let v = store.publish(g).unwrap();
         store.open(v).expect("just-published version must open")
     }
 
@@ -142,7 +142,7 @@ mod tests {
         g.nodes.insert(id.clone(), node);
         g.build_indexes();
         let mut store = MemStore::default();
-        let v = store.publish(g);
+        let v = store.publish(g).unwrap();
         let snap = store.open(v).unwrap();
 
         let line = render_verse_line(&snap, &id, "GEN.1", &HashMap::new()).expect("a real rendering must succeed");

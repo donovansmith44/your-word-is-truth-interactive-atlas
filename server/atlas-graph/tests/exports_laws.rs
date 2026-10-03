@@ -38,7 +38,7 @@ fn built() -> Built {
             let order_len = chronology.chrono.order.len();
 
             let mut store = MemStore::default();
-            let version = store.publish(graph);
+            let version = store.publish(graph).unwrap();
             let actual_hex = atlas_graph::version_hex(version);
 
             let svc = sources.build_service(&atlas.eras);
@@ -111,7 +111,7 @@ fn export_hash_1_atlas_version_root_does_not_change_when_only_a_dated_events_own
     assert_ne!(events_before, events_after, "the mutated resolved placement must produce a genuinely different exported row -- otherwise this test proves nothing");
 
     let mut store = MemStore::default();
-    let version = store.publish(graph);
+    let version = store.publish(graph).unwrap();
     let root_hex = atlas_graph::version_hex(version);
 
     let export_before = exports::ChronologyExport { format_version: exports::CHRONOLOGY_FORMAT_VERSION, atlas_version_root: root_hex.clone(), events: events_before, spans: vec![], anchors: vec![] };

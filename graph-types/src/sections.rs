@@ -8,6 +8,7 @@ use crate::edge::{CanonSuccession, Contains, CrossRef, EdgeId};
 use crate::graph::Graph;
 use crate::id::ContentHash;
 use crate::node::{Node, NodePayload};
+use crate::section_index::{derived_lines, index_sections, IndexError, SectionIndex, DERIVED_TABLES};
 use crate::sha256::sha256_prefixed_128;
 use crate::text::{BibleTag, ConcordTag, Corpus, TextRef};
 
@@ -259,8 +260,6 @@ pub fn extra_line_body(cols: Vec<(&str, Value)>) -> Vec<u8> {
     serialize(&obj(cols))
 }
 
-/// In dump order. The informational and derived tables are deliberately absent: a dump covers
-/// only what the rows themselves say.
 pub fn logical_table_order(section: Section) -> Vec<&'static str> {
     let mut v = vec!["node"];
     v.extend(row_tables_of(section).iter().map(|f| f.name()));
@@ -268,6 +267,7 @@ pub fn logical_table_order(section: Section) -> Vec<&'static str> {
         v.push("reading_spine");
     }
     v.extend(extra_tables_of(section));
+    v.extend(DERIVED_TABLES.iter().map(|t| t.name));
     v
 }
 
@@ -286,7 +286,8 @@ fn line(out: &mut Vec<u8>, table: &str, body: &[u8]) {
 /// The binding format: per table, per row in primary-key order, `<table>\t<canonical row>\n`,
 /// with nodes in id byte order -- what a database's own ordered scan yields. A reader
 /// recomputes this by streaming the section file, and the two must agree byte for byte.
-pub fn logical_dump_section(g: &Graph, section: Section) -> Vec<u8> {
+pub fn logical_dump_section(g: &Graph, index: &SectionIndex<'_>) -> Result<Vec<u8>, IndexError> {
+    let section = index.section;
     let mut out: Vec<u8> = Vec::new();
     let mut nodes: Vec<&Node> = g.nodes.values().filter(|n| section_of_node(n) == section).collect();
     nodes.sort_by_cached_key(|n| any_node_id_str(&n.id));
@@ -348,7 +349,12 @@ pub fn logical_dump_section(g: &Graph, section: Section) -> Vec<u8> {
             }
         }
     }
-    out
+    derived_lines(index, |table, body| line(&mut out, table, body))?;
+    Ok(out)
+}
+
+pub fn logical_dumps(g: &Graph) -> Result<Vec<(Section, Vec<u8>)>, IndexError> {
+    index_sections(g)?.iter().map(|index| Ok((index.section, logical_dump_section(g, index)?))).collect()
 }
 
 /// A section's logical hash: `sha256_prefixed_128(DOMAIN_PREFIX, dump)`.
@@ -385,11 +391,11 @@ pub fn root_of_lines(lines: &[u8]) -> ContentHash {
 
 /// The manifest root over the shipped sections' logical hashes -- equal to what the section
 /// writer records and what a snapshot reads back.
-pub fn version_root(g: &Graph) -> ContentHash {
-    let logicals: Vec<(Section, String)> = Section::SHIPPED.iter().map(|s| (*s, logical_hash(&logical_dump_section(g, *s)).hex())).collect();
+pub fn version_root(g: &Graph) -> Result<ContentHash, IndexError> {
+    let logicals: Vec<(Section, String)> = logical_dumps(g)?.into_iter().map(|(s, dump)| (s, logical_hash(&dump).hex())).collect();
     let entries: Vec<(&str, &str, u32, bool)> =
         logicals.iter().map(|(s, l)| (s.name(), l.as_str(), SECTION_SCHEMA_VERSION, s.required())).collect();
-    root_of_lines(&manifest_lines(&entries))
+    Ok(root_of_lines(&manifest_lines(&entries)))
 }
 
 #[cfg(test)]
@@ -404,6 +410,11 @@ mod laws {
         renderings.insert(crate::text::TranslationId("kjv".into()), "x".into());
         Node { id: AnyNodeId { kind: NodeKind::TextUnit, raw: raw.into() }, payload: NodePayload::TextUnit { corpus, renderings }, provenance: "p".into() }
     }
+    fn dump(g: &Graph, section: Section) -> String {
+        let (_, bytes) = logical_dumps(g).unwrap().into_iter().find(|(s, _)| *s == section).unwrap();
+        String::from_utf8(bytes).unwrap()
+    }
+
     fn fixture() -> Graph {
         let mut g = Graph::default();
         for n in [unit("bible/1.1.2", "bible"), unit("bible/1.1.1", "bible"), unit("concord/1.1.1", "concord")] {
@@ -424,15 +435,19 @@ mod laws {
     #[test]
     fn the_section_dump_walks_node_then_families_then_spine_in_byte_order() {
         let g = fixture();
-        let kjv = String::from_utf8(logical_dump_section(&g, Section::Kjv)).unwrap();
+        let kjv = dump(&g, Section::Kjv);
         let tags: Vec<&str> = kjv.lines().map(|l| l.split('\t').next().unwrap()).collect();
         assert_eq!(tags, ["node", "node", "reading_spine", "reading_spine"], "kjv: two bible nodes, no rows, the spine");
         assert!(kjv.starts_with("node\t{\"id\":\"TextUnit:bible/1.1.1\""), "byte order of any_node_id_str, not insertion order: {kjv}");
         assert!(kjv.contains("\nreading_spine\t{\"corpus\":\"bible\",\"node_id\":\"TextUnit:bible/1.1.1\",\"ord\":0}\n"));
-        let core = String::from_utf8(logical_dump_section(&g, Section::Core)).unwrap();
+        let core = dump(&g, Section::Core);
         let tags: Vec<&str> = core.lines().map(|l| l.split('\t').next().unwrap()).collect();
-        assert_eq!(tags, ["located_at", "analogue"], "core: no nodes here, the two rows in row_tables_of order");
-        assert!(logical_dump_section(&g, Section::Kretzmann).is_empty());
+        assert_eq!(
+            tags,
+            ["located_at", "analogue", "edge_index", "edge_index", "edge_index", "edge_index", "edge_count", "edge_count", "edge_count", "edge_count"],
+            "core: no nodes here, the two rows in row_tables_of order, then each row's entry under both of its ends and their counts"
+        );
+        assert!(dump(&g, Section::Kretzmann).is_empty());
         assert_eq!(logical_table_order(Section::Kjv).first().copied(), Some("node"));
     }
 
@@ -441,7 +456,7 @@ mod laws {
         let g = fixture();
         let lines: Vec<(String, String, u32, bool)> = Section::SHIPPED
             .iter()
-            .map(|s| (s.name().to_string(), logical_hash(&logical_dump_section(&g, *s)).hex(), SECTION_SCHEMA_VERSION, s.required()))
+            .map(|s| (s.name().to_string(), logical_hash(dump(&g, *s).as_bytes()).hex(), SECTION_SCHEMA_VERSION, s.required()))
             .collect();
         let borrowed: Vec<(&str, &str, u32, bool)> = lines.iter().map(|(n, l, v, r)| (n.as_str(), l.as_str(), *v, *r)).collect();
         let text = String::from_utf8(manifest_lines(&borrowed)).unwrap();
@@ -449,13 +464,13 @@ mod laws {
         assert!(text.ends_with(&format!("lexicon|{}|{SECTION_SCHEMA_VERSION}|false\n", lines[4].1)), "the lexicon line is last and optional");
         assert!(text.starts_with(&format!("core|{}|{SECTION_SCHEMA_VERSION}|true\n", lines[0].1)));
         assert!(text.contains(&format!("|{SECTION_SCHEMA_VERSION}|false\n")), "concord and kretzmann are optional");
-        assert_eq!(version_root(&g), root_of_lines(text.as_bytes()));
+        assert_eq!(version_root(&g).unwrap(), root_of_lines(text.as_bytes()));
         let mut g2 = fixture();
         g2.located_at[0].provenance = "q".into();
-        assert_ne!(version_root(&g), version_root(&g2), "a row byte moves the root (spec 3.1 defect 1, closed)");
+        assert_ne!(version_root(&g).unwrap(), version_root(&g2).unwrap(), "a row byte moves the root (spec 3.1 defect 1, closed)");
         let mut g3 = fixture();
         g3.build_indexes();
-        assert_eq!(version_root(&g), version_root(&g3));
+        assert_eq!(version_root(&g).unwrap(), version_root(&g3).unwrap());
     }
 
     #[test]
@@ -466,7 +481,7 @@ mod laws {
         assert_eq!(extra_tables_of(Section::Lexicon), &["lexicon_entry", "token"]);
         assert_eq!(extra_tables_of(Section::Core).len(), 27);
         let order = logical_table_order(Section::Core);
-        assert_eq!(order.last().copied(), Some("provenance_entry"));
+        assert_eq!(order[order.len() - 4..], ["provenance_entry", "label", "edge_index", "edge_count"]);
         assert!(order.iter().position(|t| *t == "place").unwrap() > order.iter().position(|t| *t == "analogue").unwrap());
         let mut all: Vec<&str> = Section::SHIPPED.iter().flat_map(|s| extra_tables_of(*s).iter().copied()).collect();
         let n = all.len();
@@ -475,7 +490,7 @@ mod laws {
         assert_eq!(all.len(), n, "extra table names are unique across sections");
 
         let g = fixture();
-        let base = version_root(&g);
+        let base = version_root(&g).unwrap();
         let mut g2 = fixture();
         g2.extra_tables.insert(
             "verse",
@@ -486,18 +501,18 @@ mod laws {
                 ("verse", Value::Int(1)),
             ])],
         );
-        assert_ne!(version_root(&g2), base, "an extra row moves the root");
-        let kjv = String::from_utf8(logical_dump_section(&g2, Section::Kjv)).unwrap();
+        assert_ne!(version_root(&g2).unwrap(), base, "an extra row moves the root");
+        let kjv = dump(&g2, Section::Kjv);
         assert!(
             kjv.ends_with(
                 "reading_spine\t{\"corpus\":\"bible\",\"node_id\":\"TextUnit:bible/1.1.2\",\"ord\":1}\nverse\t{\"book\":0,\"chapter\":1,\"node_id\":\"TextUnit:bible/0.1.1\",\"verse\":1}\n"
             ),
             "extras come AFTER the spine, keys in byte order: {kjv}"
         );
-        assert_eq!(logical_dump_section(&g2, Section::Core), logical_dump_section(&g, Section::Core), "a kjv extra does not touch core");
+        assert_eq!(dump(&g2, Section::Core), dump(&g, Section::Core), "a kjv extra does not touch core");
         let mut g3 = fixture();
         g3.extra_tables.insert("not_a_table", vec![b"{}".to_vec()]);
-        assert_eq!(version_root(&g3), base, "a table no section lists is not in any dump");
+        assert_eq!(version_root(&g3).unwrap(), base, "a table no section lists is not in any dump");
     }
 
     #[test]
@@ -539,7 +554,7 @@ mod laws {
         let mut g = Graph::default();
         g.cross_refs = vec![citation(TextRef::Bible(VERSE)), citation(TextRef::Concord(PARAGRAPH))];
         // Act
-        let dumps = [Section::Kjv, Section::Concord].map(|s| String::from_utf8(logical_dump_section(&g, s)).unwrap());
+        let dumps = [Section::Kjv, Section::Concord].map(|s| dump(&g, s).lines().filter(|l| l.starts_with("cross_refs\t")).map(|l| format!("{l}\n")).collect::<String>());
         // Assert
         assert_eq!(
             dumps,
@@ -558,6 +573,23 @@ mod laws {
                 .to_string(),
             ]
         );
+    }
+
+    #[test]
+    fn a_label_changed_with_every_row_unchanged_moves_the_root() {
+        // Arrange
+        let labelled = |label: &str| {
+            let mut g = fixture();
+            g.labels.insert(crate::id::Position::Node(AnyNodeId { kind: NodeKind::TextUnit, raw: "bible/1.1.1".into() }), label.into());
+            g
+        };
+        let (before, after) = (labelled("Genesis 1:1"), labelled("GEN.1.1"));
+
+        // Act
+        let roots = [version_root(&before).unwrap(), version_root(&after).unwrap()];
+
+        // Assert
+        assert_ne!(roots[0], roots[1]);
     }
 
     const VERSE: VerseRef = VerseRef { book: 0, chapter: 1, verse: 1 };

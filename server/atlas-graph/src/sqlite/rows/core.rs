@@ -96,7 +96,7 @@ where
     C::Ref: Abc,
     Locus<C>: Ord,
 {
-    let locus_sql = format!("SELECT {COLS_CONTAINS_LOCUS} FROM {table}_locus WHERE contains_id = ? ORDER BY ord");
+    let locus_sql = format!("SELECT ord, {COLS_CONTAINS_LOCUS} FROM {table}_locus WHERE contains_id = ? ORDER BY ord");
     read_all(conn, table, COLS_CONTAINS, |row| {
         let id: i64 = row.get(0)?;
         let container: ContainerNodeId = id_col(row, D, "container_id")?;
@@ -110,11 +110,15 @@ where
                 let mut rows = stmt.query([id])?;
                 let mut set: BTreeSet<Locus<C>> = BTreeSet::new();
                 while let Some(r) = rows.next()? {
-                    let a: i64 = col(r, 0, "a")?;
-                    let b: i64 = col(r, 1, "b")?;
-                    let c: i64 = col(r, 2, "c")?;
+                    let ord: i64 = col(r, 0, "ord")?;
+                    if usize::try_from(ord).ok() != Some(set.len()) {
+                        return Err(SqliteError(format!("{table}_locus {id}: ord {ord} where {} was next", set.len())));
+                    }
+                    let a: i64 = col(r, 1, "a")?;
+                    let b: i64 = col(r, 2, "b")?;
+                    let c: i64 = col(r, 3, "c")?;
                     let unit = C::Ref::from_abc(a, b, c)?;
-                    let span: Option<TokenSpan> = read_span(r, 3)?;
+                    let span: Option<TokenSpan> = read_span(r, 4)?;
                     set.insert(Locus { unit, span });
                 }
                 ContainerContent::Loci(LocusSet(set))

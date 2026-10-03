@@ -13,8 +13,8 @@ fn build_and_dump(kjv_json: &str, xrefs_tsv: &str, atlas: &atlas_core::data::Atl
     atlas_graph::event_world::add_justified_by(&mut graph);
     let extras = atlas_graph::sqlite::extras::compute(&graph, &chrono, &std::collections::HashMap::new(), atlas, &common::sources_registry(), &[]).expect("the fold");
     extras.attach(&mut graph);
-    let root = atlas_graph_types::sections::version_root(&graph).hex();
-    let dumps = atlas_graph_types::sections::Section::SHIPPED.iter().map(|s| atlas_graph_types::sections::logical_dump_section(&graph, *s)).collect();
+    let root = atlas_graph_types::sections::version_root(&graph).unwrap().hex();
+    let dumps = atlas_graph_types::sections::logical_dumps(&graph).unwrap().into_iter().map(|(_, dump)| dump).collect();
     (root, dumps)
 }
 

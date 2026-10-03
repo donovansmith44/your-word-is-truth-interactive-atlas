@@ -5,12 +5,14 @@
 use std::path::PathBuf;
 use std::time::{Duration, Instant, SystemTime};
 
-use atlas_graph_types::canon::ids::{any_node_id_str, position_str};
+use atlas_graph_types::canon::ids::any_node_id_str;
 use atlas_graph_types::canon::{Canon, CANON_VERSION};
-use atlas_graph_types::adjacency::EdgeMeta;
+use atlas_graph_types::canon::Value as CanonValue;
+use atlas_graph_types::section_index::{
+    edge_count_values, edge_index_values, label_values, SectionIndex, EDGE_COUNT_COLUMNS, EDGE_INDEX_COLUMNS, LABEL_COLUMNS,
+};
 use atlas_graph_types::graph::Graph;
 use atlas_graph_types::id::{ContentAddressed, ContentHash};
-use atlas_graph_types::id::Position;
 use atlas_graph_types::node::Node;
 use rusqlite::types::Value;
 use rusqlite::{Connection, Transaction};
@@ -24,7 +26,7 @@ use super::source::SectionLayout;
 use super::logical::logical_hash;
 use atlas_graph_types::sections::logical_dump_section;
 use super::manifest::{root_of, write_manifest, Manifest, ManifestSection, MANIFEST_SCHEMA};
-use super::partition::{node_kind_ordinal, partition, EdgeCountOut, EdgeEntryOut, SectionPartition};
+use super::partition::{node_kind_ordinal, partition, SectionPartition};
 use super::rows::insert_row;
 use super::{hash_bytes, SqliteError, HASH_WIDTH, SCHEMA_VERSION};
 use crate::sections::Section;
@@ -71,50 +73,46 @@ fn insert_nodes(tx: &Transaction, nodes: &[&Node]) -> Result<(), SqliteError> {
     Ok(())
 }
 
-fn insert_labels(tx: &Transaction, labels: &[(Position, &str)]) -> Result<(), SqliteError> {
-    let mut stmt = tx.prepare_cached("INSERT INTO label (position, label) VALUES (?, ?)")?;
-    for (position, label) in labels {
-        stmt.execute(rusqlite::params![position_str(position), label])?;
+fn sql_value(v: CanonValue) -> Result<Value, SqliteError> {
+    match v {
+        CanonValue::Null => Ok(Value::Null),
+        CanonValue::Int(i) => Ok(Value::Integer(i)),
+        CanonValue::Str(s) => Ok(Value::Text(s)),
+        other => Err(SqliteError(format!("a derived column holds {other:?}, which no derived table stores"))),
+    }
+}
+
+fn insert_derived<const N: usize>(tx: &Transaction, table: &str, columns: [&str; N], rows: impl Iterator<Item = Result<[Value; N], SqliteError>>) -> Result<(), SqliteError> {
+    let sql = format!("INSERT INTO {table} ({}) VALUES ({})", columns.join(", "), vec!["?"; N].join(", "));
+    let mut stmt = tx.prepare_cached(&sql)?;
+    for row in rows {
+        stmt.execute(rusqlite::params_from_iter(row?))?;
     }
     Ok(())
 }
 
-fn insert_edges(tx: &Transaction, edges: &[EdgeEntryOut]) -> Result<(), SqliteError> {
-    let mut stmt = tx.prepare_cached(
-        "INSERT INTO edge_index (subject, rel, dir, ord, object, edge_id, meta_kind, meta_narrative, meta_votes, meta_parentage, row_family, row_id) \
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+fn sql_row<const N: usize>(values: [CanonValue; N]) -> Result<[Value; N], SqliteError> {
+    let mut out: [Value; N] = std::array::from_fn(|_| Value::Null);
+    for (slot, v) in out.iter_mut().zip(values) {
+        *slot = sql_value(v)?;
+    }
+    Ok(out)
+}
+
+fn insert_index(tx: &Transaction, index: &SectionIndex<'_>) -> Result<(), SqliteError> {
+    insert_derived(tx, "label", LABEL_COLUMNS, index.labels.iter().map(|(position, label)| sql_row(label_values(position, label))))?;
+    let edge_id = EDGE_INDEX_COLUMNS.iter().position(|c| *c == "edge_id").expect("edge_index has an edge_id column");
+    insert_derived(
+        tx,
+        "edge_index",
+        EDGE_INDEX_COLUMNS,
+        index.entries.iter().map(|e| {
+            let mut row = sql_row(edge_index_values(e)?)?;
+            row[edge_id] = Value::Blob(edge_id_blob(&e.edge_id)?);
+            Ok(row)
+        }),
     )?;
-    for e in edges {
-        let (meta_kind, narrative, votes, parentage): (i64, Value, Value, Value) = match &e.meta {
-            EdgeMeta::None => (0, Value::Null, Value::Null, Value::Null),
-            EdgeMeta::Narrative(n) => (1, Value::Text(n.0.clone()), Value::Null, Value::Null),
-            EdgeMeta::Votes(v) => (2, Value::Null, Value::Integer(i64::from(*v)), Value::Null),
-            EdgeMeta::Parentage(p) => (3, Value::Null, Value::Null, Value::Text(p.name().to_string())),
-        };
-        stmt.execute(rusqlite::params![
-            position_str(&e.subject),
-            e.rel,
-            e.dir,
-            e.ord,
-            position_str(&e.object),
-            edge_id_blob(&e.edge_id)?,
-            meta_kind,
-            narrative,
-            votes,
-            parentage,
-            i64::from(e.row_family.ordinal()),
-            e.row_id,
-        ])?;
-    }
-    Ok(())
-}
-
-fn insert_edge_counts(tx: &Transaction, counts: &[EdgeCountOut]) -> Result<(), SqliteError> {
-    let mut stmt = tx.prepare_cached("INSERT INTO edge_count (subject, rel, dir, count) VALUES (?, ?, ?, ?)")?;
-    for c in counts {
-        stmt.execute(rusqlite::params![position_str(&c.subject), c.rel, c.dir, c.count])?;
-    }
-    Ok(())
+    insert_derived(tx, "edge_count", EDGE_COUNT_COLUMNS, index.counts.iter().map(|c| sql_row(edge_count_values(c))))
 }
 
 fn insert_meta(conn: &Connection, pairs: &[(&str, String)]) -> Result<(), SqliteError> {
@@ -160,7 +158,7 @@ fn write_one(
 
     // The logical hash is a pure function of the graph and the section, computed first so it can
     // be stamped into `meta` and used to name the file.
-    let logical = logical_hash(&logical_dump_section(g, p.section));
+    let logical = logical_hash(&logical_dump_section(g, &p.index)?);
 
     let mut conn = Connection::open(&tmp)?;
     create_tables(&conn, p.section)?;
@@ -172,9 +170,7 @@ fn write_one(
         for (_family, ord, row) in &p.rows {
             insert_row(&tx, &mut jw, *ord, row)?;
         }
-        insert_edges(&tx, &p.edges)?;
-        insert_edge_counts(&tx, &p.edge_counts)?;
-        insert_labels(&tx, &p.labels)?;
+        insert_index(&tx, &p.index)?;
         if let Some((_corpus, order)) = p.spine {
             let mut stmt = tx.prepare_cached("INSERT INTO reading_spine (ord, node_id) VALUES (?, ?)")?;
             for (i, id) in order.iter().enumerate() {
@@ -238,7 +234,7 @@ fn write_one(
         node_count: p.nodes.len(),
         row_count: p.rows.len(),
         extra_row_count: extra_rows,
-        edge_count: p.edges.len(),
+        edge_count: p.index.entries.len(),
         elapsed: started.elapsed(),
     })
 }

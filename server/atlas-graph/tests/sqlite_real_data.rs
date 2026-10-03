@@ -65,7 +65,7 @@ fn the_full_real_graph_is_admitted_over_the_sqlite_backend_and_the_logical_hashe
     }
     let dump_secs = t1.elapsed().as_secs_f64();
     let snap = open_written(&dir).expect("open");
-    assert_eq!(snap.version().0, atlas_graph_types::sections::version_root(g), "one root: the snapshot, the manifest and the in-memory graph agree");
+    assert_eq!(snap.version().0, atlas_graph_types::sections::version_root(g).unwrap(), "one root: the snapshot, the manifest and the in-memory graph agree");
     let t2 = Instant::now();
     assert_answers_match(&snap, g);
     let admit_secs = t2.elapsed().as_secs_f64();

@@ -21,7 +21,8 @@ use super::extras::{is_referenced_unit_table, table_specs_of};
 use super::manifest::{read_manifest, Manifest};
 use super::SCHEMA_VERSION;
 use super::source::{is_missing, SectionSource};
-use super::partition::{directed_rel_code, node_kind_ordinal, rel_code_of, rel_of_code, DIR_FORWARD, DIR_INVERSE, DIR_SYMMETRIC};
+use super::partition::node_kind_ordinal;
+use atlas_graph_types::section_index::{directed_rel_code, rel_code_of, rel_of_code, DIR_FORWARD, DIR_INVERSE, DIR_SYMMETRIC};
 use super::{hash_bytes, hash_from_bytes, open_read_only, SqliteError};
 use crate::sections::Section;
 

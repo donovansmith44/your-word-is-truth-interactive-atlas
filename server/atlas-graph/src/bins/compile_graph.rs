@@ -226,7 +226,7 @@ fn main() -> Result<()> {
         extras.tables.iter().map(|t| t.rows.len()).sum::<usize>()
     );
     let mut version_store = MemStore::default();
-    let graph_version = version_store.publish(graph_a_indexed);
+    let graph_version = version_store.publish(graph_a_indexed).context("indexing the graph into its sections")?;
     let version_hex = atlas_graph::version_hex(graph_version);
 
     let gazetteer_export = atlas_graph::exports::GazetteerExport {
