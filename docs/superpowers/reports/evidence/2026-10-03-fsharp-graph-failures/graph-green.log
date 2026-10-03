@@ -1,0 +1,86 @@
+  BibleAtlas.FSharp.ContractGenerator -> /home/donovan/w/CX-FSHARP-wire/client-fsharp.ContractGenerator/bin/Debug/net10.0/BibleAtlas.FSharp.ContractGenerator.dll
+  BibleAtlas.Client.ContractGenerator -> /home/donovan/w/CX-FSHARP-wire/client.ContractGenerator/bin/Debug/net10.0/BibleAtlas.Client.ContractGenerator.dll
+  BibleAtlas.FSharp.Core -> /home/donovan/w/CX-FSHARP-wire/client-fsharp/Core/bin/Debug/net10.0/BibleAtlas.FSharp.Core.dll
+  BibleAtlas.FSharp.Client -> /home/donovan/w/CX-FSHARP-wire/client-fsharp/bin/Debug/net10.0/BibleAtlas.FSharp.Client.dll
+  BibleAtlas.FSharp.Client (Blazor output) -> /home/donovan/w/CX-FSHARP-wire/client-fsharp/bin/Debug/net10.0/wwwroot
+  BibleAtlas.FSharp.Tests -> /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/bin/Debug/net10.0/BibleAtlas.FSharp.Tests.dll
+Test run for /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/bin/Debug/net10.0/BibleAtlas.FSharp.Tests.dll (.NETCoreApp,Version=v10.0)
+A total of 1 test files matched the specified pattern.
+[xUnit.net 00:00:00.00] xUnit.net VSTest Adapter v3.1.4+50e68bbb8b (64-bit .NET 10.0.12)
+[xUnit.net 00:00:00.06]   Discovering: BibleAtlas.FSharp.Tests
+[xUnit.net 00:00:00.11]   Discovered:  BibleAtlas.FSharp.Tests
+[xUnit.net 00:00:00.13]   Starting:    BibleAtlas.FSharp.Tests
+  Passed BibleAtlas.FSharp.Tests.ExplorationTests.a resumed journey refuses a final target from a different generated artifact root [101 ms]
+  Passed BibleAtlas.FSharp.Tests.PresentationTests.an edge card preserves its served label and optional provenance title [101 ms]
+  Passed BibleAtlas.FSharp.Tests.ModelTests.a completion from a departed surface cannot alter any replacement surface [101 ms]
+  Passed BibleAtlas.FSharp.Tests.PresentationTests.a map or era card uses the whole served window label [7 ms]
+  Passed BibleAtlas.FSharp.Tests.PresentationTests.a node card composes exactly its served label and provenance title [1 ms]
+  Passed BibleAtlas.FSharp.Tests.PresentationTests.a place card composes its name and date claims without a blurb [2 ms]
+  Passed BibleAtlas.FSharp.Tests.PresentationTests.a polity card uses the served reign label without formatting its dates [1 ms]
+  Passed BibleAtlas.FSharp.Tests.ExplorationTests.an empty resolved journey refuses every generated step list with its missing origin count [22 ms]
+  Passed BibleAtlas.FSharp.Tests.PresentationTests.every presentation field has exactly its declared caption [17 ms]
+  Passed BibleAtlas.FSharp.Tests.PresentationTests.a TextUnit without its served text is an explicit contract failure [1 ms]
+  Passed BibleAtlas.FSharp.Tests.PresentationTests.a TextUnit presentation preserves its entire served text record and provenance title [1 ms]
+  Passed BibleAtlas.FSharp.Tests.ExplorationTests.Resume preserves a failed whole-journey read without constructing a false trail [25 ms]
+  Passed BibleAtlas.FSharp.Tests.ExplorationTests.Back records the served dual edge and cancels the whole visible breadcrumb [11 ms]
+  Passed BibleAtlas.FSharp.Tests.GraphTests.a nonterminal empty page cannot keep a resolution reading forever [189 ms]
+  Passed BibleAtlas.FSharp.Tests.ModelTests.a text completion after navigation cannot reopen a departed reading [72 ms]
+  Passed BibleAtlas.FSharp.Tests.ExplorationTests.a resumed journey refuses every generated missing target cardinality [13 ms]
+  Passed BibleAtlas.FSharp.Tests.ExplorationTests.a missing element cannot become a resolved position for any requested identity [2 ms]
+  Passed BibleAtlas.FSharp.Tests.ExplorationTests.Back at the beginning preserves the complete trail and does no graph read [1 ms]
+  Passed BibleAtlas.FSharp.Tests.ModelTests.Concord opens its bounded reading from the served corpus beginning [10 ms]
+  Passed BibleAtlas.FSharp.Tests.GraphTests.an incomplete element answer cannot shift the remaining journey [48 ms]
+  Passed BibleAtlas.FSharp.Tests.GraphTests.a continuation after all requested elements preserves its exact cursor and sends no further read [12 ms]
+  Passed BibleAtlas.FSharp.Tests.GraphTests.extra answered elements retain the whole requested and received cardinalities [10 ms]
+  Passed BibleAtlas.FSharp.Tests.GraphTests.an ordered resolution reads the whole element page once [7 ms]
+  Passed BibleAtlas.FSharp.Tests.GraphTests.a root change between pages refuses the mixed journey [13 ms]
+  Passed BibleAtlas.FSharp.Tests.GraphTests.a missing element cannot become a resolved position [6 ms]
+  Passed BibleAtlas.FSharp.Tests.ModelTests.unknown routes book codes and invalid chapter input are refused [96 ms]
+  Passed BibleAtlas.FSharp.Tests.GraphTests.a paged resolution retains the requested order across a single artifact [11 ms]
+  Passed BibleAtlas.FSharp.Tests.GraphTests.an empty resolution does no transport work [1 ms]
+  Passed BibleAtlas.FSharp.Tests.GraphTests.a different answered identity cannot silently replace the requested position [6 ms]
+  Passed BibleAtlas.FSharp.Tests.ModelTests.Concord Next and failed-page retry preserve exactly the served continuation request [15 ms]
+  Passed BibleAtlas.FSharp.Tests.ModelTests.a failed opening retains exactly the position needed by Retry [10 ms]
+  Passed BibleAtlas.FSharp.Tests.ModelTests.reading page constructors are private to the surface transition boundary [1 ms]
+  Passed BibleAtlas.FSharp.Tests.ModelTests.a superseded focus completion cannot replace a later traversal [5 ms]
+  Passed BibleAtlas.FSharp.Tests.ModelTests.reader startup uses the complete served contents to open its selected chapter [5 ms]
+  Passed BibleAtlas.FSharp.Tests.ModelTests.every noncurrent surface completion preserves every page state and its focus [25 ms]
+  Passed BibleAtlas.FSharp.Tests.ModelTests.a failed contents read retries only contents with a new identity [25 ms]
+  Passed BibleAtlas.FSharp.Tests.ModelTests.source retry advances only its failed operation and keeps its entire last value [3 ms]
+  Passed BibleAtlas.FSharp.Tests.SourceOrderTests.the order gate finds a fixture used through a served record field [399 ms]
+  Passed BibleAtlas.FSharp.Tests.ModelTests.contents from the other corpus preserve the mismatch and perform no text read [7 ms]
+  Passed BibleAtlas.FSharp.Tests.ModelTests.following preserves the current trail while its replacement is in flight [6 ms]
+  Passed BibleAtlas.FSharp.Tests.ModelTests.a current source completion installs the whole served answer without starting another read [2 ms]
+  Passed BibleAtlas.FSharp.Tests.ModelTests.closing focus refuses a late successful opening [5 ms]
+  Passed BibleAtlas.FSharp.Tests.SourceOrderTests.the order gate refuses a helper above its caller and accepts descending intent [40 ms]
+  Passed BibleAtlas.FSharp.Tests.SourceOrderTests.the order gate checks type member helpers below their first member caller [65 ms]
+  Passed BibleAtlas.FSharp.Tests.ModelTests.reader and Concord routes roundtrip their generated vocabulary and escaped payloads [110 ms]
+  Passed BibleAtlas.FSharp.Tests.ModelTests.every message belonging to another surface preserves every page state [22 ms]
+  Passed BibleAtlas.FSharp.Tests.SourceOrderTests.the order gate preserves private helper checking inside nested modules [42 ms]
+  Passed BibleAtlas.FSharp.Tests.ModelTests.opening a focus has a new identity and resolves only its requested position [3 ms]
+  Passed BibleAtlas.FSharp.Tests.SourceOrderTests.the order gate permits local inputs before computations that consume them [21 ms]
+  Passed BibleAtlas.FSharp.Tests.SourceOrderTests.the order gate distinguishes a shadowing parameter from the outer helper [20 ms]
+  Passed BibleAtlas.FSharp.Tests.SourceOrderTests.the order gate checks helpers reached through a qualified module reference [38 ms]
+  Passed BibleAtlas.FSharp.Tests.ExplorationTests.every generated edge kind has an involutive dual from the published vocabulary [453 ms]
+  Passed BibleAtlas.FSharp.Tests.ExplorationTests.the exploration expression composes nested reads with the complete generated trail [10 ms]
+  Passed BibleAtlas.FSharp.Tests.SourceOrderTests.the order gate checks every exported helper regardless of its visibility [39 ms]
+  Passed BibleAtlas.FSharp.Tests.ExplorationTests.Resume resolves every saved identity once and retains the bounded whole journey with its kinds [14 ms]
+  Passed BibleAtlas.FSharp.Tests.SourceOrderTests.the order gate permits module data before an operation that reads it [17 ms]
+  Passed BibleAtlas.FSharp.Tests.ExplorationTests.following refuses any generated non-singleton answer with both cardinalities [41 ms]
+  Passed BibleAtlas.FSharp.Tests.ExplorationTests.a node record cannot be stamped with a different generated page root [1 ms]
+  Passed BibleAtlas.FSharp.Tests.ExplorationTests.a failed exploration stops the continuation and makes exactly its requested read [8 ms]
+  Passed BibleAtlas.FSharp.Tests.SourceOrderTests.the order gate finds module helpers called inside nested and destructured bindings [49 ms]
+  Passed BibleAtlas.FSharp.Tests.SourceOrderTests.the order gate distinguishes a shadowing lambda argument from the outer helper [27 ms]
+  Passed BibleAtlas.FSharp.Tests.SourceOrderTests.the order gate checks local helper chains within their binding scope [42 ms]
+[xUnit.net 00:00:01.72]   Finished:    BibleAtlas.FSharp.Tests
+  Passed BibleAtlas.FSharp.Tests.ModelTests.future sized Concord turns retain exactly the final page and current request [330 ms]
+  Passed BibleAtlas.FSharp.Tests.ModelTests.retry with no failed operation preserves every surface and pending request [33 ms]
+  Passed BibleAtlas.FSharp.Tests.ModelTests.navigating to the current route preserves its pending request instead of sending it twice [24 ms]
+  Passed BibleAtlas.FSharp.Tests.ModelTests.a text answer from another corpus is refused before entering either reading surface [5 ms]
+  Passed BibleAtlas.FSharp.Tests.ModelTests.a missing chapter is unavailable without a manufactured request identity or retry [2 ms]
+  Passed BibleAtlas.FSharp.Tests.SourceOrderTests.helper functions members and shared test fixtures follow their first caller in every FSharp source [731 ms]
+
+Test Run Successful.
+Total tests: 68
+     Passed: 68
+ Total time: 2.0175 Seconds

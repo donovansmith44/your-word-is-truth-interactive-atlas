@@ -7,3 +7,7 @@ type Failure =
     | Read of ReadFailure
     | Contract of string
     | ArtifactMoved of resolved: ArtifactRoot * serving: ArtifactRoot
+
+module Failures =
+    let graph (failure: GraphFailure) : Failure =
+        Read(ReadFailure.Terminal(TerminalFailure.InvalidGraph failure))

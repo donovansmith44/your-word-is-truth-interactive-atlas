@@ -1,6 +1,7 @@
 namespace BibleAtlas.FSharp
 
 open BibleAtlas.FSharp.Contract
+open BibleAtlas.FSharp.Admission
 
 type Step = { Kind: EdgeKind; Target: Explorable }
 type Trail = private { Start: Explorable; Steps: Step list }
@@ -14,7 +15,7 @@ module rec Trail =
             let trail = { Start = start; Steps = List.map2 (fun kind target -> { Kind = kind; Target = target }) kinds targets }
             if onOneRoot trail then Ok (trail.Steps |> List.fold (fun retained step -> follow step retained) (beginAt start))
             else Error(ArtifactMoved(Explorable.root start, Explorable.root (current trail)))
-        | _ -> Error(Contract $"the resolved journey has {List.length walked} elements for {List.length kinds} steps")
+        | _ -> Error(Failures.graph(GraphFailure.ElementCountMismatch { Requested = uint64 (List.length kinds) + originCount; Received = uint64 (List.length walked) }))
 
     let breadcrumb trail =
         let collapse (crumbs: Step list) (step: Step) =
@@ -38,3 +39,5 @@ module rec Trail =
     let current trail = List.tryLast trail.Steps |> Option.map _.Target |> Option.defaultValue trail.Start
 
     let walked trail = trail.Start :: List.map _.Target trail.Steps
+
+    let private originCount = 1UL

@@ -24,6 +24,7 @@
     <Compile Include="Admission/TextSpans.fs" />
     <Compile Include="Admission/Paths.fs" />
     <Compile Include="Admission/WireFailure.fs" />
+    <Compile Include="Admission/GraphFailure.fs" />
     <Compile Include="Admission/ReadFailure.fs" />
     <Compile Include="Admission/Failure.fs" />
     <Compile Include="Domain/Position.fs" />

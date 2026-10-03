@@ -2,7 +2,7 @@
 
 This is the actual-module tour for `lane/codex/CX-FSHARP-wire`, on approved
 producer `da7e00d`, carrying the parent skeleton forward. **Not ready for whole
-owner sign-off or full parity:** structured JSON/graph failures, frontier/read
+owner sign-off or full parity:** structured JSON failures and failure presentation, frontier/read
 integration, generated producer binding in the remaining skeleton, semantic
 source order and unused reachability still need correction. The named pending
 inventory is **59**; only the two existing HTTP status doors were filled by the
@@ -22,7 +22,8 @@ explicit failure-correction work. No new view or unrelated operation was added.
 | [ArrayIndex](../../../client-fsharp/Core/Admission/ArrayIndex.fs), [DocumentPosition](../../../client-fsharp/Core/Admission/DocumentPosition.fs), [Coordinates](../../../client-fsharp/Core/Admission/Coordinates.fs), [HttpUrl](../../../client-fsharp/Core/Admission/HttpUrl.fs) | Existing private admission leaves and narrow failure cases. |
 | [Scalars](../../../client-fsharp/Core/Admission/Scalars.fs), [TextSpans](../../../client-fsharp/Core/Admission/TextSpans.fs) | Private HTTP client/server refusal statuses with total checked range doors and invalid-status predicate; color/text-span doors remain pending. Existing text-run clamping still needs correction. |
 | [Paths](../../../client-fsharp/Core/Admission/Paths.fs), [WireFailure](../../../client-fsharp/Core/Admission/WireFailure.fs) | Structured JSON locations/failures; the live JSON decoder still returns legacy Contract strings and is not yet migrated to these types. |
-| [ReadFailure](../../../client-fsharp/Core/Admission/ReadFailure.fs), [Failure](../../../client-fsharp/Core/Admission/Failure.fs), [API door](../../../client-fsharp/Core/Api.fs) | Live Failure.Read carries transient/terminal/cancelled cases. Exact 4xx/5xx status and generated ErrorCode survive the door. Invalid received codes have a transient InvalidStatus case; surfaced informational/redirect statuses have terminal UnexpectedStatus. The old Transport string constructor is absent. Legacy Contract strings remain explicit unfinished work. |
+| [GraphFailure](../../../client-fsharp/Core/Admission/GraphFailure.fs), [graph read](../../../client-fsharp/Core/Admission/GraphRead.fs) | Closed answer failures carry generated identities, requested/received PositionRef including kind, exact continuation cursor, corpus and nonnegative cardinality evidence. Explorable, Trail/Explore, presenter and reading validation use this same vocabulary. Evidence records carry observations, without claiming refined equality/inequality guarantees. |
+| [ReadFailure](../../../client-fsharp/Core/Admission/ReadFailure.fs), [Failure](../../../client-fsharp/Core/Admission/Failure.fs), [API door](../../../client-fsharp/Core/Api.fs) | Live Failure.Read carries transient/terminal/cancelled cases. Exact 4xx/5xx status and generated ErrorCode survive the door. Invalid received codes have a transient InvalidStatus case; surfaced informational/redirect statuses have terminal UnexpectedStatus. InvalidGraph carries the graph-answer vocabulary. The old Transport string constructor is absent. Only the JSON adapter still produces Contract strings; its decoder/library correction remains open. |
 
 These links are the type/signature declarations; this spec does not maintain a
 second model. Current generated identities, roots, cursors and widenings come
@@ -36,7 +37,8 @@ liveness.
 Current evidence: [wire integration](../reports/2026-10-03-fsharp-wire-identity-generation.md),
 [source order](../reports/2026-10-03-fsharp-order-integration.md),
 [property-only tests](../reports/2026-10-03-fsharp-property-conversion.md), and
-[structured HTTP correction](../reports/2026-10-03-fsharp-http-failures.md).
+[structured HTTP correction](../reports/2026-10-03-fsharp-http-failures.md), and
+[structured graph-answer correction](../reports/2026-10-03-fsharp-graph-failures.md).
 The compiling test suite proves the recorded scope; it is not owner approval or
 an independent parity verdict. After the remaining corrections, present these
 real files for whole-domain review before feature/view expansion.

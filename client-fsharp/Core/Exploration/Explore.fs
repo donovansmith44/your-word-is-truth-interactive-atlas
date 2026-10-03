@@ -1,6 +1,7 @@
 namespace BibleAtlas.FSharp
 
 open BibleAtlas.FSharp.Contract
+open BibleAtlas.FSharp.Admission
 open FSharpPlus.Data
 
 type Link = { Kind: EdgeKind; Target: PositionRef }
@@ -23,7 +24,7 @@ module rec Explore =
                 let followed = Trail.follow { Kind = link.Kind; Target = target } trail
                 if Trail.onOneRoot followed then return Ok(target, followed)
                 else return! run<Explorable> explorer followed (renew ())
-            | Ok _ -> return Error(Contract "a single target did not resolve to one element")
+            | Ok received -> return Error(Failures.graph(GraphFailure.ElementCountMismatch { Requested = singleTargetCount; Received = uint64 received.Length }))
         })
 
     let back () : Explore<Explorable> =
@@ -55,6 +56,8 @@ module rec Explore =
     let result<'a> (value: 'a) : Explore<'a> = Explore(ReaderT(fun _ -> StateT(fun trail -> ResultT(async { return Ok(value, trail) }))))
 
     let run<'a> (explorer: Explorer) (trail: Trail) (Explore walk: Explore<'a>) : Async<Result<'a * Trail, Failure>> = ReaderT.run walk explorer |> fun state -> StateT.run state trail |> ResultT.run
+
+    let private singleTargetCount = 1UL
 
     let internal walk<'a> (action: Explorer -> Trail -> Async<Result<'a * Trail, Failure>>) : Explore<'a> = Explore(ReaderT(fun explorer -> StateT(fun trail -> ResultT(action explorer trail))))
 

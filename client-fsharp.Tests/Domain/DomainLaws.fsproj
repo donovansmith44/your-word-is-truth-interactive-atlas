@@ -6,6 +6,7 @@
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="../WireFixtures.fs" />
     <Compile Include="*.fs" />
   </ItemGroup>
   <ItemGroup>

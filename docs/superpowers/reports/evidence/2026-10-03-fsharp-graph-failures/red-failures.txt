@@ -1,0 +1,71 @@
+graph-behavior-red.log
+[xUnit.net 00:00:00.36]     BibleAtlas.FSharp.Tests.PresentationTests.a TextUnit without its served text is an explicit contract failure [FAIL]
+[xUnit.net 00:00:00.36]     BibleAtlas.FSharp.Tests.ExplorationTests.an empty resolved journey refuses every generated step list with its missing origin count [FAIL]
+   FsCheck.Xunit.PropertyFailedException : 
+Falsifiable, after 1 test (1 shrink) (4922262300798374936,13787652341964179703). 
+Last step was invoked with size of 2 and seed of (11263450859348848616,9064216132002437729):
+Original:
+   FsCheck.Xunit.PropertyFailedException : 
+Falsifiable, after 1 test (0 shrinks) (9323065302130564023,3842370548122835029). 
+Last step was invoked with size of 2 and seed of (3122580250367842537,13221078547391116795):
+Original:
+[xUnit.net 00:00:00.38]     BibleAtlas.FSharp.Tests.GraphTests.a nonterminal empty page cannot keep a resolution reading forever [FAIL]
+[xUnit.net 00:00:00.40]     BibleAtlas.FSharp.Tests.ExplorationTests.a resumed journey refuses every generated missing target cardinality [FAIL]
+[xUnit.net 00:00:00.40]     BibleAtlas.FSharp.Tests.ExplorationTests.a missing element cannot become a resolved position for any requested identity [FAIL]
+[xUnit.net 00:00:00.42]     BibleAtlas.FSharp.Tests.GraphTests.an incomplete element answer cannot shift the remaining journey [FAIL]
+[xUnit.net 00:00:00.43]     BibleAtlas.FSharp.Tests.GraphTests.a continuation after all requested elements preserves its exact cursor and sends no further read [FAIL]
+[xUnit.net 00:00:00.43]     BibleAtlas.FSharp.Tests.GraphTests.extra answered elements retain the whole requested and received cardinalities [FAIL]
+   FsCheck.Xunit.PropertyFailedException : 
+Falsifiable, after 1 test (1 shrink) (11160396220577430697,3428230003524441921). 
+Last step was invoked with size of 2 and seed of (5596560753791328953,3859959555317202639):
+Original:
+   FsCheck.Xunit.PropertyFailedException : 
+Falsifiable, after 1 test (0 shrinks) (17654552702191127308,9911052495349536631). 
+Last step was invoked with size of 2 and seed of (16668023497935289374,2911240798107142587):
+Original:
+   FsCheck.Xunit.PropertyFailedException : 
+Falsifiable, after 1 test (1 shrink) (16884002791141372635,376048780365364909). 
+Last step was invoked with size of 2 and seed of (15019269829658383663,10403790197269102253):
+Original:
+   FsCheck.Xunit.PropertyFailedException : 
+Falsifiable, after 1 test (1 shrink) (12750001255231356598,8587818963761679017). 
+Last step was invoked with size of 2 and seed of (1820924238693049799,2331754697026967171):
+Original:
+   FsCheck.Xunit.PropertyFailedException : 
+Falsifiable, after 1 test (0 shrinks) (1265442607152203852,128149120003367925). 
+Last step was invoked with size of 2 and seed of (17259094754831896489,1118796252845898883):
+Original:
+   FsCheck.Xunit.PropertyFailedException : 
+Falsifiable, after 1 test (0 shrinks) (16910846102930957496,6533317488924458167). 
+Last step was invoked with size of 2 and seed of (17229539893935435495,9026216019216360971):
+Original:
+[xUnit.net 00:00:00.45]     BibleAtlas.FSharp.Tests.GraphTests.a missing element cannot become a resolved position [FAIL]
+[xUnit.net 00:00:00.47]     BibleAtlas.FSharp.Tests.GraphTests.a different answered identity cannot silently replace the requested position [FAIL]
+   FsCheck.Xunit.PropertyFailedException : 
+Falsifiable, after 1 test (1 shrink) (11992325509820874346,226020694660857765). 
+Last step was invoked with size of 2 and seed of (15425295980941383176,13562801766750173501):
+Original:
+   FsCheck.Xunit.PropertyFailedException : 
+Falsifiable, after 1 test (1 shrink) (8273159587393085091,16157662839768902477). 
+Last step was invoked with size of 2 and seed of (10729843723103592228,14771641696689095197):
+Original:
+[xUnit.net 00:00:00.57]     BibleAtlas.FSharp.Tests.ModelTests.contents from the other corpus preserve the mismatch and perform no text read [FAIL]
+   FsCheck.Xunit.PropertyFailedException : 
+Falsifiable, after 1 test (0 shrinks) (15054388215388881929,5547494986005408565). 
+Last step was invoked with size of 2 and seed of (12693090320548638872,11993568843750167067):
+Original:
+[xUnit.net 00:00:00.85]     BibleAtlas.FSharp.Tests.ExplorationTests.following refuses any generated non-singleton answer with both cardinalities [FAIL]
+   FsCheck.Xunit.PropertyFailedException : 
+Falsifiable, after 1 test (1 shrink) (10924271623799492472,1629663855733811513). 
+Last step was invoked with size of 2 and seed of (13559089248550529304,10156570240776058161):
+Original:
+[xUnit.net 00:00:01.14]     BibleAtlas.FSharp.Tests.ModelTests.a text answer from another corpus is refused before entering either reading surface [FAIL]
+[xUnit.net 00:00:01.15]     BibleAtlas.FSharp.Tests.ModelTests.a missing chapter is unavailable without a manufactured request identity or retry [FAIL]
+   FsCheck.Xunit.PropertyFailedException : 
+Falsifiable, after 1 test (1 shrink) (2320161177277979674,15740133384860043003). 
+Last step was invoked with size of 2 and seed of (5533436835402375632,17739228289520407251):
+Original:
+   FsCheck.Xunit.PropertyFailedException : 
+Falsifiable, after 1 test (2 shrinks) (4209048139302726357,2732395063251275243). 
+Last step was invoked with size of 2 and seed of (3448906755004467351,9276761126591424831):
+Original:

@@ -1,0 +1,914 @@
+  BibleAtlas.FSharp.ContractGenerator -> /home/donovan/w/CX-FSHARP-wire/client-fsharp.ContractGenerator/bin/Debug/net10.0/BibleAtlas.FSharp.ContractGenerator.dll
+  BibleAtlas.Client.ContractGenerator -> /home/donovan/w/CX-FSHARP-wire/client.ContractGenerator/bin/Debug/net10.0/BibleAtlas.Client.ContractGenerator.dll
+  BibleAtlas.FSharp.Core -> /home/donovan/w/CX-FSHARP-wire/client-fsharp/Core/bin/Debug/net10.0/BibleAtlas.FSharp.Core.dll
+  BibleAtlas.FSharp.Client -> /home/donovan/w/CX-FSHARP-wire/client-fsharp/bin/Debug/net10.0/BibleAtlas.FSharp.Client.dll
+  BibleAtlas.FSharp.Client (Blazor output) -> /home/donovan/w/CX-FSHARP-wire/client-fsharp/bin/Debug/net10.0/wwwroot
+  BibleAtlas.FSharp.Tests -> /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/bin/Debug/net10.0/BibleAtlas.FSharp.Tests.dll
+Test run for /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/bin/Debug/net10.0/BibleAtlas.FSharp.Tests.dll (.NETCoreApp,Version=v10.0)
+A total of 1 test files matched the specified pattern.
+[xUnit.net 00:00:00.00] xUnit.net VSTest Adapter v3.1.4+50e68bbb8b (64-bit .NET 10.0.12)
+[xUnit.net 00:00:00.08]   Discovering: BibleAtlas.FSharp.Tests
+[xUnit.net 00:00:00.13]   Discovered:  BibleAtlas.FSharp.Tests
+[xUnit.net 00:00:00.15]   Starting:    BibleAtlas.FSharp.Tests
+  Passed BibleAtlas.FSharp.Tests.ModelTests.a completion from a departed surface cannot alter any replacement surface [70 ms]
+  Passed BibleAtlas.FSharp.Tests.PresentationTests.an edge card preserves its served label and optional provenance title [112 ms]
+  Passed BibleAtlas.FSharp.Tests.ExplorationTests.a resumed journey refuses a final target from a different generated artifact root [112 ms]
+  Passed BibleAtlas.FSharp.Tests.PresentationTests.a map or era card uses the whole served window label [4 ms]
+  Passed BibleAtlas.FSharp.Tests.PresentationTests.a node card composes exactly its served label and provenance title [1 ms]
+  Passed BibleAtlas.FSharp.Tests.PresentationTests.a place card composes its name and date claims without a blurb [1 ms]
+[xUnit.net 00:00:00.36]     BibleAtlas.FSharp.Tests.PresentationTests.a TextUnit without its served text is an explicit contract failure [FAIL]
+[xUnit.net 00:00:00.36]       FsCheck.Xunit.PropertyFailedException : 
+[xUnit.net 00:00:00.36]       Falsifiable, after 1 test (0 shrinks) (9323065302130564023,3842370548122835029). 
+[xUnit.net 00:00:00.36]       Last step was invoked with size of 2 and seed of (3122580250367842537,13221078547391116795):
+[xUnit.net 00:00:00.36]       Original:
+[xUnit.net 00:00:00.36]       0us
+[xUnit.net 00:00:00.36]       
+[xUnit.net 00:00:00.36]       ---- Assert.Equal() Failure: Values differ
+[xUnit.net 00:00:00.36]       Expected: Microsoft.FSharp.Core.FSharpResult`2[BibleAtlas.FSharp.PopoverPresentation,BibleAtlas.FSharp.Failure]
+[xUnit.net 00:00:00.36]       Actual:   Microsoft.FSharp.Core.FSharpResult`2[BibleAtlas.FSharp.PopoverPresentation,BibleAtlas.FSharp.Failure]
+[xUnit.net 00:00:00.36]       Stack Trace:
+[xUnit.net 00:00:00.36]         
+[xUnit.net 00:00:00.36]         ----- Inner Stack Trace -----
+[xUnit.net 00:00:00.36]         /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/PresentationTests.fs(34,0): at BibleAtlas.FSharp.Tests.PresentationTests.a TextUnit without its served text is an explicit contract failure(UInt16 suffix)
+[xUnit.net 00:00:00.36]            at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+[xUnit.net 00:00:00.36]            at System.Reflection.MethodBaseInvoker.InvokeDirectByRefWithFewArgs(Object obj, Span`1 copyOfArgs, BindingFlags invokeAttr)
+[xUnit.net 00:00:00.36]         --- End of stack trace from previous location ---
+[xUnit.net 00:00:00.36]         C:\Users\kurts\Projects\FsCheck\src\FsCheck\Runner.fs(595,0): at FsCheck.Runner.invokeAndThrowInner@592-1.Invoke(Object[] o)
+[xUnit.net 00:00:00.36]         /__w/1/s/src/fsharp/src/FSharp.Core/reflect.fs(1230,0): at <StartupCode$FSharp-Core>.$Reflect.Invoke@1230.Invoke(T1 inp)
+[xUnit.net 00:00:00.36]            at System.Lazy`1.ViaFactory(LazyThreadSafetyMode mode)
+[xUnit.net 00:00:00.36]            at System.Lazy`1.ExecutionAndPublication(LazyHelper executionAndPublication, Boolean useDefaultConstructor)
+[xUnit.net 00:00:00.36]            at System.Lazy`1.CreateValue()
+[xUnit.net 00:00:00.36]         C:\Users\kurts\Projects\FsCheck\src\FsCheck\Testable.fs(164,0): at FsCheck.Testable.Prop.safeForce[a](Lazy`1 body)
+[xUnit.net 00:00:00.36]     BibleAtlas.FSharp.Tests.ExplorationTests.an empty resolved journey refuses every generated step list with its missing origin count [FAIL]
+[xUnit.net 00:00:00.36]       FsCheck.Xunit.PropertyFailedException : 
+[xUnit.net 00:00:00.36]       Falsifiable, after 1 test (1 shrink) (4922262300798374936,13787652341964179703). 
+[xUnit.net 00:00:00.36]       Last step was invoked with size of 2 and seed of (11263450859348848616,9064216132002437729):
+[xUnit.net 00:00:00.36]       Original:
+[xUnit.net 00:00:00.36]       [Contains]
+[xUnit.net 00:00:00.36]       Shrunk:
+[xUnit.net 00:00:00.36]       []
+[xUnit.net 00:00:00.36]       
+[xUnit.net 00:00:00.36]       ---- Assert.Equal() Failure: Values differ
+[xUnit.net 00:00:00.36]       Expected: Microsoft.FSharp.Core.FSharpResult`2[BibleAtlas.FSharp.Trail,BibleAtlas.FSharp.Failure]
+[xUnit.net 00:00:00.36]       Actual:   Microsoft.FSharp.Core.FSharpResult`2[BibleAtlas.FSharp.Trail,BibleAtlas.FSharp.Failure]
+[xUnit.net 00:00:00.36]       Stack Trace:
+[xUnit.net 00:00:00.36]         
+[xUnit.net 00:00:00.36]         ----- Inner Stack Trace -----
+[xUnit.net 00:00:00.36]         /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/ExplorationTests.fs(131,0): at BibleAtlas.FSharp.Tests.ExplorationTests.an empty resolved journey refuses every generated step list with its missing origin count(FSharpList`1 kinds)
+[xUnit.net 00:00:00.36]            at InvokeStub_ExplorationTests.an empty resolved journey refuses every generated step list with its missing origin count(Object, Span`1)
+[xUnit.net 00:00:00.36]            at System.Reflection.MethodBaseInvoker.InvokeWithOneArg(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
+[xUnit.net 00:00:00.36]         --- End of stack trace from previous location ---
+[xUnit.net 00:00:00.36]         C:\Users\kurts\Projects\FsCheck\src\FsCheck\Runner.fs(595,0): at FsCheck.Runner.invokeAndThrowInner@592-1.Invoke(Object[] o)
+[xUnit.net 00:00:00.36]         /__w/1/s/src/fsharp/src/FSharp.Core/reflect.fs(1230,0): at <StartupCode$FSharp-Core>.$Reflect.Invoke@1230.Invoke(T1 inp)
+[xUnit.net 00:00:00.36]            at System.Lazy`1.ViaFactory(LazyThreadSafetyMode mode)
+[xUnit.net 00:00:00.36]            at System.Lazy`1.ExecutionAndPublication(LazyHelper executionAndPublication, Boolean useDefaultConstructor)
+[xUnit.net 00:00:00.36]            at System.Lazy`1.CreateValue()
+[xUnit.net 00:00:00.36]         C:\Users\kurts\Projects\FsCheck\src\FsCheck\Testable.fs(164,0): at FsCheck.Testable.Prop.safeForce[a](Lazy`1 body)
+  Passed BibleAtlas.FSharp.Tests.PresentationTests.a polity card uses the served reign label without formatting its dates [1 ms]
+  Passed BibleAtlas.FSharp.Tests.PresentationTests.every presentation field has exactly its declared caption [13 ms]
+  Failed BibleAtlas.FSharp.Tests.ExplorationTests.an empty resolved journey refuses every generated step list with its missing origin count [11 ms]
+  Error Message:
+   FsCheck.Xunit.PropertyFailedException : 
+Falsifiable, after 1 test (1 shrink) (4922262300798374936,13787652341964179703). 
+Last step was invoked with size of 2 and seed of (11263450859348848616,9064216132002437729):
+Original:
+[Contains]
+Shrunk:
+[]
+
+---- Assert.Equal() Failure: Values differ
+Expected: Microsoft.FSharp.Core.FSharpResult`2[BibleAtlas.FSharp.Trail,BibleAtlas.FSharp.Failure]
+Actual:   Microsoft.FSharp.Core.FSharpResult`2[BibleAtlas.FSharp.Trail,BibleAtlas.FSharp.Failure]
+  Stack Trace:
+  
+----- Inner Stack Trace -----
+   at BibleAtlas.FSharp.Tests.ExplorationTests.an empty resolved journey refuses every generated step list with its missing origin count(FSharpList`1 kinds) in /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/ExplorationTests.fs:line 131
+   at InvokeStub_ExplorationTests.an empty resolved journey refuses every generated step list with its missing origin count(Object, Span`1)
+   at System.Reflection.MethodBaseInvoker.InvokeWithOneArg(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
+--- End of stack trace from previous location ---
+   at FsCheck.Runner.invokeAndThrowInner@592-1.Invoke(Object[] o) in C:\Users\kurts\Projects\FsCheck\src\FsCheck\Runner.fs:line 595
+   at <StartupCode$FSharp-Core>.$Reflect.Invoke@1230.Invoke(T1 inp) in /__w/1/s/src/fsharp/src/FSharp.Core/reflect.fs:line 1230
+   at System.Lazy`1.ViaFactory(LazyThreadSafetyMode mode)
+   at System.Lazy`1.ExecutionAndPublication(LazyHelper executionAndPublication, Boolean useDefaultConstructor)
+   at System.Lazy`1.CreateValue()
+   at FsCheck.Testable.Prop.safeForce[a](Lazy`1 body) in C:\Users\kurts\Projects\FsCheck\src\FsCheck\Testable.fs:line 164
+  Failed BibleAtlas.FSharp.Tests.PresentationTests.a TextUnit without its served text is an explicit contract failure [2 ms]
+  Error Message:
+   FsCheck.Xunit.PropertyFailedException : 
+Falsifiable, after 1 test (0 shrinks) (9323065302130564023,3842370548122835029). 
+Last step was invoked with size of 2 and seed of (3122580250367842537,13221078547391116795):
+Original:
+0us
+
+---- Assert.Equal() Failure: Values differ
+Expected: Microsoft.FSharp.Core.FSharpResult`2[BibleAtlas.FSharp.PopoverPresentation,BibleAtlas.FSharp.Failure]
+Actual:   Microsoft.FSharp.Core.FSharpResult`2[BibleAtlas.FSharp.PopoverPresentation,BibleAtlas.FSharp.Failure]
+  Stack Trace:
+  
+----- Inner Stack Trace -----
+   at BibleAtlas.FSharp.Tests.PresentationTests.a TextUnit without its served text is an explicit contract failure(UInt16 suffix) in /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/PresentationTests.fs:line 34
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeDirectByRefWithFewArgs(Object obj, Span`1 copyOfArgs, BindingFlags invokeAttr)
+--- End of stack trace from previous location ---
+   at FsCheck.Runner.invokeAndThrowInner@592-1.Invoke(Object[] o) in C:\Users\kurts\Projects\FsCheck\src\FsCheck\Runner.fs:line 595
+   at <StartupCode$FSharp-Core>.$Reflect.Invoke@1230.Invoke(T1 inp) in /__w/1/s/src/fsharp/src/FSharp.Core/reflect.fs:line 1230
+   at System.Lazy`1.ViaFactory(LazyThreadSafetyMode mode)
+   at System.Lazy`1.ExecutionAndPublication(LazyHelper executionAndPublication, Boolean useDefaultConstructor)
+   at System.Lazy`1.CreateValue()
+   at FsCheck.Testable.Prop.safeForce[a](Lazy`1 body) in C:\Users\kurts\Projects\FsCheck\src\FsCheck\Testable.fs:line 164
+  Passed BibleAtlas.FSharp.Tests.PresentationTests.a TextUnit presentation preserves its entire served text record and provenance title [1 ms]
+  Passed BibleAtlas.FSharp.Tests.ModelTests.a text completion after navigation cannot reopen a departed reading [78 ms]
+  Passed BibleAtlas.FSharp.Tests.ExplorationTests.Resume preserves a failed whole-journey read without constructing a false trail [20 ms]
+  Passed BibleAtlas.FSharp.Tests.ModelTests.Concord opens its bounded reading from the served corpus beginning [8 ms]
+[xUnit.net 00:00:00.38]     BibleAtlas.FSharp.Tests.GraphTests.a nonterminal empty page cannot keep a resolution reading forever [FAIL]
+[xUnit.net 00:00:00.38]       FsCheck.Xunit.PropertyFailedException : 
+[xUnit.net 00:00:00.38]       Falsifiable, after 1 test (1 shrink) (11160396220577430697,3428230003524441921). 
+[xUnit.net 00:00:00.38]       Last step was invoked with size of 2 and seed of (5596560753791328953,3859959555317202639):
+[xUnit.net 00:00:00.38]       Original:
+[xUnit.net 00:00:00.38]       2us
+[xUnit.net 00:00:00.38]       Shrunk:
+[xUnit.net 00:00:00.38]       0us
+[xUnit.net 00:00:00.38]       
+[xUnit.net 00:00:00.38]       ---- Assert.Equal() Failure: Values differ
+[xUnit.net 00:00:00.38]       Expected: Tuple (Microsoft.FSharp.Core.FSharpResult`2[Microsoft.FSharp.Collections.FSharpList`1[BibleAtlas.FSharp.Explorable],BibleAtlas.FSharp.Failure], [···])
+[xUnit.net 00:00:00.38]       Actual:   Tuple (Microsoft.FSharp.Core.FSharpResult`2[Microsoft.FSharp.Collections.FSharpList`1[BibleAtlas.FSharp.Explorable],BibleAtlas.FSharp.Failure], [···])
+[xUnit.net 00:00:00.38]       Stack Trace:
+[xUnit.net 00:00:00.38]         
+[xUnit.net 00:00:00.38]         ----- Inner Stack Trace -----
+[xUnit.net 00:00:00.38]         /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/GraphTests.fs(79,0): at BibleAtlas.FSharp.Tests.GraphTests.a nonterminal empty page cannot keep a resolution reading forever(UInt16 suffix)
+[xUnit.net 00:00:00.38]            at InvokeStub_GraphTests.a nonterminal empty page cannot keep a resolution reading forever(Object, Span`1)
+[xUnit.net 00:00:00.38]            at System.Reflection.MethodBaseInvoker.InvokeWithOneArg(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
+[xUnit.net 00:00:00.38]         --- End of stack trace from previous location ---
+[xUnit.net 00:00:00.38]         C:\Users\kurts\Projects\FsCheck\src\FsCheck\Runner.fs(595,0): at FsCheck.Runner.invokeAndThrowInner@592-1.Invoke(Object[] o)
+[xUnit.net 00:00:00.38]         /__w/1/s/src/fsharp/src/FSharp.Core/reflect.fs(1230,0): at <StartupCode$FSharp-Core>.$Reflect.Invoke@1230.Invoke(T1 inp)
+[xUnit.net 00:00:00.38]            at System.Lazy`1.ViaFactory(LazyThreadSafetyMode mode)
+[xUnit.net 00:00:00.38]            at System.Lazy`1.ExecutionAndPublication(LazyHelper executionAndPublication, Boolean useDefaultConstructor)
+[xUnit.net 00:00:00.38]            at System.Lazy`1.CreateValue()
+[xUnit.net 00:00:00.38]         C:\Users\kurts\Projects\FsCheck\src\FsCheck\Testable.fs(164,0): at FsCheck.Testable.Prop.safeForce[a](Lazy`1 body)
+[xUnit.net 00:00:00.40]     BibleAtlas.FSharp.Tests.ExplorationTests.a resumed journey refuses every generated missing target cardinality [FAIL]
+[xUnit.net 00:00:00.40]       FsCheck.Xunit.PropertyFailedException : 
+[xUnit.net 00:00:00.40]       Falsifiable, after 1 test (0 shrinks) (17654552702191127308,9911052495349536631). 
+[xUnit.net 00:00:00.40]       Last step was invoked with size of 2 and seed of (16668023497935289374,2911240798107142587):
+[xUnit.net 00:00:00.40]       Original:
+[xUnit.net 00:00:00.40]       (0us, Quotes, [])
+[xUnit.net 00:00:00.40]       
+[xUnit.net 00:00:00.40]       ---- Assert.Equal() Failure: Values differ
+[xUnit.net 00:00:00.40]       Expected: Microsoft.FSharp.Core.FSharpResult`2[BibleAtlas.FSharp.Trail,BibleAtlas.FSharp.Failure]
+[xUnit.net 00:00:00.40]       Actual:   Microsoft.FSharp.Core.FSharpResult`2[BibleAtlas.FSharp.Trail,BibleAtlas.FSharp.Failure]
+[xUnit.net 00:00:00.40]       Stack Trace:
+[xUnit.net 00:00:00.40]         
+[xUnit.net 00:00:00.40]         ----- Inner Stack Trace -----
+[xUnit.net 00:00:00.40]         /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/ExplorationTests.fs(85,0): at BibleAtlas.FSharp.Tests.ExplorationTests.a resumed journey refuses every generated missing target cardinality(UInt16 suffix, EdgeKind kind, FSharpList`1 kinds)
+[xUnit.net 00:00:00.40]            at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+[xUnit.net 00:00:00.40]            at System.Reflection.MethodBaseInvoker.InvokeDirectByRefWithFewArgs(Object obj, Span`1 copyOfArgs, BindingFlags invokeAttr)
+[xUnit.net 00:00:00.40]         --- End of stack trace from previous location ---
+[xUnit.net 00:00:00.40]         C:\Users\kurts\Projects\FsCheck\src\FsCheck\Runner.fs(595,0): at FsCheck.Runner.invokeAndThrowInner@592-1.Invoke(Object[] o)
+[xUnit.net 00:00:00.40]         /__w/1/s/src/fsharp/src/FSharp.Core/reflect.fs(1230,0): at <StartupCode$FSharp-Core>.$Reflect.Invoke@1230.Invoke(T1 inp)
+[xUnit.net 00:00:00.40]            at System.Lazy`1.ViaFactory(LazyThreadSafetyMode mode)
+[xUnit.net 00:00:00.40]            at System.Lazy`1.ExecutionAndPublication(LazyHelper executionAndPublication, Boolean useDefaultConstructor)
+[xUnit.net 00:00:00.40]            at System.Lazy`1.CreateValue()
+[xUnit.net 00:00:00.40]         C:\Users\kurts\Projects\FsCheck\src\FsCheck\Testable.fs(164,0): at FsCheck.Testable.Prop.safeForce[a](Lazy`1 body)
+[xUnit.net 00:00:00.40]     BibleAtlas.FSharp.Tests.ExplorationTests.a missing element cannot become a resolved position for any requested identity [FAIL]
+[xUnit.net 00:00:00.40]       FsCheck.Xunit.PropertyFailedException : 
+[xUnit.net 00:00:00.40]       Falsifiable, after 1 test (1 shrink) (16884002791141372635,376048780365364909). 
+[xUnit.net 00:00:00.40]       Last step was invoked with size of 2 and seed of (15019269829658383663,10403790197269102253):
+[xUnit.net 00:00:00.40]       Original:
+[xUnit.net 00:00:00.40]       2us
+[xUnit.net 00:00:00.40]       Shrunk:
+[xUnit.net 00:00:00.40]       0us
+[xUnit.net 00:00:00.40]       
+[xUnit.net 00:00:00.40]       ---- Assert.Equal() Failure: Values differ
+[xUnit.net 00:00:00.40]       Expected: Microsoft.FSharp.Core.FSharpResult`2[BibleAtlas.FSharp.Explorable,BibleAtlas.FSharp.Failure]
+[xUnit.net 00:00:00.40]       Actual:   Microsoft.FSharp.Core.FSharpResult`2[BibleAtlas.FSharp.Explorable,BibleAtlas.FSharp.Failure]
+[xUnit.net 00:00:00.40]       Stack Trace:
+[xUnit.net 00:00:00.40]         
+[xUnit.net 00:00:00.40]         ----- Inner Stack Trace -----
+[xUnit.net 00:00:00.40]         /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/ExplorationTests.fs(100,0): at BibleAtlas.FSharp.Tests.ExplorationTests.a missing element cannot become a resolved position for any requested identity(UInt16 suffix)
+[xUnit.net 00:00:00.40]            at InvokeStub_ExplorationTests.a missing element cannot become a resolved position for any requested identity(Object, Span`1)
+[xUnit.net 00:00:00.40]            at System.Reflection.MethodBaseInvoker.InvokeWithOneArg(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
+[xUnit.net 00:00:00.40]         --- End of stack trace from previous location ---
+[xUnit.net 00:00:00.40]         C:\Users\kurts\Projects\FsCheck\src\FsCheck\Runner.fs(595,0): at FsCheck.Runner.invokeAndThrowInner@592-1.Invoke(Object[] o)
+[xUnit.net 00:00:00.40]         /__w/1/s/src/fsharp/src/FSharp.Core/reflect.fs(1230,0): at <StartupCode$FSharp-Core>.$Reflect.Invoke@1230.Invoke(T1 inp)
+[xUnit.net 00:00:00.40]            at System.Lazy`1.ViaFactory(LazyThreadSafetyMode mode)
+[xUnit.net 00:00:00.40]            at System.Lazy`1.ExecutionAndPublication(LazyHelper executionAndPublication, Boolean useDefaultConstructor)
+[xUnit.net 00:00:00.40]            at System.Lazy`1.CreateValue()
+[xUnit.net 00:00:00.40]         C:\Users\kurts\Projects\FsCheck\src\FsCheck\Testable.fs(164,0): at FsCheck.Testable.Prop.safeForce[a](Lazy`1 body)
+[xUnit.net 00:00:00.42]     BibleAtlas.FSharp.Tests.GraphTests.an incomplete element answer cannot shift the remaining journey [FAIL]
+[xUnit.net 00:00:00.42]       FsCheck.Xunit.PropertyFailedException : 
+[xUnit.net 00:00:00.42]       Falsifiable, after 1 test (1 shrink) (12750001255231356598,8587818963761679017). 
+[xUnit.net 00:00:00.42]       Last step was invoked with size of 2 and seed of (1820924238693049799,2331754697026967171):
+[xUnit.net 00:00:00.42]       Original:
+[xUnit.net 00:00:00.42]       1us
+[xUnit.net 00:00:00.42]       Shrunk:
+[xUnit.net 00:00:00.42]       0us
+[xUnit.net 00:00:00.42]       
+[xUnit.net 00:00:00.42]       ---- Assert.Equal() Failure: Values differ
+[xUnit.net 00:00:00.42]       Expected: Tuple (Microsoft.FSharp.Core.FSharpResult`2[Microsoft.FSharp.Collections.FSharpList`1[BibleAtlas.FSharp.Explorable],BibleAtlas.FSharp.Failure], [···])
+[xUnit.net 00:00:00.42]       Actual:   Tuple (Microsoft.FSharp.Core.FSharpResult`2[Microsoft.FSharp.Collections.FSharpList`1[BibleAtlas.FSharp.Explorable],BibleAtlas.FSharp.Failure], [···])
+[xUnit.net 00:00:00.42]       Stack Trace:
+[xUnit.net 00:00:00.42]         
+[xUnit.net 00:00:00.42]         ----- Inner Stack Trace -----
+[xUnit.net 00:00:00.42]         /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/GraphTests.fs(57,0): at BibleAtlas.FSharp.Tests.GraphTests.an incomplete element answer cannot shift the remaining journey(UInt16 suffix)
+[xUnit.net 00:00:00.42]            at InvokeStub_GraphTests.an incomplete element answer cannot shift the remaining journey(Object, Span`1)
+[xUnit.net 00:00:00.42]            at System.Reflection.MethodBaseInvoker.InvokeWithOneArg(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
+[xUnit.net 00:00:00.42]         --- End of stack trace from previous location ---
+[xUnit.net 00:00:00.42]         C:\Users\kurts\Projects\FsCheck\src\FsCheck\Runner.fs(595,0): at FsCheck.Runner.invokeAndThrowInner@592-1.Invoke(Object[] o)
+[xUnit.net 00:00:00.42]         /__w/1/s/src/fsharp/src/FSharp.Core/reflect.fs(1230,0): at <StartupCode$FSharp-Core>.$Reflect.Invoke@1230.Invoke(T1 inp)
+[xUnit.net 00:00:00.42]            at System.Lazy`1.ViaFactory(LazyThreadSafetyMode mode)
+[xUnit.net 00:00:00.42]            at System.Lazy`1.ExecutionAndPublication(LazyHelper executionAndPublication, Boolean useDefaultConstructor)
+[xUnit.net 00:00:00.42]            at System.Lazy`1.CreateValue()
+[xUnit.net 00:00:00.42]         C:\Users\kurts\Projects\FsCheck\src\FsCheck\Testable.fs(164,0): at FsCheck.Testable.Prop.safeForce[a](Lazy`1 body)
+[xUnit.net 00:00:00.43]     BibleAtlas.FSharp.Tests.GraphTests.a continuation after all requested elements preserves its exact cursor and sends no further read [FAIL]
+[xUnit.net 00:00:00.43]       FsCheck.Xunit.PropertyFailedException : 
+[xUnit.net 00:00:00.43]       Falsifiable, after 1 test (0 shrinks) (1265442607152203852,128149120003367925). 
+[xUnit.net 00:00:00.43]       Last step was invoked with size of 2 and seed of (17259094754831896489,1118796252845898883):
+[xUnit.net 00:00:00.43]       Original:
+[xUnit.net 00:00:00.43]       (0us, 0us)
+[xUnit.net 00:00:00.43]       
+[xUnit.net 00:00:00.43]       ---- Assert.Equal() Failure: Values differ
+[xUnit.net 00:00:00.43]       Expected: Tuple (Microsoft.FSharp.Core.FSharpResult`2[Microsoft.FSharp.Collections.FSharpList`1[BibleAtlas.FSharp.Explorable],BibleAtlas.FSharp.Failure], [···])
+[xUnit.net 00:00:00.43]       Actual:   Tuple (Microsoft.FSharp.Core.FSharpResult`2[Microsoft.FSharp.Collections.FSharpList`1[BibleAtlas.FSharp.Explorable],BibleAtlas.FSharp.Failure], [···])
+[xUnit.net 00:00:00.43]       Stack Trace:
+[xUnit.net 00:00:00.43]         
+[xUnit.net 00:00:00.43]         ----- Inner Stack Trace -----
+[xUnit.net 00:00:00.43]         /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/GraphTests.fs(96,0): at BibleAtlas.FSharp.Tests.GraphTests.a continuation after all requested elements preserves its exact cursor and sends no further read(UInt16 suffix, UInt16 cursor)
+[xUnit.net 00:00:00.43]            at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+[xUnit.net 00:00:00.43]            at System.Reflection.MethodBaseInvoker.InvokeDirectByRefWithFewArgs(Object obj, Span`1 copyOfArgs, BindingFlags invokeAttr)
+[xUnit.net 00:00:00.43]         --- End of stack trace from previous location ---
+[xUnit.net 00:00:00.43]         C:\Users\kurts\Projects\FsCheck\src\FsCheck\Runner.fs(595,0): at FsCheck.Runner.invokeAndThrowInner@592-1.Invoke(Object[] o)
+[xUnit.net 00:00:00.43]         /__w/1/s/src/fsharp/src/FSharp.Core/reflect.fs(1230,0): at <StartupCode$FSharp-Core>.$Reflect.Invoke@1230.Invoke(T1 inp)
+[xUnit.net 00:00:00.43]            at System.Lazy`1.ViaFactory(LazyThreadSafetyMode mode)
+[xUnit.net 00:00:00.43]            at System.Lazy`1.ExecutionAndPublication(LazyHelper executionAndPublication, Boolean useDefaultConstructor)
+[xUnit.net 00:00:00.43]            at System.Lazy`1.CreateValue()
+[xUnit.net 00:00:00.43]         C:\Users\kurts\Projects\FsCheck\src\FsCheck\Testable.fs(164,0): at FsCheck.Testable.Prop.safeForce[a](Lazy`1 body)
+[xUnit.net 00:00:00.43]     BibleAtlas.FSharp.Tests.GraphTests.extra answered elements retain the whole requested and received cardinalities [FAIL]
+[xUnit.net 00:00:00.43]       FsCheck.Xunit.PropertyFailedException : 
+[xUnit.net 00:00:00.43]       Falsifiable, after 1 test (0 shrinks) (16910846102930957496,6533317488924458167). 
+[xUnit.net 00:00:00.43]       Last step was invoked with size of 2 and seed of (17229539893935435495,9026216019216360971):
+[xUnit.net 00:00:00.43]       Original:
+[xUnit.net 00:00:00.43]       0us
+[xUnit.net 00:00:00.43]       
+[xUnit.net 00:00:00.43]       ---- Assert.Equal() Failure: Values differ
+[xUnit.net 00:00:00.43]       Expected: Tuple (Microsoft.FSharp.Core.FSharpResult`2[Microsoft.FSharp.Collections.FSharpList`1[BibleAtlas.FSharp.Explorable],BibleAtlas.FSharp.Failure], [···])
+[xUnit.net 00:00:00.43]       Actual:   Tuple (Microsoft.FSharp.Core.FSharpResult`2[Microsoft.FSharp.Collections.FSharpList`1[BibleAtlas.FSharp.Explorable],BibleAtlas.FSharp.Failure], [···])
+[xUnit.net 00:00:00.43]       Stack Trace:
+[xUnit.net 00:00:00.43]         
+[xUnit.net 00:00:00.43]         ----- Inner Stack Trace -----
+[xUnit.net 00:00:00.43]         /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/GraphTests.fs(87,0): at BibleAtlas.FSharp.Tests.GraphTests.extra answered elements retain the whole requested and received cardinalities(UInt16 suffix)
+[xUnit.net 00:00:00.43]            at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+[xUnit.net 00:00:00.43]            at System.Reflection.MethodBaseInvoker.InvokeDirectByRefWithFewArgs(Object obj, Span`1 copyOfArgs, BindingFlags invokeAttr)
+[xUnit.net 00:00:00.43]         --- End of stack trace from previous location ---
+[xUnit.net 00:00:00.43]         C:\Users\kurts\Projects\FsCheck\src\FsCheck\Runner.fs(595,0): at FsCheck.Runner.invokeAndThrowInner@592-1.Invoke(Object[] o)
+[xUnit.net 00:00:00.43]         /__w/1/s/src/fsharp/src/FSharp.Core/reflect.fs(1230,0): at <StartupCode$FSharp-Core>.$Reflect.Invoke@1230.Invoke(T1 inp)
+[xUnit.net 00:00:00.43]            at System.Lazy`1.ViaFactory(LazyThreadSafetyMode mode)
+[xUnit.net 00:00:00.43]            at System.Lazy`1.ExecutionAndPublication(LazyHelper executionAndPublication, Boolean useDefaultConstructor)
+[xUnit.net 00:00:00.43]            at System.Lazy`1.CreateValue()
+[xUnit.net 00:00:00.43]         C:\Users\kurts\Projects\FsCheck\src\FsCheck\Testable.fs(164,0): at FsCheck.Testable.Prop.safeForce[a](Lazy`1 body)
+  Failed BibleAtlas.FSharp.Tests.GraphTests.a nonterminal empty page cannot keep a resolution reading forever [176 ms]
+  Error Message:
+   FsCheck.Xunit.PropertyFailedException : 
+Falsifiable, after 1 test (1 shrink) (11160396220577430697,3428230003524441921). 
+Last step was invoked with size of 2 and seed of (5596560753791328953,3859959555317202639):
+Original:
+2us
+Shrunk:
+0us
+
+---- Assert.Equal() Failure: Values differ
+Expected: Tuple (Microsoft.FSharp.Core.FSharpResult`2[Microsoft.FSharp.Collections.FSharpList`1[BibleAtlas.FSharp.Explorable],BibleAtlas.FSharp.Failure], [···])
+Actual:   Tuple (Microsoft.FSharp.Core.FSharpResult`2[Microsoft.FSharp.Collections.FSharpList`1[BibleAtlas.FSharp.Explorable],BibleAtlas.FSharp.Failure], [···])
+  Stack Trace:
+  
+----- Inner Stack Trace -----
+   at BibleAtlas.FSharp.Tests.GraphTests.a nonterminal empty page cannot keep a resolution reading forever(UInt16 suffix) in /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/GraphTests.fs:line 79
+   at InvokeStub_GraphTests.a nonterminal empty page cannot keep a resolution reading forever(Object, Span`1)
+   at System.Reflection.MethodBaseInvoker.InvokeWithOneArg(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
+--- End of stack trace from previous location ---
+   at FsCheck.Runner.invokeAndThrowInner@592-1.Invoke(Object[] o) in C:\Users\kurts\Projects\FsCheck\src\FsCheck\Runner.fs:line 595
+   at <StartupCode$FSharp-Core>.$Reflect.Invoke@1230.Invoke(T1 inp) in /__w/1/s/src/fsharp/src/FSharp.Core/reflect.fs:line 1230
+   at System.Lazy`1.ViaFactory(LazyThreadSafetyMode mode)
+   at System.Lazy`1.ExecutionAndPublication(LazyHelper executionAndPublication, Boolean useDefaultConstructor)
+   at System.Lazy`1.CreateValue()
+   at FsCheck.Testable.Prop.safeForce[a](Lazy`1 body) in C:\Users\kurts\Projects\FsCheck\src\FsCheck\Testable.fs:line 164
+  Passed BibleAtlas.FSharp.Tests.ExplorationTests.Back records the served dual edge and cancels the whole visible breadcrumb [10 ms]
+  Failed BibleAtlas.FSharp.Tests.ExplorationTests.a resumed journey refuses every generated missing target cardinality [8 ms]
+  Error Message:
+   FsCheck.Xunit.PropertyFailedException : 
+Falsifiable, after 1 test (0 shrinks) (17654552702191127308,9911052495349536631). 
+Last step was invoked with size of 2 and seed of (16668023497935289374,2911240798107142587):
+Original:
+(0us, Quotes, [])
+
+---- Assert.Equal() Failure: Values differ
+Expected: Microsoft.FSharp.Core.FSharpResult`2[BibleAtlas.FSharp.Trail,BibleAtlas.FSharp.Failure]
+Actual:   Microsoft.FSharp.Core.FSharpResult`2[BibleAtlas.FSharp.Trail,BibleAtlas.FSharp.Failure]
+  Stack Trace:
+  
+----- Inner Stack Trace -----
+   at BibleAtlas.FSharp.Tests.ExplorationTests.a resumed journey refuses every generated missing target cardinality(UInt16 suffix, EdgeKind kind, FSharpList`1 kinds) in /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/ExplorationTests.fs:line 85
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeDirectByRefWithFewArgs(Object obj, Span`1 copyOfArgs, BindingFlags invokeAttr)
+--- End of stack trace from previous location ---
+   at FsCheck.Runner.invokeAndThrowInner@592-1.Invoke(Object[] o) in C:\Users\kurts\Projects\FsCheck\src\FsCheck\Runner.fs:line 595
+   at <StartupCode$FSharp-Core>.$Reflect.Invoke@1230.Invoke(T1 inp) in /__w/1/s/src/fsharp/src/FSharp.Core/reflect.fs:line 1230
+   at System.Lazy`1.ViaFactory(LazyThreadSafetyMode mode)
+   at System.Lazy`1.ExecutionAndPublication(LazyHelper executionAndPublication, Boolean useDefaultConstructor)
+   at System.Lazy`1.CreateValue()
+   at FsCheck.Testable.Prop.safeForce[a](Lazy`1 body) in C:\Users\kurts\Projects\FsCheck\src\FsCheck\Testable.fs:line 164
+  Failed BibleAtlas.FSharp.Tests.ExplorationTests.a missing element cannot become a resolved position for any requested identity [1 ms]
+  Error Message:
+   FsCheck.Xunit.PropertyFailedException : 
+Falsifiable, after 1 test (1 shrink) (16884002791141372635,376048780365364909). 
+Last step was invoked with size of 2 and seed of (15019269829658383663,10403790197269102253):
+Original:
+2us
+Shrunk:
+0us
+
+---- Assert.Equal() Failure: Values differ
+Expected: Microsoft.FSharp.Core.FSharpResult`2[BibleAtlas.FSharp.Explorable,BibleAtlas.FSharp.Failure]
+Actual:   Microsoft.FSharp.Core.FSharpResult`2[BibleAtlas.FSharp.Explorable,BibleAtlas.FSharp.Failure]
+  Stack Trace:
+  
+----- Inner Stack Trace -----
+   at BibleAtlas.FSharp.Tests.ExplorationTests.a missing element cannot become a resolved position for any requested identity(UInt16 suffix) in /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/ExplorationTests.fs:line 100
+   at InvokeStub_ExplorationTests.a missing element cannot become a resolved position for any requested identity(Object, Span`1)
+   at System.Reflection.MethodBaseInvoker.InvokeWithOneArg(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
+--- End of stack trace from previous location ---
+   at FsCheck.Runner.invokeAndThrowInner@592-1.Invoke(Object[] o) in C:\Users\kurts\Projects\FsCheck\src\FsCheck\Runner.fs:line 595
+   at <StartupCode$FSharp-Core>.$Reflect.Invoke@1230.Invoke(T1 inp) in /__w/1/s/src/fsharp/src/FSharp.Core/reflect.fs:line 1230
+   at System.Lazy`1.ViaFactory(LazyThreadSafetyMode mode)
+   at System.Lazy`1.ExecutionAndPublication(LazyHelper executionAndPublication, Boolean useDefaultConstructor)
+   at System.Lazy`1.CreateValue()
+   at FsCheck.Testable.Prop.safeForce[a](Lazy`1 body) in C:\Users\kurts\Projects\FsCheck\src\FsCheck\Testable.fs:line 164
+  Passed BibleAtlas.FSharp.Tests.ExplorationTests.Back at the beginning preserves the complete trail and does no graph read [1 ms]
+  Failed BibleAtlas.FSharp.Tests.GraphTests.an incomplete element answer cannot shift the remaining journey [40 ms]
+  Error Message:
+   FsCheck.Xunit.PropertyFailedException : 
+Falsifiable, after 1 test (1 shrink) (12750001255231356598,8587818963761679017). 
+Last step was invoked with size of 2 and seed of (1820924238693049799,2331754697026967171):
+Original:
+1us
+Shrunk:
+0us
+
+---- Assert.Equal() Failure: Values differ
+Expected: Tuple (Microsoft.FSharp.Core.FSharpResult`2[Microsoft.FSharp.Collections.FSharpList`1[BibleAtlas.FSharp.Explorable],BibleAtlas.FSharp.Failure], [···])
+Actual:   Tuple (Microsoft.FSharp.Core.FSharpResult`2[Microsoft.FSharp.Collections.FSharpList`1[BibleAtlas.FSharp.Explorable],BibleAtlas.FSharp.Failure], [···])
+  Stack Trace:
+  
+----- Inner Stack Trace -----
+   at BibleAtlas.FSharp.Tests.GraphTests.an incomplete element answer cannot shift the remaining journey(UInt16 suffix) in /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/GraphTests.fs:line 57
+   at InvokeStub_GraphTests.an incomplete element answer cannot shift the remaining journey(Object, Span`1)
+   at System.Reflection.MethodBaseInvoker.InvokeWithOneArg(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
+--- End of stack trace from previous location ---
+   at FsCheck.Runner.invokeAndThrowInner@592-1.Invoke(Object[] o) in C:\Users\kurts\Projects\FsCheck\src\FsCheck\Runner.fs:line 595
+   at <StartupCode$FSharp-Core>.$Reflect.Invoke@1230.Invoke(T1 inp) in /__w/1/s/src/fsharp/src/FSharp.Core/reflect.fs:line 1230
+   at System.Lazy`1.ViaFactory(LazyThreadSafetyMode mode)
+   at System.Lazy`1.ExecutionAndPublication(LazyHelper executionAndPublication, Boolean useDefaultConstructor)
+   at System.Lazy`1.CreateValue()
+   at FsCheck.Testable.Prop.safeForce[a](Lazy`1 body) in C:\Users\kurts\Projects\FsCheck\src\FsCheck\Testable.fs:line 164
+  Failed BibleAtlas.FSharp.Tests.GraphTests.a continuation after all requested elements preserves its exact cursor and sends no further read [1 ms]
+  Error Message:
+   FsCheck.Xunit.PropertyFailedException : 
+Falsifiable, after 1 test (0 shrinks) (1265442607152203852,128149120003367925). 
+Last step was invoked with size of 2 and seed of (17259094754831896489,1118796252845898883):
+Original:
+(0us, 0us)
+
+---- Assert.Equal() Failure: Values differ
+Expected: Tuple (Microsoft.FSharp.Core.FSharpResult`2[Microsoft.FSharp.Collections.FSharpList`1[BibleAtlas.FSharp.Explorable],BibleAtlas.FSharp.Failure], [···])
+Actual:   Tuple (Microsoft.FSharp.Core.FSharpResult`2[Microsoft.FSharp.Collections.FSharpList`1[BibleAtlas.FSharp.Explorable],BibleAtlas.FSharp.Failure], [···])
+  Stack Trace:
+  
+----- Inner Stack Trace -----
+   at BibleAtlas.FSharp.Tests.GraphTests.a continuation after all requested elements preserves its exact cursor and sends no further read(UInt16 suffix, UInt16 cursor) in /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/GraphTests.fs:line 96
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeDirectByRefWithFewArgs(Object obj, Span`1 copyOfArgs, BindingFlags invokeAttr)
+--- End of stack trace from previous location ---
+   at FsCheck.Runner.invokeAndThrowInner@592-1.Invoke(Object[] o) in C:\Users\kurts\Projects\FsCheck\src\FsCheck\Runner.fs:line 595
+   at <StartupCode$FSharp-Core>.$Reflect.Invoke@1230.Invoke(T1 inp) in /__w/1/s/src/fsharp/src/FSharp.Core/reflect.fs:line 1230
+   at System.Lazy`1.ViaFactory(LazyThreadSafetyMode mode)
+   at System.Lazy`1.ExecutionAndPublication(LazyHelper executionAndPublication, Boolean useDefaultConstructor)
+   at System.Lazy`1.CreateValue()
+   at FsCheck.Testable.Prop.safeForce[a](Lazy`1 body) in C:\Users\kurts\Projects\FsCheck\src\FsCheck\Testable.fs:line 164
+  Failed BibleAtlas.FSharp.Tests.GraphTests.extra answered elements retain the whole requested and received cardinalities [< 1 ms]
+  Error Message:
+   FsCheck.Xunit.PropertyFailedException : 
+Falsifiable, after 1 test (0 shrinks) (16910846102930957496,6533317488924458167). 
+Last step was invoked with size of 2 and seed of (17229539893935435495,9026216019216360971):
+Original:
+0us
+
+---- Assert.Equal() Failure: Values differ
+Expected: Tuple (Microsoft.FSharp.Core.FSharpResult`2[Microsoft.FSharp.Collections.FSharpList`1[BibleAtlas.FSharp.Explorable],BibleAtlas.FSharp.Failure], [···])
+Actual:   Tuple (Microsoft.FSharp.Core.FSharpResult`2[Microsoft.FSharp.Collections.FSharpList`1[BibleAtlas.FSharp.Explorable],BibleAtlas.FSharp.Failure], [···])
+  Stack Trace:
+  
+----- Inner Stack Trace -----
+   at BibleAtlas.FSharp.Tests.GraphTests.extra answered elements retain the whole requested and received cardinalities(UInt16 suffix) in /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/GraphTests.fs:line 87
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeDirectByRefWithFewArgs(Object obj, Span`1 copyOfArgs, BindingFlags invokeAttr)
+--- End of stack trace from previous location ---
+   at FsCheck.Runner.invokeAndThrowInner@592-1.Invoke(Object[] o) in C:\Users\kurts\Projects\FsCheck\src\FsCheck\Runner.fs:line 595
+   at <StartupCode$FSharp-Core>.$Reflect.Invoke@1230.Invoke(T1 inp) in /__w/1/s/src/fsharp/src/FSharp.Core/reflect.fs:line 1230
+   at System.Lazy`1.ViaFactory(LazyThreadSafetyMode mode)
+   at System.Lazy`1.ExecutionAndPublication(LazyHelper executionAndPublication, Boolean useDefaultConstructor)
+   at System.Lazy`1.CreateValue()
+   at FsCheck.Testable.Prop.safeForce[a](Lazy`1 body) in C:\Users\kurts\Projects\FsCheck\src\FsCheck\Testable.fs:line 164
+[xUnit.net 00:00:00.45]     BibleAtlas.FSharp.Tests.GraphTests.a missing element cannot become a resolved position [FAIL]
+[xUnit.net 00:00:00.45]       FsCheck.Xunit.PropertyFailedException : 
+[xUnit.net 00:00:00.45]       Falsifiable, after 1 test (1 shrink) (11992325509820874346,226020694660857765). 
+[xUnit.net 00:00:00.45]       Last step was invoked with size of 2 and seed of (15425295980941383176,13562801766750173501):
+[xUnit.net 00:00:00.45]       Original:
+[xUnit.net 00:00:00.45]       2us
+[xUnit.net 00:00:00.45]       Shrunk:
+[xUnit.net 00:00:00.45]       0us
+[xUnit.net 00:00:00.45]       
+[xUnit.net 00:00:00.45]       ---- Assert.Equal() Failure: Values differ
+[xUnit.net 00:00:00.45]       Expected: Tuple (Microsoft.FSharp.Core.FSharpResult`2[Microsoft.FSharp.Collections.FSharpList`1[BibleAtlas.FSharp.Explorable],BibleAtlas.FSharp.Failure], [···])
+[xUnit.net 00:00:00.45]       Actual:   Tuple (Microsoft.FSharp.Core.FSharpResult`2[Microsoft.FSharp.Collections.FSharpList`1[BibleAtlas.FSharp.Explorable],BibleAtlas.FSharp.Failure], [···])
+[xUnit.net 00:00:00.45]       Stack Trace:
+[xUnit.net 00:00:00.45]         
+[xUnit.net 00:00:00.45]         ----- Inner Stack Trace -----
+[xUnit.net 00:00:00.45]         /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/GraphTests.fs(48,0): at BibleAtlas.FSharp.Tests.GraphTests.a missing element cannot become a resolved position(UInt16 suffix)
+[xUnit.net 00:00:00.45]            at InvokeStub_GraphTests.a missing element cannot become a resolved position(Object, Span`1)
+[xUnit.net 00:00:00.45]            at System.Reflection.MethodBaseInvoker.InvokeWithOneArg(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
+[xUnit.net 00:00:00.45]         --- End of stack trace from previous location ---
+[xUnit.net 00:00:00.45]         C:\Users\kurts\Projects\FsCheck\src\FsCheck\Runner.fs(595,0): at FsCheck.Runner.invokeAndThrowInner@592-1.Invoke(Object[] o)
+[xUnit.net 00:00:00.45]         /__w/1/s/src/fsharp/src/FSharp.Core/reflect.fs(1230,0): at <StartupCode$FSharp-Core>.$Reflect.Invoke@1230.Invoke(T1 inp)
+[xUnit.net 00:00:00.45]            at System.Lazy`1.ViaFactory(LazyThreadSafetyMode mode)
+[xUnit.net 00:00:00.45]            at System.Lazy`1.ExecutionAndPublication(LazyHelper executionAndPublication, Boolean useDefaultConstructor)
+[xUnit.net 00:00:00.45]            at System.Lazy`1.CreateValue()
+[xUnit.net 00:00:00.45]         C:\Users\kurts\Projects\FsCheck\src\FsCheck\Testable.fs(164,0): at FsCheck.Testable.Prop.safeForce[a](Lazy`1 body)
+[xUnit.net 00:00:00.47]     BibleAtlas.FSharp.Tests.GraphTests.a different answered identity cannot silently replace the requested position [FAIL]
+[xUnit.net 00:00:00.47]       FsCheck.Xunit.PropertyFailedException : 
+[xUnit.net 00:00:00.47]       Falsifiable, after 1 test (1 shrink) (8273159587393085091,16157662839768902477). 
+[xUnit.net 00:00:00.47]       Last step was invoked with size of 2 and seed of (10729843723103592228,14771641696689095197):
+[xUnit.net 00:00:00.47]       Original:
+[xUnit.net 00:00:00.47]       1us
+[xUnit.net 00:00:00.47]       Shrunk:
+[xUnit.net 00:00:00.47]       0us
+[xUnit.net 00:00:00.47]       
+[xUnit.net 00:00:00.47]       ---- Assert.Equal() Failure: Values differ
+[xUnit.net 00:00:00.47]       Expected: Tuple (Microsoft.FSharp.Core.FSharpResult`2[Microsoft.FSharp.Collections.FSharpList`1[BibleAtlas.FSharp.Explorable],BibleAtlas.FSharp.Failure], [···])
+[xUnit.net 00:00:00.47]       Actual:   Tuple (Microsoft.FSharp.Core.FSharpResult`2[Microsoft.FSharp.Collections.FSharpList`1[BibleAtlas.FSharp.Explorable],BibleAtlas.FSharp.Failure], [···])
+[xUnit.net 00:00:00.47]       Stack Trace:
+[xUnit.net 00:00:00.47]         
+[xUnit.net 00:00:00.47]         ----- Inner Stack Trace -----
+[xUnit.net 00:00:00.47]         /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/GraphTests.fs(66,0): at BibleAtlas.FSharp.Tests.GraphTests.a different answered identity cannot silently replace the requested position(UInt16 suffix)
+[xUnit.net 00:00:00.47]            at InvokeStub_GraphTests.a different answered identity cannot silently replace the requested position(Object, Span`1)
+[xUnit.net 00:00:00.47]            at System.Reflection.MethodBaseInvoker.InvokeWithOneArg(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
+[xUnit.net 00:00:00.47]         --- End of stack trace from previous location ---
+[xUnit.net 00:00:00.47]         C:\Users\kurts\Projects\FsCheck\src\FsCheck\Runner.fs(595,0): at FsCheck.Runner.invokeAndThrowInner@592-1.Invoke(Object[] o)
+[xUnit.net 00:00:00.47]         /__w/1/s/src/fsharp/src/FSharp.Core/reflect.fs(1230,0): at <StartupCode$FSharp-Core>.$Reflect.Invoke@1230.Invoke(T1 inp)
+[xUnit.net 00:00:00.47]            at System.Lazy`1.ViaFactory(LazyThreadSafetyMode mode)
+[xUnit.net 00:00:00.47]            at System.Lazy`1.ExecutionAndPublication(LazyHelper executionAndPublication, Boolean useDefaultConstructor)
+[xUnit.net 00:00:00.47]            at System.Lazy`1.CreateValue()
+[xUnit.net 00:00:00.47]         C:\Users\kurts\Projects\FsCheck\src\FsCheck\Testable.fs(164,0): at FsCheck.Testable.Prop.safeForce[a](Lazy`1 body)
+  Passed BibleAtlas.FSharp.Tests.GraphTests.an ordered resolution reads the whole element page once [10 ms]
+  Passed BibleAtlas.FSharp.Tests.GraphTests.a root change between pages refuses the mixed journey [13 ms]
+  Failed BibleAtlas.FSharp.Tests.GraphTests.a missing element cannot become a resolved position [1 ms]
+  Error Message:
+   FsCheck.Xunit.PropertyFailedException : 
+Falsifiable, after 1 test (1 shrink) (11992325509820874346,226020694660857765). 
+Last step was invoked with size of 2 and seed of (15425295980941383176,13562801766750173501):
+Original:
+2us
+Shrunk:
+0us
+
+---- Assert.Equal() Failure: Values differ
+Expected: Tuple (Microsoft.FSharp.Core.FSharpResult`2[Microsoft.FSharp.Collections.FSharpList`1[BibleAtlas.FSharp.Explorable],BibleAtlas.FSharp.Failure], [···])
+Actual:   Tuple (Microsoft.FSharp.Core.FSharpResult`2[Microsoft.FSharp.Collections.FSharpList`1[BibleAtlas.FSharp.Explorable],BibleAtlas.FSharp.Failure], [···])
+  Stack Trace:
+  
+----- Inner Stack Trace -----
+   at BibleAtlas.FSharp.Tests.GraphTests.a missing element cannot become a resolved position(UInt16 suffix) in /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/GraphTests.fs:line 48
+   at InvokeStub_GraphTests.a missing element cannot become a resolved position(Object, Span`1)
+   at System.Reflection.MethodBaseInvoker.InvokeWithOneArg(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
+--- End of stack trace from previous location ---
+   at FsCheck.Runner.invokeAndThrowInner@592-1.Invoke(Object[] o) in C:\Users\kurts\Projects\FsCheck\src\FsCheck\Runner.fs:line 595
+   at <StartupCode$FSharp-Core>.$Reflect.Invoke@1230.Invoke(T1 inp) in /__w/1/s/src/fsharp/src/FSharp.Core/reflect.fs:line 1230
+   at System.Lazy`1.ViaFactory(LazyThreadSafetyMode mode)
+   at System.Lazy`1.ExecutionAndPublication(LazyHelper executionAndPublication, Boolean useDefaultConstructor)
+   at System.Lazy`1.CreateValue()
+   at FsCheck.Testable.Prop.safeForce[a](Lazy`1 body) in C:\Users\kurts\Projects\FsCheck\src\FsCheck\Testable.fs:line 164
+  Passed BibleAtlas.FSharp.Tests.GraphTests.a paged resolution retains the requested order across a single artifact [12 ms]
+  Passed BibleAtlas.FSharp.Tests.GraphTests.an empty resolution does no transport work [2 ms]
+  Failed BibleAtlas.FSharp.Tests.GraphTests.a different answered identity cannot silently replace the requested position [1 ms]
+  Error Message:
+   FsCheck.Xunit.PropertyFailedException : 
+Falsifiable, after 1 test (1 shrink) (8273159587393085091,16157662839768902477). 
+Last step was invoked with size of 2 and seed of (10729843723103592228,14771641696689095197):
+Original:
+1us
+Shrunk:
+0us
+
+---- Assert.Equal() Failure: Values differ
+Expected: Tuple (Microsoft.FSharp.Core.FSharpResult`2[Microsoft.FSharp.Collections.FSharpList`1[BibleAtlas.FSharp.Explorable],BibleAtlas.FSharp.Failure], [···])
+Actual:   Tuple (Microsoft.FSharp.Core.FSharpResult`2[Microsoft.FSharp.Collections.FSharpList`1[BibleAtlas.FSharp.Explorable],BibleAtlas.FSharp.Failure], [···])
+  Stack Trace:
+  
+----- Inner Stack Trace -----
+   at BibleAtlas.FSharp.Tests.GraphTests.a different answered identity cannot silently replace the requested position(UInt16 suffix) in /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/GraphTests.fs:line 66
+   at InvokeStub_GraphTests.a different answered identity cannot silently replace the requested position(Object, Span`1)
+   at System.Reflection.MethodBaseInvoker.InvokeWithOneArg(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
+--- End of stack trace from previous location ---
+   at FsCheck.Runner.invokeAndThrowInner@592-1.Invoke(Object[] o) in C:\Users\kurts\Projects\FsCheck\src\FsCheck\Runner.fs:line 595
+   at <StartupCode$FSharp-Core>.$Reflect.Invoke@1230.Invoke(T1 inp) in /__w/1/s/src/fsharp/src/FSharp.Core/reflect.fs:line 1230
+   at System.Lazy`1.ViaFactory(LazyThreadSafetyMode mode)
+   at System.Lazy`1.ExecutionAndPublication(LazyHelper executionAndPublication, Boolean useDefaultConstructor)
+   at System.Lazy`1.CreateValue()
+   at FsCheck.Testable.Prop.safeForce[a](Lazy`1 body) in C:\Users\kurts\Projects\FsCheck\src\FsCheck\Testable.fs:line 164
+  Passed BibleAtlas.FSharp.Tests.ModelTests.unknown routes book codes and invalid chapter input are refused [91 ms]
+  Passed BibleAtlas.FSharp.Tests.ModelTests.Concord Next and failed-page retry preserve exactly the served continuation request [14 ms]
+  Passed BibleAtlas.FSharp.Tests.ModelTests.a failed opening retains exactly the position needed by Retry [9 ms]
+[xUnit.net 00:00:00.57]     BibleAtlas.FSharp.Tests.ModelTests.contents from the other corpus preserve the mismatch and perform no text read [FAIL]
+[xUnit.net 00:00:00.57]       FsCheck.Xunit.PropertyFailedException : 
+[xUnit.net 00:00:00.57]       Falsifiable, after 1 test (0 shrinks) (15054388215388881929,5547494986005408565). 
+[xUnit.net 00:00:00.57]       Last step was invoked with size of 2 and seed of (12693090320548638872,11993568843750167067):
+[xUnit.net 00:00:00.57]       Original:
+[xUnit.net 00:00:00.57]       (Concord, NonNull "")
+[xUnit.net 00:00:00.57]       
+[xUnit.net 00:00:00.57]       ---- Assert.Equal() Failure: Values differ
+[xUnit.net 00:00:00.57]       Expected: Tuple ({ Surface =
+[xUnit.net 00:00:00.57]                    Concord
+[xUnit.net 00:00:00.57]                      { Reference = None
+[xUnit.net 00:00:00.57]                        State =
+[xUnit.net 00:00:00.57]                         Unavailable
+[xUnit.net 00:00:00.57]                           (Read
+[xUnit.net 00:00:00.57]                              (Terminal
+[xUnit.net 00:00:00.57]                                 (InvalidGraph (ContentsCorpusMismatch { Requested = Concord
+[xUnit.net 00:00:00.57]                                                                         Received = Bible })))) }
+[xUnit.net 00:00:00.57]                   Serial = RequestId 0L
+[xUnit.net 00:00:00.57]                   Focus = Closed }, [···])
+[xUnit.net 00:00:00.57]       Actual:   Tuple ({ Surface =
+[xUnit.net 00:00:00.57]                    Concord
+[xUnit.net 00:00:00.57]                      { Reference = None
+[xUnit.net 00:00:00.57]                        State =
+[xUnit.net 00:00:00.57]                         Unavailable (Contract "the contents answer names a different corpus") }
+[xUnit.net 00:00:00.57]                   Serial = RequestId 0L
+[xUnit.net 00:00:00.57]                   Focus = Closed }, [···])
+[xUnit.net 00:00:00.57]       Stack Trace:
+[xUnit.net 00:00:00.57]         
+[xUnit.net 00:00:00.57]         ----- Inner Stack Trace -----
+[xUnit.net 00:00:00.57]         /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/ModelTests.fs(46,0): at BibleAtlas.FSharp.Tests.ModelTests.contents from the other corpus preserve the mismatch and perform no text read(Corpus corpus, NonNull`1 _arg2)
+[xUnit.net 00:00:00.57]            at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+[xUnit.net 00:00:00.57]            at System.Reflection.MethodBaseInvoker.InvokeDirectByRefWithFewArgs(Object obj, Span`1 copyOfArgs, BindingFlags invokeAttr)
+[xUnit.net 00:00:00.57]         --- End of stack trace from previous location ---
+[xUnit.net 00:00:00.57]         C:\Users\kurts\Projects\FsCheck\src\FsCheck\Runner.fs(595,0): at FsCheck.Runner.invokeAndThrowInner@592-1.Invoke(Object[] o)
+[xUnit.net 00:00:00.57]         /__w/1/s/src/fsharp/src/FSharp.Core/reflect.fs(1230,0): at <StartupCode$FSharp-Core>.$Reflect.Invoke@1230.Invoke(T1 inp)
+[xUnit.net 00:00:00.57]            at System.Lazy`1.ViaFactory(LazyThreadSafetyMode mode)
+[xUnit.net 00:00:00.57]            at System.Lazy`1.ExecutionAndPublication(LazyHelper executionAndPublication, Boolean useDefaultConstructor)
+[xUnit.net 00:00:00.57]            at System.Lazy`1.CreateValue()
+[xUnit.net 00:00:00.57]         C:\Users\kurts\Projects\FsCheck\src\FsCheck\Testable.fs(164,0): at FsCheck.Testable.Prop.safeForce[a](Lazy`1 body)
+  Passed BibleAtlas.FSharp.Tests.ModelTests.reading page constructors are private to the surface transition boundary [1 ms]
+  Passed BibleAtlas.FSharp.Tests.ModelTests.a superseded focus completion cannot replace a later traversal [5 ms]
+  Passed BibleAtlas.FSharp.Tests.ModelTests.reader startup uses the complete served contents to open its selected chapter [5 ms]
+  Passed BibleAtlas.FSharp.Tests.ModelTests.every noncurrent surface completion preserves every page state and its focus [23 ms]
+  Passed BibleAtlas.FSharp.Tests.ModelTests.a failed contents read retries only contents with a new identity [24 ms]
+  Passed BibleAtlas.FSharp.Tests.ModelTests.source retry advances only its failed operation and keeps its entire last value [3 ms]
+  Failed BibleAtlas.FSharp.Tests.ModelTests.contents from the other corpus preserve the mismatch and perform no text read [8 ms]
+  Error Message:
+   FsCheck.Xunit.PropertyFailedException : 
+Falsifiable, after 1 test (0 shrinks) (15054388215388881929,5547494986005408565). 
+Last step was invoked with size of 2 and seed of (12693090320548638872,11993568843750167067):
+Original:
+(Concord, NonNull "")
+
+---- Assert.Equal() Failure: Values differ
+Expected: Tuple ({ Surface =
+             Concord
+               { Reference = None
+                 State =
+                  Unavailable
+                    (Read
+                       (Terminal
+                          (InvalidGraph (ContentsCorpusMismatch { Requested = Concord
+                                                                  Received = Bible })))) }
+            Serial = RequestId 0L
+            Focus = Closed }, [···])
+Actual:   Tuple ({ Surface =
+             Concord
+               { Reference = None
+                 State =
+                  Unavailable (Contract "the contents answer names a different corpus") }
+            Serial = RequestId 0L
+            Focus = Closed }, [···])
+  Stack Trace:
+  
+----- Inner Stack Trace -----
+   at BibleAtlas.FSharp.Tests.ModelTests.contents from the other corpus preserve the mismatch and perform no text read(Corpus corpus, NonNull`1 _arg2) in /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/ModelTests.fs:line 46
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeDirectByRefWithFewArgs(Object obj, Span`1 copyOfArgs, BindingFlags invokeAttr)
+--- End of stack trace from previous location ---
+   at FsCheck.Runner.invokeAndThrowInner@592-1.Invoke(Object[] o) in C:\Users\kurts\Projects\FsCheck\src\FsCheck\Runner.fs:line 595
+   at <StartupCode$FSharp-Core>.$Reflect.Invoke@1230.Invoke(T1 inp) in /__w/1/s/src/fsharp/src/FSharp.Core/reflect.fs:line 1230
+   at System.Lazy`1.ViaFactory(LazyThreadSafetyMode mode)
+   at System.Lazy`1.ExecutionAndPublication(LazyHelper executionAndPublication, Boolean useDefaultConstructor)
+   at System.Lazy`1.CreateValue()
+   at FsCheck.Testable.Prop.safeForce[a](Lazy`1 body) in C:\Users\kurts\Projects\FsCheck\src\FsCheck\Testable.fs:line 164
+  Passed BibleAtlas.FSharp.Tests.ModelTests.following preserves the current trail while its replacement is in flight [5 ms]
+  Passed BibleAtlas.FSharp.Tests.ModelTests.a current source completion installs the whole served answer without starting another read [2 ms]
+[xUnit.net 00:00:00.85]     BibleAtlas.FSharp.Tests.ExplorationTests.following refuses any generated non-singleton answer with both cardinalities [FAIL]
+[xUnit.net 00:00:00.85]       FsCheck.Xunit.PropertyFailedException : 
+[xUnit.net 00:00:00.85]       Falsifiable, after 1 test (1 shrink) (10924271623799492472,1629663855733811513). 
+[xUnit.net 00:00:00.85]       Last step was invoked with size of 2 and seed of (13559089248550529304,10156570240776058161):
+[xUnit.net 00:00:00.85]       Original:
+[xUnit.net 00:00:00.85]       (0us, FulfilledIn, 106uy)
+[xUnit.net 00:00:00.85]       Shrunk:
+[xUnit.net 00:00:00.85]       (0us, FulfilledIn, 0uy)
+[xUnit.net 00:00:00.85]       
+[xUnit.net 00:00:00.85]       ---- Assert.Equal() Failure: Values differ
+[xUnit.net 00:00:00.85]       Expected: Tuple (Microsoft.FSharp.Core.FSharpResult`2[System.Tuple`2[BibleAtlas.FSharp.Explorable,BibleAtlas.FSharp.Trail],BibleAtlas.FSharp.Failure], [···])
+[xUnit.net 00:00:00.85]       Actual:   Tuple (Microsoft.FSharp.Core.FSharpResult`2[System.Tuple`2[BibleAtlas.FSharp.Explorable,BibleAtlas.FSharp.Trail],BibleAtlas.FSharp.Failure], [···])
+[xUnit.net 00:00:00.85]       Stack Trace:
+[xUnit.net 00:00:00.85]         
+[xUnit.net 00:00:00.85]         ----- Inner Stack Trace -----
+[xUnit.net 00:00:00.85]         /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/ExplorationTests.fs(127,0): at BibleAtlas.FSharp.Tests.ExplorationTests.following refuses any generated non-singleton answer with both cardinalities(UInt16 suffix, EdgeKind kind, Byte size)
+[xUnit.net 00:00:00.85]            at InvokeStub_ExplorationTests.following refuses any generated non-singleton answer with both cardinalities(Object, Span`1)
+[xUnit.net 00:00:00.85]            at System.Reflection.MethodBaseInvoker.InvokeWithFewArgs(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
+[xUnit.net 00:00:00.85]         --- End of stack trace from previous location ---
+[xUnit.net 00:00:00.85]         C:\Users\kurts\Projects\FsCheck\src\FsCheck\Runner.fs(595,0): at FsCheck.Runner.invokeAndThrowInner@592-1.Invoke(Object[] o)
+[xUnit.net 00:00:00.85]         /__w/1/s/src/fsharp/src/FSharp.Core/reflect.fs(1230,0): at <StartupCode$FSharp-Core>.$Reflect.Invoke@1230.Invoke(T1 inp)
+[xUnit.net 00:00:00.85]            at System.Lazy`1.ViaFactory(LazyThreadSafetyMode mode)
+[xUnit.net 00:00:00.85]            at System.Lazy`1.ExecutionAndPublication(LazyHelper executionAndPublication, Boolean useDefaultConstructor)
+[xUnit.net 00:00:00.85]            at System.Lazy`1.CreateValue()
+[xUnit.net 00:00:00.85]         C:\Users\kurts\Projects\FsCheck\src\FsCheck\Testable.fs(164,0): at FsCheck.Testable.Prop.safeForce[a](Lazy`1 body)
+  Passed BibleAtlas.FSharp.Tests.ModelTests.closing focus refuses a late successful opening [3 ms]
+  Passed BibleAtlas.FSharp.Tests.ModelTests.reader and Concord routes roundtrip their generated vocabulary and escaped payloads [109 ms]
+  Passed BibleAtlas.FSharp.Tests.ModelTests.every message belonging to another surface preserves every page state [20 ms]
+  Passed BibleAtlas.FSharp.Tests.ModelTests.opening a focus has a new identity and resolves only its requested position [4 ms]
+  Passed BibleAtlas.FSharp.Tests.ExplorationTests.every generated edge kind has an involutive dual from the published vocabulary [420 ms]
+  Passed BibleAtlas.FSharp.Tests.ExplorationTests.the exploration expression composes nested reads with the complete generated trail [11 ms]
+  Passed BibleAtlas.FSharp.Tests.ExplorationTests.Resume resolves every saved identity once and retains the bounded whole journey with its kinds [15 ms]
+  Failed BibleAtlas.FSharp.Tests.ExplorationTests.following refuses any generated non-singleton answer with both cardinalities [5 ms]
+  Error Message:
+   FsCheck.Xunit.PropertyFailedException : 
+Falsifiable, after 1 test (1 shrink) (10924271623799492472,1629663855733811513). 
+Last step was invoked with size of 2 and seed of (13559089248550529304,10156570240776058161):
+Original:
+(0us, FulfilledIn, 106uy)
+Shrunk:
+(0us, FulfilledIn, 0uy)
+
+---- Assert.Equal() Failure: Values differ
+Expected: Tuple (Microsoft.FSharp.Core.FSharpResult`2[System.Tuple`2[BibleAtlas.FSharp.Explorable,BibleAtlas.FSharp.Trail],BibleAtlas.FSharp.Failure], [···])
+Actual:   Tuple (Microsoft.FSharp.Core.FSharpResult`2[System.Tuple`2[BibleAtlas.FSharp.Explorable,BibleAtlas.FSharp.Trail],BibleAtlas.FSharp.Failure], [···])
+  Stack Trace:
+  
+----- Inner Stack Trace -----
+   at BibleAtlas.FSharp.Tests.ExplorationTests.following refuses any generated non-singleton answer with both cardinalities(UInt16 suffix, EdgeKind kind, Byte size) in /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/ExplorationTests.fs:line 127
+   at InvokeStub_ExplorationTests.following refuses any generated non-singleton answer with both cardinalities(Object, Span`1)
+   at System.Reflection.MethodBaseInvoker.InvokeWithFewArgs(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
+--- End of stack trace from previous location ---
+   at FsCheck.Runner.invokeAndThrowInner@592-1.Invoke(Object[] o) in C:\Users\kurts\Projects\FsCheck\src\FsCheck\Runner.fs:line 595
+   at <StartupCode$FSharp-Core>.$Reflect.Invoke@1230.Invoke(T1 inp) in /__w/1/s/src/fsharp/src/FSharp.Core/reflect.fs:line 1230
+   at System.Lazy`1.ViaFactory(LazyThreadSafetyMode mode)
+   at System.Lazy`1.ExecutionAndPublication(LazyHelper executionAndPublication, Boolean useDefaultConstructor)
+   at System.Lazy`1.CreateValue()
+   at FsCheck.Testable.Prop.safeForce[a](Lazy`1 body) in C:\Users\kurts\Projects\FsCheck\src\FsCheck\Testable.fs:line 164
+[xUnit.net 00:00:01.14]     BibleAtlas.FSharp.Tests.ModelTests.a text answer from another corpus is refused before entering either reading surface [FAIL]
+[xUnit.net 00:00:01.14]       FsCheck.Xunit.PropertyFailedException : 
+[xUnit.net 00:00:01.14]       Falsifiable, after 1 test (1 shrink) (2320161177277979674,15740133384860043003). 
+[xUnit.net 00:00:01.14]       Last step was invoked with size of 2 and seed of (5533436835402375632,17739228289520407251):
+[xUnit.net 00:00:01.14]       Original:
+[xUnit.net 00:00:01.14]       (Concord, NonNull "\006") (At least one control character has been escaped as a char code, e.g. \023)
+[xUnit.net 00:00:01.14]       Shrunk:
+[xUnit.net 00:00:01.14]       (Concord, NonNull "")
+[xUnit.net 00:00:01.14]       
+[xUnit.net 00:00:01.14]       ---- Assert.Equal() Failure: Values differ
+[xUnit.net 00:00:01.14]       Expected: Tuple ({ Surface =
+[xUnit.net 00:00:01.14]                    Concord
+[xUnit.net 00:00:01.14]                      { Reference = None
+[xUnit.net 00:00:01.14]                        State =
+[xUnit.net 00:00:01.14]                         Active
+[xUnit.net 00:00:01.14]                           ({ Corpus = Concord
+[xUnit.net 00:00:01.14]                              Roots = [{ Children = []
+[xUnit.net 00:00:01.14]                                         Group = Some OT
+[xUnit.net 00:00:01.14]                                         Id = NodeId "Container:bible-book-GEN"
+[xUnit.net 00:00:01.14]                                         Kind = Book
+[xUnit.net 00:00:01.14]                                         Locus = Concord { Article = 1
+[xUnit.net 00:00:01.14]                                                           Paragraph = 1
+[xUnit.net 00:00:01.14]                                                           Part = 1 }
+[xUnit.net 00:00:01.14]                                         Ref = ContentsReference "served"
+[xUnit.net 00:00:01.14]                                         Title = "Genesis" }]
+[xUnit.net 00:00:01.14]                              Version = ArtifactRoot "root" },
+[xUnit.net 00:00:01.14]                            { Request = Request "api/text?ref=served&n=20&corpus=concord"
+[xUnit.net 00:00:01.14]                              State =
+[xUnit.net 00:00:01.14]                               Failed
+[xUnit.net 00:00:01.14]                                 (RequestId 1L,
+[xUnit.net 00:00:01.14]                                  Read
+[xUnit.net 00:00:01.14]                                    (Terminal
+[xUnit.net 00:00:01.14]                                       (InvalidGraph (TextCorpusMismatch { Requested = Concord
+[xUnit.net 00:00:01.14]                                                                           Received = Bible }))),
+[xUnit.net 00:00:01.14]                                  None) }) }
+[xUnit.net 00:00:01.14]                   Serial = RequestId 1L
+[xUnit.net 00:00:01.14]                   Focus = Closed }, [···])
+[xUnit.net 00:00:01.14]       Actual:   Tuple ({ Surface =
+[xUnit.net 00:00:01.14]                    Concord
+[xUnit.net 00:00:01.14]                      { Reference = None
+[xUnit.net 00:00:01.14]                        State =
+[xUnit.net 00:00:01.14]                         Active
+[xUnit.net 00:00:01.14]                           ({ Corpus = Concord
+[xUnit.net 00:00:01.14]                              Roots = [{ Children = []
+[xUnit.net 00:00:01.14]                                         Group = Some OT
+[xUnit.net 00:00:01.14]                                         Id = NodeId "Container:bible-book-GEN"
+[xUnit.net 00:00:01.14]                                         Kind = Book
+[xUnit.net 00:00:01.14]                                         Locus = Concord { Article = 1
+[xUnit.net 00:00:01.14]                                                           Paragraph = 1
+[xUnit.net 00:00:01.14]                                                           Part = 1 }
+[xUnit.net 00:00:01.14]                                         Ref = ContentsReference "served"
+[xUnit.net 00:00:01.14]                                         Title = "Genesis" }]
+[xUnit.net 00:00:01.14]                              Version = ArtifactRoot "root" },
+[xUnit.net 00:00:01.14]                            { Request = Request "api/text?ref=served&n=20&corpus=concord"
+[xUnit.net 00:00:01.14]                              State =
+[xUnit.net 00:00:01.14]                               Failed
+[xUnit.net 00:00:01.14]                                 (RequestId 1L,
+[xUnit.net 00:00:01.14]                                  Contract "the text answer names a different corpus", None) }) }
+[xUnit.net 00:00:01.14]                   Serial = RequestId 1L
+[xUnit.net 00:00:01.14]                   Focus = Closed }, [···])
+[xUnit.net 00:00:01.14]       Stack Trace:
+[xUnit.net 00:00:01.14]         
+[xUnit.net 00:00:01.14]         ----- Inner Stack Trace -----
+[xUnit.net 00:00:01.14]         /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/ModelTests.fs(37,0): at BibleAtlas.FSharp.Tests.ModelTests.a text answer from another corpus is refused before entering either reading surface(Corpus corpus, NonNull`1 _arg1)
+[xUnit.net 00:00:01.14]            at InvokeStub_ModelTests.a text answer from another corpus is refused before entering either reading surface(Object, Span`1)
+[xUnit.net 00:00:01.14]            at System.Reflection.MethodBaseInvoker.InvokeWithFewArgs(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
+[xUnit.net 00:00:01.14]         --- End of stack trace from previous location ---
+[xUnit.net 00:00:01.14]         C:\Users\kurts\Projects\FsCheck\src\FsCheck\Runner.fs(595,0): at FsCheck.Runner.invokeAndThrowInner@592-1.Invoke(Object[] o)
+[xUnit.net 00:00:01.14]         /__w/1/s/src/fsharp/src/FSharp.Core/reflect.fs(1230,0): at <StartupCode$FSharp-Core>.$Reflect.Invoke@1230.Invoke(T1 inp)
+[xUnit.net 00:00:01.14]            at System.Lazy`1.ViaFactory(LazyThreadSafetyMode mode)
+[xUnit.net 00:00:01.14]            at System.Lazy`1.ExecutionAndPublication(LazyHelper executionAndPublication, Boolean useDefaultConstructor)
+[xUnit.net 00:00:01.14]            at System.Lazy`1.CreateValue()
+[xUnit.net 00:00:01.14]         C:\Users\kurts\Projects\FsCheck\src\FsCheck\Testable.fs(164,0): at FsCheck.Testable.Prop.safeForce[a](Lazy`1 body)
+[xUnit.net 00:00:01.15]     BibleAtlas.FSharp.Tests.ModelTests.a missing chapter is unavailable without a manufactured request identity or retry [FAIL]
+[xUnit.net 00:00:01.15]       FsCheck.Xunit.PropertyFailedException : 
+[xUnit.net 00:00:01.15]       Falsifiable, after 1 test (2 shrinks) (4209048139302726357,2732395063251275243). 
+[xUnit.net 00:00:01.15]       Last step was invoked with size of 2 and seed of (3448906755004467351,9276761126591424831):
+[xUnit.net 00:00:01.15]       Original:
+[xUnit.net 00:00:01.15]       PositiveInt 3
+[xUnit.net 00:00:01.15]       Shrunk:
+[xUnit.net 00:00:01.15]       PositiveInt 1
+[xUnit.net 00:00:01.15]       
+[xUnit.net 00:00:01.15]       ---- Assert.Equal() Failure: Values differ
+[xUnit.net 00:00:01.15]       Expected: Tuple ({ Surface =
+[xUnit.net 00:00:01.15]                    Reader
+[xUnit.net 00:00:01.15]                      { Location = Some { Book = GEN
+[xUnit.net 00:00:01.15]                                          Chapter = 3 }
+[xUnit.net 00:00:01.15]                        State =
+[xUnit.net 00:00:01.15]                         Unavailable (Read (Terminal (InvalidGraph (MissingOpening Bible)))) }
+[xUnit.net 00:00:01.15]                   Serial = RequestId 0L
+[xUnit.net 00:00:01.15]                   Focus = Closed }, [···])
+[xUnit.net 00:00:01.15]       Actual:   Tuple ({ Surface =
+[xUnit.net 00:00:01.15]                    Reader
+[xUnit.net 00:00:01.15]                      { Location = Some { Book = GEN
+[xUnit.net 00:00:01.15]                                          Chapter = 3 }
+[xUnit.net 00:00:01.15]                        State =
+[xUnit.net 00:00:01.15]                         Unavailable
+[xUnit.net 00:00:01.15]                           (Contract
+[xUnit.net 00:00:01.15]                              "the requested reading has no opening in the served contents") }
+[xUnit.net 00:00:01.15]                   Serial = RequestId 0L
+[xUnit.net 00:00:01.15]                   Focus = Closed }, [···])
+[xUnit.net 00:00:01.15]       Stack Trace:
+[xUnit.net 00:00:01.15]         
+[xUnit.net 00:00:01.15]         ----- Inner Stack Trace -----
+[xUnit.net 00:00:01.15]         /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/ModelTests.fs(117,0): at BibleAtlas.FSharp.Tests.ModelTests.a missing chapter is unavailable without a manufactured request identity or retry(PositiveInt _arg9)
+[xUnit.net 00:00:01.15]            at InvokeStub_ModelTests.a missing chapter is unavailable without a manufactured request identity or retry(Object, Span`1)
+[xUnit.net 00:00:01.15]            at System.Reflection.MethodBaseInvoker.InvokeWithOneArg(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
+[xUnit.net 00:00:01.15]         --- End of stack trace from previous location ---
+[xUnit.net 00:00:01.15]         C:\Users\kurts\Projects\FsCheck\src\FsCheck\Runner.fs(595,0): at FsCheck.Runner.invokeAndThrowInner@592-1.Invoke(Object[] o)
+[xUnit.net 00:00:01.15]         /__w/1/s/src/fsharp/src/FSharp.Core/reflect.fs(1230,0): at <StartupCode$FSharp-Core>.$Reflect.Invoke@1230.Invoke(T1 inp)
+[xUnit.net 00:00:01.15]            at System.Lazy`1.ViaFactory(LazyThreadSafetyMode mode)
+[xUnit.net 00:00:01.15]            at System.Lazy`1.ExecutionAndPublication(LazyHelper executionAndPublication, Boolean useDefaultConstructor)
+[xUnit.net 00:00:01.15]            at System.Lazy`1.CreateValue()
+[xUnit.net 00:00:01.15]         C:\Users\kurts\Projects\FsCheck\src\FsCheck\Testable.fs(164,0): at FsCheck.Testable.Prop.safeForce[a](Lazy`1 body)
+[xUnit.net 00:00:01.15]   Finished:    BibleAtlas.FSharp.Tests
+  Passed BibleAtlas.FSharp.Tests.ExplorationTests.a node record cannot be stamped with a different generated page root [1 ms]
+  Passed BibleAtlas.FSharp.Tests.ExplorationTests.a failed exploration stops the continuation and makes exactly its requested read [7 ms]
+  Passed BibleAtlas.FSharp.Tests.ModelTests.future sized Concord turns retain exactly the final page and current request [341 ms]
+  Passed BibleAtlas.FSharp.Tests.ModelTests.retry with no failed operation preserves every surface and pending request [35 ms]
+  Passed BibleAtlas.FSharp.Tests.ModelTests.navigating to the current route preserves its pending request instead of sending it twice [28 ms]
+  Failed BibleAtlas.FSharp.Tests.ModelTests.a text answer from another corpus is refused before entering either reading surface [14 ms]
+  Error Message:
+   FsCheck.Xunit.PropertyFailedException : 
+Falsifiable, after 1 test (1 shrink) (2320161177277979674,15740133384860043003). 
+Last step was invoked with size of 2 and seed of (5533436835402375632,17739228289520407251):
+Original:
+(Concord, NonNull "\006") (At least one control character has been escaped as a char code, e.g. \023)
+Shrunk:
+(Concord, NonNull "")
+
+---- Assert.Equal() Failure: Values differ
+Expected: Tuple ({ Surface =
+             Concord
+               { Reference = None
+                 State =
+                  Active
+                    ({ Corpus = Concord
+                       Roots = [{ Children = []
+                                  Group = Some OT
+                                  Id = NodeId "Container:bible-book-GEN"
+                                  Kind = Book
+                                  Locus = Concord { Article = 1
+                                                    Paragraph = 1
+                                                    Part = 1 }
+                                  Ref = ContentsReference "served"
+                                  Title = "Genesis" }]
+                       Version = ArtifactRoot "root" },
+                     { Request = Request "api/text?ref=served&n=20&corpus=concord"
+                       State =
+                        Failed
+                          (RequestId 1L,
+                           Read
+                             (Terminal
+                                (InvalidGraph (TextCorpusMismatch { Requested = Concord
+                                                                    Received = Bible }))),
+                           None) }) }
+            Serial = RequestId 1L
+            Focus = Closed }, [···])
+Actual:   Tuple ({ Surface =
+             Concord
+               { Reference = None
+                 State =
+                  Active
+                    ({ Corpus = Concord
+                       Roots = [{ Children = []
+                                  Group = Some OT
+                                  Id = NodeId "Container:bible-book-GEN"
+                                  Kind = Book
+                                  Locus = Concord { Article = 1
+                                                    Paragraph = 1
+                                                    Part = 1 }
+                                  Ref = ContentsReference "served"
+                                  Title = "Genesis" }]
+                       Version = ArtifactRoot "root" },
+                     { Request = Request "api/text?ref=served&n=20&corpus=concord"
+                       State =
+                        Failed
+                          (RequestId 1L,
+                           Contract "the text answer names a different corpus", None) }) }
+            Serial = RequestId 1L
+            Focus = Closed }, [···])
+  Stack Trace:
+  
+----- Inner Stack Trace -----
+   at BibleAtlas.FSharp.Tests.ModelTests.a text answer from another corpus is refused before entering either reading surface(Corpus corpus, NonNull`1 _arg1) in /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/ModelTests.fs:line 37
+   at InvokeStub_ModelTests.a text answer from another corpus is refused before entering either reading surface(Object, Span`1)
+   at System.Reflection.MethodBaseInvoker.InvokeWithFewArgs(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
+--- End of stack trace from previous location ---
+   at FsCheck.Runner.invokeAndThrowInner@592-1.Invoke(Object[] o) in C:\Users\kurts\Projects\FsCheck\src\FsCheck\Runner.fs:line 595
+   at <StartupCode$FSharp-Core>.$Reflect.Invoke@1230.Invoke(T1 inp) in /__w/1/s/src/fsharp/src/FSharp.Core/reflect.fs:line 1230
+   at System.Lazy`1.ViaFactory(LazyThreadSafetyMode mode)
+   at System.Lazy`1.ExecutionAndPublication(LazyHelper executionAndPublication, Boolean useDefaultConstructor)
+   at System.Lazy`1.CreateValue()
+   at FsCheck.Testable.Prop.safeForce[a](Lazy`1 body) in C:\Users\kurts\Projects\FsCheck\src\FsCheck\Testable.fs:line 164
+  Failed BibleAtlas.FSharp.Tests.ModelTests.a missing chapter is unavailable without a manufactured request identity or retry [8 ms]
+  Error Message:
+   FsCheck.Xunit.PropertyFailedException : 
+Falsifiable, after 1 test (2 shrinks) (4209048139302726357,2732395063251275243). 
+Last step was invoked with size of 2 and seed of (3448906755004467351,9276761126591424831):
+Original:
+PositiveInt 3
+Shrunk:
+PositiveInt 1
+
+---- Assert.Equal() Failure: Values differ
+Expected: Tuple ({ Surface =
+             Reader
+               { Location = Some { Book = GEN
+                                   Chapter = 3 }
+                 State =
+                  Unavailable (Read (Terminal (InvalidGraph (MissingOpening Bible)))) }
+            Serial = RequestId 0L
+            Focus = Closed }, [···])
+Actual:   Tuple ({ Surface =
+             Reader
+               { Location = Some { Book = GEN
+                                   Chapter = 3 }
+                 State =
+                  Unavailable
+                    (Contract
+                       "the requested reading has no opening in the served contents") }
+            Serial = RequestId 0L
+            Focus = Closed }, [···])
+  Stack Trace:
+  
+----- Inner Stack Trace -----
+   at BibleAtlas.FSharp.Tests.ModelTests.a missing chapter is unavailable without a manufactured request identity or retry(PositiveInt _arg9) in /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/ModelTests.fs:line 117
+   at InvokeStub_ModelTests.a missing chapter is unavailable without a manufactured request identity or retry(Object, Span`1)
+   at System.Reflection.MethodBaseInvoker.InvokeWithOneArg(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
+--- End of stack trace from previous location ---
+   at FsCheck.Runner.invokeAndThrowInner@592-1.Invoke(Object[] o) in C:\Users\kurts\Projects\FsCheck\src\FsCheck\Runner.fs:line 595
+   at <StartupCode$FSharp-Core>.$Reflect.Invoke@1230.Invoke(T1 inp) in /__w/1/s/src/fsharp/src/FSharp.Core/reflect.fs:line 1230
+   at System.Lazy`1.ViaFactory(LazyThreadSafetyMode mode)
+   at System.Lazy`1.ExecutionAndPublication(LazyHelper executionAndPublication, Boolean useDefaultConstructor)
+   at System.Lazy`1.CreateValue()
+   at FsCheck.Testable.Prop.safeForce[a](Lazy`1 body) in C:\Users\kurts\Projects\FsCheck\src\FsCheck\Testable.fs:line 164
+
+Test Run Failed.
+Total tests: 55
+     Passed: 41
+     Failed: 14
+ Total time: 1.4566 Seconds

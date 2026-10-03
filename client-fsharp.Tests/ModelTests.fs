@@ -6,6 +6,7 @@ open FsCheck
 open FsCheck.Xunit
 open BibleAtlas.FSharp
 open BibleAtlas.FSharp.Contract
+open BibleAtlas.FSharp.Admission
 open Microsoft.FSharp.Reflection
 
 [<Property>]
@@ -31,9 +32,18 @@ let ``a text answer from another corpus is refused before entering either readin
     let request = pending.Serial
     let unit: TextUnit = { Ref = (WireFixtures.identity<UnitReference> "opaque"); Node = { Id = (WireFixtures.identity<NodeId> "served"); Kind = NodeKind.TextUnit; Label = "served" }; Heading = None; EdgeSummary = []; Body = { Text = text; Locus = other; Anchors = []; WordsOfChrist = [] } }
     let window: TextWindow = { Units = [unit]; Next = None; Version = (WireFixtures.identity<ArtifactRoot> "root") }
-    let failed = ReadSession.beginRead request read Empty |> ReadSession.complete request (Error(Contract "the text answer names a different corpus"))
+    let failed = ReadSession.beginRead request read Empty |> ReadSession.complete request (Error(WireFixtures.graphFailure(GraphFailure.TextCorpusMismatch { Requested = corpus; Received = (if corpus = Corpus.Bible then Corpus.Concord else Corpus.Bible) })))
     let expected = withState (ReadingState.Active(served, failed)) pending
     Assert.Equal((expected, []), Model.update (readingMessage corpus (ReadingMessage.TextLoaded(request, Ok window))) pending)
+
+[<Property>]
+let ``contents from the other corpus preserve the mismatch and perform no text read`` (corpus: Corpus) (NonNull title: NonNull<string>) =
+    let route, received = match corpus with Corpus.Bible -> Route.Reader, Corpus.Concord | Corpus.Concord -> Route.Concord None, Corpus.Bible
+    let model, _ = Model.init route
+    let offered = { contents with Corpus = received; Roots = contents.Roots |> List.map (fun root -> { root with Title = title }) }
+    let failure = WireFixtures.graphFailure(GraphFailure.ContentsCorpusMismatch { Requested = corpus; Received = received })
+    let expected = withState (ReadingState.Unavailable failure) model
+    Assert.Equal((expected, []), Model.update (readingMessage corpus (ReadingMessage.ContentsLoaded(model.Serial, Ok offered))) model)
 
 [<Property>]
 let ``a completion from a departed surface cannot alter any replacement surface`` (NonNull title: NonNull<string>) =
@@ -102,7 +112,7 @@ let ``Concord opens its bounded reading from the served corpus beginning`` (NonN
 let ``a missing chapter is unavailable without a manufactured request identity or retry`` (PositiveInt chapter) =
     let location = { Book = BookId.GEN; Chapter = 2 + chapter % 100 }
     let model, _ = Model.init (Route.Read location)
-    let expected = { model with Surface = Surface.Reader(readerPage (Some location) (ReadingState.Unavailable(Contract "the requested reading has no opening in the served contents"))) }
+    let expected = { model with Surface = Surface.Reader(readerPage (Some location) (ReadingState.Unavailable(WireFixtures.graphFailure(GraphFailure.MissingOpening Corpus.Bible)))) }
     let actual = Model.update (Page(SurfaceMessage.Reader(ReadingMessage.ContentsLoaded(model.Serial, Ok contents)))) model
     Assert.Equal((expected, []), actual)
     Assert.Equal((expected, []), Model.update (Page(SurfaceMessage.Reader ReadingMessage.RetryContents)) expected)

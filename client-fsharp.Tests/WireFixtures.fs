@@ -7,6 +7,9 @@ open BibleAtlas.FSharp.Contract
 open BibleAtlas.FSharp.Admission
 
 module WireFixtures =
+    let graphFailure (failure: GraphFailure) : BibleAtlas.FSharp.Failure =
+        BibleAtlas.FSharp.Failure.Read(ReadFailure.Terminal(TerminalFailure.InvalidGraph failure))
+
     let identity<'a> (value: obj) : 'a = JsonSerializer.Deserialize<'a>(JsonSerializer.Serialize value)
 
     let readFailure (code: ErrorCode) : BibleAtlas.FSharp.Failure =

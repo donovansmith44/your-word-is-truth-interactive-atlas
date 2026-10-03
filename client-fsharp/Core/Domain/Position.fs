@@ -1,6 +1,7 @@
 namespace BibleAtlas.FSharp
 
 open BibleAtlas.FSharp.Contract
+open BibleAtlas.FSharp.Admission
 
 module Positions =
     let id position =
@@ -31,7 +32,7 @@ module rec Explorable =
             if node.Node.Version = root then Ok(NodeExplorable(root, node.Node))
             else Error(ArtifactMoved(root, node.Node.Version))
         | Element.Edge edge -> Ok(EdgeExplorable(root, edge.Edge))
-        | Element.Missing missing -> Error(Contract $"the element read names nothing for {missing.Id}")
+        | Element.Missing missing -> Error(Failures.graph(GraphFailure.MissingElement missing.Id))
 
     let root element =
         match element with

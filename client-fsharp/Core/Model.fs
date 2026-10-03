@@ -3,6 +3,7 @@ namespace rec BibleAtlas.FSharp
 open System
 open System.Text.Json
 open BibleAtlas.FSharp.Contract
+open BibleAtlas.FSharp.Admission
 
 type ReadingLocation = { Book: BookId; Chapter: int }
 
@@ -233,11 +234,11 @@ module private ReadingSurface =
         | ReadingMessage.ContentsLoaded(identity, answer), ReadingState.LoadingContents pending when identity = pending ->
             match answer with
             | Error failure -> ReadingState.CouldNotLoadContents failure, []
-            | Ok contents when contents.Corpus <> corpus -> ReadingState.Unavailable(Contract "the contents answer names a different corpus"), []
+            | Ok contents when contents.Corpus <> corpus -> ReadingState.Unavailable(Failures.graph(GraphFailure.ContentsCorpusMismatch { Requested = corpus; Received = contents.Corpus })), []
             | Ok contents ->
                 match opening choice contents with
                 | Error failure -> ReadingState.Unavailable failure, []
-                | Ok None -> ReadingState.Unavailable(Contract "the requested reading has no opening in the served contents"), []
+                | Ok None -> ReadingState.Unavailable(Failures.graph(GraphFailure.MissingOpening corpus)), []
                 | Ok(Some(reference, scope)) ->
                     let size = match corpus with Corpus.Bible -> None | Corpus.Concord -> Some ReadingAffordances.concordPageSize
                     let read = Reads.textWindow reference size None scope (Some corpus)
@@ -268,12 +269,15 @@ module private ReadingSurface =
         | ReadingChoice.Concord None -> contents.Roots |> List.tryHead |> Option.map (fun root -> TextWindowReference.ofContentsReference root.Ref, None) |> Ok
 
     let private validate (corpus: Corpus) (window: TextWindow) : Result<TextWindow, Failure> =
-        let matches =
-            window.Units |> List.forall (fun unit ->
+        let mismatch =
+            window.Units |> List.tryPick (fun unit ->
                 match corpus, unit.Body.Locus with
-                | Corpus.Bible, TextRef.Bible _ | Corpus.Concord, TextRef.Concord _ -> true
-                | Corpus.Bible, TextRef.Concord _ | Corpus.Concord, TextRef.Bible _ -> false)
-        if matches then Ok window else Error(Contract "the text answer names a different corpus")
+                | Corpus.Bible, TextRef.Bible _ | Corpus.Concord, TextRef.Concord _ -> None
+                | Corpus.Bible, TextRef.Concord _ -> Some { Requested = corpus; Received = Corpus.Concord }
+                | Corpus.Concord, TextRef.Bible _ -> Some { Requested = corpus; Received = Corpus.Bible })
+        match mismatch with
+        | None -> Ok window
+        | Some mismatch -> Error(Failures.graph(GraphFailure.TextCorpusMismatch mismatch))
 
     let private corpus choice =
         match choice with

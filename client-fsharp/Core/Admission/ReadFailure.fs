@@ -13,6 +13,7 @@ type TransientFailure =
 type TerminalFailure =
     | ClientRefusal of ClientStatus * ErrorCode option
     | InvalidAnswer of WireFailure
+    | InvalidGraph of GraphFailure
     | UnexpectedStatus of received: HttpStatusCode * code: ErrorCode option
 
 [<RequireQualifiedAccess>]

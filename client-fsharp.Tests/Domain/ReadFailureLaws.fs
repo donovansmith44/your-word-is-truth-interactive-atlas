@@ -16,8 +16,9 @@ let ``transient refusals alone are retryable while every terminal category and c
           ReadFailure.Terminal(TerminalFailure.ClientRefusal(client, Some code))
           ReadFailure.Terminal(TerminalFailure.InvalidAnswer WireFailure.NullAnswer)
           ReadFailure.Terminal(TerminalFailure.UnexpectedStatus(HttpStatusCode.Found, Some code))
+          ReadFailure.Terminal(TerminalFailure.InvalidGraph(GraphFailure.MissingOpening Corpus.Bible))
           ReadFailure.Cancelled ]
-    Assert.Equal<bool list>([true; true; true; false; false; false; false], failures |> List.map ReadFailures.retryable)
+    Assert.Equal<bool list>([true; true; true; false; false; false; false; false], failures |> List.map ReadFailures.retryable)
 
 let private clientStatus offset =
     match RefusalStatuses.client (clientMinimum + int offset % refusalClassSize) with

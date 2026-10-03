@@ -8,6 +8,7 @@ open FsCheck
 open FsCheck.Xunit
 open BibleAtlas.FSharp
 open BibleAtlas.FSharp.Contract
+open BibleAtlas.FSharp.Admission
 
 [<Property>]
 let ``the exploration expression composes nested reads with the complete generated trail`` (suffix: uint16) (value: int) (kind: EdgeKind) =
@@ -23,12 +24,12 @@ let ``the exploration expression composes nested reads with the complete generat
     Assert.Equal(Ok((target, value), trail), actual)
 
 [<Property>]
-let ``a failed exploration stops the continuation and makes exactly its requested read`` (suffix: uint16) (kind: EdgeKind) (NonNull reason: NonNull<string>) =
+let ``a failed exploration stops the continuation and makes exactly its requested read`` (suffix: uint16) (kind: EdgeKind) (code: ErrorCode) =
     let start = node $"Person:start-{suffix}" $"root-{suffix}"
     let requested = Explorable.position (node $"Person:target-{suffix}" $"root-{suffix}")
     let mutable calls = []
     let mutable continued = false
-    let failure = Contract reason
+    let failure = WireFixtures.readFailure code
     let resolver = { Resolve = fun asked -> async { calls <- calls @ [asked]; return Error failure } }
     let action = Explore.follow { Kind = kind; Target = requested } |> Explore.bind (fun _ -> continued <- true; Explore.result start)
     let actual = Explore.run resolver (Trail.beginAt start) action |> Async.RunSynchronously
@@ -48,7 +49,7 @@ let ``Back at the beginning preserves the complete trail and does no graph read`
     let start = node $"Person:start-{suffix}" $"root-{suffix}"
     let trail = Trail.beginAt start
     let mutable calls = []
-    let resolver = { Resolve = fun asked -> async { calls <- calls @ [asked]; return Error(Contract "unexpected read") } }
+    let resolver = { Resolve = fun asked -> async { calls <- calls @ [asked]; return Error(WireFixtures.readFailure ErrorCode.NotFound) } }
     let actual = Explore.run resolver trail (Explore.back ()) |> Async.RunSynchronously
     Assert.Equal((Ok(start, trail), []), (actual, calls))
 
@@ -81,7 +82,7 @@ let ``a resumed journey refuses every generated missing target cardinality`` (su
     let targets = kinds |> List.mapi (fun index _ -> node $"Person:target-{suffix}-{index}" $"root-{suffix}")
     let requestedKinds = kind :: kinds
     let actual = Trail.resume (start :: targets) requestedKinds
-    Assert.Equal(Error(Contract $"the resolved journey has {targets.Length + 1} elements for {requestedKinds.Length} steps"), actual)
+    Assert.Equal(Error(WireFixtures.graphFailure(GraphFailure.ElementCountMismatch { Requested = uint64 requestedKinds.Length + originCount; Received = uint64 targets.Length + originCount })), actual)
 
 [<Property>]
 let ``a resumed journey refuses a final target from a different generated artifact root`` (suffix: uint16) (kind: EdgeKind) =
@@ -96,7 +97,7 @@ let ``a missing element cannot become a resolved position for any requested iden
     let root = WireFixtures.identity<ArtifactRoot> $"root-{suffix}"
     let missing = $"Person:absent-{suffix}"
     let actual = Explorable.ofElement root (Element.Missing { Id = WireFixtures.identity<ElementId> missing })
-    Assert.Equal(Error(Contract $"the element read names nothing for {missing}"), actual)
+    Assert.Equal(Error(WireFixtures.graphFailure(GraphFailure.MissingElement(WireFixtures.identity<ElementId> missing))), actual)
 
 [<Property>]
 let ``every generated edge kind has an involutive dual from the published vocabulary`` (kind: EdgeKind) =
@@ -114,7 +115,22 @@ let ``a node record cannot be stamped with a different generated page root`` (su
     let served = Explorable.element (node $"Person:start-{suffix}" actualRoot)
     Assert.Equal(Error(ArtifactMoved(WireFixtures.identity<ArtifactRoot> pageRoot, WireFixtures.identity<ArtifactRoot> actualRoot)), Explorable.ofElement (WireFixtures.identity<ArtifactRoot> pageRoot) served)
 
-let explorer = { Resolve = fun _ -> async { return Error(Contract "unexpected read") } }
+[<Property>]
+let ``following refuses any generated non-singleton answer with both cardinalities`` (suffix: uint16) (kind: EdgeKind) (size: byte) =
+    let start = node $"Person:start-{suffix}" $"root-{suffix}"
+    let count = if size = 1uy then 0 else int size
+    let resolved = List.init count (fun index -> node $"Person:target-{suffix}-{index}" $"root-{suffix}")
+    let requested = Explorable.position start
+    let mutable calls = []
+    let resolver = { Resolve = fun asked -> async { calls <- calls @ [asked]; return Ok resolved } }
+    let actual = Explore.run resolver (Trail.beginAt start) (Explore.follow { Kind = kind; Target = requested }) |> Async.RunSynchronously
+    Assert.Equal((Error(WireFixtures.graphFailure(GraphFailure.ElementCountMismatch { Requested = singleTargetCount; Received = uint64 count })), [[requested]]), (actual, calls))
+
+[<Property>]
+let ``an empty resolved journey refuses every generated step list with its missing origin count`` (kinds: EdgeKind list) =
+    Assert.Equal(Error(WireFixtures.graphFailure(GraphFailure.ElementCountMismatch { Requested = uint64 kinds.Length + originCount; Received = noElements })), Trail.resume [] kinds)
+
+let explorer = { Resolve = fun _ -> async { return Error(WireFixtures.readFailure ErrorCode.NotFound) } }
 let node (id: string) (root: string) : Explorable =
     let record = { Id = (WireFixtures.identity<NodeId> id); Kind = NodeKind.Person; Label = id; Provenance = { Id = "test"; Title = "test" }; EdgeSummary = []; Version = (WireFixtures.identity<ArtifactRoot> root); Book = None; Catechism = None; Description = None; Era = None; Event = None; Map = None; Person = None; Place = None; Polity = None; Text = None }
     match Explorable.ofElement (WireFixtures.identity<ArtifactRoot> root) (Element.Node { Node = record }) with
@@ -123,3 +139,7 @@ let node (id: string) (root: string) : Explorable =
 
 let start = node "Person:start" "root"
 let trail = Trail.beginAt start
+
+let private singleTargetCount = 1UL
+let private originCount = 1UL
+let private noElements = 0UL

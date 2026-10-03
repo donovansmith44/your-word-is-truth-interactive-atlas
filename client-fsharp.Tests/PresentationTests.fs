@@ -4,6 +4,7 @@ open FsCheck.Xunit
 open Xunit
 open BibleAtlas.FSharp
 open BibleAtlas.FSharp.Contract
+open BibleAtlas.FSharp.Admission
 
 [<Property>]
 let ``a node card composes exactly its served label and provenance title`` (suffix: uint16) =
@@ -30,7 +31,7 @@ let ``a TextUnit presentation preserves its entire served text record and proven
 [<Property>]
 let ``a TextUnit without its served text is an explicit contract failure`` (suffix: uint16) =
     let record = { node suffix with Kind = NodeKind.TextUnit }
-    Assert.Equal(Error(Contract $"{record.Id} is served without its UnitText"), present record.Version (Element.Node { Node = record }))
+    Assert.Equal(Error(WireFixtures.graphFailure(GraphFailure.TextMissing record.Id)), present record.Version (Element.Node { Node = record }))
 
 [<Property>]
 let ``an edge card preserves its served label and optional provenance title`` (suffix: uint16) (hasProvenance: bool) =

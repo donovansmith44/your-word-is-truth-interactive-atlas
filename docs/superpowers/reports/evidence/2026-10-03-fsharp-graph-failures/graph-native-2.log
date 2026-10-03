@@ -1,0 +1,60 @@
+  Determining projects to restore...
+  Restored /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/Domain/DomainLaws.fsproj (in 221 ms).
+  2 of 3 projects are up-to-date for restore.
+  BibleAtlas.FSharp.ContractGenerator -> /home/donovan/w/CX-FSHARP-wire/client-fsharp.ContractGenerator/bin/Debug/net10.0/BibleAtlas.FSharp.ContractGenerator.dll
+  BibleAtlas.FSharp.Core -> /home/donovan/w/CX-FSHARP-wire/client-fsharp/Core/bin/Debug/net10.0/BibleAtlas.FSharp.Core.dll
+  DomainLaws -> /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/Domain/bin/Debug/net10.0/DomainLaws.dll
+Test run for /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/Domain/bin/Debug/net10.0/DomainLaws.dll (.NETCoreApp,Version=v10.0)
+A total of 1 test files matched the specified pattern.
+[xUnit.net 00:00:00.00] xUnit.net VSTest Adapter v3.1.4+50e68bbb8b (64-bit .NET 10.0.12)
+[xUnit.net 00:00:00.05]   Discovering: DomainLaws
+[xUnit.net 00:00:00.09]   Discovered:  DomainLaws
+[xUnit.net 00:00:00.10]   Starting:    DomainLaws
+  Passed BibleAtlas.FSharp.Tests.Domain.GraphFailureLaws.every graph answer failure carries its complete typed evidence and no message string [67 ms]
+  Passed BibleAtlas.FSharp.Tests.Domain.DocumentPositionLaws.document lines are one based and preserve every valid value [63 ms]
+  Passed BibleAtlas.FSharp.Tests.Domain.HttpUrlLaws.HTTP and HTTPS admission preserves a complete generated absolute URL [81 ms]
+  Passed BibleAtlas.FSharp.Tests.Domain.ReadFailureLaws.transient refusals alone are retryable while every terminal category and cancellation stays distinct [86 ms]
+  Passed BibleAtlas.FSharp.Tests.Domain.PositiveLaws.positive admission refuses zero and every generated negative integer [58 ms]
+  Passed BibleAtlas.FSharp.Tests.Domain.StatusLaws.server refusal admission preserves exactly the whole 500 through 599 range [65 ms]
+  Passed BibleAtlas.FSharp.Tests.Domain.ArrayIndexLaws.array index admission accepts exactly nonnegative integers [62 ms]
+  Passed BibleAtlas.FSharp.Tests.Domain.CoordinatesLaws.every nonfinite coordinate is refused including all NaN and infinity witnesses [58 ms]
+  Passed BibleAtlas.FSharp.Tests.Domain.PageCacheLaws.a foreign page is refused without changing the previous cache [85 ms]
+  Passed BibleAtlas.FSharp.Tests.Domain.NonEmptyLaws.map preserves identity and composition without empty output [89 ms]
+  Passed BibleAtlas.FSharp.Tests.Domain.RootedLaws.rooted mapping preserves identity and composition [90 ms]
+  Passed BibleAtlas.FSharp.Tests.Domain.PositiveLaws.positive admission accepts exactly positive integers and preserves their value [2 ms]
+  Passed BibleAtlas.FSharp.Tests.Domain.NonEmptyLaws.singleton has exactly its supplied element [2 ms]
+  Passed BibleAtlas.FSharp.Tests.Domain.StatusLaws.client refusal admission preserves exactly the whole 400 through 499 range [3 ms]
+  Passed BibleAtlas.FSharp.Tests.Domain.DocumentPositionLaws.document byte columns are one based and preserve every valid value [3 ms]
+  Passed BibleAtlas.FSharp.Tests.Domain.PageCacheLaws.a new cache retains its root and page budget with no entries [3 ms]
+  Passed BibleAtlas.FSharp.Tests.Domain.RootedLaws.every generated foreign root is refused with both identities intact [7 ms]
+  Passed BibleAtlas.FSharp.Tests.Domain.StatusLaws.invalid HTTP status admission recognizes exactly the complement of 100 through 599 [5 ms]
+  Passed BibleAtlas.FSharp.Tests.Domain.HttpUrlLaws.non web schemes are refused before a visit link is admitted [11 ms]
+  Passed BibleAtlas.FSharp.Tests.Domain.NonEmptyLaws.append preserves both complete operands in order [11 ms]
+  Passed BibleAtlas.FSharp.Tests.Domain.HttpUrlLaws.malformed and relative URLs are refused rather than repaired [2 ms]
+  Passed BibleAtlas.FSharp.Tests.Domain.RootedLaws.root admission accepts exactly the requested data version and preserves the whole value [6 ms]
+  Passed BibleAtlas.FSharp.Tests.Domain.StatusLaws.both refusal doors preserve generated codes and their complete class boundaries [10 ms]
+  Passed BibleAtlas.FSharp.Tests.Domain.NonEmptyLaws.append is associative [5 ms]
+  Passed BibleAtlas.FSharp.Tests.Domain.CoordinatesLaws.longitude rejects nonfinite and out of range values as distinct failures [21 ms]
+  Passed BibleAtlas.FSharp.Tests.Domain.RootedLaws.combining values is admitted only on one coherent root [12 ms]
+  Passed BibleAtlas.FSharp.Tests.Domain.CoordinatesLaws.latitude rejects nonfinite and out of range values as distinct failures [7 ms]
+  Passed BibleAtlas.FSharp.Tests.Domain.NonEmptyLaws.nonempty admission refuses empty input and preserves every nonempty list [11 ms]
+  Passed BibleAtlas.FSharp.Tests.Domain.PageCacheLaws.structured query and cursor keys retain independent complete pages [29 ms]
+  Passed BibleAtlas.FSharp.Tests.Domain.RootedLaws.same root combination is associative and preserves the complete ordered payload [8 ms]
+  Passed BibleAtlas.FSharp.Tests.Domain.RootedLaws.mapping preserves both the admitted root and the complete transformed value [3 ms]
+  Passed BibleAtlas.FSharp.Tests.Domain.PageCacheLaws.replacing a key installs its new page once and makes it most recent [5 ms]
+  Passed BibleAtlas.FSharp.Tests.Domain.GraphFailureLaws.every graph answer category is terminal and remains unaltered inside the read failure [59 ms]
+  Passed BibleAtlas.FSharp.Tests.Domain.PageCacheLaws.ten thousand distinct puts retain exactly the latest page budget and no prefix history [92 ms]
+  Passed BibleAtlas.FSharp.Tests.Domain.PageCacheLaws.a hit returns the whole page and refreshes recency before eviction [4 ms]
+  Passed BibleAtlas.FSharp.Tests.Domain.PageCacheLaws.rebasing refuses an old root completion and retains the empty new root cache [2 ms]
+  Passed BibleAtlas.FSharp.Tests.Domain.PageCacheLaws.rebasing is identity at the same root and clears pages at another root [3 ms]
+  Passed BibleAtlas.FSharp.Tests.Domain.PageCacheLaws.a missing cache lookup returns no page and the identical cache [2 ms]
+  Passed BibleAtlas.FSharp.Tests.Domain.PageCacheLaws.put preserves a complete admitted page under its exact key [1 ms]
+  Passed BibleAtlas.FSharp.Tests.Domain.DeclarationLaws.every client concept has one declaration home [367 ms]
+  Passed BibleAtlas.FSharp.Tests.Domain.DeclarationLaws.duplicate declaration detection permits companions in one home and refuses names in two homes [51 ms]
+[xUnit.net 00:00:15.50]   Finished:    DomainLaws
+  Passed BibleAtlas.FSharp.Tests.Domain.AdmissionSurfaceLaws.every private representation refuses direct construction while its own public door compiles [15 s]
+
+Test Run Successful.
+Total tests: 42
+     Passed: 42
+ Total time: 15.8686 Seconds

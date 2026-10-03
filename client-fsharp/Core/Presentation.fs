@@ -1,6 +1,7 @@
 namespace BibleAtlas.FSharp
 
 open BibleAtlas.FSharp.Contract
+open BibleAtlas.FSharp.Admission
 
 [<RequireQualifiedAccess>]
 type FieldName = Window | CanonicalName | Established | Destroyed | Reign | Provenance
@@ -30,7 +31,7 @@ module rec Presenter =
         | NodeKind.TextUnit ->
             match record.Text with
             | Some unit -> Ok(PopoverPresentation.Text { Unit = unit; Fields = provenance })
-            | None -> Error(Contract $"{record.Id} is served without its UnitText")
+            | None -> Error(Failures.graph(GraphFailure.TextMissing record.Id))
         | NodeKind.Container | NodeKind.Event | NodeKind.Narrative | NodeKind.Place | NodeKind.Person
         | NodeKind.Anchor | NodeKind.Era | NodeKind.Polity | NodeKind.CatechismItem | NodeKind.Source
         | NodeKind.Translation | NodeKind.PeopleGroup | NodeKind.CommentaryItem | NodeKind.LexiconEntry | NodeKind.Map ->
