@@ -15,8 +15,6 @@ public sealed class IdentityTests
         // Assert
         Assert.Equal(
             [
-                (NodeKind.TextUnit, "text-unit:GEN.1.1", "GEN.1.1"),
-                (NodeKind.TextUnit, "text-unit:BoC 7.2.1", "BoC 7.2.1"),
                 (NodeKind.Container, "Container:bible-chapter-GEN-1", "GEN.1"),
                 (NodeKind.Container, "Container:bible-book-GEN", "GEN"),
                 (NodeKind.TextUnit, "text-unit:GEN.1.1", "GEN.1.1-5"),

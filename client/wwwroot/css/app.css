@@ -4528,6 +4528,28 @@ input:focus-visible,
     line-height: 1.7;
 }
 
+.focus-text {
+    margin: 0;
+    font-size: 1.1rem;
+    line-height: 1.7;
+}
+
+.focus-anchor {
+    font: inherit;
+    color: inherit;
+    background-color: transparent;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    border-radius: 2px;
+}
+
+.focus-anchor:hover,
+.focus-anchor:focus-visible {
+    background-color: rgba(44, 74, 112, .14);
+    color: var(--lapis);
+}
+
 /* Batch CORP-1b: a Kretzmann CommentaryItem's own prose (CommentaryItemProseSection)
    -- same shape as .popover-verse-text immediately above (this app's own
    "quiet, subordinate to the text it comments on" register, R4), a touch

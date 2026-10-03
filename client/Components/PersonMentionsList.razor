@@ -23,7 +23,7 @@
         {
             var vref = verse.Label;
             <button type="button" class="popover-event-row popover-event-row-button explorable" data-testid="@($"person-mention-{vref}")"
-                    @onclick="() => OnExplore.InvokeAsync(new PopoverOpening.Legacy(new VerseNode(vref)))">
+                    @onclick="() => OnExplore.InvokeAsync(new PopoverOpening.Explore(new NodePosition(verse)))">
                 @vref
             </button>
         }

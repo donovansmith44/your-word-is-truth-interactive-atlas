@@ -4,7 +4,7 @@
 {
     @if (piece.Anchor is { } citation)
     {
-        var verse = NodeIds.LocalPart(citation.Node);
+        var verse = citation.Node;
         <span class="@ClassPrefix" data-testid="@($"{ClassPrefix}-{OwnerSlug}-{index}")"
               tabindex="0" role="button" aria-label="@($"Explore {piece.Text}")"
               @onclick="() => Open(verse)" @onclick:stopPropagation="true"
@@ -31,7 +31,7 @@
         return pieces.Select(piece => (piece, piece.Anchor is null ? 0 : cited++));
     }
 
-    private Task Open(string verse) => OnExplore.InvokeAsync(new PopoverOpening.Legacy(new VerseNode(verse)));
+    private Task Open(NodeRef verse) => OnExplore.InvokeAsync(new PopoverOpening.Explore(new NodePosition(verse)));
 
-    private Task OnKeyDown(KeyboardEventArgs e, string verse) => e.Key == "Enter" ? Open(verse) : Task.CompletedTask;
+    private Task OnKeyDown(KeyboardEventArgs e, NodeRef verse) => e.Key == "Enter" ? Open(verse) : Task.CompletedTask;
 }

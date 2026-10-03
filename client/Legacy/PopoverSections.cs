@@ -16,9 +16,6 @@ public interface IPopoverSectionContext
     // outcomes during its own ResolveAsync call. By render time every provider has finished.
     int OtherContextSectionCount { get; }
 
-    // Same render-time-only reading rule as OtherContextSectionCount above.
-    bool XrefEntryPoint { get; }
-
     IExplorableClient Graph { get; }
 
     Task RenewAsync();
@@ -42,12 +39,9 @@ public static class PopoverSectionRegistry
         (new ChapterCardSection(), 0),
         (new YearFrontierSection(), 5),
 
-        (new VerseTextSectionProvider(), 10),
-        (new VerseEventMembershipSection(), 20),
-        (new VersePassageMembershipSection(), 21),
-        (new CatechismSeamSection(), 30),
-        (new VerseParallelsSection(), 40),
-        (new CrossRefsSection(), 50),
+        (new PassageTextSection(), 10),
+        (new PassageCatechismSection(), 30),
+        (new PassageCrossRefsSection(), 50),
 
         (new CatechismTextSection(), 100),
         (new CatechismExplanationSection(), 110),
@@ -70,8 +64,6 @@ public static class PopoverSectionRegistry
         (new PersonFamilySection(), 198),
         (new PersonCardAndMentionsSection(), 200),
         (new CommentaryItemProseSection(), 210),
-        (new ConcordUnitTextSection(), 214),
-        (new ConcordSmallCatechismSection(), 215),
     };
 
     // OrderBy is a stable sort: two entries sharing an Order value resolve in this array's

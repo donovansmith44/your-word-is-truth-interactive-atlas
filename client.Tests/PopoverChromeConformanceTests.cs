@@ -7,7 +7,7 @@ namespace BibleAtlas.Client.Tests;
 
 public class PopoverChromeConformanceTests
 {
-    private const int ConcreteExplorableNodeClasses = 12;
+    private const int ConcreteExplorableNodeClasses = 10;
 
     private static string StripLineComments(string text) => Regex.Replace(text, "//[^\n]*", string.Empty);
 
@@ -103,7 +103,7 @@ public class PopoverChromeConformanceTests
     public void PlantedSourceShape_AnUndeclaredChipInAExploreAsyncBody_IsCaughtByTheSameExtractionTheRealScanUses()
     {
         const string planted = """
-            public string Kind => "Verse";
+            public string Kind => "Passage";
 
             public Task<IReadOnlyList<Chip>> ExploreAsync(AtlasClient api)
             {
@@ -121,7 +121,7 @@ public class PopoverChromeConformanceTests
         Assert.Equal(new[] { "popover-chip-book", "popover-chip-context", "popover-chip-planted-violation" }, chips);
 
         var kind = KindPattern.Match(StripLineComments(planted)).Groups[1].Value;
-        Assert.Equal("Verse", kind);
+        Assert.Equal("Passage", kind);
 
         var undeclared = chips.Where(c => !IsDeclaredChip(kind, c)).ToList();
         Assert.Equal(new[] { "popover-chip-planted-violation" }, undeclared);

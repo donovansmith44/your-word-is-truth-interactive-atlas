@@ -14,7 +14,6 @@ public static class PopoverChromeRegistry
 
     public static readonly IReadOnlyDictionary<string, ChipDeclaration[]> ByKind = new Dictionary<string, ChipDeclaration[]>
     {
-        ["Verse"] = Exact("popover-chip-book", "popover-chip-context"),
         ["Passage"] = Exact("popover-chip-book", "popover-chip-context"),
         ["Chapter"] = Exact("popover-chip-map", "popover-chip-context", "popover-chip-book"),
         ["Book"] = Exact("popover-chip-map", "popover-chip-context", "popover-chip-book"),
@@ -28,6 +27,5 @@ public static class PopoverChromeRegistry
         ["Catechism"] = Array.Empty<ChipDeclaration>(),
         ["Person"] = Exact("popover-chip-year-born", "popover-chip-year-died", "popover-chip-year-span"),
         ["CommentaryItem"] = Array.Empty<ChipDeclaration>(),
-        ["ConcordUnit"] = Array.Empty<ChipDeclaration>(),
     };
 }

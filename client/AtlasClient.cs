@@ -97,9 +97,6 @@ public sealed class AtlasClient
         return result;
     }
 
-    public Task<VerseDetail> Verse(string vref) =>
-        _http.GetRequired<VerseDetail>($"api/verse/{vref}");
-
     // No cache here (unlike Chapter): Kretzmann re-fetches fresh on every locus change by design
     // (LoadCommentaryAsync's own request-id guard discards stale in-flight responses), so a
     // curator-added commentary unit is visible on the very next chapter visit.

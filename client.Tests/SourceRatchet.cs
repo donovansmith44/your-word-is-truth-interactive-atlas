@@ -5,7 +5,6 @@ namespace BibleAtlas.Client.Tests;
 
 public enum Batch
 {
-    Focus2,
     Focus3,
     Focus4,
     Focus5,

@@ -135,7 +135,7 @@ else
     private List<RefsList.RefDescriptor> RefDescriptors => _fetchedRefs ?? [];
 
     public static List<RefsList.RefDescriptor> SelectRefs(IReadOnlyList<EventAccount> accounts) =>
-        accounts.Select(account => new RefsList.RefDescriptor(account.Reference, new PopoverOpening.Legacy(new VerseNode(account.FirstVerse)))).ToList();
+        accounts.Select(account => new RefsList.RefDescriptor(account.Reference, LegacyTextUnits.Opening(account.FirstVerse))).ToList();
 
     private string WrapperClass => Inline ? "popover-story-thread-leg-wrap" : $"popover-event-nav-side popover-event-nav-side-{Direction}";
 

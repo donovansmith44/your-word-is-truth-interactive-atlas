@@ -148,46 +148,21 @@ public sealed class YearFrontierSection : IPopoverSectionProvider
         node is YearNode year ? year.ResolveFrontierAsync(api, ctx) : Task.FromResult<PopoverSection?>(null);
 }
 
-public sealed class VerseTextSectionProvider : IPopoverSectionProvider
+public sealed class PassageTextSection : IPopoverSectionProvider
 {
-    public bool AppliesTo(IExplorable node) => node.Kind is "Verse" or "Passage";
+    public bool AppliesTo(IExplorable node) => node.Kind == "Passage";
 
     public async Task<PopoverSection?> ResolveAsync(IExplorable node, Explorable current, AtlasClient api, IPopoverSectionContext ctx)
     {
-        string book;
-        int chapter, focalFrom, focalTo;
-        string compactText;
-        IReadOnlyList<string> textProvenance = Array.Empty<string>();
-
-        switch (node)
+        if (node is not PassageNode p)
         {
-            case VerseNode v:
-                var (vBook, vChapter, vVerse) = CanonRef.ParseVerse(v.Title);
-                book = vBook;
-                chapter = vChapter;
-                focalFrom = focalTo = vVerse;
-                var vDetail = await v.DetailAsync(api);
-                compactText = vDetail.Text;
-                textProvenance = new[] { ProvenanceResolver.NormalizeId(vDetail.Provenance) };
-                break;
-
-            case PassageNode p:
-                var (pBook, pChapter, pFromVerse) = CanonRef.ParseVerse(CanonRef.FirstVerseOf(p.Title));
-                book = pBook;
-                chapter = pChapter;
-                focalFrom = pFromVerse;
-                var dash = p.Title.LastIndexOf('-');
-                focalTo = dash >= 0 && int.TryParse(p.Title[(dash + 1)..], out var toVerse) ? toVerse : focalFrom;
-                compactText = p.Text;
-                break;
-
-            default:
-                return null;
+            return null;
         }
 
+        var (book, chapter, focalFrom) = CanonRef.ParseVerse(CanonRef.FirstVerseOf(p.Title));
+        var dash = p.Title.LastIndexOf('-');
+        var focalTo = dash >= 0 && int.TryParse(p.Title[(dash + 1)..], out var toVerse) ? toVerse : focalFrom;
         var focalVerses = (await api.ChapterText(book, chapter)).Between(focalFrom, focalTo);
-
-        var registry = await FrontierProvenance.Registry(api);
 
         RenderFragment fragment = builder =>
         {
@@ -197,14 +172,10 @@ public sealed class VerseTextSectionProvider : IPopoverSectionProvider
             builder.AddAttribute(seq++, nameof(Components.VerseTextSection.Chapter), chapter);
             builder.AddAttribute(seq++, nameof(Components.VerseTextSection.FocalFromVerse), focalFrom);
             builder.AddAttribute(seq++, nameof(Components.VerseTextSection.FocalToVerse), focalTo);
-            builder.AddAttribute(seq++, nameof(Components.VerseTextSection.CompactText), compactText);
+            builder.AddAttribute(seq++, nameof(Components.VerseTextSection.CompactText), p.Text);
             builder.AddAttribute(seq++, nameof(Components.VerseTextSection.FocalVerses), focalVerses);
             builder.AddAttribute(seq++, nameof(Components.VerseTextSection.OnExplore), EventCallback.Factory.Create<PopoverOpening>(ctx, opening => ctx.PushAsync(opening, EdgeKind.Mentions)));
             builder.CloseComponent();
-
-            seq = FrontierProvenance.Affordance(
-                builder, seq, textProvenance, registry, "verse-text-provenance",
-                "Source for this verse's text", Components.ProvenanceAffordance.RowRegister);
         };
         return new PopoverSection("verse-text", fragment);
     }
@@ -268,33 +239,21 @@ internal static class FrontierProvenance
         rowProvenances.Select(ProvenanceResolver.NormalizeId).Distinct().ToList();
 }
 
-public sealed class CrossRefsSection : IPopoverSectionProvider
+public sealed class PassageCrossRefsSection : IPopoverSectionProvider
 {
     private const int XrefsShown = 3;
 
-    public bool AppliesTo(IExplorable node) => node.Kind is "Verse" or "Passage";
+    public bool AppliesTo(IExplorable node) => node.Kind == "Passage";
 
     public async Task<PopoverSection?> ResolveAsync(IExplorable node, Explorable current, AtlasClient api, IPopoverSectionContext ctx)
     {
-        IReadOnlyList<CrossRef> xrefs;
-        IReadOnlyList<string> xrefProvenance = Array.Empty<string>();
-        switch (node)
+        if (node is not PassageNode p)
         {
-            case VerseNode v:
-            {
-                var detail = await v.DetailAsync(api);
-                xrefs = detail.CrossRefs;
-                xrefProvenance = detail.CrossRefsProvenance;
-                break;
-            }
-            case PassageNode p:
-                xrefs = await p.XrefsAsync(api);
-                xrefProvenance = FrontierProvenance.Distinct(xrefs.SelectMany(x => x.Provenance));
-                break;
-            default:
-                xrefs = new List<CrossRef>();
-                break;
+            return null;
         }
+
+        var xrefs = await p.XrefsAsync(api);
+        var xrefProvenance = FrontierProvenance.Distinct(xrefs.SelectMany(x => x.Provenance));
 
         if (xrefs.Count == 0)
         {
@@ -324,7 +283,7 @@ public sealed class CrossRefsSection : IPopoverSectionProvider
             builder.AddAttribute(seq++, nameof(Components.PassageList.TrueTotal), xrefs.Count);
             builder.AddAttribute(seq++, nameof(Components.PassageList.ResolveRemainingAsync), (Func<Task<IReadOnlyList<PassageSourceUnit>>>)(async () => await ResolveUnits(api, lazySpans)));
             builder.AddAttribute(seq++, nameof(Components.PassageList.RefTestIdPrefix), "xref-item");
-            builder.AddAttribute(seq++, nameof(Components.PassageList.Cap), ctx.XrefEntryPoint ? XrefsShown : (ctx.OtherContextSectionCount > 0 ? 2 : XrefsShown));
+            builder.AddAttribute(seq++, nameof(Components.PassageList.Cap), ctx.OtherContextSectionCount > 0 ? 2 : XrefsShown);
             builder.AddAttribute(seq++, nameof(Components.PassageList.MoreTestId), "xrefs-more");
             builder.AddAttribute(seq++, nameof(Components.PassageList.CollapseTestId), "xrefs-collapse");
             builder.AddAttribute(seq++, nameof(Components.PassageList.RevealNoun), "cross-references");
@@ -365,31 +324,19 @@ public sealed class CrossRefsSection : IPopoverSectionProvider
     }
 }
 
-public sealed class CatechismSeamSection : IPopoverSectionProvider
+public sealed class PassageCatechismSection : IPopoverSectionProvider
 {
-    public bool AppliesTo(IExplorable node) => node.Kind is "Verse" or "Passage";
+    public bool AppliesTo(IExplorable node) => node.Kind == "Passage";
 
     public async Task<PopoverSection?> ResolveAsync(IExplorable node, Explorable current, AtlasClient api, IPopoverSectionContext ctx)
     {
-        IReadOnlyList<CatechismRef> items;
-        IReadOnlyList<string> catechismProvenance = Array.Empty<string>();
-        switch (node)
+        if (node is not PassageNode p)
         {
-            case VerseNode v:
-            {
-                var detail = await v.DetailAsync(api);
-                items = detail.Catechism;
-                catechismProvenance = detail.CatechismProvenance;
-                break;
-            }
-            case PassageNode p:
-                items = await p.CatechismAsync(api);
-                catechismProvenance = FrontierProvenance.Distinct(items.SelectMany(i => i.Provenance));
-                break;
-            default:
-                items = new List<CatechismRef>();
-                break;
+            return null;
         }
+
+        var items = await p.CatechismAsync(api);
+        var catechismProvenance = FrontierProvenance.Distinct(items.SelectMany(i => i.Provenance));
 
         if (items.Count == 0)
         {
@@ -584,91 +531,6 @@ public sealed class CatechismScripturesSection : IPopoverSectionProvider
     }
 }
 
-public static class EventMembershipHeading
-{
-    public static string For(EventKind kind) => kind switch
-    {
-        EventKind.Event => "EVENT",
-        EventKind.General => "PASSAGE",
-        _ => throw new NotSupportedException($"EventMembershipHeading.For: unrecognized Event::kind '{kind}'."),
-    };
-}
-
-public sealed class VerseEventMembershipSection : IPopoverSectionProvider
-{
-    public bool AppliesTo(IExplorable node) => node.Kind == "Verse";
-
-    public async Task<PopoverSection?> ResolveAsync(IExplorable node, Explorable current, AtlasClient api, IPopoverSectionContext ctx)
-    {
-        if (node is not VerseNode v)
-        {
-            return null;
-        }
-
-        var events = (await v.DetailAsync(api)).Events;
-
-        var dated = events.Where(e => e.Kind == EventKind.Event).ToList();
-        if (dated.Count == 0)
-        {
-            return null;
-        }
-
-        return new PopoverSection("event-membership", RenderRows(EventKind.Event, dated, ctx, await FrontierProvenance.Registry(api)));
-    }
-
-    internal static RenderFragment RenderRows(EventKind kind, IReadOnlyList<VerseEvent> events, IPopoverSectionContext ctx, SourcesDocument? registry) => builder =>
-    {
-        var seq = 0;
-        seq = FrontierProvenance.Heading(
-            builder, seq,
-            EventMembershipHeading.For(kind),
-            "event-section-heading",
-            FrontierProvenance.Distinct(events.Select(e => e.Provenance)),
-            registry,
-            "event-membership-provenance-" + kind.WireName(),
-            "Sources for these " + kind.WireName() + " rows");
-
-        foreach (var e in events)
-        {
-            var id = e.Id;
-            var label = e.Label;
-            // .explorable-quiet replaces .explorable (never both): a general-kind event
-            // is not part of time traversal, so its row must not look traversable.
-            var explorableClass = e.Kind == EventKind.General ? "explorable-quiet" : "explorable";
-            builder.OpenElement(seq++, "button");
-            builder.AddAttribute(seq++, "type", "button");
-            builder.AddAttribute(seq++, "class", $"popover-event-row popover-event-row-button {explorableClass}");
-            builder.AddAttribute(seq++, "data-testid", $"verse-event-{id}");
-            builder.AddAttribute(seq++, "onclick", EventCallback.Factory.Create(ctx, () => ctx.PushAsync(new PopoverOpening.Legacy(new EventNode(id, label)), EdgeKind.Attests)));
-            builder.AddContent(seq++, label);
-            builder.CloseElement();
-        }
-    };
-}
-
-public sealed class VersePassageMembershipSection : IPopoverSectionProvider
-{
-    public bool AppliesTo(IExplorable node) => node.Kind == "Verse";
-
-    public async Task<PopoverSection?> ResolveAsync(IExplorable node, Explorable current, AtlasClient api, IPopoverSectionContext ctx)
-    {
-        if (node is not VerseNode v)
-        {
-            return null;
-        }
-
-        var events = (await v.DetailAsync(api)).Events;
-
-        var general = events.Where(e => e.Kind == EventKind.General).ToList();
-        if (general.Count == 0)
-        {
-            return null;
-        }
-
-        return new PopoverSection("passage-membership", VerseEventMembershipSection.RenderRows(EventKind.General, general, ctx, await FrontierProvenance.Registry(api)));
-    }
-}
-
 public sealed class EventProvenanceSection : IPopoverSectionProvider
 {
     public bool AppliesTo(IExplorable node) => node.Kind == "Event";
@@ -858,7 +720,7 @@ public sealed class EventMentionsSection : IPopoverSectionProvider
             return null;
         }
 
-        var refs = mentions.Select(v => new Components.RefsList.RefDescriptor(v, new PopoverOpening.Legacy(new VerseNode(v)))).ToList();
+        var refs = mentions.Select(v => new Components.RefsList.RefDescriptor(v, LegacyTextUnits.Opening(v))).ToList();
 
         var registry = await FrontierProvenance.Registry(api);
 
@@ -921,89 +783,6 @@ public sealed class EventAnaloguesSection : IPopoverSectionProvider
             builder.CloseComponent();
         };
         return new PopoverSection("event-analogues", body);
-    }
-}
-
-public sealed class VerseParallelsSection : IPopoverSectionProvider
-{
-    public bool AppliesTo(IExplorable node) => node.Kind is "Verse" or "Passage";
-
-    public async Task<PopoverSection?> ResolveAsync(IExplorable node, Explorable current, AtlasClient api, IPopoverSectionContext ctx)
-    {
-        IReadOnlyList<VerseEvent> events;
-        string ownVref;
-        switch (node)
-        {
-            case VerseNode v:
-                events = (await v.DetailAsync(api)).Events;
-                ownVref = v.Title;
-                break;
-            case PassageNode p:
-                ownVref = CanonRef.FirstVerseOf(p.Title);
-                events = (await api.Verse(ownVref)).Events;
-                break;
-            default:
-                return null;
-        }
-
-        if (events.Count == 0)
-        {
-            return null;
-        }
-
-        var own = CanonRef.BibleRefOf(ownVref);
-        var accountsOfEach = await Task.WhenAll(events.Select(async e =>
-        {
-            return await EventAccounts.ReadAsync(ctx.Graph, e.Id);
-        }));
-        var qualifying = events.Zip(accountsOfEach)
-            .Select(pair => (pair.First.Label, OtherAccounts: pair.Second.Where(account => !account.Reads(own)).ToList()))
-            .Where(q => q.OtherAccounts.Count > 0)
-            .ToList();
-
-        if (qualifying.Count == 0)
-        {
-            return null;
-        }
-
-        var unitsPerEvent = await Task.WhenAll(qualifying.Select(q => WitnessUnitsResolver.ResolveAsync(api, q.OtherAccounts)));
-
-        var multiEvent = qualifying.Count > 1;
-
-        RenderFragment body = builder =>
-        {
-            var seq = 0;
-            for (var i = 0; i < qualifying.Count; i++)
-            {
-                var (label, _) = qualifying[i];
-                var units = unitsPerEvent[i];
-
-                builder.OpenElement(seq++, "p");
-                builder.AddAttribute(seq++, "class", "catechism-section-heading");
-                builder.AddAttribute(seq++, "data-testid", "event-section-heading");
-                builder.AddContent(seq++, multiEvent ? $"PARALLELS — {label}" : "PARALLELS");
-                builder.CloseElement();
-
-                builder.OpenComponent<Components.PassageList>(seq++);
-                builder.AddAttribute(seq++, nameof(Components.PassageList.Units), (IReadOnlyList<PassageSourceUnit>)units);
-                builder.AddAttribute(seq++, nameof(Components.PassageList.RefTestIdPrefix), multiEvent ? $"verse-parallel-{Slugify(label)}" : "verse-parallel");
-                builder.AddAttribute(seq++, nameof(Components.PassageList.ClampVerses), Components.PassageList.StandardVerseClamp);
-                builder.AddAttribute(seq++, nameof(Components.PassageList.OnExplore), EventCallback.Factory.Create<PopoverOpening>(ctx, opening => ctx.PushAsync(opening, EdgeKind.Parallel)));
-                builder.CloseComponent();
-            }
-        };
-        return new PopoverSection("parallels", body);
-    }
-
-    private static string Slugify(string label)
-    {
-        var chars = label.ToLowerInvariant().Select(c => char.IsLetterOrDigit(c) ? c : '-').ToArray();
-        var slug = new string(chars);
-        while (slug.Contains("--"))
-        {
-            slug = slug.Replace("--", "-");
-        }
-        return slug.Trim('-');
     }
 }
 
@@ -1289,79 +1068,6 @@ public sealed class CatechismInConcordSection : IPopoverSectionProvider
     }
 }
 
-public sealed class ConcordSmallCatechismSection : IPopoverSectionProvider
-{
-    public bool AppliesTo(IExplorable node) => node.Kind == "ConcordUnit";
-
-    public async Task<PopoverSection?> ResolveAsync(IExplorable node, Explorable current, AtlasClient api, IPopoverSectionContext ctx)
-    {
-        if (node is not ConcordUnitNode unit)
-        {
-            return null;
-        }
-
-        IReadOnlyList<CatechismRef> items;
-        items = (await CatechismLinks.AllTargetsAsync(ctx.Graph, unit.NodeId))
-            .Where(n => n.Kind == NodeKind.CatechismItem)
-            .Select(n => new CatechismRef(id: NodeIds.LocalPart(n), name: n.Label, provenance: [], question: null))
-            .ToList();
-
-        if (items.Count == 0)
-        {
-            return null;
-        }
-
-        RenderFragment body = builder =>
-        {
-            var seq = 0;
-            builder.OpenElement(seq++, "p");
-            builder.AddAttribute(seq++, "class", "catechism-section-heading");
-            builder.AddAttribute(seq++, "data-testid", "concord-small-catechism-heading");
-            builder.AddContent(seq++, $"THE SMALL CATECHISM ({items.Count})");
-            builder.CloseElement();
-
-            builder.OpenComponent<Components.CatechismList>(seq++);
-            builder.AddAttribute(seq++, nameof(Components.CatechismList.Items), (IReadOnlyList<CatechismRef>)items);
-            builder.AddAttribute(seq++, nameof(Components.CatechismList.OnExplore), EventCallback.Factory.Create<PopoverOpening>(ctx, opening => ctx.PushAsync(opening, EdgeKind.CatechismLink)));
-            builder.CloseComponent();
-        };
-        return new PopoverSection("concord-small-catechism", body);
-    }
-}
-
-// Registering ANY section for Kind == "ConcordUnit" (see ConcordSmallCatechismSection)
-// makes sections replace ConcordUnitNode.BodyAsync entirely rather than supplement it,
-// so this section carries the paragraph's own text or it would silently disappear.
-public sealed class ConcordUnitTextSection : IPopoverSectionProvider
-{
-    public bool AppliesTo(IExplorable node) => node.Kind == "ConcordUnit";
-
-    public async Task<PopoverSection?> ResolveAsync(IExplorable node, Explorable current, AtlasClient api, IPopoverSectionContext ctx)
-    {
-        if (node is not ConcordUnitNode unit)
-        {
-            return null;
-        }
-
-        var text = await unit.TextAsync(ctx.Graph);
-
-        if (string.IsNullOrWhiteSpace(text))
-        {
-            return null;
-        }
-
-        RenderFragment body = builder =>
-        {
-            builder.OpenElement(0, "p");
-            builder.AddAttribute(1, "class", "popover-concord-text");
-            builder.AddAttribute(2, "data-testid", "concord-unit-text");
-            builder.AddContent(3, text);
-            builder.CloseElement();
-        };
-        return new PopoverSection("concord-unit-text", body);
-    }
-}
-
 internal static class CatechismLinks
 {
     public static async Task<List<NodeRef>> AllTargetsAsync(IExplorableClient graph, string nodeId) =>
@@ -1380,18 +1086,18 @@ file static class PersonSectionRendering
         return seq;
     }
 
-    public static int Chips(RenderTreeBuilder builder, int seq, string testidPrefix, IEnumerable<(string Id, string Label, IExplorable Node)> chips, IPopoverSectionContext ctx, EdgeKind via)
+    public static int Chips(RenderTreeBuilder builder, int seq, string testidPrefix, IEnumerable<(string Id, string Label, PopoverOpening Opening)> chips, IPopoverSectionContext ctx, EdgeKind via)
     {
         builder.OpenElement(seq++, "div");
         builder.AddAttribute(seq++, "class", "popover-catechism-list person-chips");
-        foreach (var (id, label, node) in chips)
+        foreach (var (id, label, opening) in chips)
         {
-            var target = node;
+            var target = opening;
             builder.OpenElement(seq++, "button");
             builder.AddAttribute(seq++, "type", "button");
             builder.AddAttribute(seq++, "class", "popover-catechism-item explorable");
             builder.AddAttribute(seq++, "data-testid", $"{testidPrefix}-{id.Replace(':', '-').Replace('.', '-')}");
-            builder.AddAttribute(seq++, "onclick", EventCallback.Factory.Create<MouseEventArgs>(ctx, () => ctx.PushAsync(new PopoverOpening.Legacy(target), via)));
+            builder.AddAttribute(seq++, "onclick", EventCallback.Factory.Create<MouseEventArgs>(ctx, () => ctx.PushAsync(target, via)));
             builder.AddContent(seq++, label);
             builder.CloseElement();
         }
@@ -1433,7 +1139,7 @@ public sealed class PersonLifeSection : IPopoverSectionProvider
             builder.CloseElement();
             if (life.Eternal && life.EternalGrounds.Count > 0)
             {
-                seq = PersonSectionRendering.Chips(builder, seq, "person-eternal-ground", life.EternalGrounds.Select(g => (g, g, (IExplorable)new VerseNode(g))), ctx, EdgeKind.MentionedIn);
+                seq = PersonSectionRendering.Chips(builder, seq, "person-eternal-ground", life.EternalGrounds.Select(g => (g, g, LegacyTextUnits.Opening(g))), ctx, EdgeKind.MentionedIn);
             }
         };
         return new PopoverSection("person-life", body);
@@ -1481,7 +1187,7 @@ public sealed class PersonEventsSection : IPopoverSectionProvider
         RenderFragment body = builder =>
         {
             var seq = PersonSectionRendering.Heading(builder, 0, $"EVENTS ({events.Count})", "person-events-heading");
-            PersonSectionRendering.Chips(builder, seq, "person-event", events.Select(e => (NodeIds.LocalPart(e), e.Label, (IExplorable)new EventNode(NodeIds.LocalPart(e), e.Label))), ctx, EdgeKind.ParticipatesIn);
+            PersonSectionRendering.Chips(builder, seq, "person-event", events.Select(e => (NodeIds.LocalPart(e), e.Label, (PopoverOpening)new PopoverOpening.Legacy(new EventNode(NodeIds.LocalPart(e), e.Label)))), ctx, EdgeKind.ParticipatesIn);
         };
         return new PopoverSection("person-events", body);
     }
@@ -1533,7 +1239,7 @@ public sealed class PersonFamilySection : IPopoverSectionProvider
                 builder.AddAttribute(seq++, "data-testid", $"person-family-{group.TestId}");
                 builder.AddContent(seq++, group.Heading);
                 builder.CloseElement();
-                seq = PersonSectionRendering.Chips(builder, seq, $"person-{group.TestId}", group.People.Select(p => (NodeIds.LocalPart(p), p.Label, (IExplorable)new PersonNode(p.Id, p.Label))), ctx, group.Via);
+                seq = PersonSectionRendering.Chips(builder, seq, $"person-{group.TestId}", group.People.Select(p => (NodeIds.LocalPart(p), p.Label, (PopoverOpening)new PopoverOpening.Legacy(new PersonNode(p.Id, p.Label)))), ctx, group.Via);
             }
         };
         return new PopoverSection("person-family", body);
