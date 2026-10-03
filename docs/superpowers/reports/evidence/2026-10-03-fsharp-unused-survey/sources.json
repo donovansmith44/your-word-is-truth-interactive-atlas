@@ -1,0 +1,378 @@
+{
+  "checked_at": "2026-10-03T18:48:06.215211+00:00",
+  "type": "source/metadata survey, no candidate installed or runtime compatibility gate run",
+  "installed_compiler_service": {
+    "package": "FSharp.Compiler.Service",
+    "version": "43.12.401",
+    "license_spdx": "MIT",
+    "package_nuspec_sha256": "bfb11e0d697836a9de9eec31d044229a4d013a32ee185576223861226745449d",
+    "repository_commit": "e34a38d2ae1fc26406a317517196e55c68ff83ab",
+    "source_url": "https://raw.githubusercontent.com/dotnet/dotnet/e34a38d2ae1fc26406a317517196e55c68ff83ab/src/fsharp/src/Compiler/Service/ServiceAnalysis.fs",
+    "source_sha256": "e73bf5a6d208a2a443c54ce827cdf55044fed5d97b35148c4bd966744028726e",
+    "source_bytes": 22834,
+    "unused_module_first_line": 434,
+    "api_scope": "file-local editor analysis; boolean isScriptFile; project exports and several entities intentionally excluded"
+  },
+  "candidates": [
+    {
+      "repository": "ionide/ionide-analyzers",
+      "revision": "093975da0ecd9fce77d3a52e70a014f70ab450ef",
+      "default_branch": "main",
+      "repository_pushed_at": "2026-10-02T07:03:03Z",
+      "license_spdx": "MIT",
+      "rule_source_paths": [
+        "src/Ionide.Analyzers/Performance/CombinePipedModuleFunctionsAnalyzer.fs",
+        "src/Ionide.Analyzers/Performance/EqualsNullAnalyzer.fs",
+        "src/Ionide.Analyzers/Performance/ListEqualsEmptyListAnalyzer.fs",
+        "src/Ionide.Analyzers/Performance/NoArgFormatStringAnalyzer.fs",
+        "src/Ionide.Analyzers/Performance/ReturnStructPartialActivePatternAnalyzer.fs",
+        "src/Ionide.Analyzers/Style/MixedFlowDirectionAnalyzer.fs",
+        "src/Ionide.Analyzers/Style/PostfixGenericsAnalyzer.fs",
+        "src/Ionide.Analyzers/Suggestion/CopyAndUpdateRecordChangesAllFieldsAnalyzer.fs",
+        "src/Ionide.Analyzers/Suggestion/EmptyStringAnalyzer.fs",
+        "src/Ionide.Analyzers/Suggestion/HandleOptionGracefullyAnalyzer.fs",
+        "src/Ionide.Analyzers/Suggestion/HeadConsEmptyListPatternAnalyzer.fs",
+        "src/Ionide.Analyzers/Suggestion/IgnoreFunctionAnalyzer.fs",
+        "src/Ionide.Analyzers/Suggestion/StructDiscriminatedUnionAnalyzer.fs",
+        "src/Ionide.Analyzers/Suggestion/UnnamedDiscriminatedUnionFieldAnalyzer.fs"
+      ],
+      "untruncated_tree": true,
+      "source_metadata": [
+        {
+          "path": "LICENSE.md",
+          "url": "https://raw.githubusercontent.com/ionide/ionide-analyzers/093975da0ecd9fce77d3a52e70a014f70ab450ef/LICENSE.md",
+          "bytes": 1072,
+          "sha256": "d40334d5101e5b938fe44e4fe02230a4fcd4c0a98b6f026c3ff62e7d6801a363"
+        },
+        {
+          "path": "Directory.Packages.props",
+          "url": "https://raw.githubusercontent.com/ionide/ionide-analyzers/093975da0ecd9fce77d3a52e70a014f70ab450ef/Directory.Packages.props",
+          "bytes": 1052,
+          "sha256": "ed23abbe507de1cb91ae5b2ff87829e599b46ee15946a1799262062f00d5f174",
+          "relevant_packages": [
+            {
+              "Include": "FSharp.Core",
+              "Version": "[10.1.400]"
+            },
+            {
+              "Include": "FSharp.Compiler.Service",
+              "Version": "[43.12.400]"
+            },
+            {
+              "Include": "FSharp.Analyzers.SDK",
+              "Version": "[0.39.2]"
+            },
+            {
+              "Include": "FSharp.Analyzers.SDK.Testing",
+              "Version": "[0.39.2]"
+            }
+          ]
+        },
+        {
+          "path": "CHANGELOG.md",
+          "url": "https://raw.githubusercontent.com/ionide/ionide-analyzers/093975da0ecd9fce77d3a52e70a014f70ab450ef/CHANGELOG.md",
+          "bytes": 7754,
+          "sha256": "8de5c5490b71cf9082d8f5ff186c7b78c0a0dbca67dc43bbd58def42853d1f7e",
+          "release_headings": [
+            "## [0.19.0] - 2026-09-10",
+            "## [0.18.0] - 2026-09-08",
+            "## [0.17.0] - 2026-08-15"
+          ]
+        }
+      ]
+    },
+    {
+      "repository": "G-Research/fsharp-analyzers",
+      "revision": "7ab2d8906209560ed96808a27e57f41fe05000fa",
+      "default_branch": "main",
+      "repository_pushed_at": "2026-09-12T07:01:54Z",
+      "license_spdx": "Apache-2.0",
+      "rule_source_paths": [
+        "src/FSharp.Analyzers/DisposedBeforeAsyncRunAnalyzer.fs",
+        "src/FSharp.Analyzers/ImmutableCollectionEqualityAnalyzer.fs",
+        "src/FSharp.Analyzers/JsonSerializerOptionsAnalyzer.fs",
+        "src/FSharp.Analyzers/LoggingArgFuncNotFullyAppliedAnalyzer.fs",
+        "src/FSharp.Analyzers/LoggingTemplateMissingValuesAnalyzer.fs",
+        "src/FSharp.Analyzers/StringAnalyzer.fs",
+        "src/FSharp.Analyzers/TypedInterpolatedStringsAnalyzer.fs",
+        "src/FSharp.Analyzers/UnionCaseAnalyzer.fs",
+        "src/FSharp.Analyzers/VirtualCallAnalyzer.fs"
+      ],
+      "untruncated_tree": true,
+      "source_metadata": [
+        {
+          "path": "LICENSE",
+          "url": "https://raw.githubusercontent.com/G-Research/fsharp-analyzers/7ab2d8906209560ed96808a27e57f41fe05000fa/LICENSE",
+          "bytes": 11357,
+          "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+        },
+        {
+          "path": "Directory.Packages.props",
+          "url": "https://raw.githubusercontent.com/G-Research/fsharp-analyzers/7ab2d8906209560ed96808a27e57f41fe05000fa/Directory.Packages.props",
+          "bytes": 1008,
+          "sha256": "ce54f95d38f54129af46475baacec6a4c978ad37d2eb3347fe1b2c2f30b2a524",
+          "relevant_packages": [
+            {
+              "Include": "FSharp.Analyzers.SDK",
+              "Version": "[0.39.0]"
+            },
+            {
+              "Include": "FSharp.Analyzers.SDK.Testing",
+              "Version": "[0.39.0]"
+            },
+            {
+              "Include": "FSharp.Core",
+              "Version": "[10.1.400]"
+            },
+            {
+              "Include": "FSharp.Compiler.Service",
+              "Version": "[43.12.400]"
+            }
+          ]
+        },
+        {
+          "path": "CHANGELOG.md",
+          "url": "https://raw.githubusercontent.com/G-Research/fsharp-analyzers/7ab2d8906209560ed96808a27e57f41fe05000fa/CHANGELOG.md",
+          "bytes": 7440,
+          "sha256": "c7bf655b06dae3d871ed528ca0ec63d43043bf135cda6f2d77aa1aed794ecf47",
+          "release_headings": [
+            "## [0.25.0] - 2026-09-10",
+            "## [0.24.0] - 2026-09-05",
+            "## [0.23.0] - 2026-06-19"
+          ]
+        }
+      ]
+    },
+    {
+      "repository": "fsprojects/FSharpLint",
+      "revision": "d2607f5c68fe0e8c0366e815692cb8d314e254a3",
+      "default_branch": "master",
+      "repository_pushed_at": "2026-09-02T03:29:39Z",
+      "license_spdx": "MIT",
+      "rule_source_paths": [
+        "src/FSharpLint.Core/Rules/Conventions/AvoidSinglePipeOperator.fs",
+        "src/FSharpLint.Core/Rules/Conventions/Binding/BindingHelper.fs",
+        "src/FSharpLint.Core/Rules/Conventions/Binding/FavourAsKeyword.fs",
+        "src/FSharpLint.Core/Rules/Conventions/Binding/FavourIgnoreOverLetWild.fs",
+        "src/FSharpLint.Core/Rules/Conventions/Binding/FavourTypedIgnore.fs",
+        "src/FSharpLint.Core/Rules/Conventions/Binding/TupleOfWildcards.fs",
+        "src/FSharpLint.Core/Rules/Conventions/Binding/UselessBinding.fs",
+        "src/FSharpLint.Core/Rules/Conventions/Binding/WildcardNamedWithAsPattern.fs",
+        "src/FSharpLint.Core/Rules/Conventions/CyclomaticComplexity.fs",
+        "src/FSharpLint.Core/Rules/Conventions/DisallowShadowing.fs",
+        "src/FSharpLint.Core/Rules/Conventions/DiscourageStringInterpolationWithStringFormat.fs",
+        "src/FSharpLint.Core/Rules/Conventions/EnsureTailCallDiagnosticsInRecursiveFunctions.fs",
+        "src/FSharpLint.Core/Rules/Conventions/FailwithBadUsage.fs",
+        "src/FSharpLint.Core/Rules/Conventions/FavourConsistentThis.fs",
+        "src/FSharpLint.Core/Rules/Conventions/FavourNamedMembers.fs",
+        "src/FSharpLint.Core/Rules/Conventions/FavourNestedFunctions.fs",
+        "src/FSharpLint.Core/Rules/Conventions/FavourNonMutablePropertyInitialization.fs",
+        "src/FSharpLint.Core/Rules/Conventions/FavourReRaise.fs",
+        "src/FSharpLint.Core/Rules/Conventions/FavourSingleton.fs",
+        "src/FSharpLint.Core/Rules/Conventions/FavourStaticEmptyFields.fs",
+        "src/FSharpLint.Core/Rules/Conventions/FunctionReimplementation/CanBeReplacedWithComposition.fs",
+        "src/FSharpLint.Core/Rules/Conventions/FunctionReimplementation/FunctionReimplementationHelper.fs",
+        "src/FSharpLint.Core/Rules/Conventions/FunctionReimplementation/ReimplementsFunction.fs",
+        "src/FSharpLint.Core/Rules/Conventions/IndexerAccessorStyleConsistency.fs",
+        "src/FSharpLint.Core/Rules/Conventions/Naming/ActivePatternNames.fs",
+        "src/FSharpLint.Core/Rules/Conventions/Naming/AsynchronousFunctionNames.fs",
+        "src/FSharpLint.Core/Rules/Conventions/Naming/AvoidTooShortNames.fs",
+        "src/FSharpLint.Core/Rules/Conventions/Naming/EnumCasesNames.fs",
+        "src/FSharpLint.Core/Rules/Conventions/Naming/ExceptionNames.fs",
+        "src/FSharpLint.Core/Rules/Conventions/Naming/GenericTypesNames.fs",
+        "src/FSharpLint.Core/Rules/Conventions/Naming/InterfaceNames.fs",
+        "src/FSharpLint.Core/Rules/Conventions/Naming/InternalValuesNames.fs",
+        "src/FSharpLint.Core/Rules/Conventions/Naming/LiteralNames.fs",
+        "src/FSharpLint.Core/Rules/Conventions/Naming/MeasureTypeNames.fs",
+        "src/FSharpLint.Core/Rules/Conventions/Naming/MemberNames.fs",
+        "src/FSharpLint.Core/Rules/Conventions/Naming/ModuleNames.fs",
+        "src/FSharpLint.Core/Rules/Conventions/Naming/NamespaceNames.fs",
+        "src/FSharpLint.Core/Rules/Conventions/Naming/NestedFunctionNames.fs",
+        "src/FSharpLint.Core/Rules/Conventions/Naming/ParameterNames.fs",
+        "src/FSharpLint.Core/Rules/Conventions/Naming/PrivateValuesNames.fs",
+        "src/FSharpLint.Core/Rules/Conventions/Naming/PublicValuesNames.fs",
+        "src/FSharpLint.Core/Rules/Conventions/Naming/RecordFieldNames.fs",
+        "src/FSharpLint.Core/Rules/Conventions/Naming/SimpleAsyncComplementaryHelpers.fs",
+        "src/FSharpLint.Core/Rules/Conventions/Naming/SynchronousFunctionNames.fs",
+        "src/FSharpLint.Core/Rules/Conventions/Naming/TypeNames.fs",
+        "src/FSharpLint.Core/Rules/Conventions/Naming/UnionCasesNames.fs",
+        "src/FSharpLint.Core/Rules/Conventions/Naming/UnnestedFunctionNames.fs",
+        "src/FSharpLint.Core/Rules/Conventions/NestedStatements.fs",
+        "src/FSharpLint.Core/Rules/Conventions/NoPartialFunctions.fs",
+        "src/FSharpLint.Core/Rules/Conventions/NumberOfItems/MaxNumberOfBooleanOperatorsInCondition.fs",
+        "src/FSharpLint.Core/Rules/Conventions/NumberOfItems/MaxNumberOfFunctionParameters.fs",
+        "src/FSharpLint.Core/Rules/Conventions/NumberOfItems/MaxNumberOfItemsInTuple.fs",
+        "src/FSharpLint.Core/Rules/Conventions/NumberOfItems/MaxNumberOfMembers.fs",
+        "src/FSharpLint.Core/Rules/Conventions/NumberOfItems/NumberOfItemsHelper.fs",
+        "src/FSharpLint.Core/Rules/Conventions/RecursiveAsyncFunction.fs",
+        "src/FSharpLint.Core/Rules/Conventions/RedundantNewKeyword.fs",
+        "src/FSharpLint.Core/Rules/Conventions/SourceLength/MaxLinesInClass.fs",
+        "src/FSharpLint.Core/Rules/Conventions/SourceLength/MaxLinesInConstructor.fs",
+        "src/FSharpLint.Core/Rules/Conventions/SourceLength/MaxLinesInEnum.fs",
+        "src/FSharpLint.Core/Rules/Conventions/SourceLength/MaxLinesInFile.fs",
+        "src/FSharpLint.Core/Rules/Conventions/SourceLength/MaxLinesInFunction.fs",
+        "src/FSharpLint.Core/Rules/Conventions/SourceLength/MaxLinesInLambdaFunction.fs",
+        "src/FSharpLint.Core/Rules/Conventions/SourceLength/MaxLinesInMatchLambdaFunction.fs",
+        "src/FSharpLint.Core/Rules/Conventions/SourceLength/MaxLinesInMember.fs",
+        "src/FSharpLint.Core/Rules/Conventions/SourceLength/MaxLinesInModule.fs",
+        "src/FSharpLint.Core/Rules/Conventions/SourceLength/MaxLinesInProperty.fs",
+        "src/FSharpLint.Core/Rules/Conventions/SourceLength/MaxLinesInRecord.fs",
+        "src/FSharpLint.Core/Rules/Conventions/SourceLength/MaxLinesInUnion.fs",
+        "src/FSharpLint.Core/Rules/Conventions/SourceLength/MaxLinesInValue.fs",
+        "src/FSharpLint.Core/Rules/Conventions/SourceLength/SourceLengthHelper.fs",
+        "src/FSharpLint.Core/Rules/Conventions/SuggestUseAutoProperty.fs",
+        "src/FSharpLint.Core/Rules/Conventions/TypePrefixing.fs",
+        "src/FSharpLint.Core/Rules/Conventions/UnneededRecKeyword.fs",
+        "src/FSharpLint.Core/Rules/Formatting/PatternMatchFormatting/PatternMatchClauseIndentation.fs",
+        "src/FSharpLint.Core/Rules/Formatting/PatternMatchFormatting/PatternMatchClausesOnNewLine.fs",
+        "src/FSharpLint.Core/Rules/Formatting/PatternMatchFormatting/PatternMatchExpressionIndentation.fs",
+        "src/FSharpLint.Core/Rules/Formatting/PatternMatchFormatting/PatternMatchFormattingHelper.fs",
+        "src/FSharpLint.Core/Rules/Formatting/PatternMatchFormatting/PatternMatchOrClausesOnNewLine.fs",
+        "src/FSharpLint.Core/Rules/Formatting/Spacing/ClassMemberSpacing.fs",
+        "src/FSharpLint.Core/Rules/Formatting/Spacing/ModuleDeclSpacing.fs",
+        "src/FSharpLint.Core/Rules/Formatting/TupleFormatting/TupleCommaSpacing.fs",
+        "src/FSharpLint.Core/Rules/Formatting/TupleFormatting/TupleFormattingHelper.fs",
+        "src/FSharpLint.Core/Rules/Formatting/TupleFormatting/TupleIndentation.fs",
+        "src/FSharpLint.Core/Rules/Formatting/TupleFormatting/TupleParentheses.fs",
+        "src/FSharpLint.Core/Rules/Formatting/TypedItemSpacing.fs",
+        "src/FSharpLint.Core/Rules/Formatting/Typography/Indentation.fs",
+        "src/FSharpLint.Core/Rules/Formatting/Typography/MaxCharactersOnLine.fs",
+        "src/FSharpLint.Core/Rules/Formatting/Typography/NoTabCharacters.fs",
+        "src/FSharpLint.Core/Rules/Formatting/Typography/TrailingNewLineInFile.fs",
+        "src/FSharpLint.Core/Rules/Formatting/Typography/TrailingWhitespaceOnLine.fs",
+        "src/FSharpLint.Core/Rules/Formatting/UnionDefinitionIndentation.fs",
+        "src/FSharpLint.Core/Rules/Hints/HintMatcher.fs",
+        "src/FSharpLint.Core/Rules/Hints/HintsHelper.fs",
+        "src/FSharpLint.Core/Rules/Identifiers.fs",
+        "src/FSharpLint.Core/Rules/NamingHelper.fs",
+        "src/FSharpLint.Core/Rules/Smells/AsyncExceptionWithoutReturn.fs",
+        "src/FSharpLint.Core/Rules/Smells/InterpolatedStringWithNoSubstitution.fs",
+        "src/FSharpLint.Core/Rules/Smells/NoAsyncRunSynchronouslyInLibrary.fs",
+        "src/FSharpLint.Core/Rules/Smells/RaiseWithTooManyArguments/FailwithWithSingleArgument.fs",
+        "src/FSharpLint.Core/Rules/Smells/RaiseWithTooManyArguments/FailwithfWithArgumentsMatchingFormatString.fs",
+        "src/FSharpLint.Core/Rules/Smells/RaiseWithTooManyArguments/InvalidArgWithTwoArguments.fs",
+        "src/FSharpLint.Core/Rules/Smells/RaiseWithTooManyArguments/InvalidOpWithSingleArgument.fs",
+        "src/FSharpLint.Core/Rules/Smells/RaiseWithTooManyArguments/NullArgWithSingleArgument.fs",
+        "src/FSharpLint.Core/Rules/Smells/RaiseWithTooManyArguments/RaiseWithSingleArgument.fs",
+        "src/FSharpLint.Core/Rules/Smells/RaiseWithTooManyArguments/RaiseWithTooManyArgumentsHelper.fs",
+        "src/FSharpLint.Core/Rules/Smells/UsedUnderscorePrefixedElements.fs",
+        "src/FSharpLint.Core/Rules/Utilities.fs",
+        "src/FSharpLint.Core/Rules/XmlDocumentation.fs"
+      ],
+      "untruncated_tree": true,
+      "source_metadata": [
+        {
+          "path": "LICENSE",
+          "url": "https://raw.githubusercontent.com/fsprojects/FSharpLint/d2607f5c68fe0e8c0366e815692cb8d314e254a3/LICENSE",
+          "bytes": 1089,
+          "sha256": "32a328d22fd3d600783224634d9e51fa0875fa6e3e965997cf5733e1cc237d2c"
+        },
+        {
+          "path": "Directory.Packages.props",
+          "url": "https://raw.githubusercontent.com/fsprojects/FSharpLint/d2607f5c68fe0e8c0366e815692cb8d314e254a3/Directory.Packages.props",
+          "bytes": 1747,
+          "sha256": "ffebf76a417e4f6f7b76b6780c45038507d31bbda52b1e29b1eed3f234670930",
+          "relevant_packages": [
+            {
+              "Include": "FSharp.Compiler.Service",
+              "Version": "43.12.201"
+            },
+            {
+              "Include": "FSharp.Core",
+              "Version": "10.1.201"
+            }
+          ]
+        },
+        {
+          "path": "CHANGELOG.md",
+          "url": "https://raw.githubusercontent.com/fsprojects/FSharpLint/d2607f5c68fe0e8c0366e815692cb8d314e254a3/CHANGELOG.md",
+          "bytes": 27752,
+          "sha256": "03bf60d27b9790311d4bea2ad29ce8d4bf84f0d9b17a9cdaaff57ad6f3130203",
+          "release_headings": [
+            "## [0.27.0] - 2026-06-05",
+            "## [0.26.10] - 2025-12-30",
+            "## [0.26.8] - 2025-11-21"
+          ]
+        }
+      ]
+    },
+    {
+      "repository": "ionide/FSharp.Analyzers.SDK",
+      "revision": "ae2ee72d6bde9ad62f9a47ea3f070c9a5117e347",
+      "default_branch": "main",
+      "repository_pushed_at": "2026-09-28T20:45:05Z",
+      "license_spdx": "MIT",
+      "rule_source_paths": [],
+      "untruncated_tree": true,
+      "source_metadata": [
+        {
+          "path": "LICENSE.md",
+          "url": "https://raw.githubusercontent.com/ionide/FSharp.Analyzers.SDK/ae2ee72d6bde9ad62f9a47ea3f070c9a5117e347/LICENSE.md",
+          "bytes": 1080,
+          "sha256": "1e0f3b175411f818bf00b6317ceaf767a139ed36de5377c97a3ee8e164d5c8d7"
+        },
+        {
+          "path": "Directory.Packages.props",
+          "url": "https://raw.githubusercontent.com/ionide/FSharp.Analyzers.SDK/ae2ee72d6bde9ad62f9a47ea3f070c9a5117e347/Directory.Packages.props",
+          "bytes": 2286,
+          "sha256": "2d0371088cef89a991a0fa838a0299a5fe68fbe2d8ddd5b34bff24370039c59e",
+          "relevant_packages": [
+            {
+              "Include": "FSharp.Core",
+              "Version": "[10.1.400]"
+            },
+            {
+              "Include": "FSharp.Compiler.Service",
+              "Version": "43.12.400"
+            }
+          ]
+        },
+        {
+          "path": "CHANGELOG.md",
+          "url": "https://raw.githubusercontent.com/ionide/FSharp.Analyzers.SDK/ae2ee72d6bde9ad62f9a47ea3f070c9a5117e347/CHANGELOG.md",
+          "bytes": 16319,
+          "sha256": "de92e8c94611eba3dd10089c06522693b3c05b953d2dc5230b95cd7bac704ce2",
+          "release_headings": [
+            "## [0.39.2] - 2026-09-12",
+            "## [0.39.1] - 2026-09-12",
+            "## [0.39.0] - 2026-09-10"
+          ]
+        }
+      ]
+    },
+    {
+      "repository": "Smaug123/WoofWare.FSharpAnalyzers",
+      "revision": "bb09a06c936fd07e9ced75fdcedab7715615033d",
+      "default_branch": "main",
+      "repository_pushed_at": "2026-09-29T05:40:57Z",
+      "license_spdx": "MIT",
+      "rule_source_paths": [
+        "WoofWare.FSharpAnalyzers/BlockingCallsAnalyzer.fs",
+        "WoofWare.FSharpAnalyzers/EarlyReturnAnalyzer.fs",
+        "WoofWare.FSharpAnalyzers/MissingCancellationTokenAnalyzer.fs",
+        "WoofWare.FSharpAnalyzers/ReferenceEqualsAnalyzer.fs",
+        "WoofWare.FSharpAnalyzers/ReturnBangOnlyAnalyzer.fs",
+        "WoofWare.FSharpAnalyzers/StreamReadAnalyzer.fs",
+        "WoofWare.FSharpAnalyzers/SuppressThrowingGenericAnalyzer.fs",
+        "WoofWare.FSharpAnalyzers/TaskCompletionSourceAnalyzer.fs",
+        "WoofWare.FSharpAnalyzers/ThrowingInDisposeAnalyzer.fs",
+        "WoofWare.FSharpAnalyzers/ValueTaskAwaitAnalyzer.fs"
+      ],
+      "untruncated_tree": true,
+      "source_metadata": [
+        {
+          "path": "LICENSE.md",
+          "url": "https://raw.githubusercontent.com/Smaug123/WoofWare.FSharpAnalyzers/bb09a06c936fd07e9ced75fdcedab7715615033d/LICENSE.md",
+          "bytes": 1077,
+          "sha256": "a466c8054a61c5fe4ed4932803d03ee7cb27f7eca21910dae75a66baf22c9fb3"
+        },
+        {
+          "path": "version.json",
+          "url": "https://raw.githubusercontent.com/Smaug123/WoofWare.FSharpAnalyzers/bb09a06c936fd07e9ced75fdcedab7715615033d/version.json",
+          "bytes": 227,
+          "sha256": "81d94485c99a33444af460a171f94d909e4396b44333abdc6a2af1c94ad8aadb"
+        }
+      ]
+    }
+  ]
+}
