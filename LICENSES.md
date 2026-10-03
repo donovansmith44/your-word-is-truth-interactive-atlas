@@ -34,7 +34,7 @@ file is the detailed version of record.
 | STEPBible TAGNT / TAHOT / TBESG ([STEPBible](https://github.com/STEPBible), Tyndale House Cambridge) — per-word lemma, morphology, Strong's numbers and English glosses for the Greek NT and Hebrew OT, via [brain-fuel/bible](https://github.com/brain-fuel/bible)'s `morph/` and `lexicon/` | **CC BY 4.0** (attribution required) | Redistributed with credit — compiled into the `lexicon` section (`data/compiled/sections/`): the `Occurs` rows (every aligned original-language word -> its lexicon entry), the `token` inventory, and the Greek entries' brief glosses. "Credit STEPBible and link to https://github.com/STEPBible" — done here, in `data/raw/README.md`, and on the Sources page. No English word is tagged: the alignment is by original-language word only. See "STEPBible / Strong's — the lexicon section (LEX-1)" below |
 | Strong's Exhaustive Concordance Greek and Hebrew dictionaries (James Strong, 1890; XML encoding by Ulrik Petersen / [openscriptures/strongs](https://github.com/openscriptures/strongs)), via brain-fuel/bible's `lexicon/` | Public domain (1890) | Redistributed — the 13,548 `LexiconEntry` nodes (number, lemma, transliteration, part of speech, the 1890 definition as the first gloss, root link), ingested as upstream publishes them (upstream's own "Yahweh" normalisation of the PD gloss text is upstream's build policy; the KJV column is never edited — the seven "Jehovah" verses stand) |
 
-## Bundled presentation assets
+## Bundled client assets
 
 Presentation, not ingested data: nothing in the graph or the compiled
 artifact derives from these. They sit outside the per-source table above,
