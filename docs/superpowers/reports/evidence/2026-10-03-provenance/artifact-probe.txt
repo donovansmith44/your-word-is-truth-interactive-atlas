@@ -1,0 +1,8 @@
+core complete provenance_title table exactly equals every provenance/source join: 33 rows
+core 496335 existing rows / 55 existing tables identical; blob SHA/length and schema 27 verified
+kjv 2573067 existing rows / 16 existing tables identical; blob SHA/length and schema 27 verified
+concord 331738 existing rows / 15 existing tables identical; blob SHA/length and schema 27 verified
+kretzmann 478546 existing rows / 7 existing tables identical; blob SHA/length and schema 27 verified
+lexicon 2199740 existing rows / 9 existing tables identical; blob SHA/length and schema 27 verified
+Whole prior artifact: 6079426 existing rows / 102 tables unchanged; only 33 compiled title rows added.
+All actual provenance-bearing tables across all five sections: 1222 distinct full IDs resolve to a nonblank compiled source title; no unmigrated artifact family.

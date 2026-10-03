@@ -1,0 +1,6 @@
+1024 generated source/locator title resolutions match the named source; 32 missing-source cases refused.
+32 duplicate source-id registries: existing validate_structure refuses; new provenance_titles accepts and takes first source title.
+32 duplicate provenance-id registries: existing validate_structure refuses; new provenance_titles accepts and silently takes last mapping/title.
+Full TOML reproduction: kjv originally names "The King James Version"; appended duplicate points to openbible-geocoding and admitted title becomes Some("OpenBible.info Geocoding").
+33 generated mutations of the complete current curated registry: duplicate existing provenance switches its served title to a different declared source; new compile titling accepts, existing admission rejects.
+Current curated registry: 20 sources, 33 provenances; every complete title mapping matches its declared source.

@@ -1,0 +1,1 @@
+66 generated mutations cover id and title of all 33 actual title rows; each changes complete production-encoded canonical table bytes and table-fragment hash; every rollback restores the whole table.

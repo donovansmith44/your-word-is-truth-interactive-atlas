@@ -1,0 +1,3 @@
+All eight AQC provenance sites reference the same closed published Provenance shape: CatechismRef.provenance, CrossRef.provenance, EdgeRecord.provenance, EventAnalogue.provenance, EventPage.mentions_provenance, EventPage.provenance, EventPage.witnesses_provenance, NodeRecord.provenance
+All 68 provenance values in every AQC fixture and AGC served fixture and HTTP/CLI pact body have exactly id/title and nonblank values; no bare served ID retained.
+The existing gazetteer-consumed export fixture retains its raw provenance ID, as explicitly recorded in the item; file exports are outside its served-wire scope.
