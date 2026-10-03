@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><TargetFramework>net10.0</TargetFramework><IsTestProject>true</IsTestProject><IsPackable>false</IsPackable><TreatWarningsAsErrors>true</TreatWarningsAsErrors></PropertyGroup>
+  <ItemGroup><Compile Include="GeneratorTests.fs" /><Compile Include="StateTests.fs" /><Compile Include="AnchoredTextTests.fs" /><Compile Include="ContractTests.fs" /><Compile Include="ExplorationTests.fs" /><Compile Include="TransportTests.fs" /><Compile Include="ModelTests.fs" /><Compile Include="ViewTests.fs" /></ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
+    <PackageReference Include="xunit" Version="2.9.3" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="3.1.4" />
+    <PackageReference Include="bunit" Version="2.11.3" />
+    <ProjectReference Include="../client-fsharp.ContractGenerator/BibleAtlas.FSharp.ContractGenerator.fsproj" />
+    <ProjectReference Include="../client-fsharp/Core/BibleAtlas.FSharp.Core.fsproj" />
+    <ProjectReference Include="../client-fsharp/BibleAtlas.FSharp.Client.fsproj" />
+  </ItemGroup>
+</Project>

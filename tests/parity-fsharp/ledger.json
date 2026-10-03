@@ -1,0 +1,1651 @@
+{
+  "reference": "ace063d4799a6447920add63336824a00cd34ef7",
+  "contract_sha256": "1e2ad669f4500068684e1a0a838a133d1640f2c6b7bb50323331dbbddde088de",
+  "inventory": [
+    {
+      "source": "client/App.razor",
+      "sha256": "a44ed6ea88872dac315bee8e938a196bbc9fb30d8eb30a06b405824176c3dc94",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/AppServices.cs",
+      "sha256": "05f1bd5bb4746dac2e636b8854d3c559af4e64ddd20901d8a5fa664c667b5fca",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/AtlasClient.cs",
+      "sha256": "05069a6ca01691172b234b1e1963401925e728b67d0f8995d13a947f63250284",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/BibleAtlas.Client.csproj",
+      "sha256": "4c55adc2dde6c27593185c0a3425d026eeb4867c0f2c3732dccd5cfc8ddbf619",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/Components/ArrowNav.razor",
+      "sha256": "c72a41d5916e22bb88a5426aa770ab121ac176192ae99fea84af2d67ff90549e",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/Components/CatechismList.razor",
+      "sha256": "4b38d8ce74ec2ecf7f6854ec486628904f4f5e92f8de86f53269ecdc925bd285",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/Components/CompositionSplit.razor",
+      "sha256": "d07faa77a5709958a1d415feaa9418eda753ae52fa3830a289a58ba8a0b6b8f4",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/Components/CompositionSplitContext.cs",
+      "sha256": "0e8a2c1dc42d9054e4ab04e92e620181721d92fa337f436964fd3ca30acc77d2",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/Components/ConcordUnitList.razor",
+      "sha256": "a44293e5f597a376d9501bde4681e519a3421cec670eec1fdf36799971cdc0bf",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/Components/ContentsPanel.razor",
+      "sha256": "5a71828d3fc5aad953fd079f7035ef3dee3b1868ee8c691dc4f1299ebfe11a9c",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/Components/ContentsTree.razor",
+      "sha256": "6a3d09d15552ccb11478c34e2aceb914db6657a76e32acd55ccc553315e69118",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/Components/ContentsTreeModel.cs",
+      "sha256": "effe6dc447aecaa9b13b7278e8705875c87a15ccaffd243d2aafe2b9b5f76934",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/Components/CouldNotLoad.razor",
+      "sha256": "e0363821c4f7852bc893dbf011fe2b4efa4940801d5e890f5dd6f07692f91f9f",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/Components/ExplorationListItem.razor",
+      "sha256": "4ff486170e62402468033be08ff95682099a0efe220d489b734b18b1bff1b5df",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/Components/ExplorerPopover.razor",
+      "sha256": "36fe33a5c6688d227f400b8c37f31618504addb30de104c07343a8461f584663",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/Components/FrontierMetadataRow.razor",
+      "sha256": "c1cd2893c2ece8d2b6243fcd576538bebf86fd81e0a1f564b76da5326b5d3420",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/Components/Legend.razor",
+      "sha256": "09d73e41ea5a555920b45a8dbfaae6f4b5514dc1b16837eb5f07618f7c587bba",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/Components/MentionScan.razor",
+      "sha256": "0a0ab7bf43c9fc7775334deb1916585d8ef29b3b3112e0bcc82e45c382c69192",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/Components/MentionText.razor",
+      "sha256": "ade7d0467988dffa99a070aec643e03764725de69aa43fe96ef2efe716bc4da3",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/Components/MiniReaderExpand.razor",
+      "sha256": "b73c394227029bb3a442bf0d78b7cb508b73462c98964135a7785f003620136d",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/Components/PageControls.razor",
+      "sha256": "1594d4b803eed1043e9c280a5482e5c34ce0d1d34922fbd02895e5cb7f24c981",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/Components/PaneRect.cs",
+      "sha256": "79bbac668a181a54075fb101540d3ba73af7b502973ccea3ce48c22602e45b8b",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/Components/PassageList.razor",
+      "sha256": "7bba31ea3a1ab8c4b9150c46891bac46b712b68782972aca9feef80f763ac70f",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/Components/PericopeHeading.razor",
+      "sha256": "784d33fb841627bf8ab36c03cc3430eac6de919d54d47ec2515f362dc5f77b3c",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/Components/PersonMentionsList.razor",
+      "sha256": "742fcbb184320abef8535c318d17ce26fb10d714689c8886cf5de446ad731056",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/Components/PlaceChooser.razor",
+      "sha256": "37d977120662446d53082e0c48bd1f2fc9373fbc24c51e62584f700390ad177e",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/Components/ProvenanceAffordance.razor",
+      "sha256": "d25c0240f672f87de58f690ae20d5b4d08762c6307f6994ddef05b6b58475f45",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/Components/RefsList.razor",
+      "sha256": "aaa39098013a543946cd2c7d84b710f7b39a7ab474f8b980ae1443a7a46283c3",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/Components/RevealControls.razor",
+      "sha256": "b030d13c384a42baa768e56cf14086c03e5e95f027da930c580705b98070d4db",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/Components/ScripturePicker.razor",
+      "sha256": "4c1357ea6efc70b7a22543d931c7003561af1b2406c9c192299d60f14b4cee86",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/Components/ScriptureRefText.razor",
+      "sha256": "877afa6fc45bb3f86c867c68160b8102e557b7b74b036cb3e21055b1e331ef56",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/Components/SelectionTray.razor",
+      "sha256": "a9794b4958f5e9db8e2bf7553dd47de24614a100ba5c0459103fb833149227ac",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/Components/SplitDivider.razor",
+      "sha256": "be88d417f22440c9c94a14409b43a438f575591322abe4e08e4a6619a442fd47",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/Components/TimeSlider.razor",
+      "sha256": "f879dae2f09c89b6d219b0603f6346422046ad4a6db8db285693df5dadd4c51c",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/Components/TitledPassageEntry.razor",
+      "sha256": "137b66e9b54254d6456b5eb59b72c97eb15d14e8eb68e9b9fc85ad7957fa5570",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/Components/VerseLine.razor",
+      "sha256": "2d51aaa87bd3e020f5872da3f505f170b7f3eda860288c98849139a960ec51dc",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/Components/VerseTextSection.razor",
+      "sha256": "437d4f63af9b9e2b7ab9fecf8ee57f94629bfab63ed7ad3d2d03912a0a2c48bb",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/Contracts/Interactions.cs",
+      "sha256": "0acce30b0ae9f31a778afa53f38f1b907e5a26a9bb17bfb62a09b7d3d41860b8",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/Contracts/State.cs",
+      "sha256": "b33391f8435d0a3961079d854ecc14852639b86f8119177d989f038ac04bd6c9",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/Contracts/Views.cs",
+      "sha256": "ba724f6b44ff9b364a51b81bd8cf8fe3a444a7a675e9730db1304e97d115fe1e",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/Draft.cs",
+      "sha256": "1e7332d9fb4cc2a088e79c56fe5b68924e7569af268f4ce210c6151626ba2185",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/DwellTiming.cs",
+      "sha256": "3e60f073b53178962905ed76152adb5a126b1d933a3d0f1ee843330c3d39c2d3",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/Exploring/Affordances.cs",
+      "sha256": "0bec1a18e9a84475ba73d40cecbe0d696d280c1eacfc41a380e8d61be155f7df",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/Exploring/AnchoredText.cs",
+      "sha256": "9b12c5b5e3c499ac34dfc4f84d32b25600e53ce8d040a3ceff49a8ee78ad5cb3",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/Exploring/AsyncMemo.cs",
+      "sha256": "ba904d825454f4196ac7c2914a5fe91793614f5d4f5a829245254ea080bf247a",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/Exploring/BibleAtlas.Client.Exploring.csproj",
+      "sha256": "9ba1696f3c37972420ec0cc6f0007a046e463e3b364d4e8fac32bffa62e5a30f",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/Exploring/CanonRef.cs",
+      "sha256": "609103f5419d2cf1a9ad26a92af29cf8f98b798c04b3033979310e9927b9eb68",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/Exploring/ChapterText.cs",
+      "sha256": "498c8bf8f90dafd29b9fedf9a4c90dbbbd7f645836c35913cb278c80439f3e7e",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/Exploring/ConcordToc.cs",
+      "sha256": "1abbe0695a244c9d9b008d5947c672f7beae32b2ce4069e05a3aaea8562b368b",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/Exploring/Contract/EdgeKinds.cs",
+      "sha256": "f6ea57adbb38fbf5b95c9abbeb78bb16194ae565a8f16af1f8384e6f3a4a5f62",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/Exploring/Contract/Neighbours.cs",
+      "sha256": "13cfc7a7a5f8debd4836c6f84c91c066b6c390f09cf0e0142c4ddbbc1d0e9a43",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/Exploring/Contract/NodeIds.cs",
+      "sha256": "a67f56a6c93204789507919e32cc5ecb9a00388ba49332329d896a970566a246",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/Exploring/Contract/WireNames.cs",
+      "sha256": "ece09e4d5e2e38270868508e2b074ba16824969b85bd4751e895e985e130decf",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/Exploring/ElementKind.cs",
+      "sha256": "f5bff2ff47bbff6e704605773819edda5351114766bc3549aba6ded9d509124b",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/Exploring/EventAccounts.cs",
+      "sha256": "cc658c47caeb7a33f5c0afcdf9e6e9eed488a9bff85bb0738072127e45402fd5",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/Exploring/Explorable.cs",
+      "sha256": "65921c4ae8d6c6b80069a6467cbe5a1ba9eb94e189ceb91b39b41e2a2440e9bc",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/Exploring/Exploration.cs",
+      "sha256": "e3a890aa5c7beec5a0d5c1e060f25290a857de6fbda90faf4ab08fe0f8cf3013",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/Exploring/Explore.cs",
+      "sha256": "bce059665ae0009cc576bd79f503b3dcfa44d9b983ee05c3770da4ea6664bd1a",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/Exploring/Explorer.cs",
+      "sha256": "01ca84c02e91623fb008e6f293cbe8c916799bca17e7bde98d845b00cb395188",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/Exploring/Frontier.cs",
+      "sha256": "7647c2524922f88133a86ed4042d528b495b7cf2c21c137985a59c2b360d90b0",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/Exploring/Geography.cs",
+      "sha256": "66096579ffe5db9dd67a7a65996f7242dcf7b7d67b40f95af193b4959fab45ad",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/Exploring/IExplorableClient.cs",
+      "sha256": "981f437a2e93aed53acfd568bbd0fe95b7b8c3a8ec8b07e1568177d6ae8d31b3",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/Exploring/Kinship.cs",
+      "sha256": "89e80954ad8fc0858a031af6b74be3a7b33d03a321d347ed9f688052d7f0ab16",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/Exploring/KretzmannCitationScan.cs",
+      "sha256": "8a6fdc8559963443f60afa991b61745920156799948059fda2397f17186c9326",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/Exploring/Link.cs",
+      "sha256": "5e575d111a9c0d8038bba129d4ec56bee13a5641659dbfbd453a3b8eb475a426",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/Exploring/LruCache.cs",
+      "sha256": "0ca43d918e73ba3d35bd75118dc66ce7982ed32c6252dcdef9c68d04a72cf0dc",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/Exploring/MapFocusHatch.cs",
+      "sha256": "5d20e99e869e870893bba2cc9ae0f562f6341aeabd0962c7aa4d18adbab15ac5",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/Exploring/PageStore.cs",
+      "sha256": "f8d3bbbcab3bb1673e7cb6bd6ef1a55681eab8212fbd6a4602f1d1e674cb448c",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/Exploring/PageWindow.cs",
+      "sha256": "48d3a5de4b66f9f4d295525a4cb3278869c7094152e9b4dc64eb326e93272fb5",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/Exploring/Paging.cs",
+      "sha256": "3b88a82b2cfb07ab1dfce8621136749929fc598ea97c7ff418e6b5286df053ec",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/Exploring/PassageGrouping.cs",
+      "sha256": "48663225e003597654c5618cab61b4a3a0d2306c312ba32b3234c7ce8798dac5",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/Exploring/PopoverChromeRegistry.cs",
+      "sha256": "9ab22059e04351578d814c69f123fed091fd4e778a476599bd27cee7adf461d2",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/Exploring/PositionIdentity.cs",
+      "sha256": "0d92076d2d0293d5702648131586bb34a3be86edc7dcb3233da5c8c3c00523a4",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/Exploring/Positions.cs",
+      "sha256": "95b0a6e194c4103c15240b7a7cbd4aeaaf4484a8d451e56965596a145001b4e8",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/Exploring/Presentation.cs",
+      "sha256": "501fe8c72df7c52dfeb7e03568c1b71f1ca49d53d38b097a3c9e3f9ba8e04a40",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/Exploring/PresentationRequest.cs",
+      "sha256": "f6a7b4ab5da833453fbef5e50b94ab0c2b02edbbbee65accc99da2a66a4ec2c8",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/Exploring/Presenter.cs",
+      "sha256": "1031e0674dc80d7c3e64df75d34a5d1b4857a81c31292af5e536be8557b88bc9",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/Exploring/ProvenanceResolver.cs",
+      "sha256": "6dbcb1858230252207a5cf056b92de656df19d383cc4799832e3e495d447a029",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/Exploring/RequestSeries.cs",
+      "sha256": "cc898bf28dcf1ebe72fb9bbe22a252d984295bf28c1c22af15fadaeb919ee8b7",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/Exploring/ServedPages.cs",
+      "sha256": "7a582d703b5a5e58e13e2d21d4ae34036e5a2425e95520244ec761f1f6134deb",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/Exploring/Surface.cs",
+      "sha256": "87ebbe94b11af65f78d2cdb65d89f6fddfb600b0a2c4348a1758a8eb3fb2a840",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/Exploring/Unit.cs",
+      "sha256": "9bb4f184ed1d0772d9468393f06e23c94149b07e4abe85557c0bbb32b292c4a1",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/FeatureFlags.cs",
+      "sha256": "2f2d44250d1ac1772e791f75ecec77a5847b7dff7ff5c4fd2ccbd412fca6a314",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/Geography/AtlasMapSource.cs",
+      "sha256": "87410f3f306aa77b3e117164c114b4d658c8f99604502324d2eee2b2809c0c22",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/Geography/IMapSource.cs",
+      "sha256": "d96bba90e6d7e776f21add59c18fed3f255edba77035699f23a127dd2c5f9664",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/GraphExplorableClient.cs",
+      "sha256": "c90700bece7a4e7eef6bb2d4ba29e6d1742c34c257ddc6926b4a105c964857bb",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/Layout/MainLayout.razor",
+      "sha256": "271a3de5c2c6fe7f204e327cc06e2fd3437b4e6062dd901a3ee601723cc742a1",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/Legacy/AuthorNode.cs",
+      "sha256": "b0d2d83e34db9b1ffb785d6c90d35c2d1716bcd83b6f0e19af4971ac29186b48",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/Legacy/BookNode.cs",
+      "sha256": "9df232bf74cb60619ac06569d36a1d8383f2910c9a911f3c1078fd125c927a77",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/Legacy/CatechismNode.cs",
+      "sha256": "8428c0836c074bd93b760aa8155c25218b70f5023ff9c1f70c0989fb08b72065",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/Legacy/ChapterNode.cs",
+      "sha256": "5fcdc7eb1c5802cc9726609c4e37bb6dc1c1345ea11be230a66c01187c649eae",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/Legacy/Chip.cs",
+      "sha256": "2dd7e50f60eff43733daa66b2b9adc5e97c2efea9659ac143d3beb88d7e6b1f6",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/Legacy/CommentaryItemNode.cs",
+      "sha256": "f873f63c0b56d82f8f397739a376d30bbc6fbf0f5e1e230b2d4f048b533babb2",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/Legacy/EventNode.cs",
+      "sha256": "38d5ee3eed52f04c06846a4b0e425abbf78e58b348c25f4ccb405a9f1edc2249",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/Legacy/IExplorable.cs",
+      "sha256": "d15cfec2fd55d7fcfa8592a8376cf59d1850911633c2c130f4fb2547e40798a8",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/Legacy/LegacyNodes.cs",
+      "sha256": "3f0a49e1d7dc4d0fdc7875e23eb9a2f6acecf58da1fd5b72828a84bc29624665",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/Legacy/LegacyPresentations.cs",
+      "sha256": "0a6c6da00fb73149c167e004903e2621a7c451675eb8f6aecd6d6977dee1243f",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/Legacy/LegacySaves.cs",
+      "sha256": "4721ca5d9d8969eaa0cdd897a9eea6cfce3d1556f96bc1b1e7594a66a3ef85c0",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/Legacy/LegacyTextUnits.cs",
+      "sha256": "803ec1947d10b08667179e00b58aff6582d0fb742eeb1648a9c8d5ac467e610a",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/Legacy/PassageBlock.cs",
+      "sha256": "d38bb0571da9b906369f5dc7b1db599faefbdd7410be4e16973ca1cbdb9328b4",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/Legacy/PassageNode.cs",
+      "sha256": "67bcd0801eb67f9f1e6ac19245666f775b3e5c174e49c7a20120ab32c0e254b2",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/Legacy/PersonNode.cs",
+      "sha256": "13ea4b0dfab59f6bed5eb74694cf596e4bab3ba2ab68a444b9288d6e68138e7c",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/Legacy/PolityDeltaNode.cs",
+      "sha256": "ff07bb84d138209e80542f34fe1a766782a7963f72aafb920a3ccc0d102a2f01",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/Legacy/PopoverOpening.cs",
+      "sha256": "4a62bd544c59ad9bb06239889d5d5657cfa4ca394e18096ede8461f933a7e69c",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/Legacy/PopoverSectionProviders.cs",
+      "sha256": "4a8775e1594c845a8b240ab0959dea326b92e00e4f693b2513ebcd81d436c02e",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/Legacy/PopoverSections.cs",
+      "sha256": "86dc7bcf1f0c3672baaac9ebd48d5728889a410e751b5582162ef2d201ba240e",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/Legacy/YearNode.cs",
+      "sha256": "b707b4833d1f13e9a6b2d25afde3be0c10a39843492ffd1fa9b925a2b20094ea",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/LocalStore.cs",
+      "sha256": "da48d3d82bc88ae25c699d4fa33e06a3f6372a24cc94032e0709136874cc564f",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/MapInterop.cs",
+      "sha256": "e3b5952b8c7fd855b250beaf5759b569e0996f4139660010a4b7317ff7a81ca8",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/Pages/Concord.razor",
+      "sha256": "acc3d4e2daadb853525e356cb4c324a4916ad8bd2426b10de8719a2f238cef2a",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/Pages/Kretzmann.razor",
+      "sha256": "b0d82d3a235aad2c8b5fe2d83c468b050a6732ab60386d6a66c3e3dff6b93e4c",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/Pages/NotFound.razor",
+      "sha256": "9190005a944ca590bb17f58563d0e524ae419b448ee81a555f376195e4856071",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/Pages/Reader.razor",
+      "sha256": "ddc0ec54f71cdcff91b9e4eb00372d63663afbfb125097399e4596850fe046ab",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/Pages/Sources.razor",
+      "sha256": "81bf62f871b03c91c78a6e02ddd52399c63ed472583b5047a8d830b8328be045",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/Pages/World.razor",
+      "sha256": "8fddca6aee6fb389d35c746f72ee93761719808ad4535b623efed5365ff41446",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/Program.cs",
+      "sha256": "2f5c4944c1fffaf4d48ddd1c34a962b07a74ef64912c0bc9cae8e9cad94d7843",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/Properties/launchSettings.json",
+      "sha256": "ee7da52483e47d2ddbf1eaa7f0b67af5885d13f16bfe246c4feba0d1de989d86",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/RequiredResponses.cs",
+      "sha256": "5a32e95d220f5fc093fdd06360fc16e80286d27a41028918ac445de2795711bc",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/SavedExplorationsService.cs",
+      "sha256": "e6451265bb40e85426753a0f7b0c75c782d925be9a2371c6cb4e0ff5066f6c63",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/SliderScale.cs",
+      "sha256": "9560a9aff5a72ac460172b37ca1ea6431d639d6c20865aee700eca72d80f17b2",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/SliderWindow.cs",
+      "sha256": "a62fc2335955a3ca717041ed20aab563de051eeb22a7402b06b829c391cdc4f7",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/State/EffectNames.cs",
+      "sha256": "a0d782366f7b41e772c8ac25d6bfbf2dd854f1e18a10fc933022eb7eefb492f3",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/State/EffectRegistry.cs",
+      "sha256": "1f7da1c753eb084bb88b1ad1f4497a4475058d5be8f55e3ca87a4f22b89b46f6",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/State/ExplorationState.cs",
+      "sha256": "ecf6d13a9f2a398cc3177c64c4819454eb43aec1f287bc7e394ad6959adb05b1",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/State/LinkDerivedIntent.cs",
+      "sha256": "a48fec8185077c1c2897040741912af1808785ed9a979014064aee946dbecd42",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/State/Locus.cs",
+      "sha256": "96655ac529381e6869c30ccc5f49b9ad264f633c4ff5ccd9dbdd8c935e2d5171",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/State/OwnershipRegistry.cs",
+      "sha256": "39d051f5d18d50131965aaa802fd4452a56ea12d622a113dba50c3bb32acc013",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/State/PaneScope.cs",
+      "sha256": "f95ffc8b0ba8a5595da6236bc1af8cb9d6ae6f8d86beca47be75d5ea3982311d",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/State/Projection.cs",
+      "sha256": "7db32b29d8f035358a5656e185637f9a8797838e208e71ccb87db98b96e5b23a",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/State/Selection.cs",
+      "sha256": "3a67c20e4326df145c839aee4ef0d92c6bd9cf554a06a0cdb78b8fcf9afa8d64",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/State/SequenceEqualityComparer.cs",
+      "sha256": "41e5519ef2aee08234dbaf1c424d6d21537ed0c64a5b959833e02a971c29702b",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/State/StateAtom.cs",
+      "sha256": "172754b5d31d175649b6449f2d4fee7e15c453f7de8258d786f72c304f867597",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/State/StateLinkRunner.cs",
+      "sha256": "4e7ced8950d3d88a7b5202d26c009aac368825537b9c0eea2a7ab6f38018382d",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/State/TimeWindow.cs",
+      "sha256": "3dbab2dca1ac3c4a759ba0292cb5e60e7b03ea4a28bada87f3d0d01b17171e27",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/State/ViewArrangement.cs",
+      "sha256": "66c2ddbaccaef81147ba6b068ec0ce8442ec48a6a8f1210bd5be88f37403bcf5",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/ViewStateService.cs",
+      "sha256": "caa6e3201ae443b27c9f79112dfe841a94e7dee0ede487f5537198881bfa88f6",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/Views/EnterSplitHatch.cs",
+      "sha256": "6c68feaea61419dd20cc51199a0c1dfb80376c49afe80a6f993563fbfdf74b7d",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/Views/FocusView.razor",
+      "sha256": "5ffe2b6f12dca264b3192cd2af45cb2a4272a55643968354aef15b639ca095fe",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/Views/SplitUrlContract.cs",
+      "sha256": "79dcc4e3ace2f33c86d975130dce1e469d4d87f59c846ffa0d32a82ef2496dc9",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/Views/ToggleFollowHatch.cs",
+      "sha256": "66285ab2c8c27c8d7d588ff4c801b027e63996e35b5f587a15b15a4770a00b01",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/Views/UnitTextView.razor",
+      "sha256": "41486205b39cac0b386172e8be4bd4e1f90a12e637de9ae0caa447d66cb45c6b",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/Views/ViewNames.cs",
+      "sha256": "17f008312b5cc2dd96b4a653cad7b97ef1e13252a5a6b2f42b2082d3e23a2e88",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/Views/ViewRegistry.cs",
+      "sha256": "0c6e58a228144faff18dd7935c6b6038ad095cd4bbd83762a459ec2f7ba50834",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/Views/ViewRegistrySetup.cs",
+      "sha256": "02ce9c51d9163d038579cb124ab0330d23f92c331f846b50b3e0c1e097a47108",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/YearInput.cs",
+      "sha256": "b2ca569f46006b18e80f25a5b6c3a49d0c9468b2d462cd968c1559793c70de52",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/_Imports.razor",
+      "sha256": "69e6cc8ab617cac4cdd386e1c1ad228e6a099d4fc7910081b189aefb7ca9d708",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/wwwroot/appsettings.Development.json",
+      "sha256": "0c9d3de106b7b0a553c666731b1b4ff828d31e33c6ce1a4b9a84362df1148371",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/wwwroot/css/app.css",
+      "sha256": "a7c9a31136d76b28df5664e9109cfe609647af9705b38087a932d0cba107cb01",
+      "status": "shared-asset",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/wwwroot/fonts/atkinson-hyperlegible/OFL.txt",
+      "sha256": "e137caeef2ff7c04fbf87078ad09cf3dcba8a3a58a4aa4e2f399d42c50bc4b18",
+      "status": "shared-asset",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/wwwroot/fonts/atkinson-hyperlegible/atkinson-hyperlegible-latin-400-italic.woff2",
+      "sha256": "bc8825fd435d4aa8e31449937826d583a7daaae15a83832c91b38375131ebf08",
+      "status": "shared-asset",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/wwwroot/fonts/atkinson-hyperlegible/atkinson-hyperlegible-latin-400-normal.woff2",
+      "sha256": "d64ba838ef5472bba248620ec4fd8b5aa7cf0db2908e0bb230600caf279ba7bc",
+      "status": "shared-asset",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/wwwroot/fonts/atkinson-hyperlegible/atkinson-hyperlegible-latin-700-italic.woff2",
+      "sha256": "73e0c9e1e284128dda599558f7c15bd5f3c056442c31dfae950528a16b3835cf",
+      "status": "shared-asset",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/wwwroot/fonts/atkinson-hyperlegible/atkinson-hyperlegible-latin-700-normal.woff2",
+      "sha256": "140e2bd25a7315c8a062508391426b0d8c3297400c947b8d847be28f73a199f0",
+      "status": "shared-asset",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/wwwroot/fonts/overpass/OFL.txt",
+      "sha256": "948fc2278ccbc7e24c598095e3723d97b53666c02446b683e9cc6745e3760f6a",
+      "status": "shared-asset",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/wwwroot/fonts/overpass/overpass-latin-400-normal.woff2",
+      "sha256": "f835f9c7e1266a33b93fe8865a1ddc8d40e7db6a80b494a4716cdebc72f973eb",
+      "status": "shared-asset",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/wwwroot/fonts/overpass/overpass-latin-600-normal.woff2",
+      "sha256": "34c3c4df94ee02c25b14576a5f782e556209c899ce42642de23c73b8a89e4312",
+      "status": "shared-asset",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/wwwroot/fonts/overpass/overpass-latin-700-normal.woff2",
+      "sha256": "6a855eb539e6f098452ffccb297fa3188969078ac4005af853b8872868e30170",
+      "status": "shared-asset",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/wwwroot/icon-192.png",
+      "sha256": "0dba506aaebc6526f92283e8b0112b33541605fb1b4f1a49aa15344448bac0fe",
+      "status": "shared-asset",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/wwwroot/index.html",
+      "sha256": "fbe2ccbfb93e9bdc2d0cb14d0a03c9d0a3ff5b7772f0e11868ba7b6252e2a2a4",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/wwwroot/js/border-morph.js",
+      "sha256": "277baf216ca5b975e32f304625ed7bfbafa44e8aefa45bbb4630ded42746d5a0",
+      "status": "shared-asset",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/wwwroot/js/geo.js",
+      "sha256": "a03109965bdf4dc6f99b9a75f2731f8fa95fe3246e5ce981079a8363cfa73706",
+      "status": "shared-asset",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/wwwroot/js/lazyProse.js",
+      "sha256": "32af6eefc697ea8504c6ac4c77f1eec4238ce49626932725f229476716c66a34",
+      "status": "shared-asset",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/wwwroot/js/map.js",
+      "sha256": "18df82c290e6cf10be193cd74678c7d561785d7018ba0bd4b3c084ffcbf942f3",
+      "status": "shared-asset",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/wwwroot/js/reader.js",
+      "sha256": "1f95cf8a61cfd1e4450ba66b4b49b51918863c47dff1b7a27a5772041ac5c67e",
+      "status": "shared-asset",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/wwwroot/vendor/leaflet/leaflet.css",
+      "sha256": "337bfca5cabd03b39815b2700febe2b3b7edf55921c59cd49f88ecb328212303",
+      "status": "shared-asset",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "client/wwwroot/vendor/leaflet/leaflet.js",
+      "sha256": "db49d009c841f5ca34a888c96511ae936fd9f5533e90d8b2c4d57596f4e5641a",
+      "status": "shared-asset",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "tests/ux/accounts-and-mentions.spec.ts",
+      "sha256": "5626a9df26f77b903e5abcbcd9d0b74e65db4b3bd7bef398584cda8f348aca0d",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "tests/ux/api-exhaustive.spec.ts",
+      "sha256": "e2fcc5173c8e02e43b6fc53be518a719cc0dc3654e87b30f846797f39dc93dd8",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "tests/ux/api-reader.spec.ts",
+      "sha256": "66223ccf759a621bc7cbb57d35f21692722d66a596bb7647047c0a00dde46109",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "tests/ux/api-scene.spec.ts",
+      "sha256": "cb325eefb49d18038904c7290662906e5ad0b355b24895f189f6c8a97100113f",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "tests/ux/api-scripture.spec.ts",
+      "sha256": "e2d8cf96e4e0d0001db52b39ed248e9dd3a9b2c51fea8ac2de793fcc944996b2",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "tests/ux/composition.spec.ts",
+      "sha256": "0c6ef32e84833a786a9efe8943c2f541b9b5062b012ec3abb0756d403a074acc",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "tests/ux/concord.spec.ts",
+      "sha256": "da784fcda9000ac2936902cdf5045856c823a3a120acb8bd98e66f7df4a1cd14",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "tests/ux/contents-tree.spec.ts",
+      "sha256": "436021425ab50bb4dc34899dd5d7897ae541e5e79c5cf38a51f21047ca712235",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "tests/ux/event-timeline.spec.ts",
+      "sha256": "28fa56cf928e64a0d443762fced08aaa18ccd9d6fb7a4373c51632ac07186ebf",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "tests/ux/event-timeplace.spec.ts",
+      "sha256": "18f14a46d490b9e75ee66243964ab5fe02d2d6ea929b8acec879206cb6675be0",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "tests/ux/explore-edges.spec.ts",
+      "sha256": "c77874b9394195a47102eaab98bd3407549a09e9cfb8895004d2ba48d41ef8bd",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "tests/ux/geo.spec.ts",
+      "sha256": "c36958bcaa26663d42167557af51f0eb8ceaf5de09d9e8560eff63740e31dc45",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "tests/ux/kretzmann.spec.ts",
+      "sha256": "316759596a3dd1942e22486297d9b7a2e5525be8e30f9a343d62e5caa6372bf8",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "tests/ux/lib/api.ts",
+      "sha256": "e38ab23ba399f92507c93fdd1bea484d844b7b63568dd2144bc28ed46fa793a0",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "tests/ux/lib/canon.ts",
+      "sha256": "4c474c831b6cba51e193cb408f3542e79f98bb94c7f55c0e0aba050252517383",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "tests/ux/lib/edges.ts",
+      "sha256": "9d0a00b13a706108a0d164012094eed328441fde9d15f7b45d1178387db2866b",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "tests/ux/lib/fc.ts",
+      "sha256": "15a179370290b05b2bda2eb9caa63f9d06822b3f263364956f10d1f87a99bd78",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "tests/ux/lib/hoverSafety.ts",
+      "sha256": "a2e410f3bffbb00b06b3dc6b68380c1da966f24a21eec808300b2d499a18c23b",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "tests/ux/lib/markers.ts",
+      "sha256": "ded521d63fd559d6ab4e481b3537bf1ad6d256da724219424cec3c682529fa03",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "tests/ux/lib/popover.ts",
+      "sha256": "9c3615a855c091d21141d2f67ed9f1dc657a9f1444504fe655ec5e28b04bb58a",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "tests/ux/lib/ports.ts",
+      "sha256": "e4b43e885d313091e5cc5586cfe02e9003511887744d30eec6fa0a74d97321d7",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "tests/ux/lib/verse.ts",
+      "sha256": "a57282b3e49ea1e5aa73030ef337c4237ee1cfde3e02c5f33bfcd663fead6847",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "tests/ux/lib/zoom.ts",
+      "sha256": "b3def02ade2f2b5891ac04a342ce587d2791965c5ba09fb73ba57749bb6b292f",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "tests/ux/person-card.spec.ts",
+      "sha256": "9df6f945442d092dacf297c3a788c8bfdc5ef374c0d7822eb8c1754e0ea71409",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "tests/ux/playwright.config.ts",
+      "sha256": "d8acaaaecf8c7ec22e9b3d22039830a14d498f1ae39c6c4c2b95a95e48ace065",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "tests/ux/popover-sections.spec.ts",
+      "sha256": "85dfd358875c0c74ccdc8b53311c9f5cfe90a69c05290c9e83ecdbecab463fb2",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "tests/ux/provenance.spec.ts",
+      "sha256": "3e5354927e8e23f9ba6f139b5dbce6a9bd566700d79eb28701b0a2340e2754ee",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "tests/ux/reader-headings.spec.ts",
+      "sha256": "358f23cb1da2d453d85e4ad5fbd81346f7c8a1a7248cc09c12a898b2a8911214",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "tests/ux/reader-map.spec.ts",
+      "sha256": "bd1428faaaf1f041489cf4631371b47070c4301daac643a45f5424571485a9c5",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "tests/ux/reader-persons.spec.ts",
+      "sha256": "c8d0cae1c38ea8398eaebaeedb352bfb2554ab4f4b0039876e666fc2fda36e2d",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "tests/ux/reader-recursion.spec.ts",
+      "sha256": "7aacdc3e6e5c77f04483873f624f814a3a43c11f08613d3e0022f53c623a2a16",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "tests/ux/reader-red-letters.spec.ts",
+      "sha256": "db06553ba75e5b96dd8fbe2c496e6f8fb0789e6cdc4f8bf950328d841325f403",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "tests/ux/reader-xref-anchoring.spec.ts",
+      "sha256": "b9450602f315f46ca6c2f0c535d3ba503379211dc79ef22a7bd26441efa61f73",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "tests/ux/reader-xref-superscripts.spec.ts",
+      "sha256": "b8feee6cd84d341a1a496132ff3284aed6dbde97f024d5272be47fd245267fb9",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "tests/ux/reader.spec.ts",
+      "sha256": "d5bacb92f56fdd83ee39d22b89ecf751c06a397734b868286ab3f7b528aabef0",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "tests/ux/saved-explorations.spec.ts",
+      "sha256": "a0d2db072770c0ac92b4b09dfb8bf1c2c91282237a26b5d1ad7047fe657ef659",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "tests/ux/selection-tray.spec.ts",
+      "sha256": "46560237ce85954e7a9cf4f5f739ca1070127fec181cae64e989787ac4fd82e3",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "tests/ux/smoke.spec.ts",
+      "sha256": "633dd91df9e6d9bdf8702bcb6300f4eda31c058a002086b4ec57a3ed1cee214a",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "tests/ux/sources.spec.ts",
+      "sha256": "3131ff1939ffbc223f1df920394e0de22443abe6b908ed1b87bb176d571e7f43",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "tests/ux/spec-hygiene.spec.ts",
+      "sha256": "57b6ca6c78af4a1eb38a33f155e8127caab1c9610208a67be4ed63a2fe15559f",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "tests/ux/split-pairs.spec.ts",
+      "sha256": "d0820f8d43a7b8a94de0dee50f5fb4de44e15f64666c23d7a4927b70fb7092ca",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "tests/ux/split-view.spec.ts",
+      "sha256": "91e79b78b245bdcf8494727b2393c0fd6e52e842e4056d877de808f0d757d42c",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "tests/ux/state-focus.spec.ts",
+      "sha256": "893e750523dd8d26cc222ec200693f525a60e82092b1cad0ce34db7d4b01d8ee",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "tests/ux/state-sync.spec.ts",
+      "sha256": "f85551a36fa3d3f69f5617437ab53688702cb0e2dc81c9936559530ab7110f1e",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "tests/ux/state-window.spec.ts",
+      "sha256": "d3002c06e6ae8ea29290986a10afb3fc129381e6b247d142e12072d4f2e8e125",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "tests/ux/w1-passages.spec.ts",
+      "sha256": "4c54b48bc6e1ef4bd88d7a9c8c792730aacb96006789812de1d7d18082af2b86",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "tests/ux/w2-passages.spec.ts",
+      "sha256": "7c37bcd7c8fb3b7cfaae57b5de7b1535749313ddb96b5ce9cbd21bdb4ea016a8",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "tests/ux/w3-passages.spec.ts",
+      "sha256": "a58a44e6dffbfbf756360b6889bbf5bfcd27db48b40b838ba07e08a4b0661a7f",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "tests/ux/w4-passages.spec.ts",
+      "sha256": "c50625305d9834cc480593d43a7907298f9211956d92fb527cdb5169f8eee3ca",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "tests/ux/w5-passages.spec.ts",
+      "sha256": "0b98f7e92f6fce676e0d6644567e5a0fd7c6a6e04d2c5d06a3dbafc5cf612b0f",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "tests/ux/world-arrows.spec.ts",
+      "sha256": "fc0525490ea190bd58a16bfa4e423e244eb6980de090a00cfd24ce171257facd",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "tests/ux/world-border-morph.spec.ts",
+      "sha256": "24ee234fdc8082ba97a9e98c69721ea2c3be2fe2ced419cb3536207592de7463",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "tests/ux/world-borders.spec.ts",
+      "sha256": "5e2ce641250996a943099be686c7e61a45e6ffd97764063cf5f344e0d0229280",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "tests/ux/world-cluster-chooser.spec.ts",
+      "sha256": "ea8718d6fa9367357e5c6580d492358b43c01c5aad559e444fdeb9c28d3f8136",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "tests/ux/world-existence.spec.ts",
+      "sha256": "1777fd1618290bda263d8caa48930d8162acd45681272c295713e725534018be",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "tests/ux/world-geography.spec.ts",
+      "sha256": "9397eb61afe03c9c6db567d2cfc3a9c3395a3ee03d9af3395767056f131a4c05",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "tests/ux/world-hover-resolution.spec.ts",
+      "sha256": "33f9264b0aaf00ce2e802c64aadfa2ee5737b9ad6bb00ee6a529057236e25a56",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "tests/ux/world-hover-text.spec.ts",
+      "sha256": "c386d72ee537ce1393657d86251ed69a630e8b87b26bf10195e93aeb7e0377b7",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "tests/ux/world-kjv-names.spec.ts",
+      "sha256": "24c870e505d85fd7912c681bc94f8d535f8ae408af89cffae1d6b4f3e619489a",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "tests/ux/world-labels.spec.ts",
+      "sha256": "e937588a4f6cfe9c0fc1cc54986844a032be34116076862dc04ee7d4e020df8d",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "tests/ux/world-land-mask.spec.ts",
+      "sha256": "f4396dae926eb7e3fbf577590afc2e54f25bcac9f72a463f21597283bbb16cc7",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "tests/ux/world-map.spec.ts",
+      "sha256": "426db363f15692c928fe0ebcbe9102165450de014130c288b346bf7f4068b9dd",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "tests/ux/world-narrative-focus.spec.ts",
+      "sha256": "6f65a0aec94c61c56172dd8ead3957fd70a82226f996375931101403d347db17",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "tests/ux/world-pin.spec.ts",
+      "sha256": "82ac9bc5a3570ece14f28f5c485181680b46a877ac8773ad8fadf58886fab998",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "tests/ux/world-place-history.spec.ts",
+      "sha256": "0fae4e11b57e9747e3d48378a38202b164b39fb9131f74a90cb77558ea4a9734",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "tests/ux/world-quiet-places.spec.ts",
+      "sha256": "5027c0148172dd0f3e2764977d6e770a2d1852678f50fcd98a043b8104540665",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "tests/ux/world-same-place.spec.ts",
+      "sha256": "8ec2637aecfeac70d82a2231461560521aa657dd08a44efac6e92a63c9734338",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "tests/ux/world-scripture.spec.ts",
+      "sha256": "044b77c44b4d6aad5bc3a47a2d5d041f1a09cab79d77b5d77f7d3fc5e31f42c2",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    },
+    {
+      "source": "tests/ux/world-slider.spec.ts",
+      "sha256": "28341e7aa061c2572ef333e198421221980cc40135ebb62f1aaeb53fa38cb754",
+      "status": "pending",
+      "replacement": [],
+      "evidence": []
+    }
+  ]
+}

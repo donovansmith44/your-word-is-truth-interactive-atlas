@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><TargetFramework>net10.0</TargetFramework><TreatWarningsAsErrors>true</TreatWarningsAsErrors><GeneratedContract>$(MSBuildProjectDirectory)/obj/Contract/Wire.g.fs</GeneratedContract></PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(GeneratedContract)" />
+    <Compile Include="obj/Contract/Vocabulary.g.fs" />
+    <Compile Include="Loading.fs" />
+    <Compile Include="Cache.fs" />
+    <Compile Include="Json.fs" /><Compile Include="AnchoredText.fs" />
+    <Compile Include="Exploration.fs" />
+    <Compile Include="Api.fs" />
+    <Compile Include="Model.fs" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="FSharp.SystemTextJson" Version="1.4.36" />
+    <ProjectReference Include="../../client-fsharp.ContractGenerator/BibleAtlas.FSharp.ContractGenerator.fsproj" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+  <Target Name="GenerateFSharpContract" BeforeTargets="CoreCompile" Inputs="$(MSBuildProjectDirectory)/../../contracts/openapi.yaml;$(MSBuildProjectDirectory)/../../contracts/atlas-graph-contract/fixtures/graph-vocabulary.json;$(MSBuildProjectDirectory)/../../client-fsharp.ContractGenerator/bin/$(Configuration)/net10.0/BibleAtlas.FSharp.ContractGenerator.dll" Outputs="$(GeneratedContract);$(MSBuildProjectDirectory)/obj/Contract/Vocabulary.g.fs">
+    <Exec Command="dotnet &quot;$(MSBuildProjectDirectory)/../../client-fsharp.ContractGenerator/bin/$(Configuration)/net10.0/BibleAtlas.FSharp.ContractGenerator.dll&quot; &quot;$(MSBuildProjectDirectory)/../../contracts/openapi.yaml&quot; &quot;$(GeneratedContract)&quot; &quot;$(MSBuildProjectDirectory)/../../contracts/atlas-graph-contract/fixtures/graph-vocabulary.json&quot; &quot;$(MSBuildProjectDirectory)/obj/Contract/Vocabulary.g.fs&quot;" />
+  </Target>
+</Project>

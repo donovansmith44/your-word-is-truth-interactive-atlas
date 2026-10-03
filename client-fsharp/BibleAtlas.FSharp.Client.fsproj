@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk.BlazorWebAssembly">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <DefaultItemExcludes>$(DefaultItemExcludes);Core/**</DefaultItemExcludes>
+    <SharedAssetRoot>$([System.IO.Path]::GetFullPath('$(MSBuildProjectDirectory)/../client/wwwroot/'))</SharedAssetRoot>
+  </PropertyGroup>
+  <ItemGroup><Compile Include="View.fs" /><Compile Include="Runtime.fs" /><Compile Include="Main.fs" /><Compile Include="Program.fs" /></ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Bolero" Version="0.25.65" />
+    <PackageReference Include="Bolero.Build" Version="0.25.65" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="10.0.12" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="10.0.12" PrivateAssets="all" />
+    <ProjectReference Include="Core/BibleAtlas.FSharp.Core.fsproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="../client/wwwroot/**/*" Exclude="../client/wwwroot/index.html;../client/wwwroot/*.json">
+      <Link>wwwroot/%(RecursiveDir)%(Filename)%(Extension)</Link>
+      <ContentRoot>$(SharedAssetRoot)</ContentRoot>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+</Project>
