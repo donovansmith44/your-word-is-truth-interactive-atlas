@@ -15,11 +15,11 @@ module View =
             headerView ()
             main {
                 attr.``class`` "app-main"
-                cond model.Route <| function
-                    | Route.Sources -> sources model.Sources dispatch
-                    | Route.Reader | Route.Read _ -> reader model dispatch
-                    | Route.Concord _ -> concord model dispatch
-                    | Route.World | Route.Kretzmann | Route.NotFound -> Node.Empty()
+                cond model.Surface <| function
+                    | Surface.Sources state -> sources state dispatch
+                    | Surface.Reader page -> reader page dispatch
+                    | Surface.Concord page -> concord page dispatch
+                    | Surface.World | Surface.Kretzmann | Surface.NotFound -> Node.Empty()
             }
             focus model.Focus dispatch
         }
@@ -67,7 +67,7 @@ module View =
                 }
                 cond state <| function
                     | Empty | Loading _ -> p { attr.``class`` "sources-loading"; "Loading sources…" }
-                    | Failed _ -> failed Retry dispatch
+                    | Failed _ -> failed (Page(SurfaceMessage.Sources SourcesMessage.Retry)) dispatch
                     | Ready document ->
                         let categories = document.Sources |> List.groupBy _.Category |> Map.ofList
                         forEach document.Categories <| fun category ->
@@ -83,51 +83,40 @@ module View =
             }
         }
 
-    let private reader model dispatch : Node =
+    let private reader (page: ReaderPage) dispatch : Node =
         div {
             attr.``class`` "reader-frame"
             "data-testid" => "reader-frame"
             div {
                 attr.``class`` "reader-page"
                 "data-testid" => "reader-root"
-                cond (readingState Corpus.Bible model) <| function
-                    | Empty | Loading _ -> p { attr.``class`` "reader-loading"; "Loading…" }
-                    | Failed _ -> failed Retry dispatch
-                    | Ready window ->
-                        article {
-                            attr.``class`` "reader-column"
-                            readerTitle model window
-                            forEach window.Units <| fun unit ->
-                                concat {
-                                    cond unit.Heading <| function
-                                        | None -> Node.Empty()
-                                        | Some heading -> unitHeading heading dispatch
-                                    cond unit.Body.Locus <| function
-                                        | TextRef.Bible locus -> verse unit locus.Verse dispatch
-                                        | TextRef.Concord _ -> Node.Empty()
-                                }
-                        }
+                reading Corpus.Bible (ReaderPage.state page) dispatch (fun contents window ->
+                    article {
+                        attr.``class`` "reader-column"
+                        readerTitle contents window
+                        forEach window.Units <| fun unit ->
+                            concat {
+                                cond unit.Heading <| function
+                                    | None -> Node.Empty()
+                                    | Some heading -> unitHeading heading dispatch
+                                cond unit.Body.Locus <| function
+                                    | TextRef.Bible locus -> verse unit locus.Verse dispatch
+                                    | TextRef.Concord _ -> Node.Empty()
+                            }
+                    })
             }
         }
 
-    let private readingState corpus model =
-        match model.Reading, Map.tryFind corpus model.Contents with
-        | Empty, Some(Failed(request, failure, _)) -> Failed(request, failure, None)
-        | state, _ -> state
-
-    let private readerTitle model (window: TextWindow) : Node =
+    let private readerTitle (contents: Contents) (window: TextWindow) : Node =
         match window.Units |> List.tryHead with
         | Some unit ->
             match unit.Body.Locus with
             | TextRef.Bible locus ->
                 let title =
-                    match Map.tryFind Corpus.Bible model.Contents with
-                    | Some(Ready contents) ->
-                        contents.Roots |> List.tryPick (fun root ->
-                            match root.Locus with
-                            | TextRef.Bible first when first.Book = locus.Book -> Some root.Title
-                            | TextRef.Bible _ | TextRef.Concord _ -> None)
-                    | None | Some Empty | Some(Loading _) | Some(Failed _) -> None
+                    contents.Roots |> List.tryPick (fun root ->
+                        match root.Locus with
+                        | TextRef.Bible first when first.Book = locus.Book -> Some root.Title
+                        | TextRef.Bible _ | TextRef.Concord _ -> None)
                 h1 {
                     attr.``class`` "chapter-head"
                     span { attr.``class`` "chapter-head-book"; title |> Option.defaultValue unit.Node.Label }
@@ -167,7 +156,7 @@ module View =
             }
         }
 
-    let private concord model dispatch : Node =
+    let private concord (page: ConcordPage) dispatch : Node =
         div {
             attr.``class`` "concord-page"
             "data-testid" => "concord-page"
@@ -177,10 +166,7 @@ module View =
                     attr.``class`` "concord-column reader-column"
                     h1 { attr.``class`` "concord-title"; "The Book of Concord" }
                     p { attr.``class`` "concord-intro"; "The Lutheran confessions of 1580 — the church's own confession, subordinate to the Scripture it confesses." }
-                    cond (readingState Corpus.Concord model) <| function
-                        | Empty | Loading _ -> p { attr.``class`` "concord-loading"; "Loading…" }
-                        | Failed _ -> failed Retry dispatch
-                        | Ready window ->
+                    reading Corpus.Concord (ConcordPage.state page) dispatch (fun _ window ->
                             concat {
                                 forEach window.Units <| fun unit ->
                                     div {
@@ -214,14 +200,32 @@ module View =
                                                 attr.``type`` "button"
                                                 attr.``class`` "concord-nav-button"
                                                 "data-testid" => "concord-next"
-                                                on.click (fun _ -> dispatch ReadNext)
+                                                on.click (fun _ -> dispatch (Page(SurfaceMessage.Concord ConcordMessage.Next)))
                                                 "Next ›"
                                             }
                                 }
-                            }
+                            })
                 }
             }
         }
+
+    let private reading (corpus: Corpus) (state: ReadingState) dispatch (show: Contents -> TextWindow -> Node) : Node =
+        let message reading =
+            match corpus with
+            | Corpus.Bible -> Page(SurfaceMessage.Reader reading)
+            | Corpus.Concord -> Page(SurfaceMessage.Concord(ConcordMessage.Reading reading))
+        let loading () =
+            p { attr.``class`` (match corpus with Corpus.Bible -> "reader-loading" | Corpus.Concord -> "concord-loading"); "Loading…" }
+        match state with
+        | ReadingState.LoadingContents _ -> loading ()
+        | ReadingState.CouldNotLoadContents _ -> failed (message ReadingMessage.RetryContents) dispatch
+        | ReadingState.Unavailable _ ->
+            div { attr.``class`` "could-not-load"; p { attr.``class`` "could-not-load-message"; "Reading unavailable." } }
+        | ReadingState.Active(contents, session) ->
+            match ReadSession.state session with
+            | Empty | Loading _ -> loading ()
+            | Failed _ -> failed (message ReadingMessage.RetryText) dispatch
+            | Ready window -> show contents window
 
     let private anchoredText body decorate : Node =
         concat {

@@ -1,4 +1,4 @@
-namespace BibleAtlas.FSharp
+namespace rec BibleAtlas.FSharp
 
 open System
 open System.Text.Json
@@ -61,28 +61,56 @@ type FocusState =
     | CouldNotWalk of Trail * Traversal * Failure
 
 [<RequireQualifiedAccess>]
-type ReadingState = Idle | Unavailable of RequestId * Failure | Active of ReadSession<TextWindow>
+type ReadingState =
+    | LoadingContents of RequestId
+    | CouldNotLoadContents of Failure
+    | Unavailable of Failure
+    | Active of Contents * ReadSession<TextWindow>
 
-type Model =
-    { Route: Route
-      Serial: RequestId
-      Contents: Map<Corpus, LoadState<Contents>>
-      ReadingSession: ReadingState
-      Sources: LoadState<SourcesDocument>
-      Focus: FocusState }
-    member this.Reading =
-        match this.ReadingSession with
-        | ReadingState.Idle -> Empty
-        | ReadingState.Unavailable(identity, failure) -> Failed(identity, failure, None)
-        | ReadingState.Active session -> ReadSession.state session
+type ReaderPage = private { Location: ReadingLocation option; State: ReadingState }
+type ConcordPage = private { Reference: string option; State: ReadingState }
+
+module ReaderPage =
+    let state (page: ReaderPage) = page.State
+    let location (page: ReaderPage) = page.Location
+
+module ConcordPage =
+    let state (page: ConcordPage) = page.State
+    let reference (page: ConcordPage) = page.Reference
+
+[<RequireQualifiedAccess>]
+type Surface =
+    | Reader of ReaderPage
+    | Concord of ConcordPage
+    | Sources of LoadState<SourcesDocument>
+    | World
+    | Kretzmann
+    | NotFound
+
+type Model = { Surface: Surface; Serial: RequestId; Focus: FocusState }
+
+[<RequireQualifiedAccess>]
+type ReadingMessage =
+    | RetryContents
+    | RetryText
+    | ContentsLoaded of RequestId * Result<Contents, Failure>
+    | TextLoaded of RequestId * Result<TextWindow, Failure>
+
+[<RequireQualifiedAccess>]
+type ConcordMessage = Reading of ReadingMessage | Next
+
+[<RequireQualifiedAccess>]
+type SourcesMessage = Retry | Loaded of RequestId * Result<SourcesDocument, Failure>
+
+[<RequireQualifiedAccess>]
+type SurfaceMessage =
+    | Reader of ReadingMessage
+    | Concord of ConcordMessage
+    | Sources of SourcesMessage
 
 type Message =
     | Navigate of Route
-    | Retry
-    | ReadNext
-    | ContentsLoaded of Corpus * RequestId * Result<Contents, Failure>
-    | TextLoaded of RequestId * Result<TextWindow, Failure>
-    | SourcesLoaded of RequestId * Result<SourcesDocument, Failure>
+    | Page of SurfaceMessage
     | OpenPosition of PositionRef
     | Traverse of Traversal
     | CloseFocus
@@ -91,49 +119,27 @@ type Message =
 
 type Effect =
     | ReadContents of Corpus * RequestId
-    | ReadText of RequestId * Request<TextWindow>
+    | ReadText of Corpus * RequestId * Request<TextWindow>
     | ReadSources of RequestId
     | ReadOpening of RequestId * PositionRef
     | WalkFocus of RequestId * Trail * Traversal
 
-module rec Model =
+module Model =
     let init (route: Route) : Model * Effect list =
-        loadView { Route = route; Serial = RequestId.initial; Contents = Map.empty; ReadingSession = ReadingState.Idle; Sources = Empty; Focus = FocusState.Closed }
+        initialize route RequestId.initial
 
     let update (message: Message) (model: Model) : Model * Effect list =
         match message with
-        | Navigate route -> loadView { model with Route = route; Serial = RequestId.next model.Serial; ReadingSession = ReadingState.Idle; Focus = FocusState.Closed }
-        | ReadNext ->
-            match model.Route, model.Reading with
-            | Route.Concord _, Ready window ->
-                match window.Next with
-                | Some reference ->
-                    beginReading (Reads.textWindow reference (Some concordPageSize) (Some WindowDir.Onward) None (Some Corpus.Concord)) { model with Serial = RequestId.next model.Serial; Focus = FocusState.Closed }
-                | None -> model, []
-            | Route.Reader, _ | Route.Read _, _ | Route.World, _ | Route.Kretzmann, _ | Route.Sources, _ | Route.NotFound, _
-            | Route.Concord _, Empty | Route.Concord _, Loading _ | Route.Concord _, Failed _ -> model, []
-        | Retry ->
-            let reset state = match state with Failed _ -> Empty | Empty | Loading _ | Ready _ -> state
-            let model = { model with Serial = RequestId.next model.Serial; Contents = Map.map (fun _ state -> reset state) model.Contents; Sources = reset model.Sources }
-            match model.ReadingSession with
-            | ReadingState.Active session ->
-                match ReadSession.state session with
-                | Failed _ ->
-                    let session = ReadSession.retry model.Serial session
-                    { model with ReadingSession = ReadingState.Active session }, [ReadText(model.Serial, ReadSession.request session)]
-                | Empty | Loading _ | Ready _ -> loadView model
-            | ReadingState.Unavailable _ -> loadView { model with ReadingSession = ReadingState.Idle }
-            | ReadingState.Idle -> loadView model
-        | ContentsLoaded(corpus, request, answer) ->
-            let previous = Map.tryFind corpus model.Contents |> Option.defaultValue Empty
-            let complete = LoadState.complete request answer previous
-            if previous = complete then model, []
-            else loadView { model with Contents = Map.add corpus complete model.Contents }
-        | TextLoaded(request, answer) ->
-            match model.ReadingSession with
-            | ReadingState.Active session -> { model with ReadingSession = ReadingState.Active(ReadSession.complete request answer session) }, []
-            | ReadingState.Idle | ReadingState.Unavailable _ -> model, []
-        | SourcesLoaded(request, answer) -> { model with Sources = LoadState.complete request answer model.Sources }, []
+        | Navigate target when target = route model -> model, []
+        | Navigate target -> initialize target (RequestId.next model.Serial)
+        | Page message ->
+            let request = RequestId.next model.Serial
+            let surface, effects = Surfaces.update request message model.Surface
+            let focus =
+                match message, effects with
+                | SurfaceMessage.Concord ConcordMessage.Next, _ :: _ -> FocusState.Closed
+                | _ -> model.Focus
+            { model with Surface = surface; Serial = (if effects.IsEmpty then model.Serial else request); Focus = focus }, effects
         | OpenPosition position ->
             let request = RequestId.next model.Serial
             { model with Serial = request; Focus = FocusState.Opening(request, position) }, [ReadOpening(request, position)]
@@ -157,42 +163,124 @@ module rec Model =
                 { model with Focus = match answer with Ok trail -> FocusState.Opened trail | Error failure -> FocusState.CouldNotWalk(trail, traversal, failure) }, []
             | FocusState.Closed | FocusState.Opening _ | FocusState.Opened _ | FocusState.Walking _ | FocusState.CouldNotOpen _ | FocusState.CouldNotWalk _ -> model, []
 
-    let private loadView (model: Model) : Model * Effect list =
-        match model.Route with
-        | Route.Sources ->
-            match model.Sources with
-            | Empty -> { model with Sources = Loading(model.Serial, None) }, [ReadSources model.Serial]
-            | Loading _ | Ready _ | Failed _ -> model, []
-        | Route.Reader | Route.Read _ -> reading Corpus.Bible model
-        | Route.Concord _ -> reading Corpus.Concord model
-        | Route.World | Route.Kretzmann | Route.NotFound -> model, []
 
-    let private reading (corpus: Corpus) (model: Model) : Model * Effect list =
-        let contents = Map.tryFind corpus model.Contents |> Option.defaultValue Empty
-        match contents, model.Reading with
-        | Empty, _ -> { model with Contents = Map.add corpus (Loading(model.Serial, None)) model.Contents }, [ReadContents(corpus, model.Serial)]
-        | Ready contents, Empty ->
-            match opening model.Route contents with
-            | Some(reference, scope) ->
-                let size = match corpus with Corpus.Bible -> None | Corpus.Concord -> Some concordPageSize
-                beginReading (Reads.textWindow reference size None scope (Some corpus)) model
-            | None -> { model with ReadingSession = ReadingState.Unavailable(model.Serial, Contract "the requested reading has no opening in the served contents") }, []
-        | Loading _, _ | Failed _, _ | Ready _, Loading _ | Ready _, Ready _ | Ready _, Failed _ -> model, []
+    let route (model: Model) : Route =
+        match model.Surface with
+        | Surface.Reader page -> ReaderPage.location page |> Option.map Route.Read |> Option.defaultValue Route.Reader
+        | Surface.Concord page -> Route.Concord(ConcordPage.reference page)
+        | Surface.Sources _ -> Route.Sources
+        | Surface.World -> Route.World
+        | Surface.Kretzmann -> Route.Kretzmann
+        | Surface.NotFound -> Route.NotFound
 
-    let private beginReading (request: Request<TextWindow>) (model: Model) : Model * Effect list =
-        let session = ReadSession.beginRead model.Serial request model.Reading
-        { model with ReadingSession = ReadingState.Active session }, [ReadText(model.Serial, ReadSession.request session)]
+    let private initialize (route: Route) (request: RequestId) : Model * Effect list =
+        let surface, effects = Surfaces.initialize request route
+        { Surface = surface; Serial = request; Focus = FocusState.Closed }, effects
 
-    let private opening (route: Route) (contents: Contents) : (string * TextScope option) option =
+module private Surfaces =
+    let initialize (request: RequestId) (route: Route) : Surface * Effect list =
         match route with
-        | Route.Reader -> contents.Roots |> List.tryHead |> Option.bind (fun root -> root.Children |> List.tryHead) |> Option.map (fun child -> child.Ref, Some TextScope.Chapter)
+        | Route.Reader ->
+            Surface.Reader { Location = None; State = ReadingState.LoadingContents request }, [ReadContents(Corpus.Bible, request)]
         | Route.Read location ->
+            Surface.Reader { Location = Some location; State = ReadingState.LoadingContents request }, [ReadContents(Corpus.Bible, request)]
+        | Route.Concord reference ->
+            Surface.Concord { Reference = reference; State = ReadingState.LoadingContents request }, [ReadContents(Corpus.Concord, request)]
+        | Route.Sources -> Surface.Sources(Loading(request, None)), [ReadSources request]
+        | Route.World -> Surface.World, []
+        | Route.Kretzmann -> Surface.Kretzmann, []
+        | Route.NotFound -> Surface.NotFound, []
+
+    let update (request: RequestId) (message: SurfaceMessage) (surface: Surface) : Surface * Effect list =
+        match message, surface with
+        | SurfaceMessage.Reader message, Surface.Reader page ->
+            let state, effects = ReadingSurface.update (ReadingChoice.Bible page.Location) request message page.State
+            Surface.Reader { page with State = state }, effects
+        | SurfaceMessage.Concord message, Surface.Concord page ->
+            let state, effects = ConcordSurface.update page.Reference request message page.State
+            Surface.Concord { page with State = state }, effects
+        | SurfaceMessage.Sources message, Surface.Sources state ->
+            let state, effects = SourcesSurface.update request message state
+            Surface.Sources state, effects
+        | _ -> surface, []
+
+module private SourcesSurface =
+    let update (request: RequestId) (message: SourcesMessage) (state: LoadState<SourcesDocument>) : LoadState<SourcesDocument> * Effect list =
+        match message, state with
+        | SourcesMessage.Retry, Failed _ -> LoadState.beginRead request state, [ReadSources request]
+        | SourcesMessage.Loaded(identity, answer), _ -> LoadState.complete identity answer state, []
+        | SourcesMessage.Retry, Empty | SourcesMessage.Retry, Loading _ | SourcesMessage.Retry, Ready _ -> state, []
+
+module private ConcordSurface =
+    let update (reference: string option) (request: RequestId) (message: ConcordMessage) (state: ReadingState) : ReadingState * Effect list =
+        match message, state with
+        | ConcordMessage.Reading message, _ -> ReadingSurface.update (ReadingChoice.Concord reference) request message state
+        | ConcordMessage.Next, ReadingState.Active(contents, session) ->
+            match ReadSession.state session with
+            | Ready window ->
+                match window.Next with
+                | Some reference -> ReadingSurface.beginRead Corpus.Concord request contents session (Reads.textWindow reference (Some ReadingAffordances.concordPageSize) (Some WindowDir.Onward) None (Some Corpus.Concord))
+                | None -> state, []
+            | Empty | Loading _ | Failed _ -> state, []
+        | ConcordMessage.Next, ReadingState.LoadingContents _ | ConcordMessage.Next, ReadingState.CouldNotLoadContents _ | ConcordMessage.Next, ReadingState.Unavailable _ -> state, []
+
+module private ReadingSurface =
+    let update (choice: ReadingChoice) (request: RequestId) (message: ReadingMessage) (state: ReadingState) : ReadingState * Effect list =
+        let corpus = corpus choice
+        match message, state with
+        | ReadingMessage.RetryContents, ReadingState.CouldNotLoadContents _ ->
+            ReadingState.LoadingContents request, [ReadContents(corpus, request)]
+        | ReadingMessage.ContentsLoaded(identity, answer), ReadingState.LoadingContents pending when identity = pending ->
+            match answer with
+            | Error failure -> ReadingState.CouldNotLoadContents failure, []
+            | Ok contents when contents.Corpus <> corpus -> ReadingState.Unavailable(Contract "the contents answer names a different corpus"), []
+            | Ok contents ->
+                match opening choice contents with
+                | None -> ReadingState.Unavailable(Contract "the requested reading has no opening in the served contents"), []
+                | Some(reference, scope) ->
+                    let size = match corpus with Corpus.Bible -> None | Corpus.Concord -> Some ReadingAffordances.concordPageSize
+                    let read = Reads.textWindow reference size None scope (Some corpus)
+                    ReadingState.Active(contents, ReadSession.beginRead request read Empty), [ReadText(corpus, request, read)]
+        | ReadingMessage.TextLoaded(identity, answer), ReadingState.Active(contents, session) ->
+            let answer = answer |> Result.bind (validate corpus)
+            ReadingState.Active(contents, ReadSession.complete identity answer session), []
+        | ReadingMessage.RetryText, ReadingState.Active(contents, session) ->
+            match ReadSession.state session with
+            | Failed _ ->
+                let retried = ReadSession.retry request session
+                ReadingState.Active(contents, retried), [ReadText(corpus, request, ReadSession.request retried)]
+            | Empty | Loading _ | Ready _ -> state, []
+        | _ -> state, []
+
+    let beginRead (corpus: Corpus) (request: RequestId) (contents: Contents) (session: ReadSession<TextWindow>) (read: Request<TextWindow>) : ReadingState * Effect list =
+        ReadingState.Active(contents, ReadSession.beginRead request read (ReadSession.state session)), [ReadText(corpus, request, read)]
+
+    let private opening (choice: ReadingChoice) (contents: Contents) : (string * TextScope option) option =
+        match choice with
+        | ReadingChoice.Bible None -> contents.Roots |> List.tryHead |> Option.bind (fun root -> root.Children |> List.tryHead) |> Option.map (fun child -> child.Ref, Some TextScope.Chapter)
+        | ReadingChoice.Bible(Some location) ->
             contents.Roots |> List.collect _.Children |> List.tryFind (fun child ->
                 match child.Locus with
                 | TextRef.Bible locus -> locus.Book = location.Book && locus.Chapter = location.Chapter
                 | TextRef.Concord _ -> false) |> Option.map (fun child -> child.Ref, Some TextScope.Chapter)
-        | Route.Concord(Some reference) -> Some(reference, None)
-        | Route.Concord None -> contents.Roots |> List.tryHead |> Option.map (fun root -> root.Ref, None)
-        | Route.World | Route.Kretzmann | Route.Sources | Route.NotFound -> None
+        | ReadingChoice.Concord(Some reference) -> Some(reference, None)
+        | ReadingChoice.Concord None -> contents.Roots |> List.tryHead |> Option.map (fun root -> root.Ref, None)
 
-    let private concordPageSize = 20
+    let private validate (corpus: Corpus) (window: TextWindow) : Result<TextWindow, Failure> =
+        let matches =
+            window.Units |> List.forall (fun unit ->
+                match corpus, unit.Body.Locus with
+                | Corpus.Bible, TextRef.Bible _ | Corpus.Concord, TextRef.Concord _ -> true
+                | Corpus.Bible, TextRef.Concord _ | Corpus.Concord, TextRef.Bible _ -> false)
+        if matches then Ok window else Error(Contract "the text answer names a different corpus")
+
+    let private corpus choice =
+        match choice with
+        | ReadingChoice.Bible _ -> Corpus.Bible
+        | ReadingChoice.Concord _ -> Corpus.Concord
+
+[<RequireQualifiedAccess>]
+type private ReadingChoice = Bible of ReadingLocation option | Concord of string option
+
+module private ReadingAffordances =
+    let concordPageSize = 20

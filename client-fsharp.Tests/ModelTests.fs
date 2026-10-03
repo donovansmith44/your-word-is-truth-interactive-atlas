@@ -2,84 +2,222 @@ module rec BibleAtlas.FSharp.Tests.ModelTests
 
 open System
 open Xunit
+open FsCheck
+open FsCheck.Xunit
 open BibleAtlas.FSharp
 open BibleAtlas.FSharp.Contract
+open Microsoft.FSharp.Reflection
 
-[<Fact>]
-let ``reader startup requests the served contents before choosing its first reading`` () =
+[<Property>]
+let ``navigating to the current route preserves its pending request instead of sending it twice`` (route: Route) =
+    let model, _ = Model.init route
+    Assert.Equal((model, []), Model.update (Navigate route) model)
+
+[<Property(MaxTest = 1)>]
+let ``reading page constructors are private to the surface transition boundary`` () =
+    let actual =
+        [typeof<ReaderPage>; typeof<ConcordPage>]
+        |> List.map (fun shape -> shape.GetConstructors(Reflection.BindingFlags.Instance ||| Reflection.BindingFlags.Public ||| Reflection.BindingFlags.NonPublic) |> Array.map _.IsPublic |> Array.toList)
+    Assert.Equal<bool list list>([[false]; [false]], actual)
+
+[<Property>]
+let ``a text answer from another corpus is refused before entering either reading surface`` (corpus: Corpus) (NonNull text: NonNull<string>) =
+    let route, served, read, other =
+        match corpus with
+        | Corpus.Bible -> Route.Reader, contents, Reads.textWindow firstChapter.Ref None None (Some TextScope.Chapter) (Some Corpus.Bible), TextRef.Concord { Part = 1; Article = 1; Paragraph = 1 }
+        | Corpus.Concord -> Route.Concord None, concordContents "served", Reads.textWindow "served" (Some concordPageSize) None None (Some Corpus.Concord), firstChapter.Locus
+    let model, _ = Model.init route
+    let pending, _ = Model.update (readingMessage corpus (ReadingMessage.ContentsLoaded(model.Serial, Ok served))) model
+    let request = pending.Serial
+    let unit: TextUnit = { Ref = "opaque"; Node = { Id = "served"; Kind = NodeKind.TextUnit; Label = "served" }; Heading = None; EdgeSummary = []; Body = { Text = text; Locus = other; Anchors = []; WordsOfChrist = [] } }
+    let window: TextWindow = { Units = [unit]; Next = None; Version = "root" }
+    let failed = ReadSession.beginRead request read Empty |> ReadSession.complete request (Error(Contract "the text answer names a different corpus"))
+    let expected = withState (ReadingState.Active(served, failed)) pending
+    Assert.Equal((expected, []), Model.update (readingMessage corpus (ReadingMessage.TextLoaded(request, Ok window))) pending)
+
+[<Property>]
+let ``a completion from a departed surface cannot alter any replacement surface`` (NonNull title: NonNull<string>) =
+    let departed, _ = Model.init Route.Sources
+    let answer: SourcesDocument = { Categories = [{ Id = "generated"; Label = title }]; Sources = []; Provenances = None }
+    let destinations = [Route.Reader; Route.Read { Book = BookId.GEN; Chapter = 1 }; Route.World; Route.Kretzmann; Route.Concord None; Route.NotFound]
+    let replacements = destinations |> List.map (fun route -> Model.update (Navigate route) departed |> fst)
+    let actual = replacements |> List.map (Model.update (Page(SurfaceMessage.Sources(SourcesMessage.Loaded(departed.Serial, Ok answer)))))
+    let expected = replacements |> List.map (fun replacement -> replacement, [])
+    Assert.Equal<(Model * Effect list) list>(expected, actual)
+
+[<Property>]
+let ``retry with no failed operation preserves every surface and pending request`` (route: Route) =
+    let model, _ = Model.init route
+    let messages = [Page(SurfaceMessage.Reader ReadingMessage.RetryContents); Page(SurfaceMessage.Reader ReadingMessage.RetryText); Page(SurfaceMessage.Concord(ConcordMessage.Reading ReadingMessage.RetryContents)); Page(SurfaceMessage.Concord(ConcordMessage.Reading ReadingMessage.RetryText)); Page(SurfaceMessage.Sources SourcesMessage.Retry)]
+    let expected = messages |> List.map (fun _ -> model, [])
+    Assert.Equal<(Model * Effect list) list>(expected, messages |> List.map (fun message -> Model.update message model))
+
+[<Property>]
+let ``reader startup uses the complete served contents to open its selected chapter`` (NonNull title: NonNull<string>) =
+    let served = { contents with Roots = contents.Roots |> List.map (fun root -> { root with Title = title }) }
     let model, effects = Model.init Route.Reader
-    Assert.Equal<Effect list>([ReadContents(Corpus.Bible, model.Serial)], effects)
-    let actual, effects = Model.update (ContentsLoaded(Corpus.Bible, model.Serial, Ok contents)) model
-    let expected = { model with Contents = Map.ofList [Corpus.Bible, Ready contents]; ReadingSession = ReadingState.Active(ReadSession.beginRead model.Serial (Reads.textWindow firstChapter.Ref None None (Some TextScope.Chapter) (Some Corpus.Bible)) Empty) }
-    Assert.Equal(expected, actual)
-    Assert.Equal<Effect list>([ReadText(model.Serial, Reads.textWindow firstChapter.Ref None None (Some TextScope.Chapter) (Some Corpus.Bible))], effects)
+    Assert.Equal((Surface.Reader(readerPage None (ReadingState.LoadingContents model.Serial)), [ReadContents(Corpus.Bible, model.Serial)]), (model.Surface, effects))
+    let request = RequestId.next model.Serial
+    let read = Reads.textWindow firstChapter.Ref None None (Some TextScope.Chapter) (Some Corpus.Bible)
+    let expected = { model with Serial = request; Surface = Surface.Reader(readerPage None (ReadingState.Active(served, ReadSession.beginRead request read Empty))) }
+    Assert.Equal((expected, [ReadText(Corpus.Bible, request, read)]), Model.update (Page(SurfaceMessage.Reader(ReadingMessage.ContentsLoaded(model.Serial, Ok served)))) model)
 
-[<Fact>]
-let ``navigating away while text loads prevents its completion from reopening the old reading`` () =
+[<Property>]
+let ``a text completion after navigation cannot reopen a departed reading`` (NonNull reason: NonNull<string>) =
     let model, _ = Model.init Route.Reader
-    let model, _ = Model.update (ContentsLoaded(Corpus.Bible, model.Serial, Ok contents)) model
-    let old = model.Serial
-    let next, _ = Model.update (Navigate Route.Sources) model
-    let stale, effects = Model.update (TextLoaded(old, Error(Transport "old failure"))) next
-    Assert.Equal(next, stale)
-    Assert.Equal<Effect list>([], effects)
+    let model, _ = Model.update (Page(SurfaceMessage.Reader(ReadingMessage.ContentsLoaded(model.Serial, Ok contents)))) model
+    let replacement, _ = Model.update (Navigate Route.Sources) model
+    Assert.Equal((replacement, []), Model.update (Page(SurfaceMessage.Reader(ReadingMessage.TextLoaded(model.Serial, Error(Transport reason))))) replacement)
 
-[<Fact>]
-let ``retry gives a failed source read a new request identity`` () =
+[<Property>]
+let ``source retry advances only its failed operation and keeps its entire last value`` (NonNull title: NonNull<string>) (NonNull reason: NonNull<string>) =
     let model, _ = Model.init Route.Sources
-    let model, _ = Model.update (SourcesLoaded(model.Serial, Error(Transport "offline"))) model
-    let retry, effects = Model.update Retry model
-    let expected = { model with Serial = RequestId.next model.Serial; Sources = Loading(RequestId.next model.Serial, None) }
-    Assert.Equal(expected, retry)
-    Assert.Equal<Effect list>([ReadSources retry.Serial], effects)
+    let prior: SourcesDocument = { Categories = [{ Id = "served"; Label = title }]; Sources = []; Provenances = None }
+    let model = { model with Surface = Surface.Sources(Failed(model.Serial, Transport reason, Some prior)) }
+    let request = RequestId.next model.Serial
+    let expected = { model with Serial = request; Surface = Surface.Sources(Loading(request, Some prior)) }
+    Assert.Equal((expected, [ReadSources request]), Model.update (Page(SurfaceMessage.Sources SourcesMessage.Retry)) model)
 
-[<Theory>]
-[<InlineData("/read/JHN/3", "JHN", 3)>]
-[<InlineData("/read/1SA/2", "1SA", 2)>]
-let ``reader routes roundtrip the generated book vocabulary`` (url: string) book chapter =
-    let code = Json.decode<BookId>(Json.encode book) |> Result.toOption |> Option.get
-    let expected = Route.Read { Book = code; Chapter = chapter }
-    Assert.Equal(expected, Routes.parse (Uri("http://example.test" + url)))
-    Assert.Equal(url, Routes.url expected)
+[<Property>]
+let ``reader and Concord routes roundtrip their generated vocabulary and escaped payloads`` (book: BookId) (PositiveInt chapter) (NonNull reference: NonNull<string>) =
+    let expected = [Route.Read { Book = book; Chapter = chapter }; Route.Concord(Some reference)]
+    let actual = expected |> List.map (fun route -> Routes.parse (Uri("http://example.test" + Routes.url route)))
+    Assert.Equal<Route list>(expected, actual)
 
-[<Theory>]
-[<InlineData("/read/NEW/3")>]
-[<InlineData("/read/JHN/0")>]
-[<InlineData("/read/JHN/nope")>]
-[<InlineData("/unknown")>]
-let ``unknown routes and invalid chapter input are refused without a partial match`` path =
-    Assert.Equal(Route.NotFound, Routes.parse (Uri("http://example.test" + path)))
+[<Property>]
+let ``unknown routes book codes and invalid chapter input are refused`` (suffix: uint16) =
+    let paths = [$"/read/NEW{suffix}/3"; "/read/JHN/0"; $"/read/JHN/nope{suffix}"; $"/unknown{suffix}"]
+    Assert.Equal<Route list>([Route.NotFound; Route.NotFound; Route.NotFound; Route.NotFound], paths |> List.map (fun path -> Routes.parse (Uri("http://example.test" + path))))
 
-[<Fact>]
-let ``Concord opens a bounded reading from the served corpus beginning`` () =
-    let opening = { contents with Corpus = Corpus.Concord; Roots = [{ contents.Roots.Head with Ref = "BoC 1.1.1"; Locus = TextRef.Concord { Part = 1; Article = 1; Paragraph = 1 }; Children = [] }] }
+[<Property>]
+let ``Concord opens its bounded reading from the served corpus beginning`` (NonNull reference: NonNull<string>) =
+    let served = concordContents reference
     let model, _ = Model.init (Route.Concord None)
-    let actual, effects = Model.update (ContentsLoaded(Corpus.Concord, model.Serial, Ok opening)) model
-    let expected = { model with Contents = Map.ofList [Corpus.Concord, Ready opening]; ReadingSession = ReadingState.Active(ReadSession.beginRead model.Serial (Reads.textWindow "BoC 1.1.1" (Some 20) None None (Some Corpus.Concord)) Empty) }
-    Assert.Equal(expected, actual)
-    Assert.Equal<Effect list>([ReadText(model.Serial, Reads.textWindow "BoC 1.1.1" (Some 20) None None (Some Corpus.Concord))], effects)
+    let request = RequestId.next model.Serial
+    let read = Reads.textWindow reference (Some concordPageSize) None None (Some Corpus.Concord)
+    let expected = { model with Serial = request; Surface = Surface.Concord(concordPage None (ReadingState.Active(served, ReadSession.beginRead request read Empty))) }
+    Assert.Equal((expected, [ReadText(Corpus.Concord, request, read)]), Model.update (Page(SurfaceMessage.Concord(ConcordMessage.Reading(ReadingMessage.ContentsLoaded(model.Serial, Ok served))))) model)
 
-[<Fact>]
-let ``opening a focus has a new identity and resolves only its requested position`` () =
+[<Property>]
+let ``a missing chapter is unavailable without a manufactured request identity or retry`` (PositiveInt chapter) =
+    let location = { Book = BookId.GEN; Chapter = 2 + chapter % 100 }
+    let model, _ = Model.init (Route.Read location)
+    let expected = { model with Surface = Surface.Reader(readerPage (Some location) (ReadingState.Unavailable(Contract "the requested reading has no opening in the served contents"))) }
+    let actual = Model.update (Page(SurfaceMessage.Reader(ReadingMessage.ContentsLoaded(model.Serial, Ok contents)))) model
+    Assert.Equal((expected, []), actual)
+    Assert.Equal((expected, []), Model.update (Page(SurfaceMessage.Reader ReadingMessage.RetryContents)) expected)
+    Assert.Equal((expected, []), Model.update (Page(SurfaceMessage.Reader ReadingMessage.RetryText)) expected)
+
+[<Property>]
+let ``Concord Next and failed-page retry preserve exactly the served continuation request`` (suffix: uint16) (NonNull reason: NonNull<string>) =
+    let reference = $"route-{suffix}"
+    let continuation = $"next-{suffix}"
+    let window: TextWindow = { Units = []; Next = Some continuation; Version = "root" }
+    let model, _ = Model.init (Route.Concord(Some reference))
+    let model = withReading window model
+    let request = RequestId.next model.Serial
+    let read = Reads.textWindow continuation (Some concordPageSize) (Some WindowDir.Onward) None (Some Corpus.Concord)
+    let served, session = concordSession model
+    let expected = { model with Serial = request; Surface = Surface.Concord(concordPage (Some reference) (ReadingState.Active(served, ReadSession.beginRead request read (Ready window)))); Focus = FocusState.Closed }
+    let pending, effects = Model.update (Page(SurfaceMessage.Concord ConcordMessage.Next)) model
+    Assert.Equal((expected, [ReadText(Corpus.Concord, request, read)]), (pending, effects))
+    Assert.Equal((pending, []), Model.update (Page(SurfaceMessage.Concord ConcordMessage.Next)) pending)
+    let failure = Transport reason
+    let failed, _ = Model.update (Page(SurfaceMessage.Concord(ConcordMessage.Reading(ReadingMessage.TextLoaded(request, Error failure))))) pending
+    let retryId = RequestId.next request
+    let expectedRetry = { failed with Serial = retryId; Surface = Surface.Concord(concordPage (Some reference) (ReadingState.Active(served, ReadSession.beginRead retryId read (Failed(request, failure, Some window))))) }
+    let retryMessage = Page(SurfaceMessage.Concord(ConcordMessage.Reading ReadingMessage.RetryText))
+    let retried, effects = Model.update retryMessage failed
+    Assert.Equal((expectedRetry, [ReadText(Corpus.Concord, retryId, read)]), (retried, effects))
+    Assert.Equal((retried, []), Model.update (Page(SurfaceMessage.Concord(ConcordMessage.Reading(ReadingMessage.TextLoaded(request, Ok window))))) retried)
+    Assert.Equal(Ready window, ReadSession.state session)
+
+[<Property(MaxTest = 4)>]
+let ``future sized Concord turns retain exactly the final page and current request`` (extra: byte) =
+    let pageCount = futureJourneyLength + int extra
+    let model, _ = Model.init (Route.Concord None)
+    let first = page 0
+    let model = withReading first model
+    let actual =
+        [1..pageCount] |> List.fold (fun model index ->
+            let pending, _ = Model.update (Page(SurfaceMessage.Concord ConcordMessage.Next)) model
+            Model.update (Page(SurfaceMessage.Concord(ConcordMessage.Reading(ReadingMessage.TextLoaded(pending.Serial, Ok(page index)))))) pending |> fst) model
+    let request = [1..pageCount] |> List.fold (fun request _ -> RequestId.next request) model.Serial
+    let read = Reads.textWindow $"next-{pageCount - 1}" (Some concordPageSize) (Some WindowDir.Onward) None (Some Corpus.Concord)
+    let served, _ = concordSession model
+    let session = ReadSession.beginRead request read Empty |> ReadSession.complete request (Ok(page pageCount))
+    let expected = { model with Serial = request; Surface = Surface.Concord(concordPage None (ReadingState.Active(served, session))) }
+    Assert.Equal(expected, actual)
+
+[<Property>]
+let ``every message belonging to another surface preserves every page state`` (NonNull reason: NonNull<string>) (steps: byte) =
+    let request = requestAfter steps
+    let failure = Transport reason
+    let fixtures = surfaceFixtures request failure
+    let messages = surfaceMessages request failure
+    let cases = [for surface in fixtures do for message in messages do if owner surface <> messageOwner message then yield surface, message]
+    let models = cases |> List.map (fun (surface, _) -> { Surface = surface; Serial = request; Focus = FocusState.Closed })
+    let expected = models |> List.map (fun model -> model, [])
+    let actual = List.map2 (fun model (_, message) -> Model.update (Page message) model) models cases
+    Assert.Equal<(Model * Effect list) list>(expected, actual)
+
+[<Property>]
+let ``every noncurrent surface completion preserves every page state and its focus`` (NonNull reason: NonNull<string>) (steps: byte) focused =
+    let request = requestAfter steps
+    let fixtures = surfaceFixtures request (Transport reason)
+    let messages =
+        surfaceMessages (RequestId.next request) (Transport reason)
+        |> List.filter (function
+            | SurfaceMessage.Reader(ReadingMessage.ContentsLoaded _ | ReadingMessage.TextLoaded _)
+            | SurfaceMessage.Concord(ConcordMessage.Reading(ReadingMessage.ContentsLoaded _ | ReadingMessage.TextLoaded _))
+            | SurfaceMessage.Sources(SourcesMessage.Loaded _) -> true
+            | _ -> false)
+    let focus = if focused then FocusState.Opened ExplorationTests.trail else FocusState.Closed
+    let cases = [for surface in fixtures do for message in messages do yield { Surface = surface; Serial = request; Focus = focus }, message]
+    let expected = cases |> List.map (fun (model, _) -> model, [])
+    let actual = cases |> List.map (fun (model, message) -> Model.update (Page message) model)
+    Assert.Equal<(Model * Effect list) list>(expected, actual)
+
+[<Property>]
+let ``a failed contents read retries only contents with a new identity`` (NonNull reason: NonNull<string>) =
+    let model, _ = Model.init Route.Reader
+    let failure = Transport reason
+    let failed, effects = Model.update (Page(SurfaceMessage.Reader(ReadingMessage.ContentsLoaded(model.Serial, Error failure)))) model
+    let expectedFailed = { model with Surface = Surface.Reader(readerPage None (ReadingState.CouldNotLoadContents failure)) }
+    Assert.Equal((expectedFailed, []), (failed, effects))
+    Assert.Equal((failed, []), Model.update (Page(SurfaceMessage.Reader ReadingMessage.RetryText)) failed)
+    let request = RequestId.next model.Serial
+    let expectedRetry = { failed with Serial = request; Surface = Surface.Reader(readerPage None (ReadingState.LoadingContents request)) }
+    Assert.Equal((expectedRetry, [ReadContents(Corpus.Bible, request)]), Model.update (Page(SurfaceMessage.Reader ReadingMessage.RetryContents)) failed)
+
+[<Property>]
+let ``a current source completion installs the whole served answer without starting another read`` (NonNull title: NonNull<string>) =
     let model, _ = Model.init Route.Sources
+    let answer: SourcesDocument = { Categories = [{ Id = "served"; Label = title }]; Sources = []; Provenances = None }
+    let expected = { model with Surface = Surface.Sources(Ready answer) }
+    Assert.Equal((expected, []), Model.update (Page(SurfaceMessage.Sources(SourcesMessage.Loaded(model.Serial, Ok answer)))) model)
+
+[<Property>]
+let ``opening a focus has a new identity and resolves only its requested position`` (steps: byte) =
+    let model, _ = seedModel Route.Sources steps
     let position = Resolved.position ExplorationTests.start
     let actual, effects = Model.update (OpenPosition position) model
     let request = RequestId.next model.Serial
     Assert.Equal({ model with Serial = request; Focus = FocusState.Opening(request, position) }, actual)
     Assert.Equal<Effect list>([ReadOpening(request, position)], effects)
 
-[<Fact>]
-let ``closing focus refuses a late successful opening`` () =
-    let model, _ = Model.init Route.Sources
+[<Property>]
+let ``closing focus refuses a late successful opening`` (steps: byte) =
+    let model, _ = seedModel Route.Sources steps
     let opening, _ = Model.update (OpenPosition(Resolved.position ExplorationTests.start)) model
     let closed, _ = Model.update CloseFocus opening
     let actual, effects = Model.update (FocusLoaded(opening.Serial, Ok ExplorationTests.trail)) closed
     Assert.Equal({ opening with Serial = RequestId.next opening.Serial; Focus = FocusState.Closed }, actual)
     Assert.Equal<Effect list>([], effects)
 
-[<Fact>]
-let ``following preserves the current trail while its replacement is in flight`` () =
-    let model, _ = Model.init Route.Sources
+[<Property>]
+let ``following preserves the current trail while its replacement is in flight`` (steps: byte) =
+    let model, _ = seedModel Route.Sources steps
     let model = { model with Focus = FocusState.Opened ExplorationTests.trail }
     let link: Link = { Kind = EdgeKind.Contains; Target = Resolved.position (ExplorationTests.node "Person:target" "root") }
     let actual, effects = Model.update (Traverse(Traversal.Follow link)) model
@@ -87,9 +225,9 @@ let ``following preserves the current trail while its replacement is in flight``
     Assert.Equal({ model with Serial = request; Focus = FocusState.Walking(request, ExplorationTests.trail, Traversal.Follow link) }, actual)
     Assert.Equal<Effect list>([WalkFocus(request, ExplorationTests.trail, Traversal.Follow link)], effects)
 
-[<Fact>]
-let ``a superseded focus completion cannot replace a later traversal`` () =
-    let model, _ = Model.init Route.Sources
+[<Property>]
+let ``a superseded focus completion cannot replace a later traversal`` (steps: byte) =
+    let model, _ = seedModel Route.Sources steps
     let model = { model with Focus = FocusState.Opened ExplorationTests.trail }
     let first, _ = Model.update (Traverse Traversal.Back) model
     let next, _ = Model.update (Traverse Traversal.Renew) first
@@ -97,9 +235,9 @@ let ``a superseded focus completion cannot replace a later traversal`` () =
     Assert.Equal(next, actual)
     Assert.Equal<Effect list>([], effects)
 
-[<Fact>]
-let ``a failed opening retains exactly the position needed by Retry`` () =
-    let model, _ = Model.init Route.Sources
+[<Property>]
+let ``a failed opening retains exactly the position needed by Retry`` (steps: byte) =
+    let model, _ = seedModel Route.Sources steps
     let position = Resolved.position ExplorationTests.start
     let opening, _ = Model.update (OpenPosition position) model
     let failed, _ = Model.update (FocusLoaded(opening.Serial, Error(Transport "offline"))) opening
@@ -109,85 +247,97 @@ let ``a failed opening retains exactly the position needed by Retry`` () =
     Assert.Equal({ failed with Serial = request; Focus = FocusState.Opening(request, position) }, retry)
     Assert.Equal<Effect list>([ReadOpening(request, position)], effects)
 
-[<Fact>]
-let ``Concord Next reads only the served next reference with a bounded page`` () =
-    let model, _ = Model.init (Route.Concord(Some "BoC 1.1.1"))
-    let window: TextWindow = { Units = []; Next = Some "BoC 1.1.21"; Version = "root" }
-    let model = withReading window model
-    let actual, effects = Model.update ReadNext model
-    let request = RequestId.next model.Serial
-    Assert.Equal({ model with Serial = request; ReadingSession = ReadingState.Active(ReadSession.beginRead request (Reads.textWindow "BoC 1.1.21" (Some 20) (Some WindowDir.Onward) None (Some Corpus.Concord)) (Ready window)); Focus = FocusState.Closed }, actual)
-    Assert.Equal<Effect list>([ReadText(request, Reads.textWindow "BoC 1.1.21" (Some 20) (Some WindowDir.Onward) None (Some Corpus.Concord))], effects)
-
-[<Fact>]
-let ``retry after a failed Concord page retains that page instead of reopening the route`` () =
-    let model, _ = Model.init (Route.Concord(Some "BoC 1.1.1"))
-    let window: TextWindow = { Units = []; Next = Some "BoC 1.1.21"; Version = "root" }
-    let model = withReading window model
-    let next, _ = Model.update ReadNext model
-    let failed, _ = Model.update (TextLoaded(next.Serial, Error(Transport "offline"))) next
-    let actual, effects = Model.update Retry failed
-    let request = RequestId.next failed.Serial
-    Assert.Equal({ failed with Serial = request; ReadingSession = ReadingState.Active(ReadSession.beginRead request (Reads.textWindow "BoC 1.1.21" (Some 20) (Some WindowDir.Onward) None (Some Corpus.Concord)) (Ready window)) }, actual)
-    Assert.Equal<Effect list>([ReadText(request, Reads.textWindow "BoC 1.1.21" (Some 20) (Some WindowDir.Onward) None (Some Corpus.Concord))], effects)
-
-[<Fact>]
-let ``a chapter absent from the served contents is an explicit unavailable reading`` () =
-    let model, _ = Model.init (Route.Read { Book = BookId.GEN; Chapter = 2 })
-    let actual, effects = Model.update (ContentsLoaded(Corpus.Bible, model.Serial, Ok contents)) model
-    let expected = { model with Contents = Map.ofList [Corpus.Bible, Ready contents]; ReadingSession = ReadingState.Unavailable(model.Serial, Contract "the requested reading has no opening in the served contents") }
-    Assert.Equal(expected, actual)
-    Assert.Equal<Effect list>([], effects)
-
-[<Fact>]
-let ``a duplicate Next while a page is pending leaves the whole reading unchanged`` () =
-    let model, _ = Model.init (Route.Concord None)
-    let model = withReading { Units = []; Next = Some "BoC 1.1.21"; Version = "root" } model
-    let pending, _ = Model.update ReadNext model
-    let actual, effects = Model.update ReadNext pending
-    Assert.Equal(pending, actual)
-    Assert.Equal<Effect list>([], effects)
-
-[<Fact>]
-let ``a stale page completion cannot replace a newer retry`` () =
-    let model, _ = Model.init (Route.Concord None)
-    let model = withReading { Units = []; Next = Some "BoC 1.1.21"; Version = "root" } model
-    let pending, _ = Model.update ReadNext model
-    let failed, _ = Model.update (TextLoaded(pending.Serial, Error(Transport "offline"))) pending
-    let retry, _ = Model.update Retry failed
-    let actual, effects = Model.update (TextLoaded(pending.Serial, Ok { Units = []; Next = None; Version = "stale" })) retry
-    Assert.Equal(retry, actual)
-    Assert.Equal<Effect list>([], effects)
-
-[<Fact>]
-let ``ten thousand Concord turns retain exactly the last page`` () =
-    let pageCount = 10_000
-    let read = Reads.textWindow "opening" (Some 20) None None (Some Corpus.Concord)
-    let page index : TextWindow =
-        { Units = [{ Ref = $"page-{index}"; Node = { Id = $"TextUnit:page-{index}"; Kind = NodeKind.TextUnit; Label = $"Page {index}" }; Heading = None; EdgeSummary = []; Body = { Locus = TextRef.Concord { Part = 1; Article = 1; Paragraph = index }; Text = $"Page {index} body"; Anchors = []; WordsOfChrist = [] } }]
-          Next = Some $"next-{index}"; Version = "root" }
-    let first = page 0
-    let model, _ = Model.init (Route.Concord None)
-    let initial = ReadSession.beginRead model.Serial read Empty |> ReadSession.complete model.Serial (Ok first)
-    let model = { model with ReadingSession = ReadingState.Active initial }
-    let actual =
-        [1..pageCount] |> List.fold (fun model index ->
-            let pending, _ = Model.update ReadNext model
-            let window = page index
-            Model.update (TextLoaded(pending.Serial, Ok window)) pending |> fst) model
-    let expectedRequest = [1..pageCount] |> List.fold (fun request _ -> RequestId.next request) model.Serial
-    let lastRead = Reads.textWindow $"next-{pageCount - 1}" (Some 20) (Some WindowDir.Onward) None (Some Corpus.Concord)
-    let lastWindow = page pageCount
-    let lastSession = ReadSession.beginRead expectedRequest lastRead Empty |> ReadSession.complete expectedRequest (Ok lastWindow)
-    Assert.Equal({ model with Serial = expectedRequest; ReadingSession = ReadingState.Active lastSession }, actual)
-
 let withReading (window: TextWindow) (model: Model) : Model =
-    let read =
-        match model.Route with
-        | Route.Concord reference -> Reads.textWindow (reference |> Option.defaultValue "BoC 1.1.1") (Some 20) None None (Some Corpus.Concord)
-        | _ -> Reads.textWindow firstChapter.Ref None None (Some TextScope.Chapter) (Some Corpus.Bible)
-    let session = ReadSession.beginRead model.Serial read Empty |> ReadSession.complete model.Serial (Ok window)
-    { model with ReadingSession = ReadingState.Active session }
-let firstChapter: ContentsChild = { Id = "Container:bible-chapter-GEN-1"; Title = "1"; Kind = ContentsChildKind.Chapter; Ref = "GEN.1"; Locus = TextRef.Bible { Book = BookId.GEN; Chapter = 1; Verse = 1 }; Count = 31 }
+    match model.Surface with
+    | Surface.Reader reader ->
+        let read = Reads.textWindow firstChapter.Ref None None (Some TextScope.Chapter) (Some Corpus.Bible)
+        let session = ReadSession.beginRead model.Serial read Empty |> ReadSession.complete model.Serial (Ok window)
+        { model with Surface = Surface.Reader(readerPage (ReaderPage.location reader) (ReadingState.Active(contents, session))) }
+    | Surface.Concord concord ->
+        let reference = ConcordPage.reference concord |> Option.defaultValue "BoC 1.1.1"
+        let read = Reads.textWindow reference (Some concordPageSize) None None (Some Corpus.Concord)
+        let session = ReadSession.beginRead model.Serial read Empty |> ReadSession.complete model.Serial (Ok window)
+        { model with Surface = Surface.Concord(concordPage (ConcordPage.reference concord) (ReadingState.Active(concordContents reference, session))) }
+    | Surface.Sources _ | Surface.World | Surface.Kretzmann | Surface.NotFound -> failwith "the fixture requires a reading surface"
 
+let private readingMessage corpus message =
+    match corpus with
+    | Corpus.Bible -> Page(SurfaceMessage.Reader message)
+    | Corpus.Concord -> Page(SurfaceMessage.Concord(ConcordMessage.Reading message))
+
+let private withState (state: ReadingState) (model: Model) : Model =
+    match model.Surface with
+    | Surface.Reader page -> { model with Surface = Surface.Reader(readerPage (ReaderPage.location page) state) }
+    | Surface.Concord page -> { model with Surface = Surface.Concord(concordPage (ConcordPage.reference page) state) }
+    | _ -> failwith "the fixture requires a reading surface"
+
+let readerPage (location: ReadingLocation option) (state: ReadingState) : ReaderPage =
+    FSharpValue.MakeRecord(typeof<ReaderPage>, [|box location; box state|], true) |> unbox<ReaderPage>
+
+let private concordPage (reference: string option) (state: ReadingState) : ConcordPage =
+    FSharpValue.MakeRecord(typeof<ConcordPage>, [|box reference; box state|], true) |> unbox<ConcordPage>
+
+let private seedModel route steps : Model * Effect list =
+    [1..int steps] |> List.fold (fun (model, _) _ ->
+        let away, _ = Model.update (Navigate Route.NotFound) model
+        Model.update (Navigate route) away) (Model.init route)
+
+let private concordSession (model: Model) : Contents * ReadSession<TextWindow> =
+    match model.Surface with
+    | Surface.Concord page ->
+        match ConcordPage.state page with
+        | ReadingState.Active(contents, session) -> contents, session
+        | _ -> failwith "the fixture requires an active Concord reading"
+    | _ -> failwith "the fixture requires an active Concord reading"
+
+let private concordContents reference : Contents =
+    { contents with Corpus = Corpus.Concord; Roots = [{ contents.Roots.Head with Ref = reference; Locus = TextRef.Concord { Part = 1; Article = 1; Paragraph = 1 }; Children = [] }] }
+
+let private page index : TextWindow =
+    { Units = [{ Ref = $"page-{index}"; Node = { Id = $"TextUnit:page-{index}"; Kind = NodeKind.TextUnit; Label = $"Page {index}" }; Heading = None; EdgeSummary = []; Body = { Locus = TextRef.Concord { Part = 1; Article = 1; Paragraph = index }; Text = $"Page {index} body"; Anchors = []; WordsOfChrist = [] } }]
+      Next = Some $"next-{index}"; Version = "root" }
+
+let private surfaceFixtures request failure : Surface list =
+    let read = Reads.textWindow "served" None None None None
+    let pending = ReadSession.beginRead request read Empty
+    let window: TextWindow = { Units = []; Next = None; Version = "root" }
+    let ready = ReadSession.complete request (Ok window) pending
+    let failed = ReadSession.complete request (Error failure) pending
+    let states = [ReadingState.LoadingContents request; ReadingState.CouldNotLoadContents failure; ReadingState.Unavailable failure; ReadingState.Active(contents, pending); ReadingState.Active(contents, ready); ReadingState.Active(contents, failed)]
+    let source: SourcesDocument = { Categories = []; Sources = []; Provenances = None }
+    [yield! states |> List.map (fun state -> Surface.Reader(readerPage None state))
+     yield! states |> List.map (fun state -> Surface.Concord(concordPage None state))
+     yield! [Empty; Loading(request, None); Ready source; Failed(request, failure, Some source)] |> List.map Surface.Sources
+     yield Surface.World; yield Surface.Kretzmann; yield Surface.NotFound]
+
+let private surfaceMessages request failure : SurfaceMessage list =
+    let window: TextWindow = { Units = []; Next = None; Version = "root" }
+    let source: SourcesDocument = { Categories = []; Sources = []; Provenances = None }
+    let readings = [ReadingMessage.RetryContents; ReadingMessage.RetryText; ReadingMessage.ContentsLoaded(request, Ok contents); ReadingMessage.ContentsLoaded(request, Error failure); ReadingMessage.TextLoaded(request, Ok window); ReadingMessage.TextLoaded(request, Error failure)]
+    [yield! readings |> List.map SurfaceMessage.Reader
+     yield! readings |> List.map (ConcordMessage.Reading >> SurfaceMessage.Concord)
+     yield SurfaceMessage.Concord ConcordMessage.Next
+     yield SurfaceMessage.Sources SourcesMessage.Retry
+     yield SurfaceMessage.Sources(SourcesMessage.Loaded(request, Ok source))
+     yield SurfaceMessage.Sources(SourcesMessage.Loaded(request, Error failure))]
+
+let private owner surface =
+    match surface with
+    | Surface.Reader _ -> ReaderOwner
+    | Surface.Concord _ -> ConcordOwner
+    | Surface.Sources _ -> SourcesOwner
+    | Surface.World | Surface.Kretzmann | Surface.NotFound -> NoOwner
+
+let private messageOwner message =
+    match message with
+    | SurfaceMessage.Reader _ -> ReaderOwner
+    | SurfaceMessage.Concord _ -> ConcordOwner
+    | SurfaceMessage.Sources _ -> SourcesOwner
+
+let private requestAfter steps = [1 .. int steps] |> List.fold (fun identity _ -> RequestId.next identity) RequestId.initial
+
+let firstChapter: ContentsChild = { Id = "Container:bible-chapter-GEN-1"; Title = "1"; Kind = ContentsChildKind.Chapter; Ref = "GEN.1"; Locus = TextRef.Bible { Book = BookId.GEN; Chapter = 1; Verse = 1 }; Count = 31 }
 let contents: Contents = { Corpus = Corpus.Bible; Version = "root"; Roots = [{ Id = "Container:bible-book-GEN"; Title = "Genesis"; Kind = ContentsRootKind.Book; Group = Some Testament.OT; Ref = "GEN.1.1"; Locus = firstChapter.Locus; Children = [firstChapter] }] }
+let private concordPageSize = 20
+let private futureJourneyLength = 10_000
+type private SurfaceOwner = ReaderOwner | ConcordOwner | SourcesOwner | NoOwner

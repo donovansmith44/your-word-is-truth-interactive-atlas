@@ -10,7 +10,7 @@ open BibleAtlas.FSharp.Contract
 [<Fact>]
 let ``the reader renders the whole served chapter with anchored red letter text`` () =
     let model, _ = Model.init Route.Reader
-    let model = ModelTests.withReading { Units = [readingUnit]; Next = None; Version = "root" } { model with Contents = Map.ofList [Corpus.Bible, Ready ModelTests.contents] }
+    let model = ModelTests.withReading { Units = [readingUnit]; Next = None; Version = "root" } model
     use context = new BunitContext()
     let view = render context model ignore
     let expected = """<article class="reader-column"><h1 class="chapter-head"><span class="chapter-head-book">Genesis</span><span class="chapter-head-num">1</span></h1><div class="verse-line explorable" data-testid="verse-line-1" data-focal="false" id="v1" tabindex="0" role="button" aria-label="Explore Genesis 1:1"><button type="button" class="verse-num" data-testid="verse-num-1">1</button><span class="verse-text">😀 <span class="words-of-christ"><span class="verse-mention" data-testid="verse-mention-1-Place:served-place" tabindex="0" role="button" aria-label="Explore ab">ab</span> cd</span></span></div></article>"""
@@ -31,12 +31,12 @@ let ``a served reader anchor opens its typed position from the keyboard`` key =
 [<Fact>]
 let ``the reader shows a failed contents read with an explicit Retry`` () =
     let model, _ = Model.init Route.Reader
-    let model = { model with Contents = Map.ofList [Corpus.Bible, Failed(model.Serial, Transport "offline", None)] }
+    let model = { model with Surface = Surface.Reader(ModelTests.readerPage None (ReadingState.CouldNotLoadContents(Transport "offline"))) }
     let mutable messages = []
     use context = new BunitContext()
     let view = render context model (fun message -> messages <- message :: messages)
     (find view "[data-testid='could-not-load-retry']").Click()
-    Assert.Equal<Message list>([Retry], messages)
+    Assert.Equal<Message list>([Page(SurfaceMessage.Reader ReadingMessage.RetryContents)], messages)
 
 [<Fact>]
 let ``the Concord view renders the entire served paragraph and citation`` () =
@@ -111,7 +111,7 @@ let ``the served Concord continuation exposes Next through an Elmish message`` (
     let button = find view "[data-testid='concord-next']"
     button.MarkupMatches("""<button type="button" class="concord-nav-button" data-testid="concord-next">Next ›</button>""")
     button.Click()
-    Assert.Equal<Message list>([ReadNext], messages)
+    Assert.Equal<Message list>([Page(SurfaceMessage.Concord ConcordMessage.Next)], messages)
 
 [<Fact>]
 let ``a terminal Concord page offers no invented continuation`` () =
@@ -201,7 +201,7 @@ let ``an invalid text presentation retries by renewing the exploration`` () =
 let ``the source view composes the complete served source under its category`` () =
     let source = { Id = "test"; Category = "text"; Title = "Served source"; WhatItIs = "What it is"; WhatWeBuilt = "What we built"; License = "CC0"; LicensesRowKey = "test"; Link = Some "https://example.test/" }
     let model, _ = Model.init Route.Sources
-    let model = { model with Sources = Ready { Categories = [{ Id = "text"; Label = "Texts" }]; Sources = [source]; Provenances = None } }
+    let model = { model with Surface = Surface.Sources(Ready { Categories = [{ Id = "text"; Label = "Texts" }]; Sources = [source]; Provenances = None }) }
     use context = new BunitContext()
     let view = render context model (fun (_: Message) -> ())
     let expected = """<article class="source-card" data-testid="source-test"><h3 class="source-title">Served source</h3><p class="source-what">What it is</p><p class="source-built"><span class="source-label">What we built:</span> What we built</p><p class="source-license"><span class="source-label">License:</span> CC0</p><a class="source-link" data-testid="source-link-test" href="https://example.test/" target="_blank" rel="noopener noreferrer">Visit source</a></article>"""
@@ -210,12 +210,12 @@ let ``the source view composes the complete served source under its category`` (
 [<Fact>]
 let ``an explicit failure offers Retry and dispatches its message`` () =
     let model, _ = Model.init Route.Sources
-    let model = { model with Sources = Failed(model.Serial, Transport "offline", None) }
+    let model = { model with Surface = Surface.Sources(Failed(model.Serial, Transport "offline", None)) }
     let mutable messages = []
     use context = new BunitContext()
     let view = render context model (fun message -> messages <- message :: messages)
     (find view "[data-testid='could-not-load-retry']").Click()
-    Assert.Equal<Message list>([Retry], messages)
+    Assert.Equal<Message list>([Page(SurfaceMessage.Sources SourcesMessage.Retry)], messages)
 
 [<Fact>]
 let ``the shared header retains primary navigation translation and credits`` () =

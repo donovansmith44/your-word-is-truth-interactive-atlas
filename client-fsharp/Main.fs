@@ -22,7 +22,7 @@ type App() =
             model, commands effects
         let router =
             { new IRouter<Model, Message> with
-                member _.GetRoute model = (Routes.url model.Route).TrimStart('/')
+                member _.GetRoute model = (Routes.url (Model.route model)).TrimStart('/')
                 member _.SetRoute uri = Some(Navigate(Routes.parse (this.NavigationManager.ToAbsoluteUri uri)))
                 member _.NotFound = Some(Navigate Route.NotFound) }
         Program.mkProgram init update View.app

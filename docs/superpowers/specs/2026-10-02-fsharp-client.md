@@ -208,10 +208,6 @@ module Routes =
     val parse: System.Uri -> Route
     val url: Route -> string
 
-module Model =
-    val init: Route -> Model * Effect list
-    val update: Message -> Model -> Model * Effect list
-
 type Request<'a> = private Request of uri: string
 module Request =
     val uri: Request<'a> -> string
@@ -314,29 +310,9 @@ module ReadSession =
     val retry: RequestId -> ReadSession<'a> -> ReadSession<'a>
     val complete: RequestId -> Result<'a, Failure> -> ReadSession<'a> -> ReadSession<'a>
 
-[<RequireQualifiedAccess>]
-type ReadingState = Idle | Unavailable of RequestId * Failure | Active of ReadSession<TextWindow>
-
-type Model =
-    { Route: Route; Serial: RequestId; Contents: Map<Corpus, LoadState<Contents>>
-      ReadingSession: ReadingState; Sources: LoadState<SourcesDocument>; Focus: FocusState }
-    member Reading: LoadState<TextWindow>
-type Message =
-    | Navigate of Route | Retry | ReadNext
-    | ContentsLoaded of Corpus * RequestId * Result<Contents, Failure>
-    | TextLoaded of RequestId * Result<TextWindow, Failure>
-    | SourcesLoaded of RequestId * Result<SourcesDocument, Failure>
-    | OpenPosition of PositionRef | Traverse of Traversal | CloseFocus | RetryFocus
-    | FocusLoaded of RequestId * Result<Trail, Failure>
-type Effect =
-    | ReadContents of Corpus * RequestId
-    | ReadText of RequestId * Request<TextWindow>
-    | ReadSources of RequestId
-    | ReadOpening of RequestId * PositionRef
-    | WalkFocus of RequestId * Trail * Traversal
 ```
 
-Reading progress is derived from ReadingState. An unavailable opening carries its failure without an invented request; an active ReadSession owns its typed request and progress together, so Retry cannot reconstruct an earlier page from a route. ReadNext takes the server's next reference and replaces the single visible page; it never grows a list of earlier pages. Previous content is retained during the request and discarded on arrival. A duplicate turn while pending and a stale completion have no effect. Contents navigation will emit the existing typed Navigate message using served loci/references.
+Reading progress is owned by the closed Surface catalog below. An unavailable opening carries its failure without an invented request; an active ReadSession owns its typed request and progress together, so RetryText cannot reconstruct an earlier page from a route. Concord Next takes the server's next reference and replaces the single visible page; it never grows a list of earlier pages. Previous content is retained during the request and discarded on arrival. A duplicate turn while pending and a stale completion have no effect. Contents navigation will emit the existing typed Navigate message using served loci/references.
 
 The popover's initial presentation is a pure composition over a resolved node or edge. Field captions form a closed client vocabulary; all domain values remain served strings. TextUnit requires its served UnitText and returns a contract failure if absent. The popover view consumes the existing FocusState and dispatches CloseFocus, RetryFocus and Traverse Back/Renew; it owns no HTTP call or mutable component state. Frontiers, chips, saves and spatial anchoring remain required later slices.
 
@@ -359,3 +335,75 @@ module Presenter =
 ## Refactor verification
 
 FsCheck.Xunit 3.4.0 supplies generated laws. Generator tests vary schema identities, wire enum names, requiredness and nullability; contract-shape laws vary complete record payloads and enumerate every published record field and named scalar identity. The SDK FSharp.Compiler.Service parses authored/generated sources for a source-order law and checks that synthetic ascending helper/fixture examples are refused. This checkpoint covers module helpers and test fixtures; local bindings, public dependency ordering and the remaining example tests still require migration. The unused Cache abstraction has no application caller and is removed.
+
+## C2 surface refactor catalog
+
+The former Model product is replaced by one closed Surface. It carries only the page the user is visiting. Reading completions and Retry are routed to that surface; an obsolete message for another surface is a whole-model no-op. An unavailable opening has no fabricated request identity. Focus is orthogonal and remains owned by its existing request state machine. Contents live only with the active reading; shared/root-aware caching is later boundary work, not a hidden background page.
+
+```fsharp
+[<RequireQualifiedAccess>]
+type ReadingState =
+    | LoadingContents of RequestId
+    | CouldNotLoadContents of Failure
+    | Unavailable of Failure
+    | Active of Contents * ReadSession<TextWindow>
+type ReaderPage = private { Location: ReadingLocation option; State: ReadingState }
+type ConcordPage = private { Reference: string option; State: ReadingState }
+[<RequireQualifiedAccess>]
+type Surface =
+    | Reader of ReaderPage
+    | Concord of ConcordPage
+    | Sources of LoadState<SourcesDocument>
+    | World
+    | Kretzmann
+    | NotFound
+type Model = { Surface: Surface; Serial: RequestId; Focus: FocusState }
+[<RequireQualifiedAccess>]
+type ReadingMessage =
+    | RetryContents
+    | RetryText
+    | ContentsLoaded of RequestId * Result<Contents, Failure>
+    | TextLoaded of RequestId * Result<TextWindow, Failure>
+[<RequireQualifiedAccess>]
+type ConcordMessage = Reading of ReadingMessage | Next
+[<RequireQualifiedAccess>]
+type SourcesMessage = Retry | Loaded of RequestId * Result<SourcesDocument, Failure>
+[<RequireQualifiedAccess>]
+type SurfaceMessage =
+    | Reader of ReadingMessage
+    | Concord of ConcordMessage
+    | Sources of SourcesMessage
+type Message =
+    | Navigate of Route
+    | Page of SurfaceMessage
+    | OpenPosition of PositionRef
+    | Traverse of Traversal
+    | CloseFocus
+    | RetryFocus
+    | FocusLoaded of RequestId * Result<Trail, Failure>
+type Effect =
+    | ReadContents of Corpus * RequestId
+    | ReadText of Corpus * RequestId * Request<TextWindow>
+    | ReadSources of RequestId
+    | ReadOpening of RequestId * PositionRef
+    | WalkFocus of RequestId * Trail * Traversal
+module Model =
+    val init: Route -> Model * Effect list
+    val update: Message -> Model -> Model * Effect list
+    val route: Model -> Route
+```
+
+Private surface transitions match only their own messages and data. Common reading behavior is shared by the Reader and Concord transitions; Concord alone owns Next. The command interpreter maps a typed corpus to its closed reading-completion case. The view renders ReadingState directly instead of merging a reading state with a second contents product or fabricating a failed LoadState. Generated laws enumerate every SurfaceMessage against every surface/state fixture, vary payloads/request identities, and assert complete model/effect outcomes, including every noncurrent completion and cross-surface combination; matching transitions have focused generated laws. The remaining exhaustive matching-transition and focus-message algebra sweep is still open.
+
+Page construction is private to the model file. Views read only these projections; tests construct complete expected values through test-only reflection fixtures.
+
+```fsharp
+module ReaderPage =
+    val state: ReaderPage -> ReadingState
+    val location: ReaderPage -> ReadingLocation option
+module ConcordPage =
+    val state: ConcordPage -> ReadingState
+    val reference: ConcordPage -> string option
+```
+
+The model refuses a contents answer or text-unit locus from the wrong corpus before installing it in a private reading page. Same-route navigation is a no-op, preserving the live request instead of duplicating it through Bolero routing. A completed contents request and its subsequent text request receive separate identities. Full typed HTTP failures, artifact-root checks and cancellation remain the next boundary work.

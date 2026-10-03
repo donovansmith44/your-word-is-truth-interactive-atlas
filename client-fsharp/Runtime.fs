@@ -12,9 +12,9 @@ module rec Runtime =
         match effect with
         | ReadContents(corpus, request) ->
             let corpusName = JsonSerializer.Deserialize<string>(Json.encode corpus)
-            Cmd.OfAsync.perform (Api.read http CancellationToken.None) (Reads.contents corpusName) (fun answer -> ContentsLoaded(corpus, request, answer))
-        | ReadText(request, read) -> Cmd.OfAsync.perform (Api.read http CancellationToken.None) read (fun answer -> TextLoaded(request, answer))
-        | ReadSources request -> Cmd.OfAsync.perform (Api.read http CancellationToken.None) (Reads.sources()) (fun answer -> SourcesLoaded(request, answer))
+            Cmd.OfAsync.perform (Api.read http CancellationToken.None) (Reads.contents corpusName) (fun answer -> readingMessage corpus (ReadingMessage.ContentsLoaded(request, answer)))
+        | ReadText(corpus, request, read) -> Cmd.OfAsync.perform (Api.read http CancellationToken.None) read (fun answer -> readingMessage corpus (ReadingMessage.TextLoaded(request, answer)))
+        | ReadSources request -> Cmd.OfAsync.perform (Api.read http CancellationToken.None) (Reads.sources()) (fun answer -> Page(SurfaceMessage.Sources(SourcesMessage.Loaded(request, answer))))
         | ReadOpening(request, position) ->
             Cmd.OfAsync.perform (Explore.beginAt (Graph.explorer http)) position (fun answer -> FocusLoaded(request, answer))
         | WalkFocus(request, trail, traversal) ->
@@ -29,3 +29,8 @@ module rec Runtime =
         let! answer = Explore.run (Graph.explorer http) trail action
         return answer |> Result.map snd
     }
+
+    let private readingMessage (corpus: Corpus) (message: ReadingMessage) : Message =
+        match corpus with
+        | Corpus.Bible -> Page(SurfaceMessage.Reader message)
+        | Corpus.Concord -> Page(SurfaceMessage.Concord(ConcordMessage.Reading message))
