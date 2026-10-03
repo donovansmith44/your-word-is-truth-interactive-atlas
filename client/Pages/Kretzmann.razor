@@ -416,7 +416,7 @@
         _loadedBook = null;
         _loadedChapterNum = null;
 
-        (await request.Fetch(() => Atlas.Chapter(book, chapterNum), () => Atlas.ChapterText(book, chapterNum), () => Atlas.KretzmannChapter(book, chapterNum))).Match(
+        (await request.Fetch(() => Atlas.Chapter(LegacyNodeIds.Chapter(book, chapterNum)), () => Atlas.ChapterText(LegacyNodeIds.Chapter(book, chapterNum)), () => Atlas.KretzmannChapter(LegacyNodeIds.Chapter(book, chapterNum)))).Match(
             arrived: loaded => ShowChapter(book, chapterNum, loaded),
             failed: () =>
             {

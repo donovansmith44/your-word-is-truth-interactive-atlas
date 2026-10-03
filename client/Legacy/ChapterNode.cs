@@ -60,5 +60,5 @@ public sealed class ChapterNode : IExplorable
         return fragment;
     }
 
-    public Task<Chapter> Load(AtlasClient api) => _loaded.Get(() => AlreadyLoaded is { } already ? Task.FromResult(already) : api.Chapter(_book, _chapter));
+    public Task<Chapter> Load(AtlasClient api) => _loaded.Get(() => AlreadyLoaded is { } already ? Task.FromResult(already) : api.Chapter(LegacyNodeIds.Chapter(_book, _chapter)));
 }

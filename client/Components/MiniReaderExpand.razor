@@ -78,7 +78,7 @@ else
         if (_expanded && _chapter is null)
         {
             _error = null;
-            (await _chapters.Next().Fetch(() => Atlas.Chapter(Book, Chapter), () => Atlas.ChapterText(Book, Chapter))).Match(
+            (await _chapters.Next().Fetch(() => Atlas.Chapter(LegacyNodeIds.Chapter(Book, Chapter)), () => Atlas.ChapterText(LegacyNodeIds.Chapter(Book, Chapter)))).Match(
                 arrived: loaded => (_chapter, _text) = loaded,
                 failed: () => _error = "Couldn't load the chapter — check your connection and try again.",
                 superseded: () => { });

@@ -8,6 +8,8 @@ public static class LegacyNodeIds
 
     private const char KindSeparator = ':';
 
+    private const char ReferenceSeparator = '.';
+
     public static NodeId Of(NodeKind kind, string localPart)
     {
         var prefix = $"{(kind == NodeKind.TextUnit ? TextUnitKind : kind.WireName())}{KindSeparator}";
@@ -15,6 +17,8 @@ public static class LegacyNodeIds
             ? throw new FormatException($"'{localPart}' is already a node id; Of wants its local part")
             : Read<NodeId>(prefix + localPart);
     }
+
+    public static ChapterReference Chapter(string book, int chapter) => Read<ChapterReference>($"{book}{ReferenceSeparator}{chapter}");
 
     public static T Read<T>(string wire) where T : class =>
         JsonSerializer.Deserialize<T>(JsonSerializer.Serialize(wire)) ?? throw new FormatException($"'{wire}' does not read as a {typeof(T).Name}");

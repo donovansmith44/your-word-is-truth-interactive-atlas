@@ -103,6 +103,64 @@ public sealed class IdentityTypesTests
         Assert.Empty(readers);
     }
 
+    [Fact]
+    public async Task No_transport_read_takes_a_primitive_where_the_document_names_an_identity()
+    {
+        // Arrange
+        var document = await Published();
+        var identities = IdentityTypes.Of(document).Values.ToHashSet();
+        var reads = typeof(AtlasClient).GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
+            .Concat(typeof(IExplorableClient).GetMethods())
+            .Where(method => typeof(Task).IsAssignableFrom(method.ReturnType));
+
+        // Act
+        var primitives = reads
+            .SelectMany(method => method.GetParameters().Where(parameter => Primitive(parameter.ParameterType)).Select(parameter => $"{method.DeclaringType!.Name}.{method.Name}({parameter.Name})"))
+            .Order(StringComparer.Ordinal)
+            .ToList();
+        var identitiesAsked = PrimitiveReads.Values
+            .Where(asked => document.Operations.Single(operation => operation.Operation.OperationId == asked.Operation).Operation.ActualParameters.Single(parameter => parameter.Name == asked.Parameter) is { } parameter
+                && (parameter.Schema ?? parameter).ActualSchema is var schema && document.Definitions.Any(definition => ReferenceEquals(definition.Value, schema) && identities.Contains(definition.Key)))
+            .Select(asked => $"{asked.Operation} {asked.Parameter}")
+            .ToList();
+
+        // Assert
+        Assert.Equal((WholeValue.Of(PrimitiveReads.Keys.Order(StringComparer.Ordinal)), None), (WholeValue.Of(primitives), string.Join(", ", identitiesAsked)));
+    }
+
+    private static readonly IReadOnlyDictionary<string, (string Operation, string Parameter)> PrimitiveReads = new Dictionary<string, (string, string)>
+    {
+        ["AtlasClient.CatechismItem(id)"] = ("catechism_item", "id"),
+        ["AtlasClient.Event(id)"] = ("event", "id"),
+        ["AtlasClient.NarrativeEventPositions(eventId)"] = ("narrative_event_positions", "id"),
+        ["AtlasClient.Polities(from)"] = ("polities", "from"),
+        ["AtlasClient.Polities(to)"] = ("polities", "to"),
+        ["AtlasClient.SceneTime(from)"] = ("scene_time", "from"),
+        ["AtlasClient.SceneTime(to)"] = ("scene_time", "to"),
+        ["IExplorableClient.Edges(limit)"] = ("node_edges", "limit"),
+        ["IExplorableClient.Reading(n)"] = ("text_window", "n"),
+    };
+
+    private static bool Primitive(Type type) => (Nullable.GetUnderlyingType(type) ?? type) is var bare && (bare == typeof(string) || bare == typeof(int));
+
+    [Fact]
+    public async Task An_identity_s_wire_value_is_read_only_by_the_transport()
+    {
+        // Arrange
+        var document = await Published();
+        var generated = IdentityTypes.Of(document).Values.Select(name => typeof(NodeId).Assembly.GetType($"{ContractNamespace}.{name}")!).ToList();
+        var clientProjects = Directory.GetFiles(ConformanceTests.ClientRoot, "*.csproj", SearchOption.AllDirectories);
+
+        // Act
+        var unfenced = generated.Where(identity => identity.GetProperty(nameof(NodeId.Value))?.GetCustomAttribute<System.Diagnostics.CodeAnalysis.ExperimentalAttribute>()?.DiagnosticId != IdentityTypes.TransportOnly).Select(identity => identity.Name).ToList();
+        var optedIn = ConformanceTests.ClientSourceFiles().Concat(clientProjects).Where(file => File.ReadAllText(file).Contains(IdentityTypes.TransportOnly)).Select(file => Path.GetRelativePath(ConformanceTests.ClientRoot, file).Replace('\\', '/')).Order(StringComparer.Ordinal).ToList();
+
+        // Assert
+        Assert.Equal((None, WholeValue.Of(Transport)), (string.Join(", ", unfenced), WholeValue.Of(optedIn)));
+    }
+
+    private static readonly string[] Transport = ["AtlasClient.cs", "GraphExplorableClient.cs"];
+
     private static Task<OpenApiDocument> Published() =>
         OpenApiYamlDocument.FromFileAsync(Path.Combine(ConformanceTests.RepoRoot(), "contracts", "openapi.yaml"));
 

@@ -382,7 +382,7 @@
         _loadedBook = null;
         _loadedChapterNum = null;
 
-        (await request.Fetch(() => Atlas.Chapter(_book, _chapterNum), () => Atlas.ChapterText(_book, _chapterNum))).Match(
+        (await request.Fetch(() => Atlas.Chapter(LegacyNodeIds.Chapter(_book, _chapterNum)), () => Atlas.ChapterText(LegacyNodeIds.Chapter(_book, _chapterNum)))).Match(
             arrived: loaded =>
             {
                 (_chapter, _text) = loaded;

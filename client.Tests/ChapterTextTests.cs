@@ -30,7 +30,7 @@ public sealed class ChapterTextTests
         var atlas = new StubbedAtlas(Genesis1Opening);
 
         // Act
-        var text = await atlas.Client().ChapterText("GEN", 1);
+        var text = await atlas.Client().ChapterText(Wire.Read<ChapterReference>("GEN.1"));
 
         // Assert
         Assert.Equivalent((Genesis1Verse2, "/api/text?ref=GEN.1&scope=chapter"), (text.Verse(2), string.Join(" ", atlas.Asked)), strict: true);
@@ -44,8 +44,8 @@ public sealed class ChapterTextTests
         var client = atlas.Client();
 
         // Act
-        await client.ChapterText("GEN", 1);
-        await client.ChapterText("GEN", 1);
+        await client.ChapterText(Wire.Read<ChapterReference>("GEN.1"));
+        await client.ChapterText(Wire.Read<ChapterReference>("GEN.1"));
 
         // Assert
         Assert.Equal(["/api/text?ref=GEN.1&scope=chapter"], atlas.Asked);

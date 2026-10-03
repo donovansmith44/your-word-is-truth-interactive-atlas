@@ -162,7 +162,7 @@ public sealed class PassageTextSection : IPopoverSectionProvider
         var (book, chapter, focalFrom) = CanonRef.ParseVerse(CanonRef.FirstVerseOf(p.Title));
         var dash = p.Title.LastIndexOf('-');
         var focalTo = dash >= 0 && int.TryParse(p.Title[(dash + 1)..], out var toVerse) ? toVerse : focalFrom;
-        var focalVerses = (await api.ChapterText(book, chapter)).Between(focalFrom, focalTo);
+        var focalVerses = (await api.ChapterText(LegacyNodeIds.Chapter(book, chapter))).Between(focalFrom, focalTo);
 
         RenderFragment fragment = builder =>
         {
@@ -300,7 +300,7 @@ public sealed class PassageCrossRefsSection : IPopoverSectionProvider
     {
         var chapterKeys = targets.Where(t => t.Span is not null).Select(t => (t.Span!.Value.Book, t.Span.Value.Chapter)).Distinct().ToList();
         var chapters = new Dictionary<(string, int), ChapterText>();
-        var fetched = await Task.WhenAll(chapterKeys.Select(k => api.ChapterText(k.Item1, k.Item2)));
+        var fetched = await Task.WhenAll(chapterKeys.Select(k => api.ChapterText(LegacyNodeIds.Chapter(k.Item1, k.Item2))));
         foreach (var (key, chapter) in chapterKeys.Zip(fetched))
         {
             chapters[key] = chapter;
@@ -485,7 +485,7 @@ public sealed class CatechismScripturesSection : IPopoverSectionProvider
 
         var servedText = new Dictionary<string, TextUnit>();
         var chapterKeys = detail.Verses.Select(v => CanonRef.ParseVerse(v.Vref.ToString())).Select(p => (p.Book, p.Chapter)).Distinct().ToList();
-        var fetched = await Task.WhenAll(chapterKeys.Select(k => api.ChapterText(k.Book, k.Chapter)));
+        var fetched = await Task.WhenAll(chapterKeys.Select(k => api.ChapterText(LegacyNodeIds.Chapter(k.Book, k.Chapter))));
         foreach (var unit in fetched.SelectMany(chapterText => chapterText.Units))
         {
             servedText[unit.Ref.ToString()] = unit;
