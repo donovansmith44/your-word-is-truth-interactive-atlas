@@ -32,5 +32,8 @@
     "id": "Event:ab_ur",
     "kind": "Event",
     "label": "Terah's family leaves Ur",
-    "provenance": "curated"
+    "provenance": {
+        "id": "curated",
+        "title": "Our Own Curated Work"
+    }
 }

@@ -4,9 +4,9 @@
 @implements IDisposable
 
 <div class="popover-person-mentions">
-    @if (!string.IsNullOrEmpty(Provenance))
+    @if (Provenance is { } source)
     {
-        <p class="popover-meta" data-testid="popover-person-provenance">Source: @Provenance</p>
+        <p class="popover-meta" data-testid="popover-person-provenance">Source: @source.Title</p>
     }
 
     @if (ShowHeading)
@@ -49,7 +49,7 @@
 </div>
 
 @code {
-    [Parameter] public string? Provenance { get; set; }
+    [Parameter] public Provenance? Provenance { get; set; }
     [Parameter, EditorRequired] public PageWindow<Entry> Mentions { get; set; } = default!;
     [Parameter, EditorRequired] public int TotalCount { get; set; }
     [Parameter] public bool ShowHeading { get; set; } = true;

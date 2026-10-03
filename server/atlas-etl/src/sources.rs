@@ -1,6 +1,3 @@
-//! Parses the curated sources file and cross-validates it 1:1 against LICENSES.md, fail-loud, from both
-//! the generating binary and a test, so the test suite alone catches drift.
-
 use anyhow::{anyhow, bail, Context, Result};
 use atlas_core::sources::{ProvenanceEntry, SourceCategory, SourceEntry, SourcesDocument};
 use serde::Deserialize;

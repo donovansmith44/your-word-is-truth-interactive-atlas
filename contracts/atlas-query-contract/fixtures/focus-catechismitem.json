@@ -9,8 +9,11 @@
     "id": "CatechismItem:commandment-1",
     "kind": "CatechismItem",
     "label": "The First Commandment",
-    "provenance": "curated-catechism",
-    "version": "42a1c1192545a42724bfa16cf43ae3af"
+    "provenance": {
+      "id": "curated-catechism",
+      "title": "Catechism Verse Mapping"
+    },
+    "version": "eb0b1856c499edc3876913a577d843bf"
   },
   "status": 200
 }

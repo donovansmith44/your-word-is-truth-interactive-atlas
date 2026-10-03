@@ -109,7 +109,7 @@ internal sealed class ServedGraph : IExplorableClient
     public static EdgeRecord EdgeRecordOf(EdgeRef edge, NodeRef subject, NodeRef @object, params FrontierGroup[] groups) =>
         EdgeRecordOf(edge, subject, @object, Provenance, groups);
 
-    public static EdgeRecord EdgeRecordOf(EdgeRef edge, NodeRef subject, NodeRef @object, string? provenance, params FrontierGroup[] groups) =>
+    public static EdgeRecord EdgeRecordOf(EdgeRef edge, NodeRef subject, NodeRef @object, Provenance? provenance, params FrontierGroup[] groups) =>
         new(
             edgeSummary: Summary(groups), id: edge.Id, kind: edge.Kind, label: edge.Label, narrative: null,
             @object: At(@object), parentage: null, provenance: provenance, subject: At(subject), votes: null);

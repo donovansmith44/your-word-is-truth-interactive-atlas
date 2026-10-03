@@ -391,7 +391,7 @@ public sealed class AtlasClientTests
     public async Task NodeRecord_requests_the_generic_node_endpoint()
     {
         // Arrange
-        var (client, handler) = MakeClient("""{"id":"text-unit:JHN.3.16","kind":"TextUnit","label":"JHN.3.16","provenance":"kjv","edge_summary":[],"version":"v"}""");
+        var (client, handler) = MakeClient("""{"id":"text-unit:JHN.3.16","kind":"TextUnit","label":"JHN.3.16","provenance":{"id":"kjv","title":"The King James Version"},"edge_summary":[],"version":"v"}""");
         // Act
         await client.NodeRecord("text-unit:JHN.3.16");
         // Assert

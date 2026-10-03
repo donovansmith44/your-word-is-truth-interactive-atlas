@@ -5,7 +5,7 @@ export type Neighbour = Position;
 export type WordSpan = { from: { unit: { corpus: string; book: string; chapter: number; verse: number }; word: number }; to: { unit: { corpus: string; book: string; chapter: number; verse: number }; word: number } };
 export type EdgeEntry = { edge: EdgeRef; neighbour: Neighbour; loci?: WordSpan[] };
 export type EdgePage = { kind: string; entries: EdgeEntry[]; next: number | null; version: string };
-export type EdgeRecord = EdgeRef & { subject: Position; object: Position; provenance?: string; edge_summary: { kind: string; count: number }[] };
+export type EdgeRecord = EdgeRef & { subject: Position; object: Position; provenance?: { id: string; title: string }; edge_summary: { kind: string; count: number }[] };
 export type Element = { element: 'node'; node: NodeRef } | { element: 'edge'; edge: EdgeRecord } | { element: 'missing'; id: string };
 export type ElementPage = { elements: Element[]; version: string };
 

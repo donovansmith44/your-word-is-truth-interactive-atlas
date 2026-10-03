@@ -3,7 +3,7 @@ openapi: 3.1.0
 info:
   title: Bible Atlas API
   description: The Bible Atlas HTTP API, generated from the Rust that serves it. The `x-atlas-relations` extension lists every relation this atlas joins two nodes by, each with the label its forward and its inverse neighbours are asked for and the words each is displayed by, so a consumer builds its own vocabulary from that list rather than writing one out.
-  version: 0.28.0
+  version: 0.29.0
 paths:
   /api/books:
     get:
@@ -1020,7 +1020,7 @@ components:
         provenance:
           type: array
           items:
-            type: string
+            $ref: '#/components/schemas/Provenance'
         question:
           type:
           - string
@@ -1199,7 +1199,7 @@ components:
         provenance:
           type: array
           items:
-            type: string
+            $ref: '#/components/schemas/Provenance'
         target:
           type: string
         votes:
@@ -1403,9 +1403,9 @@ components:
           - $ref: '#/components/schemas/Parentage'
           - type: 'null'
         provenance:
-          type:
-          - string
-          - 'null'
+          oneOf:
+          - $ref: '#/components/schemas/Provenance'
+          - type: 'null'
         subject:
           $ref: '#/components/schemas/PositionRef'
         votes:
@@ -1566,7 +1566,7 @@ components:
         id:
           type: string
         provenance:
-          type: string
+          $ref: '#/components/schemas/Provenance'
         title:
           type: string
       additionalProperties: false
@@ -1647,13 +1647,13 @@ components:
         mentions_provenance:
           type: array
           items:
-            type: string
+            $ref: '#/components/schemas/Provenance'
         places:
           type: array
           items:
             $ref: '#/components/schemas/PlaceRef'
         provenance:
-          type: string
+          $ref: '#/components/schemas/Provenance'
         ref_note:
           type:
           - string
@@ -1675,7 +1675,7 @@ components:
         witnesses_provenance:
           type: array
           items:
-            type: string
+            $ref: '#/components/schemas/Provenance'
       additionalProperties: false
     EventWitness:
       type: object
@@ -2017,7 +2017,7 @@ components:
           - $ref: '#/components/schemas/PolityDetail'
           - type: 'null'
         provenance:
-          type: string
+          $ref: '#/components/schemas/Provenance'
         text:
           oneOf:
           - $ref: '#/components/schemas/UnitText'
@@ -2254,6 +2254,18 @@ components:
           edge: '#/components/schemas/EdgePosition'
           node: '#/components/schemas/NodePosition'
         propertyName: position
+    Provenance:
+      type: object
+      description: 'Where a record comes from: the provenance id it carries and the title of the source that id names.'
+      required:
+      - id
+      - title
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+      additionalProperties: false
     ProvenanceEntry:
       type: object
       description: The join between a provenance id as records carry it and the source that names, describes and licenses it.

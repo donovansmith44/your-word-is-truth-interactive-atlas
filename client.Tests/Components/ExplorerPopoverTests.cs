@@ -23,7 +23,7 @@ public sealed class ExplorerPopoverTests : BunitContext
             <div class="popover-section" data-testid="popover-section-card">
                 <p class="focus-title" data-testid="popover-card-title">The Exodus</p>
                 <dl class="focus-fields">
-                    <div class="focus-field" data-testid="popover-field-Provenance"><dt>Provenance</dt><dd>kjv</dd></div>
+                    <div class="focus-field" data-testid="popover-field-Provenance"><dt>Provenance</dt><dd>The King James Version</dd></div>
                 </dl>
             </div>
             <span class="focus-entry"><button type="button" class="focus-arrow explorable" data-testid="popover-next">The Wilderness ›</button><button type="button" class="focus-entry-edge explorable-quiet" data-testid="popover-entry-edge-follows-in-e:Narrative:wilderness" aria-label="e The Wilderness" title="e The Wilderness">&#8942;</button></span>

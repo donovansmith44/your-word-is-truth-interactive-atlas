@@ -42,11 +42,11 @@ public sealed class GraphPresenter : IPresenter
                 Field(EstablishedField, element.Record?.Place?.Established?.Label),
                 Field(DestroyedField, element.Record?.Place?.Destroyed?.Label),
                 Field(ReignField, element.Record?.Polity?.Reign.Label),
-                Field(ProvenanceField, element.Provenance?.Id),
+                Field(ProvenanceField, element.Provenance?.Title),
             }.OfType<Presentation.Field>().ToList());
 
     private static Presentation.Text TextOf(Explorable element, NodeRecord record) =>
-        new(Served(record.Text, record), new[] { Field(ProvenanceField, element.Provenance?.Id) }.OfType<Presentation.Field>().ToList());
+        new(Served(record.Text, record), new[] { Field(ProvenanceField, element.Provenance?.Title) }.OfType<Presentation.Field>().ToList());
 
     private static Presentation.Field? Field(string name, string? value) => value is null ? null : new Presentation.Field(name, value);
 

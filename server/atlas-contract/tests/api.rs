@@ -1,13 +1,17 @@
+mod common;
+
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use atlas_core::data::{demo_fixture, AtlasData, Canon, Event, EventWitness, Person, Place, Polity, PolityEra};
+use atlas_core::data::{AtlasData, Canon, Event, EventWitness, Person, Place, Polity, PolityEra};
 use atlas_core::time::TimeRange;
 use axum::body::Body;
 use axum::http::header::ACCESS_CONTROL_ALLOW_ORIGIN;
 use axum::http::{Request, StatusCode};
 use http_body_util::BodyExt;
 use tower::ServiceExt;
+
+use common::titled_fixture::titled_demo_fixture;
 
 fn graph_fixture_for(data: &AtlasData) -> Arc<atlas_graph::GraphService> {
     let xrefs_tsv = xrefs_tsv_from(data);
@@ -977,11 +981,4 @@ async fn static_dir_serves_files_api_still_wins_and_falls_back_to_index_for_spa_
     }
 
     std::fs::remove_dir_all(&dir).ok();
-}
-
-fn titled_demo_fixture() -> AtlasData {
-    let registry = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data/curated/sources.toml");
-    let mut data = demo_fixture();
-    data.provenance_titles = atlas_etl::sources::parse_sources(&std::fs::read_to_string(registry).unwrap()).unwrap().provenance_titles().unwrap();
-    data
 }

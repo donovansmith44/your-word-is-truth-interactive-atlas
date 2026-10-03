@@ -1,6 +1,8 @@
+mod common;
+
 use std::sync::Arc;
 
-use atlas_core::data::{demo_fixture, AtlasData};
+use common::titled_fixture::titled_demo_fixture;
 use axum::body::Body;
 use axum::http::{Request, StatusCode};
 use http_body_util::BodyExt;
@@ -81,11 +83,4 @@ async fn the_developer_docs_page_is_served_when_dev_docs_is_on() {
     let response = app.oneshot(Request::builder().uri("/swagger-ui/").body(Body::empty()).unwrap()).await.unwrap();
     // Assert
     assert_eq!(response.status(), StatusCode::OK);
-}
-
-fn titled_demo_fixture() -> AtlasData {
-    let registry = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data/curated/sources.toml");
-    let mut data = demo_fixture();
-    data.provenance_titles = atlas_etl::sources::parse_sources(&std::fs::read_to_string(registry).unwrap()).unwrap().provenance_titles().unwrap();
-    data
 }

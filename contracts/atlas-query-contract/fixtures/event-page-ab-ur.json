@@ -13,7 +13,10 @@
         }
       }
     ],
-    "provenance": "curated",
+    "provenance": {
+      "id": "curated",
+      "title": "Our Own Curated Work"
+    },
     "title": "Terah's family leaves Ur",
     "when": {
       "from_year": -2100,
@@ -36,7 +39,10 @@
       }
     ],
     "witnesses_provenance": [
-      "event-witnesses"
+      {
+        "id": "event-witnesses",
+        "title": "Our Own Curated Work"
+      }
     ]
   },
   "status": 200

@@ -22,8 +22,11 @@
         }
       }
     },
-    "provenance": "curated-polities",
-    "version": "42a1c1192545a42724bfa16cf43ae3af"
+    "provenance": {
+      "id": "curated-polities",
+      "title": "Our Own Curated Work"
+    },
+    "version": "eb0b1856c499edc3876913a577d843bf"
   },
   "status": 200
 }

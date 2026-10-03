@@ -59,7 +59,7 @@ public sealed class FocusViewTests : BunitContext
         <div class="popover-section" data-testid="popover-section-card">
             <p class="focus-title" data-testid="popover-card-title">Genesis 2</p>
             <dl class="focus-fields">
-                <div class="focus-field" data-testid="popover-field-Provenance"><dt>Provenance</dt><dd>kjv</dd></div>
+                <div class="focus-field" data-testid="popover-field-Provenance"><dt>Provenance</dt><dd>The King James Version</dd></div>
             </dl>
         </div>
         <span class="focus-entry"><button type="button" class="focus-arrow explorable" data-testid="popover-prev">‹ Genesis 1</button>{{EdgeStep(EdgeKind.PrecedesIn, Genesis1)}}</span>
@@ -106,7 +106,7 @@ public sealed class FocusViewTests : BunitContext
         <div class="popover-section" data-testid="popover-section-card">
             <p class="focus-title" data-testid="popover-card-title">Adam</p>
             <dl class="focus-fields">
-                <div class="focus-field" data-testid="popover-field-Provenance"><dt>Provenance</dt><dd>kjv</dd></div>
+                <div class="focus-field" data-testid="popover-field-Provenance"><dt>Provenance</dt><dd>The King James Version</dd></div>
             </dl>
         </div>
         <div class="popover-section" data-testid="popover-section-mentioned-in">
@@ -120,7 +120,7 @@ public sealed class FocusViewTests : BunitContext
         <div class="popover-section" data-testid="popover-section-card">
             <p class="focus-title" data-testid="popover-card-title">Eden</p>
             <dl class="focus-fields">
-                <div class="focus-field" data-testid="popover-field-Provenance"><dt>Provenance</dt><dd>kjv</dd></div>
+                <div class="focus-field" data-testid="popover-field-Provenance"><dt>Provenance</dt><dd>The King James Version</dd></div>
             </dl>
         </div>
         """;
@@ -295,7 +295,7 @@ public sealed class FocusViewTests : BunitContext
             <div class="popover-section" data-testid="popover-section-card">
                 <p class="focus-title" data-testid="popover-card-title">GEN.2.1 · Mentions · Eden</p>
                 <dl class="focus-fields">
-                    <div class="focus-field" data-testid="popover-field-Provenance"><dt>Provenance</dt><dd>kjv</dd></div>
+                    <div class="focus-field" data-testid="popover-field-Provenance"><dt>Provenance</dt><dd>The King James Version</dd></div>
                 </dl>
             </div>
             """);
@@ -1012,7 +1012,7 @@ public sealed class FocusViewTests : BunitContext
         // Assert
         view.Find(".focus-fields").MarkupMatches("""
             <dl class="focus-fields">
-                <div class="focus-field" data-testid="popover-field-Provenance"><dt>Provenance</dt><dd>kjv</dd></div>
+                <div class="focus-field" data-testid="popover-field-Provenance"><dt>Provenance</dt><dd>The King James Version</dd></div>
             </dl>
             """);
     }

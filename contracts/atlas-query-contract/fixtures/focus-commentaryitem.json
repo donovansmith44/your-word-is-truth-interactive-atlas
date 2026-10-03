@@ -10,8 +10,11 @@
     "id": "CommentaryItem:kretzmann/0.1.0",
     "kind": "CommentaryItem",
     "label": "The Creation of the World.: The Creation of Chaos and Light",
-    "provenance": "kretzmann/genesis/1",
-    "version": "42a1c1192545a42724bfa16cf43ae3af"
+    "provenance": {
+      "id": "kretzmann/genesis/1",
+      "title": "Kretzmann's Popular Commentary of the Bible"
+    },
+    "version": "eb0b1856c499edc3876913a577d843bf"
   },
   "status": 200
 }

@@ -29,7 +29,10 @@
     "id": "text-unit:JHN.3.16",
     "kind": "TextUnit",
     "label": "JHN.3.16",
-    "provenance": "kjv",
+    "provenance": {
+      "id": "kjv",
+      "title": "The King James Version"
+    },
     "text": {
       "anchors": [
         {
@@ -67,7 +70,7 @@
         }
       ]
     },
-    "version": "42a1c1192545a42724bfa16cf43ae3af"
+    "version": "eb0b1856c499edc3876913a577d843bf"
   },
   "status": 200
 }

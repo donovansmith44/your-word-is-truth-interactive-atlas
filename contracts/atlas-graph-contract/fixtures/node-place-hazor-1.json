@@ -16,5 +16,8 @@
     "id": "Place:hazor-1",
     "kind": "Place",
     "label": "Hazor",
-    "provenance": "curated-places"
+    "provenance": {
+        "id": "curated-places",
+        "title": "Our Own Curated Work"
+    }
 }

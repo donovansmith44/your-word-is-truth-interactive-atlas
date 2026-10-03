@@ -146,7 +146,7 @@ fn run(args: &[String]) -> Result<String, CliError> {
         "node" => {
             let id_raw = one_positional(&rest, "node", "<id>")?;
             let loaded = load::load(&data_dir)?;
-            commands::node::run(&loaded.graph, id_raw)
+            commands::node::run(&loaded.data, &loaded.graph, id_raw)
         }
         "edges" => {
             let (id_raw, kind_raw, limit, cursor) = parse_edges_args(&rest)?;
@@ -215,7 +215,7 @@ fn run_json(args: &[String]) -> Result<serde_json::Value, CliError> {
         "node" => {
             let id_raw = one_positional(&rest, "node", "<id>")?;
             let loaded = load::load(&data_dir)?;
-            commands::node::run_json(&loaded.graph, id_raw)
+            commands::node::run_json(&loaded.data, &loaded.graph, id_raw)
         }
         "edges" => {
             let (id_raw, kind_raw, limit, cursor) = parse_edges_args(&rest)?;
