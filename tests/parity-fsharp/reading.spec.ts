@@ -40,6 +40,9 @@ test('the reader composes the served chapter text and requests a clicked anchor 
     await page.locator('.verse-mention').first().focus();
     await page.keyboard.press('Enter');
     await anchorRead;
+    await expect(page.getByTestId('popover-card-title')).toHaveText(window.units[0].body.anchors[0].node.label);
+    await page.getByTestId('popover-close').click();
+    await expect(page.getByTestId('popover')).toHaveCount(0);
     expect(requests).toEqual([
         { path: '/api/contents/bible', query: [] },
         { path: '/api/text', query: [['ref', 'JHN.3'], ['scope', 'chapter'], ['corpus', 'bible']] },
@@ -75,5 +78,41 @@ test('Concord loads a bounded page and retains its served citation text', async 
     expect(requests).toEqual([
         { path: '/api/contents/concord', query: [] },
         { path: '/api/text', query: [['ref', unit.ref], ['n', '20'], ['corpus', 'concord']] },
+    ]);
+});
+
+test('Concord retries the failed next page without reopening the old page or growing the reading', async ({ page }) => {
+    const contents = fixture('contents-concord');
+    const firstRef = contents.roots[0].ref;
+    const nextRef = 'BoC 1.1.21';
+    const unit = (reference: string, body: string) => ({
+        ref: reference, node: { id: `TextUnit:${reference}`, kind: 'TextUnit', label: reference },
+        edge_summary: [], heading: null,
+        body: { text: body, locus: contents.roots[0].locus, anchors: [], words_of_christ: [] },
+    });
+    const first = unit(firstRef, 'First served page.');
+    const next = unit(nextRef, 'Next served page.');
+    const requests: { path: string, query: [string, string][] }[] = [];
+    let nextAttempts = 0;
+    await page.route('**/api/**', route => {
+        const uri = new URL(route.request().url());
+        requests.push({ path: uri.pathname, query: [...uri.searchParams] });
+        if (uri.pathname === '/api/contents/concord') return route.fulfill({ json: contents, headers });
+        if (uri.searchParams.get('ref') === firstRef) return route.fulfill({ json: { units: [first], next: nextRef, version: contents.version }, headers });
+        if (++nextAttempts === 1) return route.fulfill({ status: 503, json: { error: { code: 'unavailable', message: 'offline' } }, headers });
+        return route.fulfill({ json: { units: [next], next: null, version: contents.version }, headers });
+    });
+    await page.goto('/concord');
+    await page.getByTestId('concord-next').click();
+    await page.getByTestId('could-not-load-retry').click();
+    await expect(page.locator('.concord-unit')).toHaveCount(1);
+    expect(await page.locator('.concord-unit').allTextContents()).toEqual([nextRef + next.body.text]);
+    await expect(page.getByTestId('concord-next')).toHaveCount(0);
+    const nextQuery: [string, string][] = [['ref', nextRef], ['n', '20'], ['dir', 'onward'], ['corpus', 'concord']];
+    expect(requests).toEqual([
+        { path: '/api/contents/concord', query: [] },
+        { path: '/api/text', query: [['ref', firstRef], ['n', '20'], ['corpus', 'concord']] },
+        { path: '/api/text', query: nextQuery },
+        { path: '/api/text', query: nextQuery },
     ]);
 });

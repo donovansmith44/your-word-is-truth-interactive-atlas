@@ -17,6 +17,7 @@ module View =
                     | Route.Concord _ -> concord model dispatch
                     | Route.World | Route.Kretzmann | Route.NotFound -> Node.Empty()
             }
+            focus model.Focus dispatch
         }
 
     and private headerView () : Node =
@@ -62,7 +63,7 @@ module View =
                 }
                 cond state <| function
                     | Empty | Loading _ -> p { attr.``class`` "sources-loading"; "Loading sources…" }
-                    | Failed _ -> failed dispatch
+                    | Failed _ -> failed Retry dispatch
                     | Ready document ->
                         let categories = document.Sources |> List.groupBy _.Category |> Map.ofList
                         forEach document.Categories <| fun category ->
@@ -87,7 +88,7 @@ module View =
                 "data-testid" => "reader-root"
                 cond (readingState Corpus.Bible model) <| function
                     | Empty | Loading _ -> p { attr.``class`` "reader-loading"; "Loading…" }
-                    | Failed _ -> failed dispatch
+                    | Failed _ -> failed Retry dispatch
                     | Ready window ->
                         article {
                             attr.``class`` "reader-column"
@@ -174,28 +175,45 @@ module View =
                     p { attr.``class`` "concord-intro"; "The Lutheran confessions of 1580 — the church's own confession, subordinate to the Scripture it confesses." }
                     cond (readingState Corpus.Concord model) <| function
                         | Empty | Loading _ -> p { attr.``class`` "concord-loading"; "Loading…" }
-                        | Failed _ -> failed dispatch
-                        | Ready window -> forEach window.Units <| fun unit ->
-                            div {
-                                let explorable = not unit.EdgeSummary.IsEmpty
-                                let interactive =
-                                    if explorable then
-                                        attrs {
-                                            attr.tabindex 0
-                                            "role" => "button"
-                                            "aria-label" => ("Explore " + unit.Node.Label)
-                                            on.click (fun _ -> openNode unit.Node dispatch)
-                                            on.keydown (fun event -> activate event unit.Node dispatch)
-                                        }
-                                    else Attr.Empty()
-                                attr.``class`` (if explorable then "concord-unit explorable" else "concord-unit")
-                                "data-testid" => ("concord-unit-" + unit.Node.Id)
-                                interactive
-                                span { attr.``class`` "concord-unit-ref"; unit.Ref }
-                                anchoredText unit.Body (fun piece ->
-                                    match piece.Anchor with
-                                    | None -> text piece.Text
-                                    | Some anchor -> textPiece "concord-ref" $"concord-ref-{unit.Node.Id}-{anchor.Start}" piece anchor dispatch)
+                        | Failed _ -> failed Retry dispatch
+                        | Ready window ->
+                            concat {
+                                forEach window.Units <| fun unit ->
+                                    div {
+                                        let explorable = not unit.EdgeSummary.IsEmpty
+                                        let interactive =
+                                            if explorable then
+                                                attrs {
+                                                    attr.tabindex 0
+                                                    "role" => "button"
+                                                    "aria-label" => ("Explore " + unit.Node.Label)
+                                                    on.click (fun _ -> openNode unit.Node dispatch)
+                                                    on.keydown (fun event -> activate event unit.Node dispatch)
+                                                }
+                                            else Attr.Empty()
+                                        attr.``class`` (if explorable then "concord-unit explorable" else "concord-unit")
+                                        "data-testid" => ("concord-unit-" + unit.Node.Id)
+                                        interactive
+                                        span { attr.``class`` "concord-unit-ref"; unit.Ref }
+                                        anchoredText unit.Body (fun piece ->
+                                            match piece.Anchor with
+                                            | None -> text piece.Text
+                                            | Some anchor -> textPiece "concord-ref" $"concord-ref-{unit.Node.Id}-{anchor.Start}" piece anchor dispatch)
+                                    }
+                                nav {
+                                    attr.``class`` "concord-nav"
+                                    "aria-label" => "Concord navigation"
+                                    cond window.Next <| function
+                                        | None -> Node.Empty()
+                                        | Some _ ->
+                                            button {
+                                                attr.``type`` "button"
+                                                attr.``class`` "concord-nav-button"
+                                                "data-testid" => "concord-next"
+                                                on.click (fun _ -> dispatch ReadNext)
+                                                "Next ›"
+                                            }
+                                }
                             }
                 }
             }
@@ -252,14 +270,117 @@ module View =
         | "Enter" | " " -> openNode node dispatch
         | _ -> ()
 
-    and private failed dispatch : Node =
+    and private focus state dispatch : Node =
+        cond state <| function
+            | FocusState.Closed -> Node.Empty()
+            | FocusState.Opening(_, position) -> popover position None (p { attr.``class`` "popover-meta"; "Loading…" }) dispatch
+            | FocusState.Opened trail -> popover (Resolved.position (Trail.current trail)) (Some trail) (presentation (Trail.current trail) dispatch) dispatch
+            | FocusState.Walking(_, trail, _) -> popover (Resolved.position (Trail.current trail)) (Some trail) (p { attr.``class`` "popover-meta"; "Loading…" }) dispatch
+            | FocusState.CouldNotOpen(position, _) -> popover position None (failed RetryFocus dispatch) dispatch
+            | FocusState.CouldNotWalk(trail, _, _) -> popover (Resolved.position (Trail.current trail)) (Some trail) (failed RetryFocus dispatch) dispatch
+
+    and private popover position trail body dispatch : Node =
+        let title =
+            match position with
+            | PositionRef.Node node -> node.Node.Label
+            | PositionRef.Edge edge -> edge.Edge.Label
+        let isText =
+            match position with
+            | PositionRef.Node node -> node.Node.Kind = NodeKind.TextUnit
+            | PositionRef.Edge _ -> false
+        concat {
+            div {
+                attr.``class`` "popover-backdrop"
+                "data-testid" => "popover-backdrop"
+                on.click (fun _ -> dispatch CloseFocus)
+            }
+            div {
+                attr.``class`` "popover"
+                "data-testid" => "popover"
+                attr.tabindex -1
+                on.keydown (fun event -> if event.Key = "Escape" then dispatch CloseFocus)
+                div {
+                    attr.``class`` "popover-head"
+                    cond trail <| function
+                        | Some trail when not (Trail.breadcrumb trail).IsEmpty ->
+                            button {
+                                attr.``type`` "button"
+                                attr.``class`` "popover-breadcrumb-back"
+                                "data-testid" => "popover-breadcrumb-back"
+                                "aria-label" => "Back"
+                                attr.title "Back"
+                                on.click (fun _ -> dispatch (Traverse Traversal.Back))
+                                "‹"
+                            }
+                        | None | Some _ -> Node.Empty()
+                    p { attr.``class`` "popover-title"; "data-testid" => "popover-title"; "data-ref" => (if isText then "true" else "false"); title }
+                    button {
+                        attr.``type`` "button"
+                        attr.``class`` "popover-close"
+                        "data-testid" => "popover-close"
+                        "aria-label" => "Close"
+                        attr.title "Close"
+                        on.click (fun _ -> dispatch CloseFocus)
+                        "×"
+                    }
+                }
+                div { attr.``class`` "popover-body"; "data-testid" => "popover-body"; body }
+            }
+        }
+
+    and private presentation element dispatch : Node =
+        cond (Presenter.popover element) <| function
+            | Error _ -> failed (Traverse Traversal.Renew) dispatch
+            | Ok(PopoverPresentation.Card card) ->
+                div {
+                    attr.``class`` "popover-section"
+                    "data-testid" => "popover-section-card"
+                    p { attr.``class`` "focus-title"; "data-testid" => "popover-card-title"; card.Title }
+                    presentationFields card.Fields
+                }
+            | Ok(PopoverPresentation.Text text) ->
+                div {
+                    attr.``class`` "popover-section"
+                    "data-testid" => "popover-section-text"
+                    p {
+                        attr.``class`` "focus-text"
+                        "data-testid" => "popover-text"
+                        anchoredText text.Unit (fun piece ->
+                            match piece.Anchor with
+                            | None -> Bolero.Html.text piece.Text
+                            | Some anchor ->
+                                button {
+                                    attr.``type`` "button"
+                                    attr.``class`` "focus-anchor explorable"
+                                    "data-testid" => $"popover-anchor-{anchor.Node.Id}-{anchor.Start}"
+                                    on.click (fun _ -> dispatch (Traverse(Traversal.Follow { Kind = anchor.Kind; Target = PositionRef.Node { Node = anchor.Node } })))
+                                    piece.Text
+                                })
+                    }
+                    presentationFields text.Fields
+                }
+
+    and private presentationFields fields : Node =
+        dl {
+            attr.``class`` "focus-fields"
+            forEach fields <| fun field ->
+                div {
+                    let caption = Presenter.caption field.Name
+                    attr.``class`` "focus-field"
+                    "data-testid" => ("popover-field-" + caption)
+                    dt { caption }
+                    dd { field.Value }
+                }
+        }
+
+    and private failed message dispatch : Node =
         concat {
             p { attr.``class`` "popover-meta"; "data-testid" => "could-not-load"; "Couldn't load this — check your connection and try again." }
             button {
                 attr.``type`` "button"
                 attr.``class`` "popover-reveal-link explorable-quiet"
                 "data-testid" => "could-not-load-retry"
-                on.click (fun _ -> dispatch Retry)
+                on.click (fun _ -> dispatch message)
                 "Try again"
             }
         }

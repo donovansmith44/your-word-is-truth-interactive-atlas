@@ -22,6 +22,11 @@ type Resolved =
     | EdgeResolved of root: string * edge: EdgeRecord
 
 module Resolved =
+    let fold node edge resolved =
+        match resolved with
+        | NodeResolved(_, record) -> node record
+        | EdgeResolved(_, record) -> edge record
+
     let ofElement root element =
         match element with
         | Element.Node node ->

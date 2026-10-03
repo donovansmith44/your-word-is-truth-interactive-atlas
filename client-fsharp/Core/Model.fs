@@ -60,17 +60,26 @@ type FocusState =
     | CouldNotOpen of PositionRef * Failure
     | CouldNotWalk of Trail * Traversal * Failure
 
+[<RequireQualifiedAccess>]
+type ReadingState = Idle | Unavailable of RequestId * Failure | Active of ReadSession<TextWindow>
+
 type Model =
     { Route: Route
       Serial: RequestId
       Contents: Map<Corpus, LoadState<Contents>>
-      Reading: LoadState<TextWindow>
+      ReadingSession: ReadingState
       Sources: LoadState<SourcesDocument>
       Focus: FocusState }
+    member this.Reading =
+        match this.ReadingSession with
+        | ReadingState.Idle -> Empty
+        | ReadingState.Unavailable(identity, failure) -> Failed(identity, failure, None)
+        | ReadingState.Active session -> ReadSession.state session
 
 type Message =
     | Navigate of Route
     | Retry
+    | ReadNext
     | ContentsLoaded of Corpus * RequestId * Result<Contents, Failure>
     | TextLoaded of RequestId * Result<TextWindow, Failure>
     | SourcesLoaded of RequestId * Result<SourcesDocument, Failure>
@@ -91,20 +100,41 @@ module Model =
     let private concordPageSize = 20
 
     let rec init route =
-        loadView { Route = route; Serial = RequestId.initial; Contents = Map.empty; Reading = Empty; Sources = Empty; Focus = FocusState.Closed }
+        loadView { Route = route; Serial = RequestId.initial; Contents = Map.empty; ReadingSession = ReadingState.Idle; Sources = Empty; Focus = FocusState.Closed }
 
     and update message model =
         match message with
-        | Navigate route -> loadView { model with Route = route; Serial = RequestId.next model.Serial; Reading = Empty; Focus = FocusState.Closed }
+        | Navigate route -> loadView { model with Route = route; Serial = RequestId.next model.Serial; ReadingSession = ReadingState.Idle; Focus = FocusState.Closed }
+        | ReadNext ->
+            match model.Route, model.Reading with
+            | Route.Concord _, Ready window ->
+                match window.Next with
+                | Some reference ->
+                    beginReading (Reads.textWindow reference (Some concordPageSize) (Some WindowDir.Onward) None (Some Corpus.Concord)) { model with Serial = RequestId.next model.Serial; Focus = FocusState.Closed }
+                | None -> model, []
+            | Route.Reader, _ | Route.Read _, _ | Route.World, _ | Route.Kretzmann, _ | Route.Sources, _ | Route.NotFound, _
+            | Route.Concord _, Empty | Route.Concord _, Loading _ | Route.Concord _, Failed _ -> model, []
         | Retry ->
             let reset state = match state with Failed _ -> Empty | Empty | Loading _ | Ready _ -> state
-            loadView { model with Serial = RequestId.next model.Serial; Contents = Map.map (fun _ state -> reset state) model.Contents; Reading = reset model.Reading; Sources = reset model.Sources }
+            let model = { model with Serial = RequestId.next model.Serial; Contents = Map.map (fun _ state -> reset state) model.Contents; Sources = reset model.Sources }
+            match model.ReadingSession with
+            | ReadingState.Active session ->
+                match ReadSession.state session with
+                | Failed _ ->
+                    let session = ReadSession.retry model.Serial session
+                    { model with ReadingSession = ReadingState.Active session }, [ReadText(model.Serial, ReadSession.request session)]
+                | Empty | Loading _ | Ready _ -> loadView model
+            | ReadingState.Unavailable _ -> loadView { model with ReadingSession = ReadingState.Idle }
+            | ReadingState.Idle -> loadView model
         | ContentsLoaded(corpus, request, answer) ->
             let previous = Map.tryFind corpus model.Contents |> Option.defaultValue Empty
             let complete = LoadState.complete request answer previous
             if previous = complete then model, []
             else loadView { model with Contents = Map.add corpus complete model.Contents }
-        | TextLoaded(request, answer) -> { model with Reading = LoadState.complete request answer model.Reading }, []
+        | TextLoaded(request, answer) ->
+            match model.ReadingSession with
+            | ReadingState.Active session -> { model with ReadingSession = ReadingState.Active(ReadSession.complete request answer session) }, []
+            | ReadingState.Idle | ReadingState.Unavailable _ -> model, []
         | SourcesLoaded(request, answer) -> { model with Sources = LoadState.complete request answer model.Sources }, []
         | OpenPosition position ->
             let request = RequestId.next model.Serial
@@ -147,9 +177,13 @@ module Model =
             match opening model.Route contents with
             | Some(reference, scope) ->
                 let size = match corpus with Corpus.Bible -> None | Corpus.Concord -> Some concordPageSize
-                { model with Reading = Loading(model.Serial, None) }, [ReadText(model.Serial, Reads.textWindow reference size None scope (Some corpus))]
-            | None -> { model with Reading = Failed(model.Serial, Contract "the requested reading has no opening in the served contents", None) }, []
+                beginReading (Reads.textWindow reference size None scope (Some corpus)) model
+            | None -> { model with ReadingSession = ReadingState.Unavailable(model.Serial, Contract "the requested reading has no opening in the served contents") }, []
         | Loading _, _ | Failed _, _ | Ready _, Loading _ | Ready _, Ready _ | Ready _, Failed _ -> model, []
+
+    and private beginReading request model =
+        let session = ReadSession.beginRead model.Serial request model.Reading
+        { model with ReadingSession = ReadingState.Active session }, [ReadText(model.Serial, ReadSession.request session)]
 
     and private opening route (contents: Contents) =
         match route with

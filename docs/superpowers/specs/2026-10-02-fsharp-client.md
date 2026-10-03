@@ -215,9 +215,6 @@ module Routes =
     val parse: System.Uri -> Route
     val url: Route -> string
 
-type Model = { Route: Route; Serial: RequestId; Contents: Map<Corpus, LoadState<Contents>>; Reading: LoadState<TextWindow>; Sources: LoadState<SourcesDocument> }
-type Message = Navigate of Route | Retry | ContentsLoaded of Corpus * RequestId * Result<Contents, Failure> | TextLoaded of RequestId * Result<TextWindow, Failure> | SourcesLoaded of RequestId * Result<SourcesDocument, Failure>
-type Effect = ReadContents of Corpus * RequestId | ReadText of RequestId * Request<TextWindow> | ReadSources of RequestId
 module Model =
     val init: Route -> Model * Effect list
     val update: Message -> Model -> Model * Effect list
@@ -316,9 +313,23 @@ type FocusState =
     | CouldNotOpen of PositionRef * Failure
     | CouldNotWalk of Trail * Traversal * Failure
 
-type Model = { Route: Route; Serial: RequestId; Contents: Map<Corpus, LoadState<Contents>>; Reading: LoadState<TextWindow>; Sources: LoadState<SourcesDocument>; Focus: FocusState }
+type ReadSession<'a> = private { Request: Request<'a>; State: LoadState<'a> }
+module ReadSession =
+    val beginRead: RequestId -> Request<'a> -> LoadState<'a> -> ReadSession<'a>
+    val state: ReadSession<'a> -> LoadState<'a>
+    val request: ReadSession<'a> -> Request<'a>
+    val retry: RequestId -> ReadSession<'a> -> ReadSession<'a>
+    val complete: RequestId -> Result<'a, Failure> -> ReadSession<'a> -> ReadSession<'a>
+
+[<RequireQualifiedAccess>]
+type ReadingState = Idle | Unavailable of RequestId * Failure | Active of ReadSession<TextWindow>
+
+type Model =
+    { Route: Route; Serial: RequestId; Contents: Map<Corpus, LoadState<Contents>>
+      ReadingSession: ReadingState; Sources: LoadState<SourcesDocument>; Focus: FocusState }
+    member Reading: LoadState<TextWindow>
 type Message =
-    | Navigate of Route | Retry
+    | Navigate of Route | Retry | ReadNext
     | ContentsLoaded of Corpus * RequestId * Result<Contents, Failure>
     | TextLoaded of RequestId * Result<TextWindow, Failure>
     | SourcesLoaded of RequestId * Result<SourcesDocument, Failure>
@@ -330,4 +341,24 @@ type Effect =
     | ReadSources of RequestId
     | ReadOpening of RequestId * PositionRef
     | WalkFocus of RequestId * Trail * Traversal
+```
+
+Reading progress is derived from ReadingState. An unavailable opening carries its failure without an invented request; an active ReadSession owns its typed request and progress together, so Retry cannot reconstruct an earlier page from a route. ReadNext takes the server's next reference and replaces the single visible page; it never grows a list of earlier pages. Previous content is retained during the request and discarded on arrival. A duplicate turn while pending and a stale completion have no effect. Contents navigation will emit the existing typed Navigate message using served loci/references.
+
+The popover's initial presentation is a pure composition over a resolved node or edge. Field captions form a closed client vocabulary; all domain values remain served strings. TextUnit requires its served UnitText and returns a contract failure if absent. The popover view consumes the existing FocusState and dispatches CloseFocus, RetryFocus and Traverse Back/Renew; it owns no HTTP call or mutable component state. Frontiers, chips, saves and spatial anchoring remain required later slices.
+
+```fsharp
+module Resolved =
+    val fold: (NodeRecord -> 'a) -> (EdgeRecord -> 'a) -> Resolved -> 'a
+
+[<RequireQualifiedAccess>]
+type FieldName = Window | CanonicalName | Established | Destroyed | Reign | Provenance
+type PresentationField = { Name: FieldName; Value: string }
+type CardPresentation = { Title: string; Fields: PresentationField list }
+type TextPresentation = { Unit: UnitText; Fields: PresentationField list }
+[<RequireQualifiedAccess>]
+type PopoverPresentation = Card of CardPresentation | Text of TextPresentation
+module Presenter =
+    val popover: Resolved -> Result<PopoverPresentation, Failure>
+    val caption: FieldName -> string
 ```

@@ -1,5 +1,7 @@
 namespace BibleAtlas.FSharp
 
+open BibleAtlas.FSharp.Contract
+
 type Failure =
     | Transport of string
     | Contract of string
@@ -33,3 +35,12 @@ module LoadState =
             | Ok value -> Ready value
             | Error failure -> Failed(request, failure, previous)
         | Empty | Ready _ | Failed _ | Loading _ -> state
+
+type ReadSession<'a> = private { Request: Request<'a>; State: LoadState<'a> }
+
+module ReadSession =
+    let beginRead identity request state = { Request = request; State = LoadState.beginRead identity state }
+    let state session = session.State
+    let request session = session.Request
+    let retry identity session = beginRead identity session.Request session.State
+    let complete identity answer session = { session with State = LoadState.complete identity answer session.State }
