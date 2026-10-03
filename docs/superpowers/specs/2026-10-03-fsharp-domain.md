@@ -73,6 +73,12 @@ WIREID contracts remain producer dependencies. There are no invented client
 year/passage constructors or server trail receipts. Canonical verse identities,
 one focus-change path and default 20/40 reading bounds remain binding.
 
+Ops 780e628 further requires ordering by the finest served evidence, including
+Scripture's sequence within a day. Sharing a day does not itself establish
+concurrency. Use the Bible's calendar without conversion; the producer curates
+the events with explicit month/day/festival/weekday evidence first. Those facts
+and ordering links belong to the artifact and contract, not client inference.
+
 The [survey and validation record](../reports/2026-10-02-fsharp-client-domain-revision.md)
 states the dependency choices and what has actually run. The 89-instance costume
 audit, all-source admission/keyword closure, whole-domain sign-off, all-file
