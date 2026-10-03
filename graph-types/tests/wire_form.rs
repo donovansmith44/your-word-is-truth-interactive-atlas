@@ -9,7 +9,7 @@ use common::{DECLARED_EDGE_KINDS, DECLARED_NODE_KINDS};
 
 const NODE_KIND_DESCRIPTION: &str = "What kind of thing one node of this atlas stands for.";
 const EDGE_KIND_DESCRIPTION: &str = "A relation between two nodes, named in the direction it is travelled: the label one page of a node's neighbours is asked for by.";
-const EVENT_ID_DESCRIPTION: &str = "The id of one Event node.";
+const EVENT_ID_DESCRIPTION: &str = "The local name of one Event node, without its kind.";
 
 #[test]
 fn serialize_emits_the_name_and_the_label() {
@@ -129,7 +129,7 @@ fn a_typed_node_id_read_from_something_that_is_not_a_string_is_refused_by_its_ki
     // Act
     let refusal = serde_json::from_str::<EventId>(not_an_id).expect_err("only a string reads back as an id");
     // Assert
-    assert_eq!(refusal.to_string(), "invalid type: integer `1`, expected the id of one Event node at line 1 column 1");
+    assert_eq!(refusal.to_string(), "invalid type: integer `1`, expected the local name of one Event node, without its kind at line 1 column 1");
 }
 
 #[test]
