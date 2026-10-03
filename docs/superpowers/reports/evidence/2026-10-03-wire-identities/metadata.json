@@ -1,0 +1,34 @@
+{
+  "base": "7247d818b3f0a84e67e5eaeca67c66779f324aee",
+  "head": "3fee0dc11f3138b82a65a3e469abdb9407c0d6c8",
+  "test_build_head": "9d4c6d641a9aba2babc1855cc72bfdd2116a1c04",
+  "comparison": {
+    "contracts": {
+      "before_files": 124,
+      "after_files": 124,
+      "changed": [
+        "contracts/atlas-query-contract/CHANGELOG.md",
+        "contracts/atlas-query-contract/VERSION",
+        "contracts/atlas-query-contract/aqc.schema.json",
+        "contracts/openapi.yaml"
+      ],
+      "unchanged": 120
+    },
+    "data/compiled": {
+      "before_files": 7,
+      "after_files": 7,
+      "changed": [],
+      "unchanged": 7
+    }
+  },
+  "prohibited_added_comment_lines": [],
+  "application_diff_between_test_and_review_head": [],
+  "evidence_sha256": {
+    "client-tests.log": "12450ab9da9f0e03063459eb8e53c577fc0a9cc815b2eed10021ec29df28092e",
+    "contract-tests.log": "c1ebfba2e241b8178377284c652d2a5aab2df0163a7e014f4d2b6e712f2896c2",
+    "forbidden-identities.cs": "36d83940b8f701ac363ed9458f64ee0c6cdd253a9a60cfbbf74b8604523da92b",
+    "forbidden-identities.txt": "f9f19457a8c3c9fd731473c5fc1b061601472b5cd706651113d56f4cc191841d",
+    "transport-probe.cs": "ca10ef159ba6374fdb086fa48a99ab2871c07e697b0fd83135e67d456f2bc06f",
+    "transport-probe.log": "d086b7639892ed6d048814d1b20f94237c0e95f90ea1c21cf2ad49beb1a56b17"
+  }
+}

@@ -1,0 +1,5 @@
+Chapter(String,Int32)
+ChapterText(String,Int32)
+KretzmannChapter(String,Int32)
+SceneScripture(String)
+All four reference-read delegates compile with an artifact root's primitive as the reference; delegates are not invoked and no HTTP request is made.

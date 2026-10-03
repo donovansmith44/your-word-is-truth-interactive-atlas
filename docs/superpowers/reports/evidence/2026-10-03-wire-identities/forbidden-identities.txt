@@ -1,0 +1,14 @@
+exit_code: 1
+/home/donovan/mut/codex-WIREID-probe/Program.cs(4,59): error CS0029: Cannot implicitly convert type 'BibleAtlas.Client.Contract.ArtifactRoot' to 'BibleAtlas.Client.Contract.NodeId' [/home/donovan/mut/codex-WIREID-probe/Probe.csproj]
+/home/donovan/mut/codex-WIREID-probe/Program.cs(5,83): error CS0029: Cannot implicitly convert type 'BibleAtlas.Client.Contract.ElementPageCursor' to 'BibleAtlas.Client.Contract.EdgePageCursor' [/home/donovan/mut/codex-WIREID-probe/Probe.csproj]
+/home/donovan/mut/codex-WIREID-probe/Program.cs(6,76): error CS0029: Cannot implicitly convert type 'BibleAtlas.Client.Contract.VerseReference' to 'BibleAtlas.Client.Contract.ChapterReference' [/home/donovan/mut/codex-WIREID-probe/Probe.csproj]
+
+Build FAILED.
+
+/home/donovan/mut/codex-WIREID-probe/Program.cs(4,59): error CS0029: Cannot implicitly convert type 'BibleAtlas.Client.Contract.ArtifactRoot' to 'BibleAtlas.Client.Contract.NodeId' [/home/donovan/mut/codex-WIREID-probe/Probe.csproj]
+/home/donovan/mut/codex-WIREID-probe/Program.cs(5,83): error CS0029: Cannot implicitly convert type 'BibleAtlas.Client.Contract.ElementPageCursor' to 'BibleAtlas.Client.Contract.EdgePageCursor' [/home/donovan/mut/codex-WIREID-probe/Probe.csproj]
+/home/donovan/mut/codex-WIREID-probe/Program.cs(6,76): error CS0029: Cannot implicitly convert type 'BibleAtlas.Client.Contract.VerseReference' to 'BibleAtlas.Client.Contract.ChapterReference' [/home/donovan/mut/codex-WIREID-probe/Probe.csproj]
+    0 Warning(s)
+    3 Error(s)
+
+Time Elapsed 00:00:01.29
