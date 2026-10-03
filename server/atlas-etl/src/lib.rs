@@ -20,5 +20,6 @@ pub mod red_letter;
 pub mod report;
 pub mod sources;
 pub mod theographic;
+pub mod triglot;
 pub mod validate;
 pub mod xrefs;
