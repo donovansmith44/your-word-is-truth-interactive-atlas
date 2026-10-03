@@ -183,14 +183,14 @@ pub trait GraphStore {
 /// The compiler publishes; serving never writes. Publishing is an atomic advance: a reader
 /// sees the old version or the new one, never a mixture.
 pub trait GraphPublisher {
-    fn publish(&mut self, graph: Graph) -> GraphVersion;
+    fn publish(&mut self, graph: Graph) -> Result<GraphVersion, crate::section_index::IndexError>;
 }
 
 /// A disclosed defect, not a hidden one: this hashes the NODE TABLE ONLY, so adding a row
 /// with the nodes untouched leaves the root where it was and two different graphs share one
 /// stamp. A law below asserts the defect; the other spelling of this function fixes it.
 #[cfg(not(feature = "canon-ids"))]
-fn version_of(g: &Graph) -> GraphVersion {
+fn version_of(g: &Graph) -> Result<GraphVersion, crate::section_index::IndexError> {
     struct V<'a>(&'a Graph);
     impl<'a> ContentAddressed for V<'a> {
         fn canonical_bytes(&self) -> Vec<u8> {
@@ -204,14 +204,12 @@ fn version_of(g: &Graph) -> GraphVersion {
             crate::id::PositionKind::Version
         }
     }
-    GraphVersion(V(g).pid().hash)
+    Ok(GraphVersion(V(g).pid().hash))
 }
 
-/// `crate::sections::version_root` states what this root is. Derived state is a function of
-/// rows the section dumps already cover, so it is not hashed again.
 #[cfg(feature = "canon-ids")]
-fn version_of(g: &Graph) -> GraphVersion {
-    GraphVersion(crate::sections::version_root(g))
+fn version_of(g: &Graph) -> Result<GraphVersion, crate::section_index::IndexError> {
+    crate::sections::version_root(g).map(GraphVersion)
 }
 
 #[derive(Clone)]
@@ -291,11 +289,11 @@ impl GraphStore for MemStore {
 }
 
 impl GraphPublisher for MemStore {
-    fn publish(&mut self, graph: Graph) -> GraphVersion {
-        let v = version_of(&graph);
+    fn publish(&mut self, graph: Graph) -> Result<GraphVersion, crate::section_index::IndexError> {
+        let v = version_of(&graph)?;
         self.versions.entry(v).or_insert_with(|| Arc::new(graph));
         self.current = Some(v);
-        v
+        Ok(v)
     }
 }
 
@@ -538,13 +536,13 @@ mod laws {
         let mut store = MemStore::default();
         assert!(store.current_version().is_none());
 
-        let v1 = store.publish(graph_with(&[("bible/1.1.1", "In the beginning")]));
+        let v1 = store.publish(graph_with(&[("bible/1.1.1", "In the beginning")])).unwrap();
         let snap1 = store.open(v1).unwrap();
 
         let v2 = store.publish(graph_with(&[
             ("bible/1.1.1", "In the beginning"),
             ("bible/1.1.2", "And the earth"),
-        ]));
+        ])).unwrap();
         assert_ne!(v1, v2, "different content, different version");
         assert_eq!(store.current_version(), Some(v2));
 
@@ -557,15 +555,15 @@ mod laws {
     #[test]
     fn same_content_same_version() {
         let mut store = MemStore::default();
-        let a = store.publish(graph_with(&[("bible/1.1.1", "In the beginning")]));
-        let b = store.publish(graph_with(&[("bible/1.1.1", "In the beginning")]));
+        let a = store.publish(graph_with(&[("bible/1.1.1", "In the beginning")])).unwrap();
+        let b = store.publish(graph_with(&[("bible/1.1.1", "In the beginning")])).unwrap();
         assert_eq!(a, b, "content addressing dedups versions");
     }
 
     #[test]
     fn derive_round_trip_self_verifies() {
         let mut store = MemStore::default();
-        let v = store.publish(graph_with(&[("bible/1.1.1", "In the beginning")]));
+        let v = store.publish(graph_with(&[("bible/1.1.1", "In the beginning")])).unwrap();
         let snap = store.open(v).unwrap();
         let n = snap
             .node(&AnyNodeId { kind: NodeKind::TextUnit, raw: "bible/1.1.1".into() })
@@ -576,7 +574,7 @@ mod laws {
 
     #[test]
     fn content_hash_hex_and_from_hex_are_inverse() {
-        let h = version_of(&graph_with(&[("bible/1.1.1", "In the beginning")])).0;
+        let h = version_of(&graph_with(&[("bible/1.1.1", "In the beginning")])).unwrap().0;
         let s = h.hex();
         assert!(
             s.bytes().all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b)),
@@ -591,14 +589,14 @@ mod laws {
     #[cfg(not(feature = "canon-ids"))]
     #[test]
     fn hex_is_sixteen_chars_while_the_hash_is_sixty_four_bits() {
-        let h = version_of(&graph_with(&[("bible/1.1.1", "In the beginning")])).0;
+        let h = version_of(&graph_with(&[("bible/1.1.1", "In the beginning")])).unwrap().0;
         assert_eq!(h.hex().len(), 16);
     }
 
     #[cfg(feature = "canon-ids")]
     #[test]
     fn hex_is_thirty_two_chars_while_the_hash_is_a_hundred_and_twenty_eight_bits() {
-        let h = version_of(&graph_with(&[("bible/1.1.1", "In the beginning")])).0;
+        let h = version_of(&graph_with(&[("bible/1.1.1", "In the beginning")])).unwrap().0;
         assert_eq!(h.hex().len(), 32);
     }
 
@@ -630,7 +628,7 @@ mod laws {
     #[test]
     fn version_root_covers_rows_not_only_nodes() {
         let (base, rowed) = base_and_rowed();
-        assert_ne!(version_of(&base), version_of(&rowed), "a row changes the root");
+        assert_ne!(version_of(&base).unwrap(), version_of(&rowed).unwrap(), "a row changes the root");
     }
 
     #[cfg(not(feature = "canon-ids"))]
@@ -638,8 +636,8 @@ mod laws {
     fn version_root_is_blind_to_rows_the_documented_defect() {
         let (base, rowed) = base_and_rowed();
         assert_eq!(
-            version_of(&base),
-            version_of(&rowed),
+            version_of(&base).unwrap(),
+            version_of(&rowed).unwrap(),
             "spec §3.1 defect 1: the skeleton root is blind to rows -- \
              `canon-ids` fixes this, and the ON sibling of this test asserts the fix"
         );
@@ -686,7 +684,7 @@ mod laws {
         let v = store.publish(with_edges(graph_with(&[
             ("bible/1.1.1", "a"),
             ("bible/1.1.2", "b"),
-        ])));
+        ]))).unwrap();
         let snap = store.open(v).unwrap();
         assert_answers_match(&snap, &g);
     }
@@ -739,7 +737,7 @@ mod laws {
 
         let g = with_edges(graph_with(&[("bible/1.1.1", "a")]));
         let mut store = MemStore::default();
-        let v = store.publish(with_edges(graph_with(&[("bible/1.1.1", "a")])));
+        let v = store.publish(with_edges(graph_with(&[("bible/1.1.1", "a")]))).unwrap();
         let liar = Lying(store.open(v).unwrap());
         let caught = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
             assert_answers_match(&liar, &g)
@@ -783,7 +781,7 @@ mod laws {
             ("bible/1.1.3", "c"),
             ("bible/1.1.4", "d"),
             ("bible/1.1.5", "e"),
-        ]));
+        ])).unwrap();
         let snap = store.open(v).unwrap();
         let whole = snap.reading_window("bible", 0, 5);
         for split in 1..5 {
@@ -863,7 +861,7 @@ mod laws {
         assert_eq!(g.position_of("concord", &id), None);
         assert_eq!(g.position_of("bible", &EventId::new("e1").erase()), None);
         let mut store = MemStore::default();
-        let v = store.publish(with_edges(graph_with(&[("bible/1.1.1", "a"), ("bible/1.1.2", "b")])));
+        let v = store.publish(with_edges(graph_with(&[("bible/1.1.1", "a"), ("bible/1.1.2", "b")]))).unwrap();
         let snap = store.open(v).unwrap();
         assert_eq!(snap.position_of("bible", &id), Some(1));
         assert_eq!(snap.row_provenance(&entry.edge).map(|r| r.family), Some(crate::canon::RowFamily::LocatedAt));
@@ -982,7 +980,7 @@ mod laws {
         }
         let g = with_edges(graph_with(&[("bible/1.1.1", "a"), ("bible/1.1.2", "b")]));
         let mut store = MemStore::default();
-        let v = store.publish(with_edges(graph_with(&[("bible/1.1.1", "a"), ("bible/1.1.2", "b")])));
+        let v = store.publish(with_edges(graph_with(&[("bible/1.1.1", "a"), ("bible/1.1.2", "b")]))).unwrap();
         let snap = store.open(v).unwrap();
         let caught = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| assert_answers_match(&LiesAboutRows(snap), &g)));
         assert!(caught.is_err(), "a provenance lie must fail conformance");
@@ -1065,7 +1063,7 @@ mod laws {
 
     fn altered(lie: Option<Lie>) -> Altered {
         let mut store = MemStore::default();
-        let v = store.publish(model());
+        let v = store.publish(model()).unwrap();
         Altered { honest: store.open(v).unwrap(), lie }
     }
 

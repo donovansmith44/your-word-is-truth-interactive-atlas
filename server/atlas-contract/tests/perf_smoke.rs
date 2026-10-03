@@ -134,7 +134,7 @@ fn adjacency_page_latency_corpus_over_both_arms() {
     let compiled = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data/compiled");
     let (g, _) = atlas_graph::sqlite::reload::committed_graph(&compiled).expect("the sections read back");
     let mut store = MemStore::default();
-    let v = store.publish(g);
+    let v = store.publish(g).unwrap();
     let mem_snap = store.open(v).expect("the published version opens");
     let (sql, _, _) = GraphService::from_sections(&compiled).expect("sections");
     let sql_snap = sql.snapshot();

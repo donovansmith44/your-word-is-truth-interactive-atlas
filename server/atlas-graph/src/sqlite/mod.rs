@@ -53,6 +53,11 @@ impl From<std::io::Error> for SqliteError {
         SqliteError(format!("io: {e}"))
     }
 }
+impl From<atlas_graph_types::section_index::IndexError> for SqliteError {
+    fn from(e: atlas_graph_types::section_index::IndexError) -> Self {
+        SqliteError(format!("index: {e}"))
+    }
+}
 
 // The hash width is a graph-types feature this crate cannot `cfg` on, and `ContentHash::hex`
 // is width-honest in both states, so the BLOB is that hex decoded back to bytes: one path,

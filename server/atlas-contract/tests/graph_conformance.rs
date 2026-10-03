@@ -31,7 +31,7 @@ fn the_real_kjv_derived_graph_is_admitted_the_in_memory_store_answers_match_the_
 
     let (for_store, ..) = build_graph_from_sources(&kjv_json, &xrefs_tsv, &atlas).expect("the real Ruth slice must parse a second time identically");
     let mut store = MemStore::default();
-    let version = store.publish(for_store);
+    let version = store.publish(for_store).unwrap();
     let snapshot = store.open(version).expect("the just-published version must be open-able");
 
     assert_answers_match(&snapshot, &model);
@@ -57,7 +57,7 @@ fn the_full_real_graph_is_admitted_the_in_memory_store_answers_match_the_model_e
     let (for_store, ..) =
         build_graph_from_sources_with_eras_and_brainfuel(&kjv_json, &xrefs_tsv, &atlas, &[], Some(&brainfuel)).expect("the real KJV source must parse a second time identically");
     let mut store = MemStore::default();
-    let version = store.publish(for_store);
+    let version = store.publish(for_store).unwrap();
     let snapshot = store.open(version).expect("the just-published version must be open-able");
 
     const CONFORMANCE_CEILING: std::time::Duration = std::time::Duration::from_secs(60);

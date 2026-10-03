@@ -313,7 +313,7 @@ impl GraphService {
         // LAST pre-store scan -- `graph` moves into the store on the very next line.
         let provenance = crate::provenance::ProvenanceIndex::build(&graph);
         let mut store = MemStore::default();
-        let version = store.publish(graph);
+        let version = store.publish(graph).expect("assemble: every index entry names its row");
         let snapshot = store.open(version).expect("the version just published must always be open-able");
         GraphService {
             snapshot: Snap::Mem(snapshot),
