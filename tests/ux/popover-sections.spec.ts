@@ -414,7 +414,7 @@ test('REGISTRY-1: a PLACE popover shows its window-free record, then its site-of
   expect(sectionIds.indexOf('popover-section-card')).toBeLessThan(sectionIds.indexOf('popover-section-site-of'));
   await expect(page.getByTestId('popover-card-title')).toHaveText(record.label);
   const fields = await page.getByTestId(/^popover-field-/).evaluateAll(els => els.map(el => el.getAttribute('data-testid')));
-  expect(fields).toEqual(['popover-field-Established', 'popover-field-Destroyed', 'popover-field-Blurb', 'popover-field-Provenance']);
+  expect(fields).toEqual(['popover-field-Established', 'popover-field-Destroyed', 'popover-field-Provenance']);
   await expect(page.getByTestId('popover-section-site-of-heading')).toHaveText(`Site of (${siteOf})`);
   const links = page.getByTestId('popover-section-site-of').locator('[data-testid^="popover-link-site-of-"]');
   await expect(links).toHaveCount(cap);
@@ -437,7 +437,6 @@ test('REGISTRY-1/XREF-1: a PLACE popover\'s established/destroyed dates are plai
   await expect(established).not.toHaveJSProperty('tagName', 'BUTTON');
   await expect(established.locator('dd')).toHaveText(record.place.established.label);
   await expect(destroyed.locator('dd')).toHaveText(record.place.destroyed.label);
-  await expect(page.getByTestId('popover-field-Blurb').locator('dd')).toHaveText(record.place.blurb);
   await expect(page.getByTestId('popover').locator('button', { hasText: record.place.established.label })).toHaveCount(0);
 });
 

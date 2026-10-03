@@ -16,7 +16,6 @@ public sealed class GraphPresenter : IPresenter
     private const string CanonicalNameField = "Canonical name";
     private const string EstablishedField = "Established";
     private const string DestroyedField = "Destroyed";
-    private const string BlurbField = "Blurb";
 
     public async Task<Presentation?> Present(PresentationRequest request) =>
         Presentation.Of(request.Element.Kind, request.Surface) is { } form ? await PresentAs(request.Element, form) : null;
@@ -39,7 +38,6 @@ public sealed class GraphPresenter : IPresenter
                 Field(CanonicalNameField, element.Record?.Place?.CanonicalName),
                 Field(EstablishedField, element.Record?.Place?.Established?.Label),
                 Field(DestroyedField, element.Record?.Place?.Destroyed?.Label),
-                Field(BlurbField, element.Record?.Place?.Blurb),
                 Field(ReignField, element.Record?.Polity?.Reign.Label),
                 Field(ProvenanceField, element.Provenance),
             }.OfType<Presentation.Field>().ToList());
