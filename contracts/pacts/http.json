@@ -3302,7 +3302,7 @@
     "GET /api/contract": {
       "body": {
         "manifest_schema": 1,
-        "section_schema_version": 27
+        "section_schema_version": 28
       },
       "status": 200
     },
@@ -3847,7 +3847,7 @@
             "verse": 31
           }
         ],
-        "version": "fa95e31a4c84a41ac12339853cefc795"
+        "version": "24fba6a992d3f68e468b6dedd19ae436"
       },
       "status": 200
     },
@@ -5141,7 +5141,7 @@
           "id": "curated",
           "title": "Our Own Curated Work"
         },
-        "version": "fa95e31a4c84a41ac12339853cefc795"
+        "version": "24fba6a992d3f68e468b6dedd19ae436"
       },
       "status": 200
     },
@@ -5174,7 +5174,7 @@
           "id": "curated-places",
           "title": "Our Own Curated Work"
         },
-        "version": "fa95e31a4c84a41ac12339853cefc795"
+        "version": "24fba6a992d3f68e468b6dedd19ae436"
       },
       "status": 200
     },
@@ -5215,7 +5215,7 @@
         "kind": "site-of",
         "next": null,
         "previous": null,
-        "version": "fa95e31a4c84a41ac12339853cefc795"
+        "version": "24fba6a992d3f68e468b6dedd19ae436"
       },
       "status": 200
     },
@@ -10996,6 +10996,16 @@
           },
           {
             "category": "lutheran-texts",
+            "id": "concordia-triglotta-scan",
+            "license": "Public domain (published 1921, USA)",
+            "licenses_row_key": "*Concordia Triglotta*",
+            "link": "https://archive.org/details/concordiatriglot00unse",
+            "title": "Concordia Triglotta (1921), as scanned",
+            "what_it_is": "The Internet Archive's scan and OCR of the 1921 St. Louis Concordia Triglotta, the printed book the Book of Concord text above is taken from.",
+            "what_we_built": "Nothing is served from it: every Book of Concord paragraph and title is checked against its English column when the atlas is compiled, and a paragraph the scan garbles is confirmed by hand with the printed page."
+          },
+          {
+            "category": "lutheran-texts",
             "id": "catechism-mapping",
             "license": "No license file -- used by the project owner's own explicit direction",
             "licenses_row_key": "Catechism verse mapping",
@@ -11450,7 +11460,7 @@
             "name": "Shows"
           }
         ],
-        "section_schema_version": 27,
+        "section_schema_version": 28,
         "symmetric": [
           {
             "display": "Analogous to",

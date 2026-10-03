@@ -6,6 +6,7 @@
 use std::collections::BTreeSet;
 
 use atlas_core::data::BookAuthorship;
+use atlas_graph_types::container::{BibleContainer, CorpusContainer};
 use atlas_graph_types::edge::{Authored, CanonSuccession, ContainerContent, Contains, Justification};
 use atlas_graph_types::id::{AnyNodeId, ContainerNodeId, NodeKind};
 use atlas_graph_types::ingest::ProvenanceId;
@@ -95,7 +96,7 @@ pub fn normalize(ctx: &mut BuildCtx) -> anyhow::Result<BibleContainerStats> {
             book_container.erase(),
             Node {
                 id: book_container.erase(),
-                payload: NodePayload::Container { title: info.name.to_string() },
+                payload: NodePayload::Container(CorpusContainer::Bible(BibleContainer::Book { title: info.name.to_string() })),
                 provenance: PROVENANCE.to_string(),
             },
         );
@@ -108,7 +109,7 @@ pub fn normalize(ctx: &mut BuildCtx) -> anyhow::Result<BibleContainerStats> {
                 chapter_container.erase(),
                 Node {
                     id: chapter_container.erase(),
-                    payload: NodePayload::Container { title: format!("{} {}", info.name, chapter) },
+                    payload: NodePayload::Container(CorpusContainer::Bible(BibleContainer::Chapter { title: format!("{} {}", info.name, chapter) })),
                     provenance: PROVENANCE.to_string(),
                 },
             );
@@ -154,7 +155,7 @@ pub fn normalize(ctx: &mut BuildCtx) -> anyhow::Result<BibleContainerStats> {
     stats.book_steps = book_steps.len();
     ctx.graph.canon_succession.extend(book_steps);
 
-    let root_rows = corpus_root::mint::<BibleTag>(&mut ctx.graph, BIBLE_TITLE, PROVENANCE, &all_books);
+    let root_rows = corpus_root::mint::<BibleTag>(&mut ctx.graph, CorpusContainer::Bible(BibleContainer::Bible { title: BIBLE_TITLE.to_string() }), PROVENANCE, &all_books);
     ctx.graph.contains_bible.extend(root_rows);
 
     ctx.graph.authored.extend(authored_rows(&ctx.atlas.book_authorship));
@@ -249,15 +250,14 @@ mod tests {
     fn normalize_titles_come_from_the_canonical_books_table() {
         let graph = built_ctx_graph();
         let book = graph.nodes.get(&book_container_id("GEN").erase()).expect("book container node");
-        match &book.payload {
-            NodePayload::Container { title } => assert_eq!(title, "Genesis"),
-            other => panic!("expected Container, got {other:?}"),
-        }
         let ch = graph.nodes.get(&chapter_container_id("GEN", 2).erase()).expect("chapter container node");
-        match &ch.payload {
-            NodePayload::Container { title } => assert_eq!(title, "Genesis 2"),
-            other => panic!("expected Container, got {other:?}"),
-        }
+        assert_eq!(
+            (&book.payload, &ch.payload),
+            (
+                &NodePayload::Container(CorpusContainer::Bible(BibleContainer::Book { title: "Genesis".to_string() })),
+                &NodePayload::Container(CorpusContainer::Bible(BibleContainer::Chapter { title: "Genesis 2".to_string() }))
+            )
+        );
     }
 
     #[test]

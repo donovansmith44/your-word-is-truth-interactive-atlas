@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use atlas_graph::corpus_root::corpus_root_id;
 use atlas_graph::GraphService;
+use atlas_graph_types::container::{ConcordContainer, CorpusContainer};
 use atlas_graph_types::edge::{Direction, EdgeKind, RelationId};
 use atlas_graph_types::id::{AnyNodeId, Position};
 use atlas_graph_types::node::NodePayload;
@@ -25,11 +26,19 @@ const CONTAINS: EdgeKind = EdgeKind::Directed(RelationId::Contains, Direction::F
 pub async fn contents(State(graph): State<Arc<GraphService>>, Path(corpus): Path<String>) -> Result<Json<wire::Contents>, ApiError> {
     let snap = graph.snapshot();
     let corpus = wire::Corpus::named(&corpus).ok_or_else(|| ApiError::not_found("corpus"))?;
-    let roots = match corpus {
-        wire::Corpus::Bible => members(&snap, &corpus_root_id::<BibleTag>().erase()).iter().map(|book| book_root(&snap, book)).collect::<Result<_, _>>()?,
-        wire::Corpus::Concord => members(&snap, &corpus_root_id::<ConcordTag>().erase()).iter().map(|document| document_root(&snap, document)).collect::<Result<_, _>>()?,
+    let root = match corpus {
+        wire::Corpus::Bible => corpus_root_id::<BibleTag>().erase(),
+        wire::Corpus::Concord => corpus_root_id::<ConcordTag>().erase(),
     };
-    Ok(Json(wire::Contents { corpus, version: ArtifactRoot::of(graph.version()), roots }))
+    let roots = match corpus {
+        wire::Corpus::Bible => members(&snap, &root).iter().map(|book| book_root(&snap, book)).collect::<Result<_, _>>()?,
+        wire::Corpus::Concord => members(&snap, &root).iter().map(|document| document_root(&snap, document)).collect::<Result<_, _>>()?,
+    };
+    let description = match container_of(&snap, &root) {
+        Some(CorpusContainer::Concord(ConcordContainer::BookOfConcord { description, .. })) => Some(description),
+        _ => None,
+    };
+    Ok(Json(wire::Contents { corpus, description, version: ArtifactRoot::of(graph.version()), roots }))
 }
 
 fn members<S: GraphQuery>(snap: &S, container: &AnyNodeId) -> Vec<AnyNodeId> {
@@ -55,6 +64,7 @@ fn book_root<S: GraphQuery>(snap: &S, book: &AnyNodeId) -> Result<wire::Contents
             Some(NodeId::encoded_one(child, snap).map(|id| wire::ContentsChild {
                 id,
                 title: chapter.to_string(),
+                section_title: None,
                 kind: wire::ContentsChildKind::Chapter,
                 r#ref: ChapterReference { book: code, chapter }.into(),
                 locus: wire::TextRef::of_verse(&VerseRef { book: b, chapter: c, verse: v }),
@@ -89,7 +99,11 @@ fn document_root<S: GraphQuery>(snap: &S, document: &AnyNodeId) -> Result<wire::
 fn article_child<S: GraphQuery>(snap: &S, article: &AnyNodeId, first: &AnyNodeId, locus: wire::TextRef) -> Result<wire::ContentsChild, ApiError> {
     let compiled = snap.references(std::slice::from_ref(first)).remove(0).ok_or_else(|| UnreferencedUnit(first.clone()))?;
     let r#ref = compiled.parse::<ConcordReference>().map_err(|_| ApiError::internal(&format!("the compiled reference {compiled} names no paragraph of the Book of Concord")))?.into();
-    Ok(wire::ContentsChild { id: NodeId::encoded_one(article, snap)?, title: title_of(snap, article), kind: wire::ContentsChildKind::Article, r#ref, locus, count: member_count(snap, article) })
+    let section_title = match container_of(snap, article) {
+        Some(CorpusContainer::Concord(ConcordContainer::Article { section_title, .. })) => section_title,
+        _ => None,
+    };
+    Ok(wire::ContentsChild { id: NodeId::encoded_one(article, snap)?, title: title_of(snap, article), section_title, kind: wire::ContentsChildKind::Article, r#ref, locus, count: member_count(snap, article) })
 }
 
 fn opening(root: &AnyNodeId, children: &[wire::ContentsChild]) -> (ContentsReference, wire::TextRef) {
@@ -102,9 +116,13 @@ fn member_count<S: GraphQuery>(snap: &S, container: &AnyNodeId) -> usize {
 }
 
 fn title_of<S: GraphQuery>(snap: &S, id: &AnyNodeId) -> String {
+    container_of(snap, id).map_or_else(|| id.raw.clone(), |container| container.container().title().to_string())
+}
+
+fn container_of<S: GraphQuery>(snap: &S, id: &AnyNodeId) -> Option<CorpusContainer> {
     match snap.node(id).map(|n| n.payload) {
-        Some(NodePayload::Container { title }) => title,
-        _ => id.raw.clone(),
+        Some(NodePayload::Container(container)) => Some(container),
+        _ => None,
     }
 }
 

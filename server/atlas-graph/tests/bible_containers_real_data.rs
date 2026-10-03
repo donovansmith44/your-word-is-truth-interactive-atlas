@@ -77,17 +77,21 @@ fn served_indexes_are_a_pure_function_of_the_declared_rows() {
 
 #[test]
 fn chapter_and_book_nodes_carry_reader_display_titles() {
+    // Arrange
     let g = real_graph();
-    let jhn3 = g.node(&atlas_graph::bible_container_adapter::chapter_container_id("JHN", 3).erase()).expect("JHN 3 container node");
-    match &jhn3.payload {
-        atlas_graph_types::node::NodePayload::Container { title } => assert_eq!(title, "John 3"),
-        other => panic!("expected Container payload, got {other:?}"),
-    }
-    let sng = g.node(&atlas_graph::bible_container_adapter::book_container_id("SNG").erase()).expect("SNG book container node");
-    match &sng.payload {
-        atlas_graph_types::node::NodePayload::Container { title } => assert_eq!(title, "Song of Solomon"),
-        other => panic!("expected Container payload, got {other:?}"),
-    }
+    // Act
+    let jhn3 = g.node(&atlas_graph::bible_container_adapter::chapter_container_id("JHN", 3).erase()).expect("JHN 3 container node").payload;
+    let sng = g.node(&atlas_graph::bible_container_adapter::book_container_id("SNG").erase()).expect("SNG book container node").payload;
+    // Assert
+    use atlas_graph_types::container::{BibleContainer, CorpusContainer};
+    use atlas_graph_types::node::NodePayload;
+    assert_eq!(
+        (jhn3, sng),
+        (
+            NodePayload::Container(CorpusContainer::Bible(BibleContainer::Chapter { title: "John 3".to_string() })),
+            NodePayload::Container(CorpusContainer::Bible(BibleContainer::Book { title: "Song of Solomon".to_string() }))
+        )
+    );
 }
 
 #[test]

@@ -160,7 +160,7 @@ pub fn justified_by_source_family(source_edge_id: &EdgeId) -> Option<RowFamily> 
 }
 
 /// Part of every manifest line, and therefore part of the root.
-pub const SECTION_SCHEMA_VERSION: u32 = 27;
+pub const SECTION_SCHEMA_VERSION: u32 = 28;
 
 /// A per-row family appears under both of its homes.
 pub fn row_tables_of(section: Section) -> &'static [RowFamily] {

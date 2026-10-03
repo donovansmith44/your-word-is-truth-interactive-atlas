@@ -787,7 +787,7 @@ mod tests {
         let id = atlas_graph_types::id::ContainerNodeId::new(raw);
         graph.nodes.insert(
             id.erase(),
-            Node { id: id.erase(), payload: NodePayload::Container { title: raw.to_string() }, provenance: "test".into() },
+            Node { id: id.erase(), payload: NodePayload::Container(atlas_graph_types::container::CorpusContainer::Bible(atlas_graph_types::container::BibleContainer::Chapter { title: raw.to_string() })), provenance: "test".into() },
         );
         id
     }

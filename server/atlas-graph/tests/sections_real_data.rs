@@ -226,13 +226,13 @@ fn every_row_of_every_family_maps_to_a_section() {
         "every shipped contains_bible row names the Bible root or a book/chapter container (Kjv)"
     );
 
-    let concord_steps = DOCUMENT_STEPS + concord_articles() - DOCUMENTS.len();
+    let concord_steps = DOCUMENT_STEPS + concord_articles() - 1;
     let canon_succession_sections = sections_of(&g.canon_succession, section_of_canon_succession);
     println!("DB-2a CANON_SUCCESSION SECTIONS: {canon_succession_sections:?}");
     assert_eq!(
         canon_succession_sections,
         BTreeMap::from([(Section::Kjv, g.canon_succession.len() - concord_steps), (Section::Concord, concord_steps)]),
-        "the Bible's steps in Kjv; one step between each pair of Concord documents and each pair of articles within a document, in Concord"
+        "the Bible's steps in Kjv; one step between each pair of Concord documents and each pair of articles in reading order, across documents, in Concord"
     );
     let filed_away_from_their_prior: Vec<&CanonSuccession> = g
         .canon_succession

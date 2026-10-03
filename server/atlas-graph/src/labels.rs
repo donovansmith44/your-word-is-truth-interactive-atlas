@@ -23,7 +23,7 @@ impl<'a> ReaderNames<'a> {
     fn of_node(&self, node: &Node) -> Option<String> {
         match &node.payload {
             NodePayload::TextUnit { corpus, .. } => Some(format!("text unit ({corpus})")),
-            NodePayload::Container { title } => Some(title.clone()),
+            NodePayload::Container(container) => Some(container.container().title().to_string()),
             NodePayload::Event { label, .. }
             | NodePayload::Narrative { label, .. }
             | NodePayload::Person { label, .. }

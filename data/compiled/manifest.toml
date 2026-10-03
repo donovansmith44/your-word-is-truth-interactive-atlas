@@ -1,45 +1,45 @@
 schema = 1
 compiler = "atlas-graph-compile 0.1.0 (rustc 1.97.1)"
-built = "2026-10-03T14:13:14Z"
-root = "fa95e31a4c84a41ac12339853cefc795"
-raw_root = "ca285021ab2a62274ca84741bd50629c"
+built = "2026-10-03T21:47:01Z"
+root = "24fba6a992d3f68e468b6dedd19ae436"
+raw_root = "2a38ff960027e7384c0ffb44e56484ff"
 
 [[section]]
 name = "core"
 required = true
-logical = "bd1cbbfcdb772800041f0c31ca289caf"
-blob = "2a3c4649a133be201fbbba07698767efbe3549a9e1d2ef2c3f4f89f3c52508f2"
-bytes = 12698344
-schema_version = 27
+logical = "57157de7e79c36c1651a03c014939a4d"
+blob = "af02979c0ab3b44ea24e4555bc4962992586ea6a626c4b617838109ae1fcebdd"
+bytes = 12696896
+schema_version = 28
 
 [[section]]
 name = "kjv"
 required = true
-logical = "163ed466d9d032767cc81bfaca2fa6ff"
-blob = "e036c1f1836e4ef6e6ad23298dfa98dab29af9ebe6ccb5ea6f7db15c56f03d84"
-bytes = 58788241
-schema_version = 27
+logical = "953ad011239697dbf81937317b310240"
+blob = "1c0d01fb8ff8fac2af4cff9c48eb8eb262a2c5e1ce118f0d702d17fa23933af0"
+bytes = 58792366
+schema_version = 28
 
 [[section]]
 name = "concord"
 required = false
-logical = "fedd8f007da7a1e2f3c59d3721815ee1"
-blob = "8db43b65ed1270892e780148922ac369e9f8f9bf2aaf96ab288767f88601bd41"
-bytes = 2385307
-schema_version = 27
+logical = "a2b6c133091366dc92b5290b43a76fd4"
+blob = "6531f6642e7ab3579f1979063fdf6994922d78c62970b7cd9e066e8b7f8735d7"
+bytes = 2412910
+schema_version = 28
 
 [[section]]
 name = "kretzmann"
 required = false
 logical = "092f39f542cef8433a2d5a553c45da9c"
-blob = "b1ed3c99636ce1d8eaf9e213ccc274ab6d7ef4221c850c467074b8b314de9cf3"
+blob = "70e66a79bd479fb4c1c5d6baa47bad187b140371d4fa1e40be390a23a34224db"
 bytes = 11019293
-schema_version = 27
+schema_version = 28
 
 [[section]]
 name = "lexicon"
 required = false
 logical = "1cc1be08ad6bdf4da70b82475109b5dd"
-blob = "05e86f8278c74909ea1c2b834a1a08563da3f77a1486bc74ba1f5cfdbebedf85"
-bytes = 52534109
-schema_version = 27
+blob = "63a04f86bd60d6201fbd49851b076ac5c16aeed6e4efc83fac72e254be013f1b"
+bytes = 52534124
+schema_version = 28

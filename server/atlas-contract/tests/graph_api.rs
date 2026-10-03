@@ -286,8 +286,8 @@ async fn text_window_concord_single_paragraph_is_the_real_sc_first_commandment()
     assert_eq!(units[0]["ref"], "BoC 7.2.1");
     assert_eq!(
         units[0]["body"]["text"].as_str().unwrap(),
-        "Thou shalt have no other gods. What does this mean? \u{2013}Answer: We should fear, love, and trust in God above all things.",
-        "the real bookofconcord.org-sourced First Commandment paragraph, served through the existing generic endpoint"
+        "As the head of the family should teach them in a simple way to his household. The First Commandment. Thou shalt have no other gods. What does this mean? \u{2013}Answer: We should fear, love, and trust in God above all things.",
+        "the real First Commandment paragraph with the headings the source prints over it, served through the existing generic endpoint"
     );
     assert_eq!(body["next"], "BoC 7.2.2");
 }
@@ -1796,10 +1796,10 @@ async fn a_concord_paragraph_carries_its_structured_locus_beside_its_ref() {
         window["units"],
         serde_json::json!([{
             "ref": "BoC 7.2.1",
-            "node": { "id": "text-unit:BoC 7.2.1", "kind": atlas_graph_types::id::NodeKind::TextUnit, "label": "BoC 7.2.1" },
+            "node": { "id": "text-unit:BoC 7.2.1", "kind": atlas_graph_types::id::NodeKind::TextUnit, "label": "SC I" },
             "body": {
                 "locus": { "corpus": "concord", "part": 7, "article": 2, "paragraph": 1 },
-                "text": "Thou shalt have no other gods. What does this mean? \u{2013}Answer: We should fear, love, and trust in God above all things.",
+                "text": "As the head of the family should teach them in a simple way to his household. The First Commandment. Thou shalt have no other gods. What does this mean? \u{2013}Answer: We should fear, love, and trust in God above all things.",
                 "words_of_christ": [],
                 "anchors": [],
             },

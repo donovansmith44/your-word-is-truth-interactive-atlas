@@ -7,6 +7,8 @@ use atlas_core::canon::Testament;
 #[schema(description = "One corpus's contents, as a tree two levels deep.")]
 pub struct Contents {
     pub corpus: Corpus,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
     pub version: super::ArtifactRoot,
     pub roots: Vec<ContentsRoot>,
 }
@@ -31,6 +33,8 @@ pub struct ContentsRoot {
 pub struct ContentsChild {
     pub id: super::NodeId,
     pub title: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub section_title: Option<String>,
     pub kind: ContentsChildKind,
     pub r#ref: super::ContentsReference,
     pub locus: super::TextRef,

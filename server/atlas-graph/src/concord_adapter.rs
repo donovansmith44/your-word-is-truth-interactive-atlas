@@ -1,15 +1,15 @@
 //! The Book of Concord corpus: one TextUnit node per paragraph, whose raw id is
 //! `concord/{part}.{article}.{paragraph}` -- the spelling `Graph::build_indexes` derives from a
 //! `TextRef::Concord`. A container's id is `concord-doc-{key}` or `concord-art-{key}-{article}`, and
-//! one corpus root contains every document. Each document follows the one before it, and each
-//! article the one before it within its document.
+//! one corpus root contains every document.
 
 use std::collections::BTreeSet;
 
 use atlas_etl::concord::{ConcordCorpus, ScOverlapRow};
 use atlas_graph_types::edge::{CanonSuccession, CatechismLink, ContainerContent, Contains};
 use atlas_graph_types::graph::ReadingSpine;
-use atlas_graph_types::id::{AnyNodeId, CatechismItemId, ContainerNodeId, NodeKind};
+use atlas_graph_types::container::{ConcordContainer, CorpusContainer};
+use atlas_graph_types::id::{AnyNodeId, CatechismItemId, ContainerNodeId, NodeKind, Position};
 use atlas_graph_types::ingest::ProvenanceId;
 use atlas_graph_types::node::{Node, NodePayload};
 use atlas_graph_types::text::{ConcordRef, ConcordTag, Corpus, Locus, LocusSet, Rendering, TextLocus, TranslationId};
@@ -19,7 +19,6 @@ use crate::pipeline::BuildCtx;
 
 pub const CONCORD_CORPUS: &str = ConcordTag::ID;
 pub const PROVENANCE: &str = "concord";
-const CONCORD_TITLE: &str = "The Book of Concord";
 /// The canonical rendering layer for the whole Concord corpus: one translation, unlike the Bible
 /// corpus's many, and a key deliberately distinct from the KJV's -- this is not that translation.
 pub const CONCORD_TRANSLATION: &str = "bente-dau";
@@ -91,13 +90,11 @@ pub fn normalize(ctx: &mut BuildCtx) -> ConcordAdapterStats {
     };
     let mut order: Vec<AnyNodeId> = Vec::new();
     let mut documents: Vec<ContainerNodeId> = Vec::new();
-    let mut articles_by_document: Vec<Vec<ContainerNodeId>> = Vec::new();
+    let mut articles_in_order: Vec<ContainerNodeId> = Vec::new();
 
     for doc in &bundle.corpus.documents {
         stats.documents += 1;
         let doc_container = doc_container_id(doc.key);
-        let mut articles: Vec<ContainerNodeId> = Vec::new();
-
         for article in &doc.articles {
             stats.articles += 1;
             let mut art_content: BTreeSet<Locus<ConcordTag>> = BTreeSet::new();
@@ -106,6 +103,7 @@ pub fn normalize(ctx: &mut BuildCtx) -> ConcordAdapterStats {
                 stats.paragraphs += 1;
                 let unit = ConcordRef { part: doc.part, article: article.article, paragraph: p.paragraph };
                 let node = paragraph_node(unit.clone(), p.rendering.clone());
+                ctx.graph.labels.insert(Position::Node(node.id.clone()), article.citation.label(p.paragraph));
                 order.push(node.id.clone());
                 ctx.graph.nodes.insert(node.id.clone(), node);
 
@@ -115,7 +113,11 @@ pub fn normalize(ctx: &mut BuildCtx) -> ConcordAdapterStats {
             let art_container = article_container_id(doc.key, article.article);
             ctx.graph.nodes.insert(
                 art_container.erase(),
-                Node { id: art_container.erase(), payload: NodePayload::Container { title: article.title.clone() }, provenance: PROVENANCE.to_string() },
+                Node {
+                    id: art_container.erase(),
+                    payload: NodePayload::Container(CorpusContainer::Concord(ConcordContainer::Article { title: article.title.clone(), section_title: article.section_title.clone() })),
+                    provenance: PROVENANCE.to_string(),
+                },
             );
             ctx.graph.contains_concord.push(Contains {
                 container: art_container.clone(),
@@ -132,23 +134,21 @@ pub fn normalize(ctx: &mut BuildCtx) -> ConcordAdapterStats {
                 provenance: ProvenanceId::from(PROVENANCE),
                 justification: Default::default(),
             });
-            articles.push(art_container);
+            articles_in_order.push(art_container);
         }
 
         ctx.graph.nodes.insert(
             doc_container.erase(),
-            Node { id: doc_container.erase(), payload: NodePayload::Container { title: doc.title.to_string() }, provenance: PROVENANCE.to_string() },
+            Node { id: doc_container.erase(), payload: NodePayload::Container(CorpusContainer::Concord(ConcordContainer::Document { title: doc.title.to_string() })), provenance: PROVENANCE.to_string() },
         );
         documents.push(doc_container);
-        articles_by_document.push(articles);
     }
 
-    let root_rows = corpus_root::mint::<ConcordTag>(&mut ctx.graph, CONCORD_TITLE, PROVENANCE, &documents);
+    let root = CorpusContainer::Concord(ConcordContainer::BookOfConcord { title: bundle.corpus.title.clone(), description: bundle.corpus.description.clone() });
+    let root_rows = corpus_root::mint::<ConcordTag>(&mut ctx.graph, root, PROVENANCE, &documents);
     ctx.graph.contains_concord.extend(root_rows);
     ctx.graph.canon_succession.extend(CanonSuccession::steps_between(&documents, PROVENANCE));
-    for articles in &articles_by_document {
-        ctx.graph.canon_succession.extend(CanonSuccession::steps_between(articles, PROVENANCE));
-    }
+    ctx.graph.canon_succession.extend(CanonSuccession::steps_between(&articles_in_order, PROVENANCE));
     ctx.graph.reading.insert(CONCORD_CORPUS, ReadingSpine { order });
     stats
 }
@@ -200,12 +200,16 @@ mod tests {
 
     fn tiny_corpus() -> ConcordCorpus {
         ConcordCorpus {
+            title: "The Book of Concord".to_string(),
+            description: "The Lutheran confessions of 1580.".to_string(),
             documents: vec![
                 ConcordDocument {
                     part: 3,
                     key: "augsburg-confession",
                     title: "The Augsburg Confession",
                     articles: vec![ConcordArticle {
+                        section_title: None,
+                        citation: atlas_etl::concord::Citation { code: "AC IV".to_string(), numbering: atlas_etl::concord::NumberingAgreement::Agrees },
                         article: 4,
                         slug: "/augsburg-confession/of-justification/".into(),
                         title: "Article IV. Of Justification.".into(),
@@ -220,6 +224,8 @@ mod tests {
                     key: "small-catechism",
                     title: "The Small Catechism",
                     articles: vec![ConcordArticle {
+                        section_title: None,
+                        citation: atlas_etl::concord::Citation { code: "SC I".to_string(), numbering: atlas_etl::concord::NumberingAgreement::ArticleOnly },
                         article: 2,
                         slug: "/small-catechism/ten-commandments/".into(),
                         title: "The Ten Commandments".into(),
@@ -336,13 +342,15 @@ mod tests {
     }
 
     #[test]
-    fn each_document_is_followed_by_the_next_and_each_article_by_the_next_within_its_document() {
+    fn each_document_is_followed_by_the_next_and_each_article_by_the_next_across_documents() {
         // Arrange
         let canon = Canon { books: vec![] };
         let verses = HashMap::new();
         let atlas = crate::event_world::empty_atlas();
         let mut corpus = tiny_corpus();
         corpus.documents[0].articles.push(ConcordArticle {
+            section_title: None,
+            citation: atlas_etl::concord::Citation { code: "AC IV".to_string(), numbering: atlas_etl::concord::NumberingAgreement::Agrees },
             article: 5,
             slug: "/augsburg-confession/of-the-ministry/".into(),
             title: "Article V. Of the Ministry.".into(),
@@ -367,6 +375,12 @@ mod tests {
                 CanonSuccession {
                     prior: article_container_id("augsburg-confession", 4),
                     next: article_container_id("augsburg-confession", 5),
+                    provenance: ProvenanceId::from(PROVENANCE),
+                    justification: Default::default(),
+                },
+                CanonSuccession {
+                    prior: article_container_id("augsburg-confession", 5),
+                    next: article_container_id("small-catechism", 2),
                     provenance: ProvenanceId::from(PROVENANCE),
                     justification: Default::default(),
                 },

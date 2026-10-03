@@ -34,6 +34,15 @@ hatch — and adding one to a previously-green scenario is classified
 
 ---
 
+- **0.30.0** (FOCUS-3 rebuild #1, the Book of Concord's whole Triglot text, admitted and cited) — **MINOR under the 0.x policy (MAJOR class: blessed fixtures moved).**
+  A container node's payload is typed by corpus and level (`{"Container":{"Concord":{"Article":{...}}}}`);
+  every Concord article follows the one before it across documents, as a chapter follows across books;
+  a Concord paragraph's label is its 1921 Triglot citation (`Ap IV 48`, or the article's code where its
+  numbering differs); the paragraphs carry the headings, brackets and texts the parser used to drop;
+  the Smalcald Articles' three part pages are no longer articles (25, was 28). The section schema moves
+  27 -> 28, so `graph-vocabulary.json`, `contract.json` and every fixture carrying the version root move.
+  No relation, edge kind or scenario changed.
+
 - **0.29.0** (A-PROVENANCE, a served provenance carries its source title, O-PROVENANCE) — **MINOR under the 0.x policy (MAJOR class: blessed fixtures moved).**
   The core section gains a `provenance_title` table (each provenance id with the title of the source
   it names, compiled from `data/curated/sources.toml`); the section schema moves 26 -> 27, so
