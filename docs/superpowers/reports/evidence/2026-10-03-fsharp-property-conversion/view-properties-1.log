@@ -1,0 +1,53 @@
+  BibleAtlas.FSharp.ContractGenerator -> /home/donovan/w/CX-FSHARP-wire/client-fsharp.ContractGenerator/bin/Debug/net10.0/BibleAtlas.FSharp.ContractGenerator.dll
+  BibleAtlas.Client.ContractGenerator -> /home/donovan/w/CX-FSHARP-wire/client.ContractGenerator/bin/Debug/net10.0/BibleAtlas.Client.ContractGenerator.dll
+  BibleAtlas.FSharp.Core -> /home/donovan/w/CX-FSHARP-wire/client-fsharp/Core/bin/Debug/net10.0/BibleAtlas.FSharp.Core.dll
+  BibleAtlas.FSharp.Client -> /home/donovan/w/CX-FSHARP-wire/client-fsharp/bin/Debug/net10.0/BibleAtlas.FSharp.Client.dll
+  BibleAtlas.FSharp.Client (Blazor output) -> /home/donovan/w/CX-FSHARP-wire/client-fsharp/bin/Debug/net10.0/wwwroot
+  BibleAtlas.FSharp.Tests -> /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/bin/Debug/net10.0/BibleAtlas.FSharp.Tests.dll
+Test run for /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/bin/Debug/net10.0/BibleAtlas.FSharp.Tests.dll (.NETCoreApp,Version=v10.0)
+A total of 1 test files matched the specified pattern.
+[xUnit.net 00:00:00.00] xUnit.net VSTest Adapter v3.1.4+50e68bbb8b (64-bit .NET 10.0.12)
+[xUnit.net 00:00:00.06]   Discovering: BibleAtlas.FSharp.Tests
+[xUnit.net 00:00:00.12]   Discovered:  BibleAtlas.FSharp.Tests
+[xUnit.net 00:00:00.13]   Starting:    BibleAtlas.FSharp.Tests
+  Passed BibleAtlas.FSharp.Tests.SourceOrderTests.the order gate finds a fixture used through a served record field [340 ms]
+  Passed BibleAtlas.FSharp.Tests.SourceOrderTests.the order gate refuses a helper above its caller and accepts descending intent [41 ms]
+  Passed BibleAtlas.FSharp.Tests.SourceOrderTests.the order gate checks type member helpers below their first member caller [69 ms]
+  Passed BibleAtlas.FSharp.Tests.ViewTests.an explicit failure offers Retry and dispatches its message [504 ms]
+  Passed BibleAtlas.FSharp.Tests.SourceOrderTests.the order gate preserves private helper checking inside nested modules [41 ms]
+  Passed BibleAtlas.FSharp.Tests.SourceOrderTests.the order gate permits local inputs before computations that consume them [19 ms]
+  Passed BibleAtlas.FSharp.Tests.SourceOrderTests.the order gate distinguishes a shadowing parameter from the outer helper [16 ms]
+  Passed BibleAtlas.FSharp.Tests.SourceOrderTests.the order gate checks helpers reached through a qualified module reference [37 ms]
+  Passed BibleAtlas.FSharp.Tests.SourceOrderTests.the order gate checks every exported helper regardless of its visibility [62 ms]
+  Passed BibleAtlas.FSharp.Tests.SourceOrderTests.the order gate permits module data before an operation that reads it [16 ms]
+  Passed BibleAtlas.FSharp.Tests.ViewTests.Back in the popover dispatches the exploration operation [180 ms]
+  Passed BibleAtlas.FSharp.Tests.SourceOrderTests.the order gate finds module helpers called inside nested and destructured bindings [60 ms]
+  Passed BibleAtlas.FSharp.Tests.SourceOrderTests.the order gate distinguishes a shadowing lambda argument from the outer helper [26 ms]
+  Passed BibleAtlas.FSharp.Tests.SourceOrderTests.the order gate checks local helper chains within their binding scope [43 ms]
+  Passed BibleAtlas.FSharp.Tests.ViewTests.the served Concord continuation exposes Next through an Elmish message [205 ms]
+  Passed BibleAtlas.FSharp.Tests.ViewTests.unrelated typing over a reader anchor does not open a focus [168 ms]
+  Passed BibleAtlas.FSharp.Tests.ViewTests.the shared header retains primary navigation translation and credits [136 ms]
+  Passed BibleAtlas.FSharp.Tests.ViewTests.Escape closes the focus without changing the route [152 ms]
+  Passed BibleAtlas.FSharp.Tests.ViewTests.a terminal Concord page offers no invented continuation [146 ms]
+  Passed BibleAtlas.FSharp.Tests.ViewTests.an invalid text presentation retries by renewing the exploration [174 ms]
+  Passed BibleAtlas.FSharp.Tests.ViewTests.the reader shows a failed contents read with an explicit Retry [163 ms]
+  Passed BibleAtlas.FSharp.Tests.ViewTests.the reader renders an event heading without an invented continuation [206 ms]
+  Passed BibleAtlas.FSharp.Tests.ViewTests.the reader retains a continued quiet heading and its served target [206 ms]
+  Passed BibleAtlas.FSharp.Tests.ViewTests.the Concord view renders the entire served paragraph and citation [205 ms]
+  Passed BibleAtlas.FSharp.Tests.SourceOrderTests.helper functions members and shared test fixtures follow their first caller in every FSharp source [1 s]
+  Passed BibleAtlas.FSharp.Tests.ViewTests.a served reader anchor opens its typed position from the keyboard [188 ms]
+  Passed BibleAtlas.FSharp.Tests.ViewTests.a failed focus retries its own request rather than the underlying page [176 ms]
+  Passed BibleAtlas.FSharp.Tests.ViewTests.closing a visible focus dispatches CloseFocus [167 ms]
+  Passed BibleAtlas.FSharp.Tests.ViewTests.the reader renders the whole served chapter with anchored red letter text [208 ms]
+  Passed BibleAtlas.FSharp.Tests.ViewTests.a text presentation follows its served anchor within the current exploration [196 ms]
+  Passed BibleAtlas.FSharp.Tests.ViewTests.activating a served reader row dispatches exactly its typed position [160 ms]
+  Passed BibleAtlas.FSharp.Tests.ViewTests.the source view composes the complete served source under its category [169 ms]
+  Passed BibleAtlas.FSharp.Tests.ViewTests.the Concord view keeps a paragraph with no served edges as plain text [170 ms]
+[xUnit.net 00:00:04.63]   Finished:    BibleAtlas.FSharp.Tests
+  Passed BibleAtlas.FSharp.Tests.ViewTests.the WebAssembly entry component runs the sources command and renders its response [363 ms]
+  Passed BibleAtlas.FSharp.Tests.ViewTests.an opened focus renders its entire card presentation [184 ms]
+
+Test Run Successful.
+Total tests: 35
+     Passed: 35
+ Total time: 4.9617 Seconds

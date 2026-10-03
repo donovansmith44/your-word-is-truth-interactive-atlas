@@ -1,0 +1,65 @@
+  BibleAtlas.FSharp.ContractGenerator -> /home/donovan/w/CX-FSHARP-wire/client-fsharp.ContractGenerator/bin/Debug/net10.0/BibleAtlas.FSharp.ContractGenerator.dll
+  BibleAtlas.Client.ContractGenerator -> /home/donovan/w/CX-FSHARP-wire/client.ContractGenerator/bin/Debug/net10.0/BibleAtlas.Client.ContractGenerator.dll
+  BibleAtlas.FSharp.Core -> /home/donovan/w/CX-FSHARP-wire/client-fsharp/Core/bin/Debug/net10.0/BibleAtlas.FSharp.Core.dll
+  BibleAtlas.FSharp.Client -> /home/donovan/w/CX-FSHARP-wire/client-fsharp/bin/Debug/net10.0/BibleAtlas.FSharp.Client.dll
+  BibleAtlas.FSharp.Client (Blazor output) -> /home/donovan/w/CX-FSHARP-wire/client-fsharp/bin/Debug/net10.0/wwwroot
+  BibleAtlas.FSharp.Tests -> /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/bin/Debug/net10.0/BibleAtlas.FSharp.Tests.dll
+Test run for /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/bin/Debug/net10.0/BibleAtlas.FSharp.Tests.dll (.NETCoreApp,Version=v10.0)
+A total of 1 test files matched the specified pattern.
+[xUnit.net 00:00:00.00] xUnit.net VSTest Adapter v3.1.4+50e68bbb8b (64-bit .NET 10.0.12)
+[xUnit.net 00:00:00.06]   Discovering: BibleAtlas.FSharp.Tests
+[xUnit.net 00:00:00.11]   Discovered:  BibleAtlas.FSharp.Tests
+[xUnit.net 00:00:00.12]   Starting:    BibleAtlas.FSharp.Tests
+[xUnit.net 00:00:00.24]     BibleAtlas.FSharp.Tests.PropertyTests.every compiled FSharp test is a property including inherited or aliased test attributes [FAIL]
+[xUnit.net 00:00:00.24]       FsCheck.Xunit.PropertyFailedException : 
+[xUnit.net 00:00:00.24]       Falsifiable, after 1 test (0 shrinks) (16628518319251329323,11403111239242551499). 
+[xUnit.net 00:00:00.24]       Last step was invoked with size of 100 and seed of (15026464482192426633,2247059093427162873):
+[xUnit.net 00:00:00.24]       Original:
+[xUnit.net 00:00:00.24]       <null>
+[xUnit.net 00:00:00.24]       
+[xUnit.net 00:00:00.24]       ---- Assert.Equal() Failure: Values differ
+[xUnit.net 00:00:00.24]       Expected: Tuple (164, [···])
+[xUnit.net 00:00:00.24]       Actual:   Tuple (165, [···])
+[xUnit.net 00:00:00.24]       Stack Trace:
+[xUnit.net 00:00:00.24]         
+[xUnit.net 00:00:00.24]         ----- Inner Stack Trace -----
+[xUnit.net 00:00:00.24]         /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/PropertyTests.fs(14,0): at BibleAtlas.FSharp.Tests.PropertyTests.every compiled FSharp test is a property including inherited or aliased test attributes()
+[xUnit.net 00:00:00.24]            at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+[xUnit.net 00:00:00.24]            at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+[xUnit.net 00:00:00.24]         --- End of stack trace from previous location ---
+[xUnit.net 00:00:00.24]         C:\Users\kurts\Projects\FsCheck\src\FsCheck\Runner.fs(595,0): at FsCheck.Runner.invokeAndThrowInner@592-1.Invoke(Object[] o)
+[xUnit.net 00:00:00.24]         /__w/1/s/src/fsharp/src/FSharp.Core/reflect.fs(1230,0): at <StartupCode$FSharp-Core>.$Reflect.Invoke@1230.Invoke(T1 inp)
+[xUnit.net 00:00:00.24]            at System.Lazy`1.ViaFactory(LazyThreadSafetyMode mode)
+[xUnit.net 00:00:00.24]            at System.Lazy`1.ExecutionAndPublication(LazyHelper executionAndPublication, Boolean useDefaultConstructor)
+[xUnit.net 00:00:00.24]            at System.Lazy`1.CreateValue()
+[xUnit.net 00:00:00.24]         C:\Users\kurts\Projects\FsCheck\src\FsCheck\Testable.fs(164,0): at FsCheck.Testable.Prop.safeForce[a](Lazy`1 body)
+[xUnit.net 00:00:00.25]   Finished:    BibleAtlas.FSharp.Tests
+  Failed BibleAtlas.FSharp.Tests.PropertyTests.every compiled FSharp test is a property including inherited or aliased test attributes [53 ms]
+  Error Message:
+   FsCheck.Xunit.PropertyFailedException : 
+Falsifiable, after 1 test (0 shrinks) (16628518319251329323,11403111239242551499). 
+Last step was invoked with size of 100 and seed of (15026464482192426633,2247059093427162873):
+Original:
+<null>
+
+---- Assert.Equal() Failure: Values differ
+Expected: Tuple (164, [···])
+Actual:   Tuple (165, [···])
+  Stack Trace:
+  
+----- Inner Stack Trace -----
+   at BibleAtlas.FSharp.Tests.PropertyTests.every compiled FSharp test is a property including inherited or aliased test attributes() in /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/PropertyTests.fs:line 14
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+--- End of stack trace from previous location ---
+   at FsCheck.Runner.invokeAndThrowInner@592-1.Invoke(Object[] o) in C:\Users\kurts\Projects\FsCheck\src\FsCheck\Runner.fs:line 595
+   at <StartupCode$FSharp-Core>.$Reflect.Invoke@1230.Invoke(T1 inp) in /__w/1/s/src/fsharp/src/FSharp.Core/reflect.fs:line 1230
+   at System.Lazy`1.ViaFactory(LazyThreadSafetyMode mode)
+   at System.Lazy`1.ExecutionAndPublication(LazyHelper executionAndPublication, Boolean useDefaultConstructor)
+   at System.Lazy`1.CreateValue()
+   at FsCheck.Testable.Prop.safeForce[a](Lazy`1 body) in C:\Users\kurts\Projects\FsCheck\src\FsCheck\Testable.fs:line 164
+
+Test Run Failed.
+Total tests: 1
+     Failed: 1
+ Total time: 0.5615 Seconds
