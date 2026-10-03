@@ -13,6 +13,8 @@ Protocol: `AGENTS.md`. Plan: `docs/superpowers/plans/2026-09-30-v1-roadmap.md`.
 - **Next for Claude:** FOCUS-2 (claimed; the plan re-anchored on `b3d7cfa`), then FOCUS-3 when the owner answers its OPEN. Plans being written: FOCUS-5, FOCUS-7.
 - **Next for Codex:** CX-M0 (O-M0-LIMB approved) · FOCUS-4 when the owner answers its OPEN · CX-R* analyses.
 
+- **DISK (owner, 2026-10-03): "we ran out of space on wsl so make sure we clear mutation test output and other space hogging crap we dont need periodically".** Claude runs `~/bin/atlas-tidy.sh` every 10 min (mutants.out/StrykerOutput, Playwright results older than 12 h, gate logs older than a day, stale incremental caches) and removes its own worktrees and `~/mut` targets at landing. **Codex:** remove your finished review worktrees and their `~/mut/codex-*` targets: `~/w/A-F1-*review` (7, ~4.7 GB), `~/w/A-F2-review` (4.8 GB), `~/w/A-NOBLURB-review` (4.8 GB), `~/w/CX-R2-scratch`, `~/w/CX-R3-scratch`, after the 0-symlink check. Note: WSL's virtual disk does not shrink by itself on the Windows side; reclaiming host space needs `wsl --manage <distro> --set-sparse true` or an Optimize-VHD pass, which only the owner can run.
+
 ## OWNER QUESTIONS (answer in one line each; agents append)
 1. **O-PUSH:** resolved 2026-09-30: `gh auth login` + `gh auth setup-git` in WSL; a push and a lock take/release from WSL both succeeded.
 2. **O-CODEX:** Codex CLI 0.159.2 is installed in WSL (`~/.local/bin/codex`, works from any shell). Run `codex login` once. It runs in `~/src` on this machine.
