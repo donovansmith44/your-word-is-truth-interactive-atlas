@@ -3,7 +3,7 @@ openapi: 3.1.0
 info:
   title: Bible Atlas API
   description: The Bible Atlas HTTP API, generated from the Rust that serves it. The `x-atlas-relations` extension lists every relation this atlas joins two nodes by, each with the label its forward and its inverse neighbours are asked for and the words each is displayed by, so a consumer builds its own vocabulary from that list rather than writing one out.
-  version: 0.21.0
+  version: 0.23.0
 paths:
   /api/books:
     get:
@@ -2081,6 +2081,10 @@ components:
           - type: 'null'
         provenance:
           type: string
+        text:
+          oneOf:
+          - $ref: '#/components/schemas/UnitText'
+          - type: 'null'
         version:
           type: string
       additionalProperties: false
@@ -2661,16 +2665,12 @@ components:
       description: 'One unit of a reading spine: a verse of Scripture, or a paragraph of the Book of Concord.'
       required:
       - ref
-      - locus
-      - text
-      - words_of_christ
-      - anchors
+      - node
+      - body
       - edge_summary
       properties:
-        anchors:
-          type: array
-          items:
-            $ref: '#/components/schemas/Anchor'
+        body:
+          $ref: '#/components/schemas/UnitText'
         edge_summary:
           type: array
           items:
@@ -2679,16 +2679,10 @@ components:
           oneOf:
           - $ref: '#/components/schemas/UnitHeading'
           - type: 'null'
-        locus:
-          $ref: '#/components/schemas/TextRef'
+        node:
+          $ref: '#/components/schemas/NodeRef'
         ref:
           type: string
-        text:
-          type: string
-        words_of_christ:
-          type: array
-          items:
-            $ref: '#/components/schemas/WordsOfChristSpan'
       additionalProperties: false
     TextWindow:
       type: object
@@ -2750,6 +2744,28 @@ components:
           type: boolean
         kind:
           $ref: '#/components/schemas/EventKind'
+      additionalProperties: false
+    UnitText:
+      type: object
+      description: 'What a text unit is: where it stands, its words, the words of Christ in it, and what its words stand for, each anchor in reading order.'
+      required:
+      - locus
+      - text
+      - words_of_christ
+      - anchors
+      properties:
+        anchors:
+          type: array
+          items:
+            $ref: '#/components/schemas/Anchor'
+        locus:
+          $ref: '#/components/schemas/TextRef'
+        text:
+          type: string
+        words_of_christ:
+          type: array
+          items:
+            $ref: '#/components/schemas/WordsOfChristSpan'
       additionalProperties: false
     Verse:
       type: object

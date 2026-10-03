@@ -27,7 +27,7 @@ public sealed class ConcordUnitNode : IExplorable
     public Task<string> TextAsync(IExplorableClient graph) =>
         _givenText is { } given
             ? Task.FromResult(given)
-            : _text.Get(async () => (await ParagraphAt(graph, Title))?.Text ?? string.Empty);
+            : _text.Get(async () => (await ParagraphAt(graph, Title))?.Body.Text ?? string.Empty);
 
     public static async Task<TextUnit?> ParagraphAt(IExplorableClient graph, string citation) =>
         (await graph.Reading(citation, OneParagraph, WindowDir.Onward, Corpus.Concord)).Units.FirstOrDefault(u => u.Ref == citation);

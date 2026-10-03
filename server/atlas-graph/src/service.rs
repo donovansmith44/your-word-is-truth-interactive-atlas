@@ -26,6 +26,7 @@ use crate::sections::Section;
 use crate::sqlite::snapshot::SqliteSnapshot;
 use crate::sqlite::SqliteError;
 use crate::sqlite::source::sibling_dir;
+use crate::sqlite::words::{compiled_words, words_in, Words};
 
 /// The port handle a `GraphService` serves through: the in-memory store's snapshot or the committed
 /// sections. Every arm delegates the whole port, so a handler never sees which one it holds, and either
@@ -91,6 +92,9 @@ impl GraphQuery for Snap {
     fn labels(&self, at: &[Position]) -> Vec<Option<String>> {
         delegate!(self, s => s.labels(at))
     }
+    fn references(&self, units: &[AnyNodeId]) -> Vec<Option<String>> {
+        delegate!(self, s => s.references(units))
+    }
     fn edge(&self, id: &EdgeId) -> Option<atlas_graph_types::edge::EdgeRecord> {
         delegate!(self, s => s.edge(id))
     }
@@ -140,11 +144,19 @@ struct MemRowsAtLocus {
     cross_refs: HashMap<String, Vec<CrossRef>>,
     mention_spans: BTreeMap<VerseRef, Vec<MentionSpan>>,
     citation_spans: BTreeMap<ConcordRef, Vec<CitationSpan>>,
+    verse_words: Words<VerseRef>,
+    paragraph_words: Words<ConcordRef>,
 }
 
 impl MemRowsAtLocus {
-    fn of(graph: &Graph) -> MemRowsAtLocus {
-        let mut rows = MemRowsAtLocus { cross_refs: HashMap::new(), mention_spans: BTreeMap::new(), citation_spans: BTreeMap::new() };
+    fn of(graph: &Graph, extras: &crate::sqlite::extras::Extras) -> MemRowsAtLocus {
+        let mut rows = MemRowsAtLocus {
+            cross_refs: HashMap::new(),
+            mention_spans: BTreeMap::new(),
+            citation_spans: BTreeMap::new(),
+            verse_words: compiled_words(extras).expect("assemble: the compiled words of the Bible read back"),
+            paragraph_words: compiled_words(extras).expect("assemble: the compiled words of the Concord read back"),
+        };
         for row in &graph.cross_refs {
             match &row.from.at {
                 TextRef::Bible(verse) => rows
@@ -296,7 +308,7 @@ impl GraphService {
             extras.extend(crate::sqlite::sidecars::fold_sidecars(atlas, sources).expect("assemble: the sidecars fold"));
         }
         extras.attach(&mut graph);
-        let rows_at_locus = RowsAtLocus::InMemory(MemRowsAtLocus::of(&graph));
+        let rows_at_locus = RowsAtLocus::InMemory(MemRowsAtLocus::of(&graph, &extras));
         // The compiler publishes and serving never writes: one publish, at startup. This is also the
         // LAST pre-store scan -- `graph` moves into the store on the very next line.
         let provenance = crate::provenance::ProvenanceIndex::build(&graph);
@@ -407,6 +419,20 @@ impl GraphService {
         match &self.rows_at_locus {
             RowsAtLocus::Sections(s) => s.with_conn(|c| crate::sqlite::serve::citation_spans_in(c, paragraphs)),
             RowsAtLocus::InMemory(rows) => Ok(held_in(&rows.citation_spans, paragraphs)),
+        }
+    }
+
+    pub fn verse_words_in(&self, verses: &RangeInclusive<VerseRef>) -> Result<Words<VerseRef>, SqliteError> {
+        match &self.rows_at_locus {
+            RowsAtLocus::Sections(s) => s.with_conn(|c| words_in(c, verses)),
+            RowsAtLocus::InMemory(rows) => Ok(held_in(&rows.verse_words, verses)),
+        }
+    }
+
+    pub fn paragraph_words_in(&self, paragraphs: &RangeInclusive<ConcordRef>) -> Result<Words<ConcordRef>, SqliteError> {
+        match &self.rows_at_locus {
+            RowsAtLocus::Sections(s) => s.with_conn(|c| words_in(c, paragraphs)),
+            RowsAtLocus::InMemory(rows) => Ok(held_in(&rows.paragraph_words, paragraphs)),
         }
     }
 

@@ -5,6 +5,7 @@ use atlas_core::history::resolve_display_name;
 use atlas_graph::window;
 use atlas_graph::GraphService;
 use atlas_graph_types::id::{AnyNodeId, NodeKind};
+use atlas_graph_types::store::GraphQuery;
 use atlas_contract::graph_wire::{decode_node_id, encode_node_id};
 
 use crate::error::CliError;
@@ -16,8 +17,9 @@ struct Attached {
     label: String,
 }
 
-fn attached(kind: NodeKind, raw: &str, label: impl Into<String>) -> Attached {
-    Attached { id: encode_node_id(&AnyNodeId { kind, raw: raw.to_string() }), label: label.into() }
+fn attached(kind: NodeKind, raw: &str, label: impl Into<String>, snap: &impl GraphQuery) -> Result<Attached, CliError> {
+    let id = encode_node_id(&AnyNodeId { kind, raw: raw.to_string() }, snap).map_err(|unreferenced| CliError::unlabelled(unreferenced.into()))?;
+    Ok(Attached { id, label: label.into() })
 }
 
 /// `"name [id]"` pairs comma-joined, or the literal `(none)` -- never a blank line.
@@ -84,17 +86,17 @@ fn resolve_kjv(graph: &GraphService, data: &AtlasData, ref_raw: &str, text_id: &
         .filter_map(|pid| scene_source.place(pid).map(|p| (pid, p)))
         .map(|(pid, p)| {
             let name = resolve_display_name(&p.name, data.place_history_for(&p.id), None, data.place_name_alias_for(&p.id));
-            attached(NodeKind::Place, pid, name)
+            attached(NodeKind::Place, pid, name, &snap)
         })
-        .collect();
+        .collect::<Result<_, _>>()?;
 
-    let persons: Vec<Attached> = graph.persons_at_verse(book, chapter, verse).iter().map(|(pid, label)| attached(NodeKind::Person, pid, label.clone())).collect();
+    let persons: Vec<Attached> = graph.persons_at_verse(book, chapter, verse).iter().map(|(pid, label)| attached(NodeKind::Person, pid, label.clone(), &snap)).collect::<Result<_, _>>()?;
 
     // Split by kind: a dated, placed passage is an event; an undated one is a passage. Each
     // section is independently empty when its own kind has no entries.
     let all_events: Vec<&atlas_core::data::Event> = scene_source.events_for_verse(&sref).iter().filter_map(|eid| scene_source.event(eid)).collect();
-    let events: Vec<Attached> = all_events.iter().filter(|e| e.kind == EventKind::Event).map(|e| attached(NodeKind::Event, &e.id, e.label.clone())).collect();
-    let passages: Vec<Attached> = all_events.iter().filter(|e| e.kind == EventKind::General).map(|e| attached(NodeKind::Event, &e.id, e.label.clone())).collect();
+    let events: Vec<Attached> = all_events.iter().filter(|e| e.kind == EventKind::Event).map(|e| attached(NodeKind::Event, &e.id, e.label.clone(), &snap)).collect::<Result<_, _>>()?;
+    let passages: Vec<Attached> = all_events.iter().filter(|e| e.kind == EventKind::General).map(|e| attached(NodeKind::Event, &e.id, e.label.clone(), &snap)).collect::<Result<_, _>>()?;
 
     Ok(ResolvedKjvVerse { sref, text, spans, places, persons, events, passages })
 }

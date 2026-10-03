@@ -45,8 +45,8 @@ async fn text_window_single_verse_matches_the_compiled_verse_map() {
     let units = body["units"].as_array().unwrap();
     assert_eq!(units.len(), 1);
     assert_eq!(units[0]["ref"], "JHN.3.16");
-    assert!(units[0]["text"].as_str().unwrap().contains("For God so loved the world"));
-    assert_eq!(units[0]["text"].as_str().unwrap(), "For God so loved the world, that he gave his only begotten Son, that whosoever believeth in him should not perish, but have everlasting life.");
+    assert!(units[0]["body"]["text"].as_str().unwrap().contains("For God so loved the world"));
+    assert_eq!(units[0]["body"]["text"].as_str().unwrap(), "For God so loved the world, that he gave his only begotten Son, that whosoever believeth in him should not perish, but have everlasting life.");
     assert_eq!(body["next"], "JHN.3.17");
 }
 
@@ -285,7 +285,7 @@ async fn text_window_concord_single_paragraph_is_the_real_sc_first_commandment()
     assert_eq!(units.len(), 1);
     assert_eq!(units[0]["ref"], "BoC 7.2.1");
     assert_eq!(
-        units[0]["text"].as_str().unwrap(),
+        units[0]["body"]["text"].as_str().unwrap(),
         "Thou shalt have no other gods. What does this mean? \u{2013}Answer: We should fear, love, and trust in God above all things.",
         "the real bookofconcord.org-sourced First Commandment paragraph, served through the existing generic endpoint"
     );
@@ -327,7 +327,7 @@ async fn text_window_bible_default_corpus_is_unchanged_by_the_new_param() {
     let app = compiled_app();
     let (st, body, _) = get(&app, "/api/text?ref=JHN.3.16&corpus=bible").await;
     assert_eq!(st, 200, "{body}");
-    assert_eq!(body["units"][0]["text"].as_str().unwrap(), "For God so loved the world, that he gave his only begotten Son, that whosoever believeth in him should not perish, but have everlasting life.");
+    assert_eq!(body["units"][0]["body"]["text"].as_str().unwrap(), "For God so loved the world, that he gave his only begotten Son, that whosoever believeth in him should not perish, but have everlasting life.");
 }
 
 #[tokio::test]
@@ -481,11 +481,11 @@ fn loci_of(verse: &atlas_graph_types::text::VerseRef, rows: &[&atlas_graph_types
 }
 
 fn wire_id_of(entity: &atlas_graph_types::id::AnyNodeId) -> String {
-    atlas_contract::graph_wire::encode_node_id(entity)
+    atlas_contract::graph_wire::encode_node_id(entity, committed_rows()).expect("an entity's id encodes")
 }
 
 fn wire_id_of_verse(verse: &atlas_graph_types::text::VerseRef) -> String {
-    atlas_contract::graph_wire::encode_node_id(&atlas_graph::kjv_adapter::verse_node_id(verse.book, verse.chapter, verse.verse))
+    atlas_contract::graph_wire::encode_node_id(&atlas_graph::kjv_adapter::verse_node_id(verse.book, verse.chapter, verse.verse), committed_rows()).expect("a verse of the artifact carries its compiled reference")
 }
 
 fn node_and_loci(entries: &serde_json::Value) -> Vec<serde_json::Value> {
@@ -1315,12 +1315,17 @@ async fn chapter_verse_places_name_real_places_from_the_graph_backed_scene_sourc
 }
 
 fn artifact_app() -> axum::Router {
+    let (data, graph, sources) = artifact();
+    atlas_contract::load::LoadedAtlas { data, graph, sources }.into_router(None)
+}
+
+fn artifact() -> (Arc<AtlasData>, Arc<atlas_graph::GraphService>, Arc<atlas_core::sources::SourcesDocument>) {
     static CACHED: std::sync::OnceLock<(
         Arc<AtlasData>,
         Arc<atlas_graph::GraphService>,
         Arc<atlas_core::sources::SourcesDocument>,
     )> = std::sync::OnceLock::new();
-    let (data, graph, sources) = CACHED
+    CACHED
         .get_or_init(|| {
             let compiled = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data/compiled");
             let (graph, data) = atlas_contract::load::load_graph_and_data(&compiled)
@@ -1333,8 +1338,7 @@ fn artifact_app() -> axum::Router {
             );
             (Arc::new(data), Arc::new(graph), Arc::new(sources))
         })
-        .clone();
-    atlas_contract::load::LoadedAtlas { data, graph, sources }.into_router(None)
+        .clone()
 }
 
 #[tokio::test]
@@ -1793,11 +1797,14 @@ async fn a_text_unit_carries_its_structured_locus_beside_its_ref() {
         window["units"],
         serde_json::json!([{
             "ref": "GEN.1.1",
-            "locus": { "corpus": "bible", "book": "GEN", "chapter": 1, "verse": 1 },
-            "text": "In the beginning God created the heaven and the earth.",
-            "words_of_christ": [],
+            "node": { "id": "text-unit:GEN.1.1", "kind": atlas_graph_types::id::NodeKind::TextUnit, "label": "GEN.1.1" },
+            "body": {
+                "locus": { "corpus": "bible", "book": "GEN", "chapter": 1, "verse": 1 },
+                "text": "In the beginning God created the heaven and the earth.",
+                "words_of_christ": [],
+                "anchors": [god_named_at(17)],
+            },
             "heading": the_creation_heading(),
-            "anchors": [god_named_at(17)],
             "edge_summary": [
                 { "kind": "member-of", "count": 1 },
                 { "kind": "attests", "count": 1 },
@@ -1825,10 +1832,13 @@ async fn a_concord_paragraph_carries_its_structured_locus_beside_its_ref() {
         window["units"],
         serde_json::json!([{
             "ref": "BoC 7.2.1",
-            "locus": { "corpus": "concord", "part": 7, "article": 2, "paragraph": 1 },
-            "text": "Thou shalt have no other gods. What does this mean? \u{2013}Answer: We should fear, love, and trust in God above all things.",
-            "words_of_christ": [],
-            "anchors": [],
+            "node": { "id": "text-unit:BoC 7.2.1", "kind": atlas_graph_types::id::NodeKind::TextUnit, "label": "BoC 7.2.1" },
+            "body": {
+                "locus": { "corpus": "concord", "part": 7, "article": 2, "paragraph": 1 },
+                "text": "Thou shalt have no other gods. What does this mean? \u{2013}Answer: We should fear, love, and trust in God above all things.",
+                "words_of_christ": [],
+                "anchors": [],
+            },
             "edge_summary": [{ "kind": "member-of", "count": 1 }, { "kind": "catechism-link", "count": 1 }],
         }])
     );
@@ -2200,11 +2210,14 @@ async fn a_verse_that_opens_a_pericope_carries_its_heading_and_the_verse_after_i
             serde_json::json!([
                 {
                     "ref": "GEN.1.1",
-                    "locus": bible_unit("GEN", 1, 1),
-                    "text": "In the beginning God created the heaven and the earth.",
-                    "words_of_christ": [],
+                    "node": { "id": "text-unit:GEN.1.1", "kind": atlas_graph_types::id::NodeKind::TextUnit, "label": "GEN.1.1" },
+                    "body": {
+                        "locus": bible_unit("GEN", 1, 1),
+                        "text": "In the beginning God created the heaven and the earth.",
+                        "words_of_christ": [],
+                        "anchors": [god_named_at(17)],
+                    },
                     "heading": the_creation_heading(),
-                    "anchors": [god_named_at(17)],
                     "edge_summary": [
                         { "kind": "member-of", "count": 1 },
                         { "kind": "attests", "count": 1 },
@@ -2217,10 +2230,13 @@ async fn a_verse_that_opens_a_pericope_carries_its_heading_and_the_verse_after_i
                 },
                 {
                     "ref": "GEN.1.2",
-                    "locus": bible_unit("GEN", 1, 2),
-                    "text": "And the earth was without form and void; and darkness was upon the face of the deep. And the Spirit of God moved upon the face of the waters.",
-                    "words_of_christ": [],
-                    "anchors": [god_named_at(103)],
+                    "node": { "id": "text-unit:GEN.1.2", "kind": atlas_graph_types::id::NodeKind::TextUnit, "label": "GEN.1.2" },
+                    "body": {
+                        "locus": bible_unit("GEN", 1, 2),
+                        "text": "And the earth was without form and void; and darkness was upon the face of the deep. And the Spirit of God moved upon the face of the waters.",
+                        "words_of_christ": [],
+                        "anchors": [god_named_at(103)],
+                    },
                     "edge_summary": [
                         { "kind": "member-of", "count": 1 },
                         { "kind": "attests", "count": 1 },
@@ -2244,7 +2260,7 @@ async fn a_verse_that_names_hazor_serves_an_anchor_over_the_name() {
     let (status, window, _) = get(&app, "/api/text?ref=JOS.11.1").await;
     // Assert
     assert_eq!(
-        (status, window["units"][0]["text"].clone(), window["units"][0]["anchors"].clone()),
+        (status, window["units"][0]["body"]["text"].clone(), window["units"][0]["body"]["anchors"].clone()),
         (
             StatusCode::OK,
             serde_json::json!("And it came to pass, when Jabin king of Hazor had heard those things, that he sent to Jobab king of Madon, and to the king of Shimron, and to the king of Achshaph,"),
@@ -2268,7 +2284,7 @@ async fn a_small_catechism_paragraph_that_cites_scripture_serves_cites_anchors()
     let (status, window, _) = get(&app, "/api/text?ref=BoC%207.9.6&corpus=concord").await;
     // Assert
     assert_eq!(
-        (status, window["units"][0]["text"].clone(), window["units"][0]["anchors"].clone()),
+        (status, window["units"][0]["body"]["text"].clone(), window["units"][0]["body"]["anchors"].clone()),
         (
             StatusCode::OK,
             serde_json::json!("For Wives. Wives, submit yourselves unto your own husbands, as unto the Lord, even as Sarah obeyed Abraham, calling him lord; whose daughters ye are, as long as ye do well, and are not afraid with any amazement. 1 Pet. 3:6; Eph. 5:22."),
@@ -2645,10 +2661,12 @@ async fn one_malformed_id_refuses_the_whole_element_read() {
 #[test]
 fn no_relation_name_is_a_node_kind_prefix() {
     // Arrange
+    let mut referenced = atlas_graph_types::graph::Graph::default();
+    referenced.references.insert(atlas_graph_types::id::AnyNodeId { kind: atlas_graph_types::id::NodeKind::TextUnit, raw: "x".to_string() }, "x".to_string());
     let prefixes: Vec<String> = atlas_graph_types::id::NodeKind::ALL
         .iter()
         .map(|kind| {
-            let wire = atlas_contract::graph_wire::encode_node_id(&atlas_graph_types::id::AnyNodeId { kind: *kind, raw: "x".to_string() });
+            let wire = atlas_contract::graph_wire::encode_node_id(&atlas_graph_types::id::AnyNodeId { kind: *kind, raw: "x".to_string() }, &referenced).unwrap();
             wire.split_once(':').unwrap().0.to_string()
         })
         .collect();
@@ -2672,10 +2690,10 @@ fn no_served_id_carries_the_separator_an_element_read_lists_ids_by() {
     let snap = served_snapshot();
 
     // Act
-    let carrying: Vec<String> = atlas_graph_types::id::NodeKind::ALL
-        .iter()
-        .flat_map(|kind| snap.nodes_of_kind(*kind, None, usize::MAX).ids)
-        .map(|id| atlas_contract::graph_wire::encode_node_id(&id))
+    let held: Vec<atlas_graph_types::id::AnyNodeId> = atlas_graph_types::id::NodeKind::ALL.iter().flat_map(|kind| snap.nodes_of_kind(*kind, None, usize::MAX).ids).collect();
+    let carrying: Vec<String> = atlas_contract::graph_wire::encode_node_ids(&held, &snap)
+        .expect("every held id encodes")
+        .into_iter()
         .filter(|id| id.contains(atlas_contract::reference::ELEMENT_ID_SEPARATOR))
         .collect();
 
@@ -2831,4 +2849,197 @@ async fn every_polity_row_and_era_names_its_node() {
         .map(|((row, _), record)| (row["node"].clone(), record.clone()))
         .collect();
     assert_eq!((polities.is_empty(), unnamed), (false, Vec::new()));
+}
+
+const JOHN: u8 = 42;
+const BIBLE: &str = "bible";
+const CONCORD: &str = "concord";
+const A_CONCORD_WINDOW: usize = 3;
+
+fn spine_references(corpus: &'static str, first: &atlas_graph_types::id::AnyNodeId, n: usize) -> Vec<String> {
+    use atlas_graph_types::store::GraphQuery;
+    let rows = committed_rows();
+    let start = rows.position_of(corpus, first).expect("the window's first unit stands on its corpus's spine");
+    rows.references(&rows.reading_window(corpus, start, n)).into_iter().map(|reference| reference.expect("every unit of the spine carries its compiled reference")).collect()
+}
+
+fn served_references(window: &serde_json::Value) -> (Vec<String>, serde_json::Value) {
+    (window["units"].as_array().unwrap().iter().map(|unit| unit["ref"].as_str().unwrap().to_string()).collect(), window["next"].clone())
+}
+
+#[tokio::test]
+async fn a_text_window_serves_each_units_compiled_reference_and_the_next_units() {
+    // Arrange
+    let app = artifact_app();
+    let john_3 = atlas_graph::kjv_adapter::verse_node_id(JOHN, 3, 1);
+    let first_paragraph = atlas_graph::concord_adapter::text_unit_id(7, 2, 1);
+
+    // Act
+    let (_, chapter, _) = get(&app, "/api/text?ref=JHN.3&scope=chapter").await;
+    let (_, paragraphs, _) = get(&app, &format!("/api/text?ref=BoC%207.2.1&n={A_CONCORD_WINDOW}&corpus=concord")).await;
+
+    // Assert
+    let chapter_length = chapter["units"].as_array().unwrap().len();
+    let mut bible = spine_references(BIBLE, &john_3, chapter_length + 1);
+    let mut concord = spine_references(CONCORD, &first_paragraph, A_CONCORD_WINDOW + 1);
+    let (bible_next, concord_next) = (bible.pop().unwrap(), concord.pop().unwrap());
+    assert_eq!(
+        (served_references(&chapter), served_references(&paragraphs)),
+        ((bible, serde_json::json!(bible_next)), (concord, serde_json::json!(concord_next)))
+    );
+}
+
+#[tokio::test]
+async fn a_text_unit_id_on_the_wire_carries_its_compiled_reference() {
+    use atlas_graph_types::store::GraphQuery;
+    // Arrange
+    let app = artifact_app();
+    let units = [atlas_graph::kjv_adapter::verse_node_id(JOHN, 3, 16), atlas_graph::concord_adapter::text_unit_id(7, 2, 1)];
+    let compiled: Vec<String> = committed_rows().references(&units).into_iter().map(|reference| format!("text-unit:{}", reference.unwrap())).collect();
+
+    // Act
+    let mut served = Vec::new();
+    for wire_id in &compiled {
+        let (_, record, _) = get(&app, &format!("/api/node/{}", wire_id.replace(' ', "%20"))).await;
+        served.push(record["id"].as_str().unwrap().to_string());
+    }
+
+    // Assert
+    assert_eq!(served, compiled);
+}
+
+type CompiledWords = std::collections::BTreeMap<[i64; 3], Vec<(usize, usize)>>;
+
+fn compiled_words(table: &str, unit_columns: [&str; 3]) -> CompiledWords {
+    let mut words = CompiledWords::new();
+    for body in &committed_rows().extra_tables[table] {
+        let row: serde_json::Value = serde_json::from_slice(body).unwrap();
+        let unit = unit_columns.map(|column| row[column].as_i64().unwrap());
+        words.entry(unit).or_default().push((row["char_start"].as_u64().unwrap() as usize, row["char_end"].as_u64().unwrap() as usize));
+    }
+    words
+}
+
+fn spanned(words: &[(usize, usize)], span: &atlas_graph_types::text::TokenSpan) -> (usize, usize) {
+    (words[usize::from(span.start)].0, words[usize::from(span.end)].1)
+}
+
+fn served_anchors(window: &serde_json::Value) -> Vec<(usize, usize, String)> {
+    let mut anchors: Vec<(usize, usize, String)> = window["units"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .flat_map(|unit| unit["body"]["anchors"].as_array().unwrap().iter().map(|anchor| (anchor["start"].as_u64().unwrap() as usize, anchor["end"].as_u64().unwrap() as usize, anchor["node"]["id"].as_str().unwrap().to_string())))
+        .collect();
+    anchors.sort();
+    anchors
+}
+
+fn the_paragraph_citing_most() -> atlas_graph_types::text::ConcordRef {
+    let mut citations: std::collections::BTreeMap<atlas_graph_types::text::ConcordRef, usize> = std::collections::BTreeMap::new();
+    for row in &committed_rows().cross_refs {
+        if let (atlas_graph_types::text::TextRef::Concord(paragraph), Some(_)) = (&row.from.at, atlas_graph::citations::CitationSpan::of(row)) {
+            *citations.entry(paragraph.clone()).or_default() += 1;
+        }
+    }
+    citations.into_iter().max_by_key(|(_, cited)| *cited).map(|(paragraph, _)| paragraph).expect("the artifact carries citation rows")
+}
+
+#[tokio::test]
+async fn every_anchor_spans_the_characters_its_compiled_tokens_cover() {
+    // Arrange
+    let app = artifact_app();
+    let (verse, _) = the_verse_naming_one_entity_most_often();
+    let paragraph = the_paragraph_citing_most();
+    let verse_words = compiled_words("kjv_token", ["book", "chapter", "verse"]);
+    let paragraph_words = compiled_words("concord_token", ["part", "article", "paragraph"]);
+    let verse_key = [i64::from(verse.book), i64::from(verse.chapter), i64::from(verse.verse)];
+    let paragraph_key = [i64::from(paragraph.part), i64::from(paragraph.article), i64::from(paragraph.paragraph)];
+    let mut mentions: Vec<(usize, usize, String)> = bible_mention_rows()
+        .into_iter()
+        .filter(|(at, _)| *at == verse)
+        .filter_map(|(_, row)| atlas_graph::mention_spans::MentionSpan::of(row))
+        .map(|span| {
+            let (start, end) = spanned(&verse_words[&verse_key], &span.words);
+            (start, end, wire_id_of(&span.entity.node_id()))
+        })
+        .collect();
+    mentions.sort();
+    let mut citations: Vec<(usize, usize, String)> = committed_rows()
+        .cross_refs
+        .iter()
+        .filter(|row| row.from.at == atlas_graph_types::text::TextRef::Concord(paragraph.clone()))
+        .filter_map(atlas_graph::citations::CitationSpan::of)
+        .map(|span| {
+            let (start, end) = spanned(&paragraph_words[&paragraph_key], &span.words);
+            (start, end, wire_id_of_verse(&span.cites))
+        })
+        .collect();
+    citations.sort();
+
+    // Act
+    let (_, verses, _) = get(&app, &format!("/api/text?ref={}.{}.{}", atlas_core::refs::BookId(verse.book).code(), verse.chapter, verse.verse)).await;
+    let (_, paragraphs, _) = get(&app, &format!("/api/text?ref=BoC%20{}.{}.{}&corpus=concord", paragraph.part, paragraph.article, paragraph.paragraph)).await;
+
+    // Assert
+    assert_eq!((served_anchors(&verses), served_anchors(&paragraphs)), (mentions, citations));
+}
+
+const JOHN_3_16: &str = "JHN.3.16";
+const SOLID_DECLARATION_II_1: &str = "BoC%207.2.1";
+
+#[tokio::test]
+async fn a_text_units_record_serves_its_text_as_the_text_window_does() {
+    // Arrange
+    let app = artifact_app();
+    let (_, verse_window, _) = get(&app, &format!("/api/text?ref={JOHN_3_16}")).await;
+    let (_, paragraph_window, _) = get(&app, &format!("/api/text?ref={SOLID_DECLARATION_II_1}&corpus=concord")).await;
+    let windowed = [&verse_window["units"][0], &paragraph_window["units"][0]];
+    let ids: Vec<&str> = windowed.iter().map(|unit| unit["node"]["id"].as_str().unwrap()).collect();
+
+    // Act
+    let (_, read) = elements(&app, &ids).await;
+
+    // Assert
+    let served: Vec<serde_json::Value> = read["elements"].as_array().unwrap().iter().map(|element| element["node"]["text"].clone()).collect();
+    assert_eq!(served, windowed.iter().map(|unit| unit["body"].clone()).collect::<Vec<_>>());
+}
+
+#[tokio::test]
+async fn no_record_but_a_text_units_carries_text() {
+    use atlas_graph_types::store::GraphQuery;
+    // Arrange
+    let app = artifact_app();
+    let rows = committed_rows();
+    let held: Vec<atlas_graph_types::id::AnyNodeId> = atlas_graph_types::id::NodeKind::ALL
+        .iter()
+        .filter_map(|kind| rows.nodes_of_kind(*kind, None, 1).ids.into_iter().next())
+        .filter(|id| atlas_contract::graph_wire::decode_node_id(&wire_id_of(id)).is_some())
+        .collect();
+    let ids: Vec<String> = held.iter().map(wire_id_of).collect();
+
+    // Act
+    let (_, read) = elements(&app, &ids.iter().map(String::as_str).collect::<Vec<_>>()).await;
+
+    // Assert
+    let carrying: Vec<(serde_json::Value, bool)> = read["elements"].as_array().unwrap().iter().map(|element| (element["node"]["kind"].clone(), element["node"].get("text").is_some())).collect();
+    let expected: Vec<(serde_json::Value, bool)> = held.iter().map(|id| (serde_json::to_value(id.kind).unwrap(), id.kind == atlas_graph_types::id::NodeKind::TextUnit)).collect();
+    assert_eq!(carrying, expected);
+}
+
+#[tokio::test]
+async fn every_text_row_names_its_node() {
+    // Arrange
+    let app = artifact_app();
+    let (_, chapter, _) = get(&app, "/api/text?ref=JHN.3&scope=chapter").await;
+    let (_, paragraphs, _) = get(&app, &format!("/api/text?ref={SOLID_DECLARATION_II_1}&n={A_CONCORD_WINDOW}&corpus=concord")).await;
+    let named: Vec<serde_json::Value> = chapter["units"].as_array().unwrap().iter().chain(paragraphs["units"].as_array().unwrap()).map(|unit| unit["node"].clone()).collect();
+    let ids: Vec<&str> = named.iter().map(|node| node["id"].as_str().unwrap()).collect();
+
+    // Act
+    let (_, read) = elements(&app, &ids).await;
+
+    // Assert
+    let resolved: Vec<serde_json::Value> = read["elements"].as_array().unwrap().iter().map(|element| serde_json::json!({ "id": element["node"]["id"], "kind": element["node"]["kind"], "label": element["node"]["label"] })).collect();
+    assert_eq!(resolved, named);
 }

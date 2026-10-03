@@ -3,28 +3,43 @@
     "next": "JHN.3.17",
     "units": [
       {
-        "anchors": [
-          {
-            "end": 7,
-            "kind": "mentions",
-            "node": {
-              "id": "Person:god_1324",
-              "kind": "Person",
-              "label": "God"
+        "body": {
+          "anchors": [
+            {
+              "end": 7,
+              "kind": "mentions",
+              "node": {
+                "id": "Person:god_1324",
+                "kind": "Person",
+                "label": "God"
+              },
+              "start": 4
             },
-            "start": 4
+            {
+              "end": 62,
+              "kind": "mentions",
+              "node": {
+                "id": "Person:jesus_905",
+                "kind": "Person",
+                "label": "Jesus Christ"
+              },
+              "start": 59
+            }
+          ],
+          "locus": {
+            "book": "JHN",
+            "chapter": 3,
+            "corpus": "bible",
+            "verse": 16
           },
-          {
-            "end": 62,
-            "kind": "mentions",
-            "node": {
-              "id": "Person:jesus_905",
-              "kind": "Person",
-              "label": "Jesus Christ"
-            },
-            "start": 59
-          }
-        ],
+          "text": "For God so loved the world, that he gave his only begotten Son, that whosoever believeth in him should not perish, but have everlasting life.",
+          "words_of_christ": [
+            {
+              "end": 141,
+              "start": 0
+            }
+          ]
+        },
         "edge_summary": [
           {
             "count": 1,
@@ -51,23 +66,15 @@
             "kind": "catechism-link"
           }
         ],
-        "locus": {
-          "book": "JHN",
-          "chapter": 3,
-          "corpus": "bible",
-          "verse": 16
+        "node": {
+          "id": "text-unit:JHN.3.16",
+          "kind": "TextUnit",
+          "label": "JHN.3.16"
         },
-        "ref": "JHN.3.16",
-        "text": "For God so loved the world, that he gave his only begotten Son, that whosoever believeth in him should not perish, but have everlasting life.",
-        "words_of_christ": [
-          {
-            "end": 141,
-            "start": 0
-          }
-        ]
+        "ref": "JHN.3.16"
       }
     ],
-    "version": "40cfb5f71731986598f7e9277ca69084"
+    "version": "73516ab14cce068504421ae1c91a1037"
   },
   "status": 200
 }

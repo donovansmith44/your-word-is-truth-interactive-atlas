@@ -8,22 +8,20 @@ public sealed class ChapterTextTests
 {
     private const string Genesis1Opening = """
         {"version":"v","units":[
-          {"ref":"GEN.1.1","locus":{"corpus":"bible","book":"GEN","chapter":1,"verse":1},"text":"In the beginning God created the heaven and the earth.",
-           "words_of_christ":[],"edge_summary":[],
-           "anchors":[{"start":17,"end":20,"kind":"mentions","node":{"id":"Person:god_1324","kind":"Person","label":"God"}}]},
-          {"ref":"GEN.1.2","locus":{"corpus":"bible","book":"GEN","chapter":1,"verse":2},"text":"And the earth was without form, and void.",
-           "words_of_christ":[],"edge_summary":[],"anchors":[]}
+          {"ref":"GEN.1.1","node":{"id":"text-unit:GEN.1.1","kind":"TextUnit","label":"GEN.1.1"},"edge_summary":[],
+           "body":{"locus":{"corpus":"bible","book":"GEN","chapter":1,"verse":1},"text":"In the beginning God created the heaven and the earth.","words_of_christ":[],
+           "anchors":[{"start":17,"end":20,"kind":"mentions","node":{"id":"Person:god_1324","kind":"Person","label":"God"}}]}},
+          {"ref":"GEN.1.2","node":{"id":"text-unit:GEN.1.2","kind":"TextUnit","label":"GEN.1.2"},"edge_summary":[],
+           "body":{"locus":{"corpus":"bible","book":"GEN","chapter":1,"verse":2},"text":"And the earth was without form, and void.","words_of_christ":[],"anchors":[]}}
         ]}
         """;
 
     private static readonly TextUnit Genesis1Verse2 = new(
-        anchors: [],
+        body: new UnitText(anchors: [], locus: new BibleRef(BookId.GEN, 1, 2), text: "And the earth was without form, and void.", wordsOfChrist: []),
         edgeSummary: [],
         heading: null,
-        locus: new BibleRef(BookId.GEN, 1, 2),
-        @ref: "GEN.1.2",
-        text: "And the earth was without form, and void.",
-        wordsOfChrist: []);
+        node: new NodeRef(id: "text-unit:GEN.1.2", kind: NodeKind.TextUnit, label: "GEN.1.2"),
+        @ref: "GEN.1.2");
 
     [Fact]
     public async Task A_chapters_text_is_its_served_chapter_window_read_verse_by_verse()
@@ -105,5 +103,5 @@ public sealed class ChapterTextTests
     }
 
     private static string Window(params (string Ref, string Book, int Chapter, int Verse)[] units) =>
-        $$"""{"version":"v","units":[{{string.Join(",", units.Select(u => $$"""{"ref":"{{u.Ref}}","locus":{"corpus":"bible","book":"{{u.Book}}","chapter":{{u.Chapter}},"verse":{{u.Verse}}},"text":"","words_of_christ":[],"edge_summary":[],"anchors":[]}"""))}}]}""";
+        $$"""{"version":"v","units":[{{string.Join(",", units.Select(u => $$"""{"ref":"{{u.Ref}}","node":{"id":"text-unit:{{u.Ref}}","kind":"TextUnit","label":"{{u.Ref}}"},"body":{"locus":{"corpus":"bible","book":"{{u.Book}}","chapter":{{u.Chapter}},"verse":{{u.Verse}}},"text":"","words_of_christ":[],"anchors":[]},"edge_summary":[]}"""))}}]}""";
 }

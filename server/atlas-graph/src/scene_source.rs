@@ -173,7 +173,8 @@ fn place_nodes_of(q: &impl GraphQuery, places: &[Place]) -> HashMap<String, Node
         .zip(q.labels(&at))
         .map(|((place, id), label)| {
             let label = label.unwrap_or_else(|| panic!("{} is a place of the scene and no label is compiled for it", place.id));
-            (place.id.clone(), crate::node_ref::node_ref(&id, label))
+            let node = crate::node_ref::node_ref(&id, label, q).unwrap_or_else(|_| panic!("{} is a place of the scene and its id does not encode", place.id));
+            (place.id.clone(), node)
         })
         .collect()
 }

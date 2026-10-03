@@ -101,7 +101,7 @@ pub async fn kretzmann_chapter(
 
     let mut verses: Vec<wire::KretzmannChapterVerse> = Vec::new();
     for row in rows {
-        let item = wire::KretzmannChapterItem { id: crate::graph_wire::encode_node_id(&row.item_id), heading: row.heading };
+        let item = wire::KretzmannChapterItem { id: crate::graph_wire::encode_node_id(&row.item_id, &snap)?, heading: row.heading };
         match verses.last_mut() {
             Some(v) if v.verse == row.verse => v.items.push(item),
             _ => verses.push(wire::KretzmannChapterVerse { verse: row.verse, items: vec![item] }),

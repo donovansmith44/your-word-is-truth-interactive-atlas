@@ -9,7 +9,7 @@ public sealed class ChapterText
     public ChapterText(TextWindow window)
     {
         Units = window.Units;
-        _byVerse = Units.ToDictionary(unit => ((BibleRef)unit.Locus).Verse);
+        _byVerse = Units.ToDictionary(unit => ((BibleRef)unit.Body.Locus).Verse);
     }
 
     public IReadOnlyList<TextUnit> Units { get; }
@@ -17,5 +17,5 @@ public sealed class ChapterText
     public TextUnit Verse(int number) => _byVerse[number];
 
     public IReadOnlyList<TextUnit> Between(int fromVerse, int toVerse) =>
-        Units.Where(unit => ((BibleRef)unit.Locus).Verse >= fromVerse && ((BibleRef)unit.Locus).Verse <= toVerse).ToList();
+        Units.Where(unit => ((BibleRef)unit.Body.Locus).Verse >= fromVerse && ((BibleRef)unit.Body.Locus).Verse <= toVerse).ToList();
 }

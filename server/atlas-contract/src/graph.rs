@@ -18,7 +18,8 @@ use atlas_graph::heading::Heading;
 use atlas_graph::kjv_adapter::verse_node_id;
 use atlas_graph::mention_spans::MentionSpan;
 use atlas_graph::runs;
-use atlas_graph::tokens;
+use atlas_graph::sqlite::words::Words;
+use atlas_graph::tokens::{self, Token};
 use atlas_graph::window::{self, WindowDir};
 use atlas_graph::sqlite::SqliteError;
 use atlas_graph::GraphService;
@@ -30,9 +31,10 @@ use atlas_graph_types::store::GraphQuery;
 use atlas_graph_types::text::{BibleLocusRange, ConcordRef, Locus, TokenSpan, VerseRef};
 
 use crate::error::{ApiError, ElementRefusals, NeighbourRefusals, ReadingWindowRefusals, ReferenceRefusals};
-use crate::graph_wire::{describe_nodes, describe_positions, edge_ref, encode_node_id, labelled_positions, node_ref};
+use crate::graph_wire::{describe_nodes, describe_positions, edge_ref, encode_node_id, labelled_positions, node_ref, UnreferencedUnit};
+use atlas_graph_types::canon::ids::any_node_id_str;
 use crate::query::{self, AsGiven, Contract, ContractParams};
-use crate::reference::{ConcordParagraphReference, ElementId, ElementIds, NodeReference, PositionReference, ReadingReference, Reference};
+use crate::reference::{AskedElement, ConcordParagraphReference, ElementId, ElementIds, NodeReference, PositionReference, ReadingReference, Reference};
 use crate::wire;
 
 /// One node of the graph at a glance: what it is, what to call it, where it came from, and how many neighbours it has of each kind.
@@ -77,9 +79,13 @@ fn read_node_record(node_id: &AnyNodeId, data: &AtlasData, graph: &GraphService,
         NodePayload::Polity { .. } => (None, None, Some(polity_detail(node_id, graph)?)),
         _ => (None, None, None),
     };
+    let text = match &node.payload {
+        NodePayload::TextUnit { .. } => unit_text(graph, snap, std::slice::from_ref(node_id))?.pop(),
+        _ => None,
+    };
 
     Ok(Some(wire::NodeRecord {
-        id: encode_node_id(node_id),
+        id: encode_node_id(node_id, snap)?,
         kind: node_id.kind,
         label,
         provenance: node.provenance.clone(),
@@ -94,11 +100,12 @@ fn read_node_record(node_id: &AnyNodeId, data: &AtlasData, graph: &GraphService,
         map,
         era,
         polity,
+        text,
     }))
 }
 
 fn polity_detail(polity: &AnyNodeId, graph: &GraphService) -> Result<wire::PolityDetail, ApiError> {
-    let reign = graph.geography.reign_of(polity).ok_or_else(|| ApiError::internal(&format!("{} is a polity and no reign is compiled for it", encode_node_id(polity))))?;
+    let reign = graph.geography.reign_of(polity).ok_or_else(|| ApiError::internal(&format!("{} is a polity and no reign is compiled for it", any_node_id_str(polity))))?;
     Ok(wire::PolityDetail { reign: wire::TimeRange::of(reign) })
 }
 
@@ -113,8 +120,8 @@ fn read_edge_record(id: &EdgeId, snap: &impl GraphQuery) -> Result<Option<wire::
         id: id.0.clone(),
         kind: record.kind,
         label,
-        subject: described_as(&record.subject, subject)?,
-        object: described_as(&record.object, object)?,
+        subject: described_as(&record.subject, subject, snap)?,
+        object: described_as(&record.object, object, snap)?,
         provenance: snap.row_provenance(id).map(|row| row.provenance),
         votes,
         narrative,
@@ -123,9 +130,9 @@ fn read_edge_record(id: &EdgeId, snap: &impl GraphQuery) -> Result<Option<wire::
     }))
 }
 
-fn described_as(at: &Position, label: String) -> Result<wire::PositionRef, ApiError> {
+fn described_as(at: &Position, label: String, snap: &impl GraphQuery) -> Result<wire::PositionRef, ApiError> {
     match at {
-        Position::Node(id) => Ok(wire::PositionRef::Node { node: wire::NodeRef { id: encode_node_id(id), kind: id.kind, label } }),
+        Position::Node(id) => Ok(wire::PositionRef::Node { node: wire::NodeRef { id: encode_node_id(id, snap)?, kind: id.kind, label } }),
         Position::Edge(id) => edge_ref(id, label).map(|edge| wire::PositionRef::Edge { edge }),
     }
 }
@@ -143,23 +150,17 @@ fn summary_at(snap: &impl GraphQuery, at: &Position) -> Vec<wire::EdgeSummaryEnt
     snap.edge_summary(at).into_iter().map(|(kind, count)| wire::EdgeSummaryEntry { kind, count }).collect()
 }
 
-pub fn read_elements(data: &AtlasData, graph: &GraphService, snap: &impl GraphQuery, ids: &[ElementId]) -> Result<Vec<wire::Element>, ApiError> {
-    ids.iter()
-        .map(|id| {
-            let read = match id {
+pub fn read_elements(data: &AtlasData, graph: &GraphService, snap: &impl GraphQuery, asked: &[AskedElement]) -> Result<Vec<wire::Element>, ApiError> {
+    asked
+        .iter()
+        .map(|element| {
+            let read = match &element.id {
                 ElementId::Node(node) => read_node_record(node, data, graph, snap)?.map(|node| wire::Element::Node { node }),
                 ElementId::Edge(edge) => read_edge_record(edge, snap)?.map(|edge| wire::Element::Edge { edge }),
             };
-            Ok(read.unwrap_or_else(|| wire::Element::Missing { id: element_wire_id(id) }))
+            Ok(read.unwrap_or_else(|| wire::Element::Missing { id: element.asked.clone() }))
         })
         .collect()
-}
-
-fn element_wire_id(id: &ElementId) -> String {
-    match id {
-        ElementId::Node(node) => encode_node_id(node),
-        ElementId::Edge(edge) => edge.0.clone(),
-    }
 }
 
 #[utoipa::path(
@@ -220,7 +221,7 @@ fn event_detail(event: &Event) -> wire::EventDetail {
 
 fn place_detail(place: &Place, node_id: &AnyNodeId, data: &AtlasData, graph: &GraphService, snap: &impl GraphQuery) -> Result<wire::PlaceDetail, ApiError> {
     let history = data.place_history_for(&place.id);
-    let default = graph.geography.place_default(node_id).ok_or_else(|| ApiError::internal(&format!("{} is a place and no default is compiled for it", encode_node_id(node_id))))?;
+    let default = graph.geography.place_default(node_id).ok_or_else(|| ApiError::internal(&format!("{} is a place and no default is compiled for it", any_node_id_str(node_id))))?;
     Ok(wire::PlaceDetail {
         lat: place.lat,
         lon: place.lon,
@@ -376,7 +377,7 @@ struct AccountOf {
 impl EventAccounts {
     fn read(event: &AnyNodeId, snap: &impl GraphQuery, chrono: &ChronologyDerivation) -> EventAccounts {
         let record = atlas_graph::legacy::event_from_node(event, snap, chrono)
-            .unwrap_or_else(|| panic!("{} attests verses, but the graph holds no such event", encode_node_id(event)));
+            .unwrap_or_else(|| panic!("{} attests verses, but the graph holds no such event", any_node_id_str(event)));
         let accounts = accounts_of(&record).into_iter().map(|account| AccountOf { verses: account_verses(&account), note: account.ref_note, runs: OnceCell::new() }).collect();
         EventAccounts { event: event.clone(), accounts }
     }
@@ -385,7 +386,7 @@ impl EventAccounts {
         self.accounts
             .iter()
             .find_map(|account| account.verses.iter().find(|v| verse_node_id(v.book, v.chapter, v.verse) == *verse).map(|v| (v, account)))
-            .unwrap_or_else(|| panic!("the attestation of {} at {} belongs to none of its accounts", encode_node_id(&self.event), encode_node_id(verse)))
+            .unwrap_or_else(|| panic!("the attestation of {} at {} belongs to none of its accounts", any_node_id_str(&self.event), any_node_id_str(verse)))
     }
 }
 
@@ -495,26 +496,8 @@ pub async fn text_window(
         let n = asked.units();
 
         let ids = window::window(&snap, corpus.name(), start, n, dir);
-        let units = concord_text_units(&graph, &snap, &ids)?;
-
-        let unit_at = |pos: usize| {
-            snap.reading_window(corpus.name(), pos, 1)
-                .into_iter()
-                .next()
-                .and_then(|id| atlas_graph::concord_adapter::decode_text_unit(&id))
-                .map(|(p, a, para)| format!("BoC {p}.{a}.{para}"))
-        };
-        let next = match dir {
-            WindowDir::Onward => unit_at(start + units.len()),
-            WindowDir::Backward => {
-                let window_start = window::resolved_start(start, n, dir);
-                if window_start == 0 {
-                    None
-                } else {
-                    unit_at(window_start - 1)
-                }
-            }
-        };
+        let units = text_units(&graph, &snap, &ids)?;
+        let next = next_reference(&snap, corpus, start, n, units.len(), dir)?;
 
         let body = Json(wire::TextWindow { units, next, version: atlas_graph::version_hex(graph.version()) });
         return Ok(([(header::ETAG, etag)], body).into_response());
@@ -532,29 +515,24 @@ pub async fn text_window(
     };
 
     let ids = window::window(&snap, corpus.name(), start, n, dir);
-    let units = bible_text_units(&graph, &snap, &ids)?;
-
-    let unit_at = |pos: usize| {
-        snap.reading_window(corpus.name(), pos, 1)
-            .into_iter()
-            .next()
-            .and_then(|id| atlas_graph::kjv_adapter::decode_text_unit(&id))
-            .map(|(b, c, v)| atlas_graph::kjv_adapter::dot_ref(b, c, v))
-    };
-    let next = match dir {
-        WindowDir::Onward => unit_at(start + units.len()),
-        WindowDir::Backward => {
-            let window_start = window::resolved_start(start, n, dir);
-            if window_start == 0 {
-                None
-            } else {
-                unit_at(window_start - 1)
-            }
-        }
-    };
+    let units = text_units(&graph, &snap, &ids)?;
+    let next = next_reference(&snap, corpus, start, n, units.len(), dir)?;
 
     let body = Json(wire::TextWindow { units, next, version: atlas_graph::version_hex(graph.version()) });
     Ok(([(header::ETAG, etag)], body).into_response())
+}
+
+fn next_reference(snap: &impl GraphQuery, corpus: wire::Corpus, start: usize, n: usize, read: usize, dir: WindowDir) -> Result<Option<String>, ApiError> {
+    let after = match dir {
+        WindowDir::Onward => Some(start + read),
+        WindowDir::Backward => window::resolved_start(start, n, dir).checked_sub(1),
+    };
+    let Some(unit) = after.and_then(|at| snap.reading_window(corpus.name(), at, 1).into_iter().next()) else { return Ok(None) };
+    references_of(snap, std::slice::from_ref(&unit)).map(|mut references| references.pop())
+}
+
+fn references_of(snap: &impl GraphQuery, units: &[AnyNodeId]) -> Result<Vec<String>, ApiError> {
+    snap.references(units).into_iter().zip(units).map(|(reference, unit)| reference.ok_or_else(|| UnreferencedUnit(unit.clone()).into())).collect()
 }
 
 /// The reading window one request asks for.
@@ -615,49 +593,59 @@ impl ContractParams for TextWindowQuery {
 const MENTIONS: EdgeKind = EdgeKind::Directed(RelationId::Mentions, Direction::Forward);
 const CITES: EdgeKind = EdgeKind::Directed(RelationId::Cites, Direction::Forward);
 
-pub fn bible_text_units(graph: &GraphService, snap: &impl GraphQuery, ids: &[AnyNodeId]) -> Result<Vec<wire::TextUnit>, ApiError> {
-    let verses: Vec<(&AnyNodeId, VerseRef)> = ids
-        .iter()
-        .filter_map(|id| atlas_graph::kjv_adapter::decode_text_unit(id).map(|(book, chapter, verse)| (id, VerseRef { book, chapter, verse })))
-        .collect();
-    let mut links = mention_links(graph, snap, verses.iter().map(|(_, verse)| verse))?;
-    verses
-        .into_iter()
-        .filter_map(|(id, verse)| window::render(snap, id).map(|text| (id, verse, text)))
-        .map(|(id, verse, text)| {
-            let r#ref = atlas_graph::kjv_adapter::dot_ref(verse.book, verse.chapter, verse.verse);
-            let words_of_christ = graph.red_letter_spans.get(&r#ref).map(|spans| spans.iter().map(|&(start, end)| crate::wire::WordsOfChristSpan { start, end }).collect()).unwrap_or_default();
-            let locus = wire::TextRef::of_verse(&verse);
+pub fn text_units(graph: &GraphService, snap: &impl GraphQuery, ids: &[AnyNodeId]) -> Result<Vec<wire::TextUnit>, ApiError> {
+    let references = references_of(snap, ids)?;
+    let bodies = unit_text(graph, snap, ids)?;
+    let nodes = describe_nodes(&ids.iter().cloned().collect(), snap)?;
+    ids.iter()
+        .zip(references)
+        .zip(bodies)
+        .map(|((id, r#ref), body)| {
             let heading = graph.heading_index.get(&r#ref).map(|heading| unit_heading(heading, snap)).transpose()?;
-            let anchors = anchors_over(&text, MENTIONS, links.remove(&verse).unwrap_or_default());
-            Ok(wire::TextUnit { r#ref, locus, text, words_of_christ, heading, anchors, edge_summary: unit_edge_summary(snap, id) })
+            let node = nodes.get(id).cloned().ok_or_else(|| ApiError::internal(&format!("{} was described and no reference to it was answered", any_node_id_str(id))))?;
+            Ok(wire::TextUnit { r#ref, node, body, heading, edge_summary: unit_edge_summary(snap, id) })
         })
         .collect()
 }
 
-pub fn concord_text_units(graph: &GraphService, snap: &impl GraphQuery, ids: &[AnyNodeId]) -> Result<Vec<wire::TextUnit>, ApiError> {
-    let paragraphs: Vec<(&AnyNodeId, ConcordRef)> = ids
+pub fn unit_text(graph: &GraphService, snap: &impl GraphQuery, units: &[AnyNodeId]) -> Result<Vec<wire::UnitText>, ApiError> {
+    let references = references_of(snap, units)?;
+    let verses: Vec<VerseRef> = units.iter().filter_map(|unit| atlas_graph::kjv_adapter::decode_text_unit(unit).map(|(book, chapter, verse)| VerseRef { book, chapter, verse })).collect();
+    let paragraphs: Vec<ConcordRef> = units.iter().filter_map(|unit| atlas_graph::concord_adapter::decode_text_unit(unit).map(|(part, article, paragraph)| ConcordRef { part, article, paragraph })).collect();
+    let mut mentions = mention_links(graph, snap, verses.iter())?;
+    let mut citations = citation_links(graph, snap, paragraphs.iter())?;
+    let mut verse_words = match units_spanned(verses.iter()) {
+        Some(window) => graph.verse_words_in(&window).map_err(|e| unreadable_rows("words", &e))?,
+        None => Words::new(),
+    };
+    let mut paragraph_words = match units_spanned(paragraphs.iter()) {
+        Some(window) => graph.paragraph_words_in(&window).map_err(|e| unreadable_rows("words", &e))?,
+        None => Words::new(),
+    };
+    units
         .iter()
-        .filter_map(|id| atlas_graph::concord_adapter::decode_text_unit(id).map(|(part, article, paragraph)| (id, ConcordRef { part, article, paragraph })))
-        .collect();
-    let mut links = citation_links(graph, snap, paragraphs.iter().map(|(_, paragraph)| paragraph))?;
-    Ok(paragraphs
-        .into_iter()
-        .filter_map(|(id, paragraph)| {
-            let text = window::render_layer(snap, id, atlas_graph::concord_adapter::CONCORD_TRANSLATION)?;
-            let anchors = anchors_over(&text, CITES, links.remove(&paragraph).unwrap_or_default());
-            let ConcordRef { part, article, paragraph } = paragraph;
-            Some(wire::TextUnit {
-                r#ref: format!("BoC {part}.{article}.{paragraph}"),
-                locus: wire::TextRef::Concord { part, article, paragraph },
-                text,
-                words_of_christ: Vec::new(),
-                heading: None,
-                anchors,
-                edge_summary: unit_edge_summary(snap, id),
-            })
+        .zip(references)
+        .map(|(unit, reference)| {
+            if let Some((book, chapter, verse)) = atlas_graph::kjv_adapter::decode_text_unit(unit) {
+                let verse = VerseRef { book, chapter, verse };
+                let text = window::render(snap, unit).ok_or_else(|| unwritten(unit))?;
+                let words_of_christ = graph.red_letter_spans.get(&reference).map(|spans| spans.iter().map(|&(start, end)| wire::WordsOfChristSpan { start, end }).collect()).unwrap_or_default();
+                let anchors = anchors_over(&reference, &verse_words.remove(&verse).unwrap_or_default(), MENTIONS, mentions.remove(&verse).unwrap_or_default())?;
+                Ok(wire::UnitText { locus: wire::TextRef::of_verse(&verse), text, words_of_christ, anchors })
+            } else if let Some((part, article, paragraph)) = atlas_graph::concord_adapter::decode_text_unit(unit) {
+                let at = ConcordRef { part, article, paragraph };
+                let text = window::render_layer(snap, unit, atlas_graph::concord_adapter::CONCORD_TRANSLATION).ok_or_else(|| unwritten(unit))?;
+                let anchors = anchors_over(&reference, &paragraph_words.remove(&at).unwrap_or_default(), CITES, citations.remove(&at).unwrap_or_default())?;
+                Ok(wire::UnitText { locus: wire::TextRef::Concord { part, article, paragraph }, text, words_of_christ: Vec::new(), anchors })
+            } else {
+                Err(ApiError::internal(&format!("{} is a text unit of no corpus", any_node_id_str(unit))))
+            }
         })
-        .collect())
+        .collect()
+}
+
+fn unwritten(unit: &AnyNodeId) -> ApiError {
+    ApiError::internal(&format!("{} is a text unit and carries no text", any_node_id_str(unit)))
 }
 
 type Links<U> = BTreeMap<U, Vec<(TokenSpan, wire::NodeRef)>>;
@@ -689,17 +677,16 @@ fn unreadable_rows(rows: &str, error: &SqliteError) -> ApiError {
     ApiError::internal(&format!("the {rows} of a reading window could not be read: {error}"))
 }
 
-fn anchors_over(text: &str, kind: EdgeKind, links: Vec<(TokenSpan, wire::NodeRef)>) -> Vec<wire::Anchor> {
-    let words = tokens::tokenize(text);
-    let mut anchors: Vec<wire::Anchor> = links
+fn anchors_over(unit: &str, words: &[Token], kind: EdgeKind, links: Vec<(TokenSpan, wire::NodeRef)>) -> Result<Vec<wire::Anchor>, ApiError> {
+    let mut anchors = links
         .into_iter()
         .map(|(span, node)| {
-            let chars = tokens::chars_of(&span, &words).unwrap_or_else(|| panic!("the words {}..={} of {} lie past the text of the unit they are stored on", span.start, span.end, node.id));
-            wire::Anchor { start: chars.start, end: chars.end, kind, node }
+            let chars = tokens::chars_of(&span, words).ok_or_else(|| ApiError::internal(&format!("the words {}..={} anchoring {} lie past the compiled words of {unit}", span.start, span.end, node.id)))?;
+            Ok(wire::Anchor { start: chars.start, end: chars.end, kind, node })
         })
-        .collect();
+        .collect::<Result<Vec<_>, ApiError>>()?;
     anchors.sort_by_key(|anchor| anchor.start);
-    anchors
+    Ok(anchors)
 }
 
 fn unit_heading(heading: &Heading, snap: &impl GraphQuery) -> Result<wire::UnitHeading, ApiError> {
@@ -756,18 +743,21 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "the words 9..=10 of Place:hazor-1 lie past the text of the unit they are stored on")]
-    fn a_word_span_past_its_units_text_is_a_graph_defect_not_an_anchor() {
+    fn a_word_span_past_its_units_compiled_words_is_a_graph_defect_not_an_anchor() {
         // Arrange
         let past_the_end = tokens::span(atlas_graph::kjv_adapter::KJV_TRANSLATION, 9, 10).unwrap();
         let hazor = wire::NodeRef { id: "Place:hazor-1".to_string(), kind: NodeKind::Place, label: "Hazor 1".to_string() };
+        let in_the = [Token { ord: 0, char_start: 0, char_end: 2 }, Token { ord: 1, char_start: 3, char_end: 6 }];
 
         // Act
-        anchors_over("In the beginning God created the heaven and the earth.", MENTIONS, vec![(past_the_end, hazor)]);
+        let refused = anchors_over("GEN.1.1", &in_the, MENTIONS, vec![(past_the_end, hazor)]).unwrap_err();
+
+        // Assert
+        assert_eq!((refused.code, refused.message), (crate::error::ErrorCode::Internal, "the words 9..=10 anchoring Place:hazor-1 lie past the compiled words of GEN.1.1".to_string()));
     }
 
     #[test]
-    #[should_panic(expected = "the attestation of Event:ab_ur at text-unit:GEN.1.2 belongs to none of its accounts")]
+    #[should_panic(expected = "the attestation of Event:ab_ur at TextUnit:bible/0.1.2 belongs to none of its accounts")]
     fn an_attestation_at_a_verse_none_of_its_accounts_reads_is_a_graph_defect_not_an_entry_without_its_account() {
         // Arrange
         let accounts = EventAccounts { event: event_node_id("ab_ur"), accounts: vec![AccountOf { verses: vec![VerseRef { book: GENESIS, chapter: 1, verse: 1 }], note: None, runs: OnceCell::new() }] };

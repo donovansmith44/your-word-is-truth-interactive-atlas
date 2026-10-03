@@ -11,7 +11,7 @@ use axum::extract::{Path, State};
 use axum::Json;
 
 use crate::error::{ApiError, NoRefusals};
-use crate::graph_wire::encode_node_id;
+use crate::graph_wire::{encode_node_id, UnreferencedUnit};
 use crate::wire;
 
 const CONTAINS: EdgeKind = EdgeKind::Directed(RelationId::Contains, Direction::Forward);
@@ -26,8 +26,8 @@ pub async fn contents(State(graph): State<Arc<GraphService>>, Path(corpus): Path
     let snap = graph.snapshot();
     let corpus = wire::Corpus::named(&corpus).ok_or_else(|| ApiError::not_found("corpus"))?;
     let roots = match corpus {
-        wire::Corpus::Bible => members(&snap, &corpus_root_id::<BibleTag>().erase()).iter().map(|book| book_root(&snap, book)).collect(),
-        wire::Corpus::Concord => members(&snap, &corpus_root_id::<ConcordTag>().erase()).iter().map(|document| document_root(&snap, document)).collect(),
+        wire::Corpus::Bible => members(&snap, &corpus_root_id::<BibleTag>().erase()).iter().map(|book| book_root(&snap, book)).collect::<Result<_, _>>()?,
+        wire::Corpus::Concord => members(&snap, &corpus_root_id::<ConcordTag>().erase()).iter().map(|document| document_root(&snap, document)).collect::<Result<_, _>>()?,
     };
     Ok(Json(wire::Contents { corpus, version: atlas_graph::version_hex(graph.version()), roots }))
 }
@@ -43,54 +43,52 @@ fn members<S: GraphQuery>(snap: &S, container: &AnyNodeId) -> Vec<AnyNodeId> {
 }
 
 /// A member of the Bible's root that is not a book is a defect in the graph, never a book to leave out.
-fn book_root<S: GraphQuery>(snap: &S, book: &AnyNodeId) -> wire::ContentsRoot {
+fn book_root<S: GraphQuery>(snap: &S, book: &AnyNodeId) -> Result<wire::ContentsRoot, ApiError> {
     let index = atlas_graph::bible_container_adapter::decode_book_container(book)
         .unwrap_or_else(|| panic!("the Bible's root contains {}, which is not a book container", book.raw)) as usize;
     let code = atlas_core::canon::BOOKS[index].code;
-    let children: Vec<wire::ContentsChild> = members(snap, book)
+    let children = members(snap, book)
         .iter()
         .filter_map(|child| {
             let (_, chapter) = atlas_graph::bible_container_adapter::decode_chapter_container(child)?;
             let (b, c, v) = members(snap, child).into_iter().find_map(|verse| atlas_graph::kjv_adapter::decode_text_unit(&verse))?;
-            Some(wire::ContentsChild {
-                id: encode_node_id(child),
+            Some(encode_node_id(child, snap).map(|id| wire::ContentsChild {
+                id,
                 title: chapter.to_string(),
                 kind: wire::ContentsChildKind::Chapter,
                 r#ref: format!("{code}.{chapter}"),
                 locus: wire::TextRef::of_verse(&VerseRef { book: b, chapter: c, verse: v }),
                 count: member_count(snap, child),
-            })
+            }))
         })
-        .collect();
+        .collect::<Result<Vec<_>, _>>()?;
     let (r#ref, locus) = opening(book, &children);
-    wire::ContentsRoot {
-        id: encode_node_id(book),
+    Ok(wire::ContentsRoot {
+        id: encode_node_id(book, snap)?,
         title: title_of(snap, book),
         kind: wire::ContentsRootKind::Book,
         group: Some(atlas_core::canon::Testament::of_book_index(index)),
         r#ref,
         locus,
         children,
-    }
+    })
 }
 
-fn document_root<S: GraphQuery>(snap: &S, document: &AnyNodeId) -> wire::ContentsRoot {
-    let children: Vec<wire::ContentsChild> = members(snap, document)
+fn document_root<S: GraphQuery>(snap: &S, document: &AnyNodeId) -> Result<wire::ContentsRoot, ApiError> {
+    let children = members(snap, document)
         .iter()
         .filter_map(|article| {
-            let (part, number, paragraph) = members(snap, article).into_iter().find_map(|p| atlas_graph::concord_adapter::decode_text_unit(&p))?;
-            Some(wire::ContentsChild {
-                id: encode_node_id(article),
-                title: title_of(snap, article),
-                kind: wire::ContentsChildKind::Article,
-                r#ref: format!("BoC {part}.{number}.{paragraph}"),
-                locus: wire::TextRef::Concord { part, article: number, paragraph },
-                count: member_count(snap, article),
-            })
+            let (first, (part, number, paragraph)) = members(snap, article).into_iter().find_map(|p| atlas_graph::concord_adapter::decode_text_unit(&p).map(|unit| (p, unit)))?;
+            Some(article_child(snap, article, &first, wire::TextRef::Concord { part, article: number, paragraph }))
         })
-        .collect();
+        .collect::<Result<Vec<_>, _>>()?;
     let (r#ref, locus) = opening(document, &children);
-    wire::ContentsRoot { id: encode_node_id(document), title: title_of(snap, document), kind: wire::ContentsRootKind::Document, group: None, r#ref, locus, children }
+    Ok(wire::ContentsRoot { id: encode_node_id(document, snap)?, title: title_of(snap, document), kind: wire::ContentsRootKind::Document, group: None, r#ref, locus, children })
+}
+
+fn article_child<S: GraphQuery>(snap: &S, article: &AnyNodeId, first: &AnyNodeId, locus: wire::TextRef) -> Result<wire::ContentsChild, ApiError> {
+    let r#ref = snap.references(std::slice::from_ref(first)).remove(0).ok_or_else(|| UnreferencedUnit(first.clone()))?;
+    Ok(wire::ContentsChild { id: encode_node_id(article, snap)?, title: title_of(snap, article), kind: wire::ContentsChildKind::Article, r#ref, locus, count: member_count(snap, article) })
 }
 
 fn opening(root: &AnyNodeId, children: &[wire::ContentsChild]) -> (String, wire::TextRef) {
@@ -128,7 +126,7 @@ mod tests {
         let not_a_book = ContainerNodeId::new("concord-part-1").erase();
 
         // Act
-        book_root(&Graph::default(), &not_a_book);
+        let _ = book_root(&Graph::default(), &not_a_book);
     }
 
     #[test]
@@ -138,7 +136,7 @@ mod tests {
         let genesis = atlas_graph::bible_container_adapter::book_container_id("GEN").erase();
 
         // Act
-        book_root(&Graph::default(), &genesis);
+        let _ = book_root(&Graph::default(), &genesis);
     }
 
     #[test]
@@ -148,6 +146,6 @@ mod tests {
         let preface = ContainerNodeId::new("concord-doc-preface").erase();
 
         // Act
-        document_root(&Graph::default(), &preface);
+        let _ = document_root(&Graph::default(), &preface);
     }
 }

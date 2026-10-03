@@ -104,7 +104,7 @@ async fn api_text_window_still_projects_only_the_canonical_kjv_text() {
     assert_eq!(status, StatusCode::OK);
     let units = body["units"].as_array().expect("units array");
     assert_eq!(units.len(), 1);
-    assert_eq!(units[0]["text"], "In the beginning was the Word, and the Word was with God, and the Word was God.");
+    assert_eq!(units[0]["body"]["text"], "In the beginning was the Word, and the Word was with God, and the Word was God.");
     assert!(units[0].get("renderings").is_none());
 }
 

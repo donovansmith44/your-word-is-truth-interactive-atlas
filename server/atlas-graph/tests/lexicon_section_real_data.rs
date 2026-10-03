@@ -13,8 +13,8 @@ use atlas_graph_types::store::GraphQuery;
 
 const PINNED: [(&str, &str); 4] = [
     ("core", "9ad5d635339cd2e07714b6aac199fd40"),
-    ("kjv", "6f413a55daedb14b489139d97814d214"),
-    ("concord", "bfe52b2b8fa22a3228b5d8a8ff2e1403"),
+    ("kjv", "8885578c38b91c5237aae12e9ee1feff"),
+    ("concord", "f63e2c3ea90203bb31aca083e58a8eb4"),
     ("kretzmann", "cfebcd669fe2737850598fbc8b57ff24"),
 ];
 
