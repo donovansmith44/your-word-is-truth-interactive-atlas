@@ -5,14 +5,15 @@ open System.Net
 open System.Net.Http
 open System.Threading.Tasks
 open Xunit
+open FsCheck.Xunit
 open BibleAtlas.FSharp
 open BibleAtlas.FSharp.Client
 open BibleAtlas.FSharp.Contract
 
-[<Fact>]
-let ``the opening command resolves its typed position and delivers the whole trail`` () =
-    let start = ExplorationTests.start
-    let body = Json.encode { Elements = [Explorable.element start]; Version = (WireFixtures.identity<ArtifactRoot> "root"); Next = None; Previous = None }
+[<Property>]
+let ``the opening command resolves its typed position and delivers the whole trail`` (suffix: uint16) =
+    let start = ExplorationTests.node $"Person:start-{suffix}" $"root-{suffix}"
+    let body = Json.encode { Elements = [Explorable.element start]; Version = (Explorable.root start); Next = None; Previous = None }
     use response = new HttpResponseMessage(HttpStatusCode.OK, Content = new StringContent(body))
     use handler = new TransportTests.Handler(response)
     use http = new HttpClient(handler, BaseAddress = Uri "http://example.test/")
@@ -21,10 +22,10 @@ let ``the opening command resolves its typed position and delivers the whole tra
     for effect in command do effect (fun message -> completion.SetResult message)
     Assert.Equal(FocusLoaded(RequestId.initial, Ok(Trail.beginAt start)), completion.Task.GetAwaiter().GetResult())
 
-[<Fact>]
-let ``the Back command interprets the algebra without a transport read`` () =
-    let start = ExplorationTests.start
-    let target = ExplorationTests.node "Person:target" "root"
+[<Property>]
+let ``the Back command interprets the algebra without a transport read`` (suffix: uint16) =
+    let start = ExplorationTests.node $"Person:start-{suffix}" $"root-{suffix}"
+    let target = ExplorationTests.node $"Person:target-{suffix}" $"root-{suffix}"
     let outward = Trail.beginAt start |> Trail.follow { Kind = EdgeKind.Contains; Target = target }
     let expected = outward |> Trail.follow { Kind = EdgeKind.MemberOf; Target = start }
     use http = new HttpClient(BaseAddress = Uri "http://example.test/")

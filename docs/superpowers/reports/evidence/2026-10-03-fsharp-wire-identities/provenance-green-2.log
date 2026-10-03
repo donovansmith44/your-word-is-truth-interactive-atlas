@@ -1,0 +1,9 @@
+  Determining projects to restore...
+  All projects are up-to-date for restore.
+  BibleAtlas.FSharp.ContractGenerator -> /home/donovan/w/CX-FSHARP-wire/client-fsharp.ContractGenerator/bin/Debug/net10.0/BibleAtlas.FSharp.ContractGenerator.dll
+  BibleAtlas.FSharp.Core -> /home/donovan/w/CX-FSHARP-wire/client-fsharp/Core/bin/Debug/net10.0/BibleAtlas.FSharp.Core.dll
+  ConsumerLaws -> /home/donovan/w/CX-FSHARP-wire/docs/superpowers/reports/evidence/2026-10-03-fsharp-wire-identities/consumers/bin/Debug/net10.0/ConsumerLaws.dll
+Test run for /home/donovan/w/CX-FSHARP-wire/docs/superpowers/reports/evidence/2026-10-03-fsharp-wire-identities/consumers/bin/Debug/net10.0/ConsumerLaws.dll (.NETCoreApp,Version=v10.0)
+A total of 1 test files matched the specified pattern.
+
+Passed!  - Failed:     0, Passed:     8, Skipped:     0, Total:     8, Duration: 172 ms - ConsumerLaws.dll (net10.0)

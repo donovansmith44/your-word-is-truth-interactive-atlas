@@ -5,50 +5,57 @@ open System.Net
 open System.Net.Http
 open System.Threading
 open Xunit
+open FsCheck
+open FsCheck.Xunit
 open BibleAtlas.FSharp
 open BibleAtlas.FSharp.Contract
 
-[<Fact>]
-let ``generated requests compose escaped paths and the contract enum spellings`` () =
-    let actual = [Request.uri (Reads.nodeRecord (WireFixtures.identity<NodeId> "text-unit:BoC 7.2.1")); Request.uri (Reads.nodeEdges (WireFixtures.identity<ElementId> "Person:god_1324") EdgeKind.MentionedIn (Some (WireFixtures.identity<EdgePageCursor> 0)) (Some 20)); Request.uri (Reads.textWindow (WireFixtures.identity<TextWindowReference> "JHN.3") None None (Some TextScope.Chapter) None); Request.uri (Reads.elements [(WireFixtures.identity<ElementId> "Event:a"); (WireFixtures.identity<ElementId> "Place:b")] None)]
-    Assert.Equal<string list>(["api/node/text-unit%3ABoC%207.2.1"; "api/node/Person%3Agod_1324/edges?kind=mentioned-in&cursor=0&limit=20"; "api/text?ref=JHN.3&scope=chapter"; "api/elements?ids=Event%3Aa%2CPlace%3Ab"], actual)
+[<Property>]
+let ``generated requests compose escaped paths and the contract enum spellings`` (suffix: uint16) =
+    let actual = [Request.uri (Reads.nodeRecord (WireFixtures.identity<NodeId> $"text-unit:BoC 7.2.{suffix}")); Request.uri (Reads.nodeEdges (WireFixtures.identity<ElementId> $"Person:served-{suffix}") EdgeKind.MentionedIn (Some EdgePageCursor.first) (Some 20)); Request.uri (Reads.textWindow (TextWindowReference.ofChapterReference (WireFixtures.identity<ChapterReference> "JHN.3")) None None (Some TextScope.Chapter) None); Request.uri (Reads.elements [ElementId.ofNodeId (WireFixtures.identity<NodeId> $"Event:a-{suffix}"); ElementId.ofEdgeId (WireFixtures.identity<EdgeId> $"edge:b-{suffix}")] None)]
+    Assert.Equal<string list>([$"api/node/text-unit%%3ABoC%%207.2.{suffix}"; $"api/node/Person%%3Aserved-{suffix}/edges?kind=mentioned-in&cursor=0&limit=20"; "api/text?ref=JHN.3&scope=chapter"; $"api/elements?ids=Event%%3Aa-{suffix}%%2Cedge%%3Ab-{suffix}"], actual)
 
-[<Fact>]
-let ``a typed HTTP read refuses a record missing its required fields`` () =
-    use response = new HttpResponseMessage(HttpStatusCode.OK, Content = new StringContent("""{"id":"Person:a","kind":"Person","label":"A"}"""))
+[<Property>]
+let ``a typed HTTP read refuses a record missing its required fields`` (suffix: uint16) =
+    let body = System.Text.Json.JsonSerializer.Serialize {| id = $"Person:{suffix}"; kind = "Person"; label = $"Label {suffix}" |}
+    use response = new HttpResponseMessage(HttpStatusCode.OK, Content = new StringContent(body))
     use handler = new Handler(response)
     use http = new HttpClient(handler, BaseAddress = Uri "http://example.test/")
-    let request = Reads.nodeRecord (WireFixtures.identity<NodeId> "Person:a")
+    let request = Reads.nodeRecord (WireFixtures.identity<NodeId> $"Person:{suffix}")
     let actual = Api.read http CancellationToken.None request |> Async.RunSynchronously
-    Assert.True(Result.isError actual)
+    Assert.Equal(Error(Contract "Missing field for record type BibleAtlas.FSharp.Contract.NodeRecord: edge_summary"), actual)
 
-[<Fact>]
-let ``a typed HTTP read returns the whole element page`` () =
-    use response = new HttpResponseMessage(HttpStatusCode.OK, Content = new StringContent("""{"elements":[{"element":"missing","id":"Person:absent"}],"version":"root"}"""))
+[<Property>]
+let ``a typed HTTP read returns the whole element page`` (suffix: uint16) =
+    let identity = ElementId.ofNodeId (WireFixtures.identity<NodeId> $"Person:absent-{suffix}")
+    let expected: ElementPage = { Elements = [Element.Missing { Id = identity }]; Version = WireFixtures.identity<ArtifactRoot> $"root-{suffix}"; Next = None; Previous = None }
+    use response = new HttpResponseMessage(HttpStatusCode.OK, Content = new StringContent(Json.encode expected))
     use handler = new Handler(response)
     use http = new HttpClient(handler, BaseAddress = Uri "http://example.test/")
-    let actual = Api.read http CancellationToken.None (Reads.elements [(WireFixtures.identity<ElementId> "Person:absent")] None) |> Async.RunSynchronously
-    Assert.Equal(Ok { Elements = [Element.Missing { Id = (WireFixtures.identity<ElementId> "Person:absent") }]; Version = (WireFixtures.identity<ArtifactRoot> "root"); Next = None; Previous = None }, actual)
+    let actual = Api.read http CancellationToken.None (Reads.elements [identity] None) |> Async.RunSynchronously
+    Assert.Equal(Ok expected, actual)
 
-[<Fact>]
-let ``a served refusal stays an explicit failure instead of an empty collection`` () =
-    use response = new HttpResponseMessage(HttpStatusCode.NotFound, Content = new StringContent("""{"error":{"code":"not_found","message":"node not found"}}"""))
+[<Property>]
+let ``a served refusal stays an explicit failure instead of an empty collection`` (NonNull reason: NonNull<string>) (notFound: bool) =
+    let status, code = if notFound then HttpStatusCode.NotFound, ErrorCode.NotFound else HttpStatusCode.BadRequest, ErrorCode.BadRef
+    let body = Json.encode { Error = { Code = code; Message = reason } }
+    use response = new HttpResponseMessage(status, Content = new StringContent(body))
     use handler = new Handler(response)
     use http = new HttpClient(handler, BaseAddress = Uri "http://example.test/")
     let actual = Api.read http CancellationToken.None (Reads.nodeRecord (WireFixtures.identity<NodeId> "Person:absent")) |> Async.RunSynchronously
-    Assert.Equal(Error(Transport "404: node not found"), actual)
+    Assert.Equal(Error(Transport $"{int status}: {reason}"), actual)
 
-[<Fact>]
-let ``an interrupted HTTP request completes with an explicit retryable failure`` () =
-    use handler = new InterruptedHandler()
+[<Property>]
+let ``an interrupted HTTP request completes with an explicit retryable failure`` (NonNull reason: NonNull<string>) =
+    use handler = new InterruptedHandler(reason)
     use http = new HttpClient(handler, BaseAddress = Uri "http://example.test/")
     let actual = Api.read http CancellationToken.None (Reads.sources()) |> Async.RunSynchronously
-    Assert.Equal(Error(Transport "read interrupted"), actual)
+    Assert.Equal(Error(Transport reason), actual)
 
 type Handler(response: HttpResponseMessage) =
     inherit HttpMessageHandler()
     override _.SendAsync(_, _) = System.Threading.Tasks.Task.FromResult response
 
-type InterruptedHandler() =
+type InterruptedHandler(reason: string) =
     inherit HttpMessageHandler()
-    override _.SendAsync(_, _) = System.Threading.Tasks.Task.FromException<HttpResponseMessage>(System.OperationCanceledException "read interrupted")
+    override _.SendAsync(_, _) = System.Threading.Tasks.Task.FromException<HttpResponseMessage>(System.OperationCanceledException reason)

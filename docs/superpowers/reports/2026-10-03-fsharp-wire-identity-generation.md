@@ -47,12 +47,26 @@ edge provenance, place claims and served reign/map/era labels. All eight tests i
 that touched file are now properties, replacing its example attributes. Entire
 Result presentations are asserted. Both remaining property controls stayed green.
 
+A follow-up replaces all **18 example tests** in GraphTests, TransportTests,
+AnchoredTextTests and RuntimeTests with properties. Identity/root suffixes vary
+across ordered and paged resolution; refusal laws now assert the entire
+(result, request-history) pair. Unicode laws vary BMP and supplementary scalars
+across the same served anchor/red-letter boundaries. Transport laws vary served
+failure text and statuses, use generated ErrorCode values and exercise both node
+and edge widenings in one many-elements request. Command laws vary whole start/
+arrival records. The empty-resolution law offers a varying nonempty answer and
+proves that no read occurs. Along with PresentationTests, these five files contain
+only properties. **18 focused properties and the full 157-test suite pass**.
+No app implementation changed in this test-conversion follow-up. Compile diagnostics
+for percent signs in interpolated expected URLs and an undeclared error-code test
+fixture were corrected; neither is counted as an app behavioral red.
+
 The first normal test compile exposed **98 distinct diagnostics** in legacy
 fixtures. The type-directed migration updates only test values, expected results
 and request arguments; generated constructors were not opened. WireFixtures uses
 the existing System.Text.Json library to admit test primitives, never an app
 factory. ContentsReference expectations use the actual generated widening. Old
-example tests outside PresentationTests remain; **157 passing tests is not a
+example tests outside those five files remain; **157 passing tests is not a
 property-only claim**. Compact compile reds and the 92 initial fixture adaptations
 are retained, followed by the final normal green log. Shared static assets are
 read-only sparse inputs from the approved C# client.

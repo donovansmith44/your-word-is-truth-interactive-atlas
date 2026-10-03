@@ -1,0 +1,26 @@
+{
+  "appCheckpoint": "1f18a00",
+  "convertedFiles": [
+    "GraphTests.fs",
+    "TransportTests.fs",
+    "AnchoredTextTests.fs",
+    "RuntimeTests.fs"
+  ],
+  "convertedExamples": 18,
+  "focusedProperties": {
+    "passed": 18,
+    "failed": 0,
+    "skipped": 0
+  },
+  "normalTests": {
+    "passed": 157,
+    "failed": 0,
+    "skipped": 0
+  },
+  "newAppBehavior": false,
+  "remainingExampleFiles": [
+    "ViewTests.fs",
+    "ExplorationTests.fs",
+    "ContractTests.fs"
+  ]
+}
