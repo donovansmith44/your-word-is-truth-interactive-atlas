@@ -235,8 +235,8 @@ internal static class FrontierProvenance
     // Deliberately does not filter out blank/whitespace provenance: a blank here means
     // real data has no attribution, and that must reach the affordance rather than be
     // silently treated as "no provenance at all" (which renders no affordance).
-    internal static IReadOnlyList<string> Distinct(IEnumerable<string> rowProvenances) =>
-        rowProvenances.Select(ProvenanceResolver.NormalizeId).Distinct().ToList();
+    internal static IReadOnlyList<string> Distinct(IEnumerable<Provenance> rowProvenances) =>
+        rowProvenances.Select(provenance => ProvenanceResolver.NormalizeId(provenance.Id)).Distinct().ToList();
 }
 
 public sealed class PassageCrossRefsSection : IPopoverSectionProvider
@@ -548,7 +548,7 @@ public sealed class EventProvenanceSection : IPopoverSectionProvider
         RenderFragment body = builder =>
         {
             FrontierProvenance.Affordance(
-                builder, 0, new[] { ProvenanceResolver.NormalizeId(detail.Provenance) }, registry, "event-provenance",
+                builder, 0, FrontierProvenance.Distinct([detail.Provenance]), registry, "event-provenance",
                 "Source for this event", Components.ProvenanceAffordance.RowRegister);
         };
         return new PopoverSection("event-provenance", body);
@@ -683,7 +683,7 @@ public sealed class EventWitnessesSection : IPopoverSectionProvider
             {
                 seq = FrontierProvenance.Heading(
                     builder, seq, "PARALLEL ACCOUNTS", "event-section-heading",
-                    detail.WitnessesProvenance ?? [], registry, "event-witnesses-provenance",
+                    FrontierProvenance.Distinct(detail.WitnessesProvenance ?? []), registry, "event-witnesses-provenance",
                     "Sources for these parallel accounts");
             }
 
@@ -729,7 +729,7 @@ public sealed class EventMentionsSection : IPopoverSectionProvider
             var seq = 0;
             seq = FrontierProvenance.Heading(
                 builder, seq, "MENTIONED IN", "event-section-heading",
-                detail.MentionsProvenance ?? [], registry, "event-mentions-provenance",
+                FrontierProvenance.Distinct(detail.MentionsProvenance ?? []), registry, "event-mentions-provenance",
                 "Sources for these mentions");
 
             builder.OpenComponent<Components.RefsList>(seq++);
@@ -987,7 +987,7 @@ public sealed class PersonCardAndMentionsSection : IPopoverSectionProvider
             builder.AddContent(seq++, $"MENTIONED IN SCRIPTURE ({total})");
             builder.CloseElement();
             builder.OpenComponent<Components.PersonMentionsList>(seq++);
-            builder.AddAttribute(seq++, nameof(Components.PersonMentionsList.Provenance), card.Provenance);
+            builder.AddAttribute(seq++, nameof(Components.PersonMentionsList.Provenance), card.Provenance.Id);
             builder.AddAttribute(seq++, nameof(Components.PersonMentionsList.Mentions), mentions);
             builder.AddAttribute(seq++, nameof(Components.PersonMentionsList.TotalCount), total);
             builder.AddAttribute(seq++, nameof(Components.PersonMentionsList.ShowHeading), false);

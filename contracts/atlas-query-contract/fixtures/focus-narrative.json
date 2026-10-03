@@ -9,8 +9,11 @@
     "id": "Narrative:abraham-migration",
     "kind": "Narrative",
     "label": "Abraham's Migration",
-    "provenance": "curated-narratives",
-    "version": "168c3f49c4f9141041c407ac3542e406"
+    "provenance": {
+      "id": "curated-narratives",
+      "title": "Our Own Curated Work"
+    },
+    "version": "18713ccd56249f05bda0674795717bfa"
   },
   "status": 200
 }

@@ -1,13 +1,17 @@
+mod common;
+
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use atlas_core::data::{demo_fixture, AtlasData, Canon, Event, EventWitness, Person, Place, Polity, PolityEra};
+use atlas_core::data::{AtlasData, Canon, Event, EventWitness, Person, Place, Polity, PolityEra};
 use atlas_core::time::TimeRange;
 use axum::body::Body;
 use axum::http::header::ACCESS_CONTROL_ALLOW_ORIGIN;
 use axum::http::{Request, StatusCode};
 use http_body_util::BodyExt;
 use tower::ServiceExt;
+
+use common::titled_fixture::{titled, titled_demo_fixture};
 
 fn graph_fixture_for(data: &AtlasData) -> Arc<atlas_graph::GraphService> {
     let xrefs_tsv = xrefs_tsv_from(data);
@@ -39,11 +43,11 @@ fn xrefs_tsv_from(data: &AtlasData) -> String {
 }
 
 fn graph_fixture() -> Arc<atlas_graph::GraphService> {
-    graph_fixture_for(&demo_fixture())
+    graph_fixture_for(&titled_demo_fixture())
 }
 
 fn app() -> axum::Router {
-    let data = demo_fixture();
+    let data = titled_demo_fixture();
     let graph = graph_fixture_for(&data);
     atlas_contract::app::build(Arc::new(data), graph, None)
 }
@@ -225,7 +229,7 @@ async fn event_endpoint_omits_when_for_general_kind_passages() {
             ..Default::default()
         },
     ];
-    let data = AtlasData::new(Canon { books: vec![] }, vec![], events, vec![], vec![], vec![], verses, HashMap::new()).finish();
+    let data = titled(AtlasData::new(Canon { books: vec![] }, vec![], events, vec![], vec![], vec![], verses, HashMap::new()).finish());
     let graph = graph_fixture_for(&data);
     let app = atlas_contract::app::build(Arc::new(data), graph, None);
 
@@ -254,7 +258,7 @@ async fn event_endpoint_omits_when_for_general_kind_passages() {
 
 #[tokio::test]
 async fn general_kind_event_places_never_resolve_a_spurious_period_name() {
-    let mut data = demo_fixture();
+    let mut data = titled_demo_fixture();
     data.events.push(Event {
         id: "g-hebron".into(),
         label: "A general-kind passage mentioning Hebron".into(),
@@ -282,7 +286,7 @@ async fn general_kind_event_places_never_resolve_a_spurious_period_name() {
 }
 
 async fn data_hebron_period_name_still_resolves_for_a_real_event_kind_window() {
-    let mut data = demo_fixture();
+    let mut data = titled_demo_fixture();
     data.events.push(Event {
         id: "e-hebron-period".into(),
         label: "A real event-kind passage, dated inside Kirjath-arba's range".into(),
@@ -316,7 +320,7 @@ async fn event_endpoint_carries_acts_section_when_present() {
         },
         Event { id: "a2".into(), label: "No Acts provenance".into(), when: TimeRange::new(30, 30).unwrap(), places: vec![], verses: vec![], ..Default::default() },
     ];
-    let data = AtlasData::new(Canon { books: vec![] }, vec![], events, vec![], vec![], vec![], HashMap::new(), HashMap::new()).finish();
+    let data = titled(AtlasData::new(Canon { books: vec![] }, vec![], events, vec![], vec![], vec![], HashMap::new(), HashMap::new()).finish());
     let graph = graph_fixture_for(&data);
     let app = atlas_contract::app::build(Arc::new(data), graph, None);
 
@@ -344,7 +348,7 @@ async fn event_endpoint_carries_kjv_superscription_when_present() {
         },
         Event { id: "k2".into(), label: "No KJV-superscription provenance".into(), when: TimeRange::undated(), places: vec![], verses: vec![], kind: atlas_core::data::EventKind::General, ..Default::default() },
     ];
-    let data = AtlasData::new(Canon { books: vec![] }, vec![], events, vec![], vec![], vec![], HashMap::new(), HashMap::new()).finish();
+    let data = titled(AtlasData::new(Canon { books: vec![] }, vec![], events, vec![], vec![], vec![], HashMap::new(), HashMap::new()).finish());
     let graph = graph_fixture_for(&data);
     let app = atlas_contract::app::build(Arc::new(data), graph, None);
 
@@ -386,7 +390,7 @@ async fn event_endpoint_general_kind_with_multiple_witnesses_shows_parallel_acco
         ],
         ..Default::default()
     }];
-    let data = AtlasData::new(Canon { books: vec![] }, vec![], events, vec![], vec![], vec![], verses, HashMap::new()).finish();
+    let data = titled(AtlasData::new(Canon { books: vec![] }, vec![], events, vec![], vec![], vec![], verses, HashMap::new()).finish());
     let graph = graph_fixture_for(&data);
     let app = atlas_contract::app::build(Arc::new(data), graph, None);
 
@@ -557,7 +561,7 @@ const YEAR_ZERO: i32 = 0;
 #[tokio::test]
 async fn a_person_whose_record_holds_a_year_zero_is_refused_as_this_atlases_own_defect() {
     // Arrange
-    let mut data = demo_fixture();
+    let mut data = titled_demo_fixture();
     data.people.push(Person { id: "nobody_0".into(), name: "Nobody".into(), birth_year: Some(YEAR_ZERO), verse_links: vec!["GEN.1.1".into()], ..Default::default() });
     let data: AtlasData = data.finish();
     let graph = graph_fixture_for(&data);
@@ -576,7 +580,7 @@ async fn a_person_whose_record_holds_a_year_zero_is_refused_as_this_atlases_own_
 #[tokio::test]
 async fn a_book_whose_record_dates_its_writing_at_one_end_only_is_refused_as_this_atlases_own_defect() {
     // Arrange
-    let mut data = demo_fixture();
+    let mut data = titled_demo_fixture();
     let joshua = data.books_meta.iter_mut().find(|meta| meta.book == "JOS").expect("the demo atlas records Joshua");
     joshua.write_to = None;
     let data: AtlasData = data.finish();
@@ -599,7 +603,7 @@ async fn a_book_whose_record_dates_its_writing_at_one_end_only_is_refused_as_thi
 #[tokio::test]
 async fn a_place_that_shares_a_catechism_items_id_carries_no_catechism_prose() {
     // Arrange
-    let mut data = demo_fixture();
+    let mut data = titled_demo_fixture();
     data.places.push(Place { id: "demo-item-1".into(), name: "Demo Item".into(), lat: 31.5, lon: 35.5, verse_links: vec!["JOS.1.1".into()] });
     let data: AtlasData = data.finish();
     let graph = graph_fixture_for(&data);
@@ -617,7 +621,7 @@ async fn a_place_that_shares_a_catechism_items_id_carries_no_catechism_prose() {
                 "id": "Place:demo-item-1",
                 "kind": "Place",
                 "label": "Demo Item",
-                "provenance": "curated-places",
+                "provenance": { "id": "curated-places", "title": "Our Own Curated Work" },
                 "edge_summary": [{ "kind": "mentioned-in", "count": 1 }],
                 "version": record["version"],
                 "place": { "lat": 31.5, "lon": 35.5, "display_name": "Demo Item" },
@@ -629,7 +633,7 @@ async fn a_place_that_shares_a_catechism_items_id_carries_no_catechism_prose() {
 #[tokio::test]
 async fn a_place_a_chapter_names_carries_the_node_it_opens_on() {
     // Arrange
-    let mut data = demo_fixture();
+    let mut data = titled_demo_fixture();
     data.places.push(Place { id: "kadesh".into(), name: "Kadesh".into(), lat: 30.6, lon: 34.4, verse_links: vec!["JOS.1.1".into()] });
     let data: AtlasData = data.finish();
     let graph = graph_fixture_for(&data);
@@ -669,7 +673,7 @@ async fn a_place_an_event_names_carries_the_node_it_opens_on() {
 #[tokio::test]
 async fn an_event_record_carries_every_section_and_note_its_event_records() {
     // Arrange
-    let mut data = demo_fixture();
+    let mut data = titled_demo_fixture();
     data.events.push(Event {
         id: "e-sections".into(),
         label: "A demo event cited by every outline".into(),
@@ -712,7 +716,7 @@ fn square_ring() -> Vec<(f64, f64)> {
 }
 
 fn app_with_test_polities() -> axum::Router {
-    let mut data = demo_fixture();
+    let mut data = titled_demo_fixture();
     data.polities = vec![
         Polity {
             id: "egypt".into(),
@@ -847,7 +851,7 @@ async fn polities_intersection_ordering_and_color_key_stability() {
 
 #[tokio::test]
 async fn polities_transition_and_fall_conditional_presence_on_the_wire() {
-    let mut data = demo_fixture();
+    let mut data = titled_demo_fixture();
     data.polities = vec![Polity {
         id: "delta-test".into(),
         color_key: 0,
@@ -929,7 +933,7 @@ async fn static_dir_serves_files_api_still_wins_and_falls_back_to_index_for_spa_
     std::fs::write(dir.join("index.html"), "<html>shell</html>").unwrap();
     std::fs::write(dir.join("app.css"), "body{color:red}").unwrap();
 
-    let app = atlas_contract::app::build(Arc::new(demo_fixture()), graph_fixture(), Some(dir.clone()));
+    let app = atlas_contract::app::build(Arc::new(titled_demo_fixture()), graph_fixture(), Some(dir.clone()));
 
     let response = app
         .clone()

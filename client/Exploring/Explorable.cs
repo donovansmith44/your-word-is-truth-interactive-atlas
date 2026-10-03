@@ -23,7 +23,7 @@ public sealed class Explorable
     {
     }
 
-    private Explorable(PositionRef identity, string root, NodeRecord? record, string? provenance, IEnumerable<EdgeSummaryEntry> summary, IReadOnlyList<Link> ends, ServedPages pages)
+    private Explorable(PositionRef identity, string root, NodeRecord? record, Provenance? provenance, IEnumerable<EdgeSummaryEntry> summary, IReadOnlyList<Link> ends, ServedPages pages)
     {
         Identity = identity;
         Root = root;
@@ -51,7 +51,7 @@ public sealed class Explorable
 
     public IReadOnlyList<Link> Ends { get; }
 
-    internal string? Provenance { get; }
+    internal Provenance? Provenance { get; }
 
     internal NodeRecord? Record { get; }
 

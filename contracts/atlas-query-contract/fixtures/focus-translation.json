@@ -4,8 +4,11 @@
     "id": "Translation:latin_vulgate",
     "kind": "Translation",
     "label": "Clementine Vulgate",
-    "provenance": "brainfuel",
-    "version": "168c3f49c4f9141041c407ac3542e406"
+    "provenance": {
+      "id": "brainfuel",
+      "title": "brain-fuel/bible Parallel Editions"
+    },
+    "version": "18713ccd56249f05bda0674795717bfa"
   },
   "status": 200
 }

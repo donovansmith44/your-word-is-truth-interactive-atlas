@@ -1,13 +1,15 @@
+mod common;
+
 use std::sync::Arc;
 
-use atlas_core::data::demo_fixture;
+use common::titled_fixture::titled_demo_fixture;
 use axum::body::Body;
 use axum::http::{Request, StatusCode};
 use http_body_util::BodyExt;
 use tower::ServiceExt;
 
 fn app() -> axum::Router {
-    let data = demo_fixture();
+    let data = titled_demo_fixture();
     let graph = atlas_graph::GraphService::from_canon_and_verses(&data.canon, &data.verses, "", &data).expect("fixture graph must build");
     atlas_contract::app::build(Arc::new(data), Arc::new(graph), None)
 }
@@ -18,7 +20,7 @@ async fn the_contract_declares_only_the_schema_versions_it_was_built_with() {
     let app = app();
     let expected = serde_json::json!({
         "manifest_schema": 1,
-        "section_schema_version": 26,
+        "section_schema_version": 27,
     });
     // Act
     let answered = get_json(&app, "/api/contract").await;

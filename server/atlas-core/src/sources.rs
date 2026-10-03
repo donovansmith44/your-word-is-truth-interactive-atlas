@@ -1,3 +1,5 @@
+use std::collections::BTreeMap;
+
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, utoipa::ToSchema)]
@@ -41,6 +43,43 @@ pub struct ProvenanceEntry {
 }
 
 pub use atlas_graph_types::ingest::Confidence;
+
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct ProvenanceTitles(BTreeMap<String, String>);
+
+impl ProvenanceTitles {
+    pub fn from_rows(rows: impl IntoIterator<Item = (String, String)>) -> Result<Self, DuplicateProvenance> {
+        let mut titles = BTreeMap::new();
+        for (id, title) in rows {
+            if titles.contains_key(&id) {
+                return Err(DuplicateProvenance { id });
+            }
+            titles.insert(id, title);
+        }
+        Ok(ProvenanceTitles(titles))
+    }
+
+    pub fn title_of(&self, provenance: &str) -> Option<&str> {
+        self.0.get(split_provenance_id(provenance).0).map(String::as_str)
+    }
+
+    pub fn rows(&self) -> impl Iterator<Item = (&str, &str)> {
+        self.0.iter().map(|(id, title)| (id.as_str(), title.as_str()))
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DuplicateProvenance {
+    pub id: String,
+}
+
+impl std::fmt::Display for DuplicateProvenance {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "the provenance {} is titled more than once", self.id)
+    }
+}
+
+impl std::error::Error for DuplicateProvenance {}
 
 pub fn split_provenance_id(id: &str) -> (&str, Option<&str>) {
     match id.split_once('/') {

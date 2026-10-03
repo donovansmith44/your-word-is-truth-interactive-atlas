@@ -124,7 +124,7 @@ async fn every_ingested_translation_node_is_reachable_through_the_existing_gener
         assert_eq!(status, StatusCode::OK, "GET {uri} must succeed -- a rendering's own TranslationId must resolve to a real, reachable node");
         assert_eq!(body["kind"], "Translation");
         assert_eq!(body["label"], label);
-        assert_eq!(body["provenance"], "brainfuel");
+        assert_eq!(body["provenance"], serde_json::json!({"id": "brainfuel", "title": "brain-fuel/bible Parallel Editions"}));
     }
 }
 

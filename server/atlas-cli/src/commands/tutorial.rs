@@ -47,7 +47,7 @@ every Place/Person/Event this graph attaches to that exact verse -- \
 
     out.push_str(&step_header(4, "bibex node <id> -- any node's record + edge summary"));
     out.push_str("$ bibex node Event:ab_ur\n");
-    out.push_str(&super::node::run(graph, "Event:ab_ur")?);
+    out.push_str(&super::node::run(data, graph, "Event:ab_ur")?);
     out.push_str(
         "\n'id'/'kind'/'label'/'provenance' identify the node; 'edges' lists \
 every edge KIND this node carries and how many entries each has -- the \

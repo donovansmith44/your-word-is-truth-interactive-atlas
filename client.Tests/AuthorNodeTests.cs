@@ -7,7 +7,7 @@ namespace BibleAtlas.Client.Tests;
 public sealed class AuthorNodeTests
 {
     private const string NehemiahsCard = """
-        {"id":"Container:bible-book-NEH","kind":"Container","label":"Nehemiah","edge_summary":[],"provenance":"","version":"",
+        {"id":"Container:bible-book-NEH","kind":"Container","label":"Nehemiah","edge_summary":[],"provenance":{"id":"kjv","title":"The King James Version"},"version":"",
          "book":{"author":"Nehemiah","write_place":{"id":"Place:jerusalem","kind":"Place","label":"Jerusalem"},
                  "written":{"from":{"label":"445 BC","value":-445},"label":"445 – 432 BC","to":{"label":"432 BC","value":-432}}}}
         """;

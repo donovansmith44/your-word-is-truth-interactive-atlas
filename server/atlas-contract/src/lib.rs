@@ -12,6 +12,7 @@ pub mod graph_wire;
 pub mod load;
 pub mod map;
 pub mod meta;
+pub mod provenance;
 pub mod query;
 pub mod reading;
 pub mod reference;

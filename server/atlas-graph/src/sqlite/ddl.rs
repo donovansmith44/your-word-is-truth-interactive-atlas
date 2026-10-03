@@ -544,6 +544,9 @@ CREATE TABLE source_entry (
 CREATE TABLE provenance_entry (
   id TEXT PRIMARY KEY, ord INTEGER NOT NULL, source TEXT NOT NULL, confidence TEXT NOT NULL, locator TEXT
 ) WITHOUT ROWID;
+CREATE TABLE provenance_title (
+  id TEXT PRIMARY KEY, title TEXT NOT NULL
+) WITHOUT ROWID;
 ";
 /// The write-time materialisation of `AtlasData::finish()`'s verse -> item join.
 const EXTRA_INDEX_DDL_CORE_SIDECARS: &str = "

@@ -116,13 +116,13 @@ pub async fn kretzmann_chapter(
 /// a book-only or chapter-only reference is `bad_ref`. A reference with no
 /// recorded cross references answers an empty list.
 #[utoipa::path(get, path = "/api/xrefs/{sref}", params(("sref" = String, Path)), responses((status = 200, body = Vec<wire::CrossRef>), ReferenceRefusals), tag = "reading")]
-pub async fn xrefs(State(graph): State<Arc<GraphService>>, Reference(VerseSpan(span)): Reference<VerseSpan>) -> Result<Json<Vec<wire::CrossRef>>, ApiError> {
+pub async fn xrefs(State(data): State<Arc<AtlasData>>, State(graph): State<Arc<GraphService>>, Reference(VerseSpan(span)): Reference<VerseSpan>) -> Result<Json<Vec<wire::CrossRef>>, ApiError> {
     let by_from = graph.cross_refs_for_span(&span);
     let aggregated = aggregate_span_xrefs(&span, &by_from, |key| {
         let v = VerseId::parse_canonical(key).ok()?;
         graph.verse_text_of(&VerseRef { book: v.book.0, chapter: v.chapter, verse: v.verse })
     });
-    let provenance = graph.provenance.by_family(atlas_graph::provenance::family::CROSS_REFS);
+    let provenance = crate::provenance::all_titled(&graph.provenance.by_family(atlas_graph::provenance::family::CROSS_REFS), &data)?;
     let out = aggregated
         .into_iter()
         .map(|x| wire::CrossRef::attributed(x, &provenance))

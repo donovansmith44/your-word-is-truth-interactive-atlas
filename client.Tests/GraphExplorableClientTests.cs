@@ -37,7 +37,7 @@ public class GraphExplorableClientTests
     {
         var (client, handler) = MakeClient();
         handler.ResponseBody = """
-            {"id":"text-unit:JHN.3.16","kind":"TextUnit","label":"JHN.3.16","provenance":"kjv","edge_summary":[{"kind":"cites","count":178}],"version":"abc123"}
+            {"id":"text-unit:JHN.3.16","kind":"TextUnit","label":"JHN.3.16","provenance":{"id":"kjv","title":"The King James Version"},"edge_summary":[{"kind":"cites","count":178}],"version":"abc123"}
             """;
 
         var card = await client.Card("text-unit:JHN.3.16");
@@ -46,7 +46,7 @@ public class GraphExplorableClientTests
         Assert.Equal("text-unit:JHN.3.16", card.Id);
         Assert.Equal(NodeKind.TextUnit, card.Kind);
         Assert.Equal("JHN.3.16", card.Label);
-        Assert.Equal("kjv", card.Provenance);
+        Assert.Equal(new Provenance(id: "kjv", title: "The King James Version"), card.Provenance);
         Assert.Equal("abc123", card.Version);
         Assert.Single(card.EdgeSummary);
         Assert.Equal(EdgeKind.Cites, card.EdgeSummary[0].Kind);
@@ -118,8 +118,8 @@ public class GraphExplorableClientTests
         var (client, handler) = MakeClient();
         handler.ResponseBody = """
             {"elements":[
-              {"element":"node","node":{"id":"text-unit:EXO.14.21","kind":"TextUnit","label":"Exodus 14:21","provenance":"kjv","edge_summary":[],"version":"abc123"}},
-              {"element":"edge","edge":{"id":"Attests:00aa","kind":"attested-in","label":"The Red Sea parted · Attested in · Exodus 14:21","subject":{"position":"node","node":{"id":"Event:red_sea","kind":"Event","label":"The Red Sea parted"}},"object":{"position":"node","node":{"id":"text-unit:EXO.14.21","kind":"TextUnit","label":"Exodus 14:21"}},"provenance":"kjv","edge_summary":[]}},
+              {"element":"node","node":{"id":"text-unit:EXO.14.21","kind":"TextUnit","label":"Exodus 14:21","provenance":{"id":"kjv","title":"The King James Version"},"edge_summary":[],"version":"abc123"}},
+              {"element":"edge","edge":{"id":"Attests:00aa","kind":"attested-in","label":"The Red Sea parted · Attested in · Exodus 14:21","subject":{"position":"node","node":{"id":"Event:red_sea","kind":"Event","label":"The Red Sea parted"}},"object":{"position":"node","node":{"id":"text-unit:EXO.14.21","kind":"TextUnit","label":"Exodus 14:21"}},"provenance":{"id":"kjv","title":"The King James Version"},"edge_summary":[]}},
               {"element":"missing","id":"Event:nowhere"}],"version":"abc123"}
             """;
 
@@ -130,9 +130,9 @@ public class GraphExplorableClientTests
         Assert.Equal(
             ("/api/elements", "?ids=text-unit:EXO.14.21,Attests:00aa,Event:nowhere", WholeValue.Of(new Element[]
             {
-                new NodeElement(new NodeRecord(book: null, catechism: null, description: null, edgeSummary: [], @event: null, id: "text-unit:EXO.14.21", kind: NodeKind.TextUnit, label: "Exodus 14:21", person: null, place: null, era: null, map: null, polity: null, provenance: "kjv", text: null, version: "abc123")),
+                new NodeElement(new NodeRecord(book: null, catechism: null, description: null, edgeSummary: [], @event: null, id: "text-unit:EXO.14.21", kind: NodeKind.TextUnit, label: "Exodus 14:21", person: null, place: null, era: null, map: null, polity: null, provenance: new Provenance(id: "kjv", title: "The King James Version"), text: null, version: "abc123")),
                 new EdgeElement(new EdgeRecord(edgeSummary: [], id: "Attests:00aa", kind: EdgeKind.AttestedIn, label: "The Red Sea parted · Attested in · Exodus 14:21", narrative: null,
-                    @object: new NodePosition(new NodeRef(id: "text-unit:EXO.14.21", kind: NodeKind.TextUnit, label: "Exodus 14:21")), parentage: null, provenance: "kjv",
+                    @object: new NodePosition(new NodeRef(id: "text-unit:EXO.14.21", kind: NodeKind.TextUnit, label: "Exodus 14:21")), parentage: null, provenance: new Provenance(id: "kjv", title: "The King James Version"),
                     subject: new NodePosition(new NodeRef(id: "Event:red_sea", kind: NodeKind.Event, label: "The Red Sea parted")), votes: null)),
                 new MissingElement("Event:nowhere"),
             }), "abc123"),

@@ -20,7 +20,7 @@ fn the_sections_read_back_into_the_graph_that_wrote_them() {
     assert_eq!(g.cross_refs.len(), 343558 + CONCORD_CITATIONS);
     assert_eq!(g.reading["bible"].order.len(), 31102);
     assert_eq!(g.occurs.len(), 431_280, "LEX-1: one Occurs row per aligned token");
-    assert!(g.extra_tables.len() == 34, "{} extra tables re-attached", g.extra_tables.len());
+    assert!(g.extra_tables.len() == 35, "{} extra tables re-attached", g.extra_tables.len());
     assert_eq!(snap.present().len(), 5);
 }
 

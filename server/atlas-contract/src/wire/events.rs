@@ -54,11 +54,11 @@ pub struct EventPage {
     pub mentioned_in: Vec<String>,
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub analogues: Vec<EventAnalogue>,
-    pub provenance: String,
+    pub provenance: super::Provenance,
     #[serde(skip_serializing_if = "Vec::is_empty")]
-    pub witnesses_provenance: Vec<String>,
+    pub witnesses_provenance: Vec<super::Provenance>,
     #[serde(skip_serializing_if = "Vec::is_empty")]
-    pub mentions_provenance: Vec<String>,
+    pub mentions_provenance: Vec<super::Provenance>,
 }
 
 #[derive(Debug, Serialize, utoipa::ToSchema)]
@@ -67,5 +67,5 @@ pub struct EventPage {
 pub struct EventAnalogue {
     pub id: String,
     pub title: String,
-    pub provenance: String,
+    pub provenance: super::Provenance,
 }

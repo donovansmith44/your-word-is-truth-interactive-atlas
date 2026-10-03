@@ -41,10 +41,11 @@ fn the_sources_generator_writes_the_compiled_registry_byte_for_byte_and_says_wha
     let written = Path::new(env!("CARGO_TARGET_TMPDIR")).join("the_sources_generator.json");
     let _ = std::fs::remove_file(&written);
     let committed = std::fs::read(data_dir().join("compiled").join("sources.json")).expect("data/compiled/sources.json must exist");
-    let doc = atlas_etl::sources::parse_sources(
+    let doc = atlas_etl::sources::admit_sources(
         &std::fs::read_to_string(curated_dir().join("sources.toml")).expect("data/curated/sources.toml must exist"),
     )
-    .expect("data/curated/sources.toml must parse");
+    .expect("data/curated/sources.toml must be admitted")
+    .into_document();
     let expected_report = format!(
         "gen_sources: wrote {} categories, {} sources, {} provenance rows to {} (validated 1:1 against LICENSES.md's per-source table)\n",
         doc.categories.len(),

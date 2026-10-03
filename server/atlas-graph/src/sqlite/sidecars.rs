@@ -9,7 +9,7 @@ use atlas_core::data::{
     ChronologyAnchor, Landmark, LandmarkKind, LandmarkSize, PlaceDateClaim, PlaceHistory,
     PlaceNameAlias, PlaceNameEntry,
 };
-use atlas_core::sources::{Confidence, ProvenanceEntry, SourceCategory, SourceEntry, SourcesDocument};
+use atlas_core::sources::{Confidence, ProvenanceEntry, ProvenanceTitles, SourceCategory, SourceEntry, SourcesDocument};
 use atlas_core::time::TimeRange;
 use atlas_graph_types::canon::{serialize, Value};
 use rusqlite::Connection;
@@ -82,9 +82,10 @@ pub static SOURCE_ENTRY: TableSpec = TableSpec {
 };
 pub static PROVENANCE_ENTRY: TableSpec =
     TableSpec { name: "provenance_entry", columns: &["id", "ord", "source", "confidence", "locator"], pk: &["id"] };
+pub static PROVENANCE_TITLE: TableSpec = TableSpec { name: "provenance_title", columns: &["id", "title"], pk: &["id"] };
 
 /// The 21 sidecar specs in `extra_tables_of(Core)` order, after the five graph-derived tables.
-pub static SIDECAR_SPECS: [&TableSpec; 20] = [
+pub static SIDECAR_SPECS: [&TableSpec; 21] = [
     &CANON_BOOK,
     &CANON_CHAPTER_VERSES,
     &BOOK_META,
@@ -105,6 +106,7 @@ pub static SIDECAR_SPECS: [&TableSpec; 20] = [
     &SOURCE_CATEGORY,
     &SOURCE_ENTRY,
     &PROVENANCE_ENTRY,
+    &PROVENANCE_TITLE,
 ];
 
 fn t(s: &str) -> Col {
@@ -272,6 +274,7 @@ pub fn fold_sidecars(atlas: &AtlasData, sources: &SourcesDocument) -> Result<Vec
         .enumerate()
         .map(|(ord, p)| vec![t(&p.id), i(ord as i64), t(&p.source), t(p.confidence.name()), ot(&p.locator)])
         .collect();
+    let provenance_title = atlas.provenance_titles.rows().map(|(id, title)| vec![t(id), t(title)]).collect();
 
     Ok(vec![
         ExtraTable { spec: &CANON_BOOK, rows: canon_book },
@@ -294,6 +297,7 @@ pub fn fold_sidecars(atlas: &AtlasData, sources: &SourcesDocument) -> Result<Vec
         ExtraTable { spec: &SOURCE_CATEGORY, rows: source_category },
         ExtraTable { spec: &SOURCE_ENTRY, rows: source_entry },
         ExtraTable { spec: &PROVENANCE_ENTRY, rows: provenance_entry },
+        ExtraTable { spec: &PROVENANCE_TITLE, rows: provenance_title },
     ])
 }
 
@@ -559,6 +563,11 @@ pub fn unfold(conn: &Connection) -> Result<(AtlasData, SourcesDocument), SqliteE
         provenances.push((int(&r[1], t)?, ProvenanceEntry { id: text(&r[0], t)?, source: text(&r[2], t)?, confidence: word(&r[3], t, Confidence::named)?, locator: opt_text(&r[4], t)? }));
     }
     provenances.sort_by_key(|(o, _)| *o);
+    let mut provenance_titles = Vec::new();
+    for r in rows(&PROVENANCE_TITLE)? {
+        let t = "provenance_title";
+        provenance_titles.push((text(&r[0], t)?, text(&r[1], t)?));
+    }
     let sources = SourcesDocument {
         categories: categories.into_iter().map(|(_, c)| c).collect(),
         sources: entries.into_iter().map(|(_, e)| e).collect(),
@@ -576,5 +585,6 @@ pub fn unfold(conn: &Connection) -> Result<(AtlasData, SourcesDocument), SqliteE
     atlas.catechism = catechism;
     atlas.chronology_anchors = chronology_anchors;
     atlas.book_narration_windows = book_narration_windows;
+    atlas.provenance_titles = ProvenanceTitles::from_rows(provenance_titles).map_err(|e| SqliteError(format!("provenance_title: {e}")))?;
     Ok((atlas, sources))
 }

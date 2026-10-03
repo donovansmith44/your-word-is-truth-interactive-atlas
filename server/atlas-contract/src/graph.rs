@@ -88,7 +88,7 @@ fn read_node_record(node_id: &AnyNodeId, data: &AtlasData, graph: &GraphService,
         id: encode_node_id(node_id, snap)?,
         kind: node_id.kind,
         label,
-        provenance: node.provenance.clone(),
+        provenance: crate::provenance::titled(&node.provenance, data)?,
         edge_summary,
         version: atlas_graph::version_hex(graph.version()),
         person,
@@ -109,7 +109,7 @@ fn polity_detail(polity: &AnyNodeId, graph: &GraphService) -> Result<wire::Polit
     Ok(wire::PolityDetail { reign: wire::TimeRange::of(reign) })
 }
 
-fn read_edge_record(id: &EdgeId, snap: &impl GraphQuery) -> Result<Option<wire::EdgeRecord>, ApiError> {
+fn read_edge_record(id: &EdgeId, data: &AtlasData, snap: &impl GraphQuery) -> Result<Option<wire::EdgeRecord>, ApiError> {
     let Some(record) = snap.edge(id) else { return Ok(None) };
     let at = Position::Edge(id.clone());
     let [label, subject, object]: [String; 3] = labelled_positions(&[at.clone(), record.subject.clone(), record.object.clone()], snap)?
@@ -122,7 +122,7 @@ fn read_edge_record(id: &EdgeId, snap: &impl GraphQuery) -> Result<Option<wire::
         label,
         subject: described_as(&record.subject, subject, snap)?,
         object: described_as(&record.object, object, snap)?,
-        provenance: snap.row_provenance(id).map(|row| row.provenance),
+        provenance: snap.row_provenance(id).map(|row| crate::provenance::titled(&row.provenance, data)).transpose()?,
         votes,
         narrative,
         parentage,
@@ -156,7 +156,7 @@ pub fn read_elements(data: &AtlasData, graph: &GraphService, snap: &impl GraphQu
         .map(|element| {
             let read = match &element.id {
                 ElementId::Node(node) => read_node_record(node, data, graph, snap)?.map(|node| wire::Element::Node { node }),
-                ElementId::Edge(edge) => read_edge_record(edge, snap)?.map(|edge| wire::Element::Edge { edge }),
+                ElementId::Edge(edge) => read_edge_record(edge, data, snap)?.map(|edge| wire::Element::Edge { edge }),
             };
             Ok(read.unwrap_or_else(|| wire::Element::Missing { id: element.asked.clone() }))
         })

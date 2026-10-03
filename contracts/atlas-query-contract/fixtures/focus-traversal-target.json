@@ -29,7 +29,10 @@
     "id": "text-unit:ROM.5.8",
     "kind": "TextUnit",
     "label": "ROM.5.8",
-    "provenance": "kjv",
+    "provenance": {
+      "id": "kjv",
+      "title": "The King James Version"
+    },
     "text": {
       "anchors": [
         {
@@ -52,7 +55,7 @@
       "text": "But God commendeth his love toward us, in that, while we were yet sinners, Christ died for us.",
       "words_of_christ": []
     },
-    "version": "168c3f49c4f9141041c407ac3542e406"
+    "version": "18713ccd56249f05bda0674795717bfa"
   },
   "status": 200
 }

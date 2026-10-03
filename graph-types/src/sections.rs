@@ -160,7 +160,7 @@ pub fn justified_by_source_family(source_edge_id: &EdgeId) -> Option<RowFamily> 
 }
 
 /// Part of every manifest line, and therefore part of the root.
-pub const SECTION_SCHEMA_VERSION: u32 = 26;
+pub const SECTION_SCHEMA_VERSION: u32 = 27;
 
 /// A per-row family appears under both of its homes.
 pub fn row_tables_of(section: Section) -> &'static [RowFamily] {
@@ -246,6 +246,7 @@ pub fn extra_tables_of(section: Section) -> &'static [&'static str] {
             "source_category",
             "source_entry",
             "provenance_entry",
+            "provenance_title",
         ],
         Section::Kjv => &["verse", "red_letter_span", "kjv_token"],
         Section::Concord => &["concord_unit", "concord_token"],
@@ -486,9 +487,9 @@ mod laws {
         assert_eq!(extra_tables_of(Section::Concord), &["concord_unit", "concord_token"]);
         assert!(extra_tables_of(Section::Kretzmann).is_empty());
         assert_eq!(extra_tables_of(Section::Lexicon), &["lexicon_entry", "token"]);
-        assert_eq!(extra_tables_of(Section::Core).len(), 27);
+        assert_eq!(extra_tables_of(Section::Core).len(), 28);
         let order = logical_table_order(Section::Core);
-        assert_eq!(order[order.len() - 4..], ["provenance_entry", "label", "edge_index", "edge_count"]);
+        assert_eq!(order[order.len() - 4..], ["provenance_title", "label", "edge_index", "edge_count"]);
         assert!(order.iter().position(|t| *t == "place").unwrap() > order.iter().position(|t| *t == "analogue").unwrap());
         let mut all: Vec<&str> = Section::SHIPPED.iter().flat_map(|s| extra_tables_of(*s).iter().copied()).collect();
         let n = all.len();

@@ -509,6 +509,8 @@ pub struct AtlasData {
     pub event_mentions: Vec<EventMentionSeed>,
     #[serde(skip)]
     pub event_analogues: Vec<EventAnalogueSeed>,
+    #[serde(skip)]
+    pub provenance_titles: crate::sources::ProvenanceTitles,
 
     #[serde(skip)]
     place_index: HashMap<String, usize>,

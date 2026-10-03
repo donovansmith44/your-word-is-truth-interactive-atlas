@@ -25,8 +25,7 @@ fn main() -> Result<()> {
 
     let toml_input = fs::read_to_string(&sources_toml_path)
         .with_context(|| format!("reading {}", sources_toml_path.display()))?;
-    let doc = atlas_etl::sources::parse_sources(&toml_input)?;
-    atlas_etl::sources::validate_structure(&doc)?;
+    let doc = atlas_etl::sources::admit_sources(&toml_input)?.into_document();
 
     let licenses_md =
         fs::read_to_string(&licenses_path).with_context(|| format!("reading {}", licenses_path.display()))?;

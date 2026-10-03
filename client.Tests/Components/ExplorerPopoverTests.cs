@@ -76,7 +76,7 @@ public sealed class ExplorerPopoverTests : BunitContext
         Hosting(new ServedGraph().Serving(new NodeRecord(
             book: null, catechism: null, description: prose, edgeSummary: [], @event: null,
             id: "CommentaryItem:kretzmann/0.1.0", kind: NodeKind.CommentaryItem, label: "The Creation of Chaos and Light",
-            person: null, place: null, era: null, map: null, polity: null, provenance: ServedGraph.Provenance, text: null, version: "v")));
+            person: null, place: null, era: null, map: null, polity: null, provenance: ServedGraph.ServedProvenance, text: null, version: "v")));
 
         // Act
         var popover = Render<ExplorerPopover>(p => p.Add(v => v.Opening, new PopoverOpening.Legacy(new CommentaryItemNode("kretzmann/0.1.0", "The Creation of Chaos and Light"))));

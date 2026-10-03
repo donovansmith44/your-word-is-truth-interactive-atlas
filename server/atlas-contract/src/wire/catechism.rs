@@ -8,11 +8,11 @@ pub struct CatechismRef {
     pub name: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub question: Option<String>,
-    pub provenance: Vec<String>,
+    pub provenance: Vec<super::Provenance>,
 }
 
 impl CatechismRef {
-    pub(crate) fn attributed(c: atlas_core::catechism::CatechismRef, provenance: &[String]) -> Self {
+    pub(crate) fn attributed(c: atlas_core::catechism::CatechismRef, provenance: &[super::Provenance]) -> Self {
         CatechismRef { id: c.id, name: c.name, question: c.question, provenance: provenance.to_vec() }
     }
 }

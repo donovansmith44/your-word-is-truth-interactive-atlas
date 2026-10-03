@@ -297,7 +297,7 @@
         },
         "provenance": {
           "items": {
-            "type": "string"
+            "$ref": "#/$defs/Provenance"
           },
           "type": "array"
         },
@@ -536,7 +536,7 @@
         },
         "provenance": {
           "items": {
-            "type": "string"
+            "$ref": "#/$defs/Provenance"
           },
           "type": "array"
         },
@@ -827,9 +827,13 @@
           ]
         },
         "provenance": {
-          "type": [
-            "string",
-            "null"
+          "oneOf": [
+            {
+              "$ref": "#/$defs/Provenance"
+            },
+            {
+              "type": "null"
+            }
           ]
         },
         "subject": {
@@ -1046,7 +1050,7 @@
           "type": "string"
         },
         "provenance": {
-          "type": "string"
+          "$ref": "#/$defs/Provenance"
         },
         "title": {
           "type": "string"
@@ -1159,7 +1163,7 @@
         },
         "mentions_provenance": {
           "items": {
-            "type": "string"
+            "$ref": "#/$defs/Provenance"
           },
           "type": "array"
         },
@@ -1170,7 +1174,7 @@
           "type": "array"
         },
         "provenance": {
-          "type": "string"
+          "$ref": "#/$defs/Provenance"
         },
         "ref_note": {
           "type": [
@@ -1205,7 +1209,7 @@
         },
         "witnesses_provenance": {
           "items": {
-            "type": "string"
+            "$ref": "#/$defs/Provenance"
           },
           "type": "array"
         }
@@ -1727,7 +1731,7 @@
           ]
         },
         "provenance": {
-          "type": "string"
+          "$ref": "#/$defs/Provenance"
         },
         "text": {
           "oneOf": [
@@ -2090,6 +2094,22 @@
       },
       "required": [
         "position"
+      ],
+      "type": "object"
+    },
+    "Provenance": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "title"
       ],
       "type": "object"
     },
@@ -2876,5 +2896,5 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "description": "Derived from contracts/openapi.yaml by export_contract; do not edit.",
   "title": "Atlas Query Contract -- shapes",
-  "version": "0.29.0"
+  "version": "0.30.0"
 }

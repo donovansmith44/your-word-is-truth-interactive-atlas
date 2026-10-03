@@ -33,7 +33,10 @@
           "id": "text-unit:JHN.3.16",
           "kind": "TextUnit",
           "label": "JHN.3.16",
-          "provenance": "kjv",
+          "provenance": {
+            "id": "kjv",
+            "title": "The King James Version"
+          },
           "text": {
             "anchors": [
               {
@@ -71,7 +74,7 @@
               }
             ]
           },
-          "version": "168c3f49c4f9141041c407ac3542e406"
+          "version": "18713ccd56249f05bda0674795717bfa"
         }
       },
       {
@@ -81,7 +84,7 @@
     ],
     "next": null,
     "previous": null,
-    "version": "168c3f49c4f9141041c407ac3542e406"
+    "version": "18713ccd56249f05bda0674795717bfa"
   },
   "status": 200
 }

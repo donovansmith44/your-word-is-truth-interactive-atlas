@@ -1600,8 +1600,14 @@
           "id": "commandment-1",
           "name": "The First Commandment",
           "provenance": [
-            "concord-sc-overlap",
-            "curated-catechism"
+            {
+              "id": "concord-sc-overlap",
+              "title": "Catechism Verse Mapping"
+            },
+            {
+              "id": "curated-catechism",
+              "title": "Catechism Verse Mapping"
+            }
           ],
           "question": "God the Holy Trinity"
         },
@@ -1609,8 +1615,14 @@
           "id": "commandment-2",
           "name": "The Second Commandment",
           "provenance": [
-            "concord-sc-overlap",
-            "curated-catechism"
+            {
+              "id": "concord-sc-overlap",
+              "title": "Catechism Verse Mapping"
+            },
+            {
+              "id": "curated-catechism",
+              "title": "Catechism Verse Mapping"
+            }
           ],
           "question": "Proclaiming God's Name"
         },
@@ -1618,8 +1630,14 @@
           "id": "commandment-2",
           "name": "The Second Commandment",
           "provenance": [
-            "concord-sc-overlap",
-            "curated-catechism"
+            {
+              "id": "concord-sc-overlap",
+              "title": "Catechism Verse Mapping"
+            },
+            {
+              "id": "curated-catechism",
+              "title": "Catechism Verse Mapping"
+            }
           ],
           "question": "Acting in God's Name"
         },
@@ -1627,8 +1645,14 @@
           "id": "commandment-3",
           "name": "The Third Commandment",
           "provenance": [
-            "concord-sc-overlap",
-            "curated-catechism"
+            {
+              "id": "concord-sc-overlap",
+              "title": "Catechism Verse Mapping"
+            },
+            {
+              "id": "curated-catechism",
+              "title": "Catechism Verse Mapping"
+            }
           ],
           "question": "The Means of Grace"
         },
@@ -1636,8 +1660,14 @@
           "id": "creed-3",
           "name": "The Third Article — Of Sanctification",
           "provenance": [
-            "concord-sc-overlap",
-            "curated-catechism"
+            {
+              "id": "concord-sc-overlap",
+              "title": "Catechism Verse Mapping"
+            },
+            {
+              "id": "curated-catechism",
+              "title": "Catechism Verse Mapping"
+            }
           ],
           "question": "Sent to Witness and Proclaim"
         },
@@ -1645,16 +1675,28 @@
           "id": "baptism-1",
           "name": "Baptism — Part One",
           "provenance": [
-            "concord-sc-overlap",
-            "curated-catechism"
+            {
+              "id": "concord-sc-overlap",
+              "title": "Catechism Verse Mapping"
+            },
+            {
+              "id": "curated-catechism",
+              "title": "Catechism Verse Mapping"
+            }
           ]
         },
         {
           "id": "baptism-1",
           "name": "Baptism — Part One",
           "provenance": [
-            "concord-sc-overlap",
-            "curated-catechism"
+            {
+              "id": "concord-sc-overlap",
+              "title": "Catechism Verse Mapping"
+            },
+            {
+              "id": "curated-catechism",
+              "title": "Catechism Verse Mapping"
+            }
           ],
           "question": "Baptizing in the Triune Name"
         },
@@ -1662,8 +1704,14 @@
           "id": "baptism-1",
           "name": "Baptism — Part One",
           "provenance": [
-            "concord-sc-overlap",
-            "curated-catechism"
+            {
+              "id": "concord-sc-overlap",
+              "title": "Catechism Verse Mapping"
+            },
+            {
+              "id": "curated-catechism",
+              "title": "Catechism Verse Mapping"
+            }
           ],
           "question": "Baptizing and Teaching"
         },
@@ -1671,8 +1719,14 @@
           "id": "baptism-1",
           "name": "Baptism — Part One",
           "provenance": [
-            "concord-sc-overlap",
-            "curated-catechism"
+            {
+              "id": "concord-sc-overlap",
+              "title": "Catechism Verse Mapping"
+            },
+            {
+              "id": "curated-catechism",
+              "title": "Catechism Verse Mapping"
+            }
           ],
           "question": "Households Baptized"
         },
@@ -1680,8 +1734,14 @@
           "id": "baptism-1",
           "name": "Baptism — Part One",
           "provenance": [
-            "concord-sc-overlap",
-            "curated-catechism"
+            {
+              "id": "concord-sc-overlap",
+              "title": "Catechism Verse Mapping"
+            },
+            {
+              "id": "curated-catechism",
+              "title": "Catechism Verse Mapping"
+            }
           ],
           "question": "Baptized Without Delay"
         },
@@ -1689,8 +1749,14 @@
           "id": "baptism-4",
           "name": "Baptism — Part Four",
           "provenance": [
-            "concord-sc-overlap",
-            "curated-catechism"
+            {
+              "id": "concord-sc-overlap",
+              "title": "Catechism Verse Mapping"
+            },
+            {
+              "id": "curated-catechism",
+              "title": "Catechism Verse Mapping"
+            }
           ],
           "question": "Living Daily in Our Baptism"
         },
@@ -1698,8 +1764,14 @@
           "id": "confession-2",
           "name": "The Absolution",
           "provenance": [
-            "concord-sc-overlap",
-            "curated-catechism"
+            {
+              "id": "concord-sc-overlap",
+              "title": "Catechism Verse Mapping"
+            },
+            {
+              "id": "curated-catechism",
+              "title": "Catechism Verse Mapping"
+            }
           ],
           "question": "Gathered in His Name"
         },
@@ -1707,8 +1779,14 @@
           "id": "altar-4",
           "name": "Who Receives the Sacrament Worthily",
           "provenance": [
-            "concord-sc-overlap",
-            "curated-catechism"
+            {
+              "id": "concord-sc-overlap",
+              "title": "Catechism Verse Mapping"
+            },
+            {
+              "id": "curated-catechism",
+              "title": "Catechism Verse Mapping"
+            }
           ],
           "question": "Preparing to Receive Him"
         }
@@ -3224,7 +3302,7 @@
     "GET /api/contract": {
       "body": {
         "manifest_schema": 1,
-        "section_schema_version": 26
+        "section_schema_version": 27
       },
       "status": 200
     },
@@ -3468,7 +3546,10 @@
             }
           }
         ],
-        "provenance": "curated",
+        "provenance": {
+          "id": "curated",
+          "title": "Our Own Curated Work"
+        },
         "title": "Sojourn in Haran; the call of Abram",
         "when": {
           "from_year": -2092,
@@ -3499,7 +3580,10 @@
           }
         ],
         "witnesses_provenance": [
-          "event-witnesses"
+          {
+            "id": "event-witnesses",
+            "title": "Our Own Curated Work"
+          }
         ]
       },
       "status": 200
@@ -3763,7 +3847,7 @@
             "verse": 31
           }
         ],
-        "version": "bdc28d5488646977d7a74e76b6e26d7e"
+        "version": "fa95e31a4c84a41ac12339853cefc795"
       },
       "status": 200
     },
@@ -5053,8 +5137,11 @@
         "id": "Event:ab_ur",
         "kind": "Event",
         "label": "Terah's family leaves Ur",
-        "provenance": "curated",
-        "version": "bdc28d5488646977d7a74e76b6e26d7e"
+        "provenance": {
+          "id": "curated",
+          "title": "Our Own Curated Work"
+        },
+        "version": "fa95e31a4c84a41ac12339853cefc795"
       },
       "status": 200
     },
@@ -5083,8 +5170,11 @@
           "lat": 33.018333,
           "lon": 35.569167
         },
-        "provenance": "curated-places",
-        "version": "bdc28d5488646977d7a74e76b6e26d7e"
+        "provenance": {
+          "id": "curated-places",
+          "title": "Our Own Curated Work"
+        },
+        "version": "fa95e31a4c84a41ac12339853cefc795"
       },
       "status": 200
     },
@@ -5125,7 +5215,7 @@
         "kind": "site-of",
         "next": null,
         "previous": null,
-        "version": "bdc28d5488646977d7a74e76b6e26d7e"
+        "version": "fa95e31a4c84a41ac12339853cefc795"
       },
       "status": 200
     },
@@ -10963,7 +11053,10 @@
         {
           "preview": "But God commendeth his love toward us, in that, while we were yet sinners, Christ died for us.",
           "provenance": [
-            "openbible.info-cross-references"
+            {
+              "id": "openbible.info-cross-references",
+              "title": "OpenBible.info Cross-References"
+            }
           ],
           "target": "ROM.5.8",
           "votes": 981
@@ -10971,7 +11064,10 @@
         {
           "preview": "In this was manifested the love of God toward us, because that God sent his only begotten Son into the world, that we might live through him.",
           "provenance": [
-            "openbible.info-cross-references"
+            {
+              "id": "openbible.info-cross-references",
+              "title": "OpenBible.info Cross-References"
+            }
           ],
           "target": "1JN.4.9-10",
           "votes": 695
@@ -10979,7 +11075,10 @@
         {
           "preview": "He that spared not his own Son, but delivered him up for us all, how shall he not with him also freely give us all things?",
           "provenance": [
-            "openbible.info-cross-references"
+            {
+              "id": "openbible.info-cross-references",
+              "title": "OpenBible.info Cross-References"
+            }
           ],
           "target": "ROM.8.32",
           "votes": 507
@@ -10987,7 +11086,10 @@
         {
           "preview": "That whosoever believeth in him should not perish, but have eternal life.",
           "provenance": [
-            "openbible.info-cross-references"
+            {
+              "id": "openbible.info-cross-references",
+              "title": "OpenBible.info Cross-References"
+            }
           ],
           "target": "JHN.3.15",
           "votes": 497
@@ -10995,7 +11097,10 @@
         {
           "preview": "Jesus said unto her, I am the resurrection, and the life: he that believeth in me, though he were dead, yet shall he live:",
           "provenance": [
-            "openbible.info-cross-references"
+            {
+              "id": "openbible.info-cross-references",
+              "title": "OpenBible.info Cross-References"
+            }
           ],
           "target": "JHN.11.25-26",
           "votes": 455
@@ -11003,7 +11108,10 @@
         {
           "preview": "And this is the will of him that sent me, that every one which seeth the Son, and believeth on him, may have everlasting life: and I will raise him up at the last day.",
           "provenance": [
-            "openbible.info-cross-references"
+            {
+              "id": "openbible.info-cross-references",
+              "title": "OpenBible.info Cross-References"
+            }
           ],
           "target": "JHN.6.40",
           "votes": 396
@@ -11011,7 +11119,10 @@
         {
           "preview": "He that believeth on the Son hath everlasting life: and he that believeth not the Son shall not see life; but the wrath of God abideth on him.",
           "provenance": [
-            "openbible.info-cross-references"
+            {
+              "id": "openbible.info-cross-references",
+              "title": "OpenBible.info Cross-References"
+            }
           ],
           "target": "JHN.3.36",
           "votes": 374
@@ -11019,7 +11130,10 @@
         {
           "preview": "We love him, because he first loved us.",
           "provenance": [
-            "openbible.info-cross-references"
+            {
+              "id": "openbible.info-cross-references",
+              "title": "OpenBible.info Cross-References"
+            }
           ],
           "target": "1JN.4.19",
           "votes": 349
@@ -11027,7 +11141,10 @@
         {
           "preview": "And I give unto them eternal life; and they shall never perish, neither shall any man pluck them out of my hand.",
           "provenance": [
-            "openbible.info-cross-references"
+            {
+              "id": "openbible.info-cross-references",
+              "title": "OpenBible.info Cross-References"
+            }
           ],
           "target": "JHN.10.28",
           "votes": 317
@@ -11035,7 +11152,10 @@
         {
           "preview": "This is a faithful saying, and worthy of all acceptation, that Christ Jesus came into the world to save sinners; of whom I am chief.",
           "provenance": [
-            "openbible.info-cross-references"
+            {
+              "id": "openbible.info-cross-references",
+              "title": "OpenBible.info Cross-References"
+            }
           ],
           "target": "1TI.1.15-16",
           "votes": 286
@@ -11043,7 +11163,10 @@
         {
           "preview": "For if, when we were enemies, we were reconciled to God by the death of his Son, much more, being reconciled, we shall be saved by his life.",
           "provenance": [
-            "openbible.info-cross-references"
+            {
+              "id": "openbible.info-cross-references",
+              "title": "OpenBible.info Cross-References"
+            }
           ],
           "target": "ROM.5.10",
           "votes": 262
@@ -11051,7 +11174,10 @@
         {
           "preview": "The next day John seeth Jesus coming unto him, and saith, Behold the Lamb of God, which taketh away the sin of the world.",
           "provenance": [
-            "openbible.info-cross-references"
+            {
+              "id": "openbible.info-cross-references",
+              "title": "OpenBible.info Cross-References"
+            }
           ],
           "target": "JHN.1.29",
           "votes": 237
@@ -11059,7 +11185,10 @@
         {
           "preview": "Now our Lord Jesus Christ himself, and God, even our Father, which hath loved us, and hath given us everlasting consolation and good hope through grace,",
           "provenance": [
-            "openbible.info-cross-references"
+            {
+              "id": "openbible.info-cross-references",
+              "title": "OpenBible.info Cross-References"
+            }
           ],
           "target": "2TH.2.16",
           "votes": 224
@@ -11067,7 +11196,10 @@
         {
           "preview": "To wit, that God was in Christ, reconciling the world unto himself, not imputing their trespasses unto them; and hath committed unto us the word of reconciliation.",
           "provenance": [
-            "openbible.info-cross-references"
+            {
+              "id": "openbible.info-cross-references",
+              "title": "OpenBible.info Cross-References"
+            }
           ],
           "target": "2CO.5.19-21",
           "votes": 212
@@ -11075,7 +11207,10 @@
         {
           "preview": "But God, who is rich in mercy, for his great love wherewith he loved us,",
           "provenance": [
-            "openbible.info-cross-references"
+            {
+              "id": "openbible.info-cross-references",
+              "title": "OpenBible.info Cross-References"
+            }
           ],
           "target": "EPH.2.4",
           "votes": 202
@@ -11083,7 +11218,10 @@
         {
           "preview": "But go ye and learn what that meaneth, I will have mercy, and not sacrifice: for I am not come to call the righteous, but sinners to repentance.",
           "provenance": [
-            "openbible.info-cross-references"
+            {
+              "id": "openbible.info-cross-references",
+              "title": "OpenBible.info Cross-References"
+            }
           ],
           "target": "MAT.9.13",
           "votes": 186
@@ -11091,7 +11229,10 @@
         {
           "preview": "And from Jesus Christ, who is the faithful witness, and the first begotten of the dead, and the prince of the kings of the earth. Unto him that loved us, and washed us from our sins in his own blood,",
           "provenance": [
-            "openbible.info-cross-references"
+            {
+              "id": "openbible.info-cross-references",
+              "title": "OpenBible.info Cross-References"
+            }
           ],
           "target": "REV.1.5",
           "votes": 171
@@ -11099,7 +11240,10 @@
         {
           "preview": "And he said, Lay not thine hand upon the lad, neither do thou any thing unto him: for now I know that thou fearest God, seeing thou hast not withheld thy son, thine only son from me.",
           "provenance": [
-            "openbible.info-cross-references"
+            {
+              "id": "openbible.info-cross-references",
+              "title": "OpenBible.info Cross-References"
+            }
           ],
           "target": "GEN.22.12",
           "votes": 164
@@ -11107,7 +11251,10 @@
         {
           "preview": "And the Word was made flesh, and dwelt among us, (and we beheld his glory, the glory as of the only begotten of the Father,) full of grace and truth.",
           "provenance": [
-            "openbible.info-cross-references"
+            {
+              "id": "openbible.info-cross-references",
+              "title": "OpenBible.info Cross-References"
+            }
           ],
           "target": "JHN.1.14",
           "votes": 164
@@ -11115,7 +11262,10 @@
         {
           "preview": "But after that the kindness and love of God our Saviour toward man appeared,",
           "provenance": [
-            "openbible.info-cross-references"
+            {
+              "id": "openbible.info-cross-references",
+              "title": "OpenBible.info Cross-References"
+            }
           ],
           "target": "TIT.3.4",
           "votes": 160
@@ -11300,7 +11450,7 @@
             "name": "Shows"
           }
         ],
-        "section_schema_version": 26,
+        "section_schema_version": 27,
         "symmetric": [
           {
             "display": "Analogous to",

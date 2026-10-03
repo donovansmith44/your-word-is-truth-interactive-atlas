@@ -34,6 +34,12 @@ hatch — and adding one to a previously-green scenario is classified
 
 ---
 
+- **0.29.0** (A-PROVENANCE, a served provenance carries its source title, O-PROVENANCE) — **MINOR under the 0.x policy (MAJOR class: blessed fixtures moved).**
+  The core section gains a `provenance_title` table (each provenance id with the title of the source
+  it names, compiled from `data/curated/sources.toml`); the section schema moves 26 -> 27, so
+  `graph-vocabulary.json`, `contract.json` and every fixture carrying the version root move, and the
+  node-card fixtures carry `provenance` as `{ id, title }`. No relation, edge kind or scenario changed.
+
 - **0.28.0** (A-F39 F-85, a row's persisted address is under its section's logical hash) — **MINOR under the 0.x policy (MAJOR class: blessed fixtures moved).**
   Each row-family line of a section's logical dump now carries the row's persisted ord, so a row
   moved to another address (with everything that points at it) moves the hash, where it used to

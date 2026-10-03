@@ -6,6 +6,7 @@ namespace BibleAtlas.Client.Tests;
 internal sealed class ServedGraph : IExplorableClient
 {
     public const string Provenance = "kjv";
+    public static readonly BibleAtlas.Client.Contract.Provenance ServedProvenance = new(id: Provenance, title: "The King James Version");
     public const string Version = "v";
     public const string EdgeId = "e";
 
@@ -90,7 +91,7 @@ internal sealed class ServedGraph : IExplorableClient
             book: null, catechism: null, description: null,
             edgeSummary: Summary(groups),
             @event: null, id: id, kind: kind, label: label, person: null, place: null, era: null, map: null, polity: null,
-            provenance: Provenance, text: null, version: Version);
+            provenance: ServedProvenance, text: null, version: Version);
 
     public static NodeRecord TextCard(NodeRef unit, UnitText text, params FrontierGroup[] groups) =>
         Card(unit.Kind, unit.Id, unit.Label, groups) with { Text = text };
@@ -106,9 +107,9 @@ internal sealed class ServedGraph : IExplorableClient
     public static Anchor AnchorOf(EdgeKind kind, NodeRef node, int start, int end) => new(end: end, kind: kind, node: node, start: start);
 
     public static EdgeRecord EdgeRecordOf(EdgeRef edge, NodeRef subject, NodeRef @object, params FrontierGroup[] groups) =>
-        EdgeRecordOf(edge, subject, @object, Provenance, groups);
+        EdgeRecordOf(edge, subject, @object, ServedProvenance, groups);
 
-    public static EdgeRecord EdgeRecordOf(EdgeRef edge, NodeRef subject, NodeRef @object, string? provenance, params FrontierGroup[] groups) =>
+    public static EdgeRecord EdgeRecordOf(EdgeRef edge, NodeRef subject, NodeRef @object, BibleAtlas.Client.Contract.Provenance? provenance, params FrontierGroup[] groups) =>
         new(
             edgeSummary: Summary(groups), id: edge.Id, kind: edge.Kind, label: edge.Label, narrative: null,
             @object: At(@object), parentage: null, provenance: provenance, subject: At(subject), votes: null);

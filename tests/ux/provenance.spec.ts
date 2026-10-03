@@ -34,17 +34,19 @@ async function openLeperEvent(page: any) {
   await expect(page.getByTestId('popover-title')).toHaveText((await api.event('mat_leper_healed')).title);
 }
 
-async function servedEdgeProvenance(verseId: string, kind: string): Promise<string[]> {
+type Provenance = { id: string; title: string };
+
+async function servedEdgeProvenance(verseId: string, kind: string): Promise<Provenance[]> {
   const edges = await api.nodeEdges(verseId, kind);
   const elements = (await api.elements(edges.entries.map(entry => entry.edge.id))).elements;
-  return elements.map(element => elementEdge(element, `${verseId}'s ${kind} edge`).provenance ?? '');
+  return elements.map(element => elementEdge(element, `${verseId}'s ${kind} edge`).provenance ?? { id: '', title: '' });
 }
 
 test('PROV-1 (owner order 2, the headline case): a verse\'s cross reference, stepped onto, names its source: OpenBible', async ({ page }) => {
   // Arrange
   const cites = await api.nodeEdges('text-unit:GEN.1.1', 'cites', { limit: 1 });
   const edge = elementEdge((await api.elements([cites.entries[0].edge.id])).elements[0], cites.entries[0].edge.id);
-  expect(edge.provenance).toBe('openbible.info-cross-references');
+  expect(edge.provenance).toEqual({ id: 'openbible.info-cross-references', title: 'OpenBible.info Cross-References' });
   await openVersePopover(page, 'GEN.1.1');
 
   // Act
@@ -52,26 +54,26 @@ test('PROV-1 (owner order 2, the headline case): a verse\'s cross reference, ste
 
   // Assert
   await expect(page.getByTestId('popover-card-title')).toHaveText(edge.label);
-  await expect(page.getByTestId('popover-field-Provenance').locator('dd')).toHaveText(edge.provenance!);
+  await expect(page.getByTestId('popover-field-Provenance').locator('dd')).toHaveText(edge.provenance!.id);
 });
 
 test('PROV-1 (a THIRD source): a verse\'s text names the King James Version as its source', async ({ page }) => {
   // Arrange
   const record = await api.node('text-unit:JHN.3.16');
-  expect(record.provenance).toBe('kjv');
+  expect(record.provenance).toEqual({ id: 'kjv', title: 'The King James Version' });
 
   // Act
   await openVersePopover(page, 'JHN.3.16');
 
   // Assert
-  await expect(page.getByTestId('popover-field-Provenance').locator('dd')).toHaveText(record.provenance);
+  await expect(page.getByTestId('popover-field-Provenance').locator('dd')).toHaveText(record.provenance.id);
 });
 
 test('PROV-1 (owner order 1, an IMPORTED event): the "?" on a Theographic-sourced event says Theographic', async ({ page }) => {
   // theo-249 (the Espousal of Mary) is Theographic's by id -- the
   // `theo-` prefix IS the provenance rule (event_world::event_provenance).
   const espousal = await api.event('theo-249');
-  expect(espousal.provenance).toBe('theographic');
+  expect(espousal.provenance).toEqual({ id: 'theographic', title: 'Theographic Bible Metadata' });
 
   // Reached the only way a mention-only event can be: through its temporal
   // neighbour, the same walk accounts-and-mentions.spec.ts uses.
@@ -96,7 +98,7 @@ test('PROV-1 (TOTAL-CAPTURE HONESTY, the leper lesson): a CURATED row says so, a
   // was, before that batch, wearing an imported source's clothes as a false
   // parallel account. This is the affordance that makes that impossible.
   const matthews = await api.event('mat_leper_healed');
-  expect(matthews.provenance, 'a hand-authored event must not report as Theographic').toBe('curated');
+  expect(matthews.provenance, 'a hand-authored event must not report as Theographic').toEqual({ id: 'curated', title: 'Our Own Curated Work' });
 
   await openVersePopover(page, 'MAT.8.2');
   await page.getByTestId('popover-link-attests-Event:mat_leper_healed').click();
@@ -113,7 +115,7 @@ test('PROV-1 (TOTAL-CAPTURE HONESTY, the leper lesson): a CURATED row says so, a
   // And the SIMILAR ACCOUNTS section beside it is attributed too -- an
   // Analogue row is a curatorial CLAIM about two events, so it carries its
   // OWN provenance, not either event's.
-  expect(matthews.analogues[0].provenance).toBe('attestation-corrections');
+  expect(matthews.analogues[0].provenance).toEqual({ id: 'attestation-corrections', title: 'Our Own Curated Work' });
   await page.getByTestId('event-analogues-provenance-button').click();
   await expect(page.getByTestId('event-analogues-provenance-panel')).toContainText('Sourced from Our Own Curated Work');
 });
@@ -172,8 +174,8 @@ test('PROV-1 fix round 1 (H-1, NEVER A SILENT BLANK): a blank or unregistered pr
   await page.route('**/api/event/mat_leper_healed', async (route) => {
     const response = await route.fetch();
     const body = await response.json();
-    body.provenance = '';
-    body.analogues[0].provenance = 'no-such-source-2026';
+    body.provenance = { id: '', title: '' };
+    body.analogues[0].provenance = { id: 'no-such-source-2026', title: '' };
     await route.fulfill({ response, json: body });
   });
   await openLeperEvent(page);
@@ -201,7 +203,7 @@ test('PROV-1 fix round 1 (M-4): a registry fetch failure blames the SOURCE LIST,
   // Assert
   const panel = page.getByTestId('event-provenance-panel');
   await expect(panel).toContainText('The source list could not be loaded');
-  await expect(panel).toContainText(event.provenance);
+  await expect(panel).toContainText(event.provenance.id);
   await expect(
     page.getByTestId('event-provenance-unresolved'),
     'an infrastructure fault must NOT wear the data fault\'s clothes'
@@ -221,12 +223,12 @@ test('PROV-1 fix round 1 (M-3): a PASSAGE node\'s cross-references and catechism
   const xrefs = await api.xrefs('MAT.26.26-28');
   expect(xrefs.length, 'MAT.26.26-28 must carry cross references for this fixture to mean anything').toBeGreaterThan(0);
   expect(xrefs[0].provenance, 'the WIRE must carry it, not merely the client render it').toEqual([
-    'openbible.info-cross-references',
+    { id: 'openbible.info-cross-references', title: 'OpenBible.info Cross-References' },
   ]);
   const cat = await api.catechism('MAT.26.26-28');
   expect(cat.length, 'MAT.26.26-28 must cite catechism items for this fixture to mean anything').toBeGreaterThan(0);
   // The genuinely MULTI-sourced family: BOTH sources, never collapsed.
-  expect(cat[0].provenance).toEqual(['concord-sc-overlap', 'curated-catechism']);
+  expect(cat[0].provenance.map((p: Provenance) => p.id)).toEqual(['concord-sc-overlap', 'curated-catechism']);
 
   await page.goto('/read/MAT/26');
   await page.getByTestId('verse-num-26').click();
@@ -276,17 +278,17 @@ test('PROV-1 fix round 1 (L-6): the invisible touch target does not swallow clic
   ).toHaveCount(0);
 });
 
-test('PROV-1 (the resolution law, at the wire): every provenance id this app serves resolves to a registry source', async () => {
+test('PROV-1 (the resolution law, at the wire): every provenance this app serves names a registry source and carries that source\'s title', async () => {
   // Arrange
   const sources = await api.sources();
   const registry = new Map<string, string>((sources.provenances ?? []).map((p: any) => [p.id, p.source]));
-  const sourceIds = new Set((sources.sources ?? []).map((s: any) => s.id));
+  const titles = new Map<string, string>((sources.sources ?? []).map((s: any) => [s.id, s.title]));
   const kindOf = (id: string) => (id.includes('/') ? id.slice(0, id.indexOf('/')) : id);
   const verseId = 'text-unit:GEN.1.1';
   const event = await api.event('mat_leper_healed');
 
   // Act
-  const served: string[] = [
+  const served: Provenance[] = [
     (await api.node(verseId)).provenance,
     ...(await servedEdgeProvenance(verseId, 'cites')),
     ...(await servedEdgeProvenance(verseId, 'catechism-link')),
@@ -299,11 +301,11 @@ test('PROV-1 (the resolution law, at the wire): every provenance id this app ser
 
   // Assert
   expect(registry.size, 'GET /api/sources must serve the provenance join table').toBeGreaterThan(0);
-  expect(served.filter((id) => id === undefined || id === ''), 'no provenance the wire serves may be blank').toEqual([]);
+  expect(served.filter((p) => p === undefined || p.id === ''), 'no provenance the wire serves may be blank').toEqual([]);
   expect(served.length, 'the wire must actually be carrying provenance for this test to mean anything').toBeGreaterThan(4);
-  for (const id of served) {
+  for (const { id, title } of served) {
     const source = registry.get(kindOf(id));
     expect(source, `provenance id '${id}' resolves to no registry row`).toBeTruthy();
-    expect(sourceIds.has(source), `provenance id '${id}' names source '${source}', which does not exist`).toBe(true);
+    expect(title, `provenance id '${id}' must carry the title of the source '${source}' it names`).toBe(titles.get(source!));
   }
 });

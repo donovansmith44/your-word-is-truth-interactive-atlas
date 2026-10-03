@@ -48,8 +48,11 @@
         "value": 64
       }
     },
-    "provenance": "theographic-people",
-    "version": "168c3f49c4f9141041c407ac3542e406"
+    "provenance": {
+      "id": "theographic-people",
+      "title": "Theographic Bible Metadata"
+    },
+    "version": "18713ccd56249f05bda0674795717bfa"
   },
   "status": 200
 }

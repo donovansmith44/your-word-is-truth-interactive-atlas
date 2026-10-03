@@ -1,9 +1,5 @@
-//! Parses the curated sources file and cross-validates it 1:1 against LICENSES.md, fail-loud, from both
-//! the generating binary and a test, so the test suite alone catches drift. Deliberately its own module,
-//! never wired into the compile: this data has nothing to do with the graph.
-
 use anyhow::{anyhow, bail, Context, Result};
-use atlas_core::sources::{ProvenanceEntry, SourceCategory, SourceEntry, SourcesDocument};
+use atlas_core::sources::{DuplicateProvenance, ProvenanceEntry, ProvenanceTitles, SourceCategory, SourceEntry, SourcesDocument};
 use serde::Deserialize;
 use std::collections::HashSet;
 
@@ -17,9 +13,34 @@ struct SourcesFile {
     provenance: Vec<ProvenanceEntry>,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct AdmittedSources(SourcesDocument);
+
+pub fn admit_sources(input: &str) -> Result<AdmittedSources> {
+    let doc = parse_sources(input)?;
+    validate_structure(&doc)?;
+    Ok(AdmittedSources(doc))
+}
+
+impl AdmittedSources {
+    pub fn document(&self) -> &SourcesDocument {
+        &self.0
+    }
+
+    pub fn into_document(self) -> SourcesDocument {
+        self.0
+    }
+
+    pub fn provenance_titles(&self) -> Result<ProvenanceTitles, DuplicateProvenance> {
+        ProvenanceTitles::from_rows(
+            self.0.provenances.iter().filter_map(|p| self.0.sources.iter().find(|s| s.id == p.source).map(|source| (p.id.clone(), source.title.clone()))),
+        )
+    }
+}
+
 /// Purely structural: the TOML shape and field types only. The cross-reference checks and the LICENSES.md
 /// reconciliation are separate functions, so a caller runs exactly the checks it needs.
-pub fn parse_sources(input: &str) -> Result<SourcesDocument> {
+fn parse_sources(input: &str) -> Result<SourcesDocument> {
     let f: SourcesFile = toml::from_str(input)
         .context("sources.toml: invalid TOML or does not match the [[category]]/[[source]]/[[provenance]] schema")?;
     Ok(SourcesDocument { categories: f.category, sources: f.source, provenances: f.provenance })
@@ -27,7 +48,7 @@ pub fn parse_sources(input: &str) -> Result<SourcesDocument> {
 
 /// No duplicate ids, every source's `category` names a declared category, and no source carries an empty
 /// `licenses_row_key` -- an empty key would trivially and silently match nothing in the reconciliation.
-pub fn validate_structure(doc: &SourcesDocument) -> Result<()> {
+fn validate_structure(doc: &SourcesDocument) -> Result<()> {
     let mut errors = Vec::new();
 
     let mut cat_ids: HashSet<&str> = HashSet::new();

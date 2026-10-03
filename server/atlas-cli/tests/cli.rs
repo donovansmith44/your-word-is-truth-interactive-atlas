@@ -328,7 +328,7 @@ fn node_json_happy_path_carries_real_fields() {
     assert_eq!(v["id"], "Event:ab_ur");
     assert_eq!(v["kind"], "Event");
     assert_eq!(v["label"], "Terah's family leaves Ur");
-    assert_eq!(v["provenance"], "curated");
+    assert_eq!(v["provenance"], serde_json::json!({"id": "curated", "title": "Our Own Curated Work"}));
     let summary = v["edge_summary"].as_array().expect("edge_summary must be an array");
     assert!(summary.iter().any(|e| e["kind"] == "located-at" && e["count"].as_u64().unwrap() >= 1), "edge_summary: {summary:?}");
 }
@@ -491,7 +491,7 @@ fn node_plain_output_is_byte_unchanged_by_the_json_addition() {
         "id:         Event:ab_ur\n",
         "kind:       Event\n",
         "label:      Terah's family leaves Ur\n",
-        "provenance: curated\n",
+        "provenance: Our Own Curated Work\n",
         "edges:\n",
         "  attested-in      2\n",
         "  follows-in       1\n",
@@ -660,7 +660,7 @@ fn node_json_on_a_chapter_container_carries_the_same_record_shape() {
     let v = v.expect("json value");
     assert_eq!(v["kind"], "Container");
     assert_eq!(v["label"], "John 3");
-    assert_eq!(v["provenance"], "kjv");
+    assert_eq!(v["provenance"], serde_json::json!({"id": "kjv", "title": "The King James Version"}));
     let contains = v["edge_summary"].as_array().unwrap().iter().find(|e| e["kind"] == "contains").expect("a contains row");
     assert_eq!(contains["count"], 36);
 }
