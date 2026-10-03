@@ -1,0 +1,12 @@
+  Determining projects to restore...
+  All projects are up-to-date for restore.
+  BibleAtlas.Client.ContractGenerator -> /home/donovan/w/CX-FSHARP-wire/client.ContractGenerator/bin/Debug/net10.0/BibleAtlas.Client.ContractGenerator.dll
+  BibleAtlas.FSharp.ContractGenerator -> /home/donovan/w/CX-FSHARP-wire/client-fsharp.ContractGenerator/bin/Debug/net10.0/BibleAtlas.FSharp.ContractGenerator.dll
+  BibleAtlas.FSharp.Core -> /home/donovan/w/CX-FSHARP-wire/client-fsharp/Core/bin/Debug/net10.0/BibleAtlas.FSharp.Core.dll
+  BibleAtlas.FSharp.Client -> /home/donovan/w/CX-FSHARP-wire/client-fsharp/bin/Debug/net10.0/BibleAtlas.FSharp.Client.dll
+  BibleAtlas.FSharp.Client (Blazor output) -> /home/donovan/w/CX-FSHARP-wire/client-fsharp/bin/Debug/net10.0/wwwroot
+  BibleAtlas.FSharp.Tests -> /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/bin/Debug/net10.0/BibleAtlas.FSharp.Tests.dll
+Test run for /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/bin/Debug/net10.0/BibleAtlas.FSharp.Tests.dll (.NETCoreApp,Version=v10.0)
+A total of 1 test files matched the specified pattern.
+
+Passed!  - Failed:     0, Passed:    13, Skipped:     0, Total:    13, Duration: 2 s - BibleAtlas.FSharp.Tests.dll (net10.0)

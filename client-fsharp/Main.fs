@@ -13,13 +13,12 @@ type App() =
     member val Http = Unchecked.defaultof<HttpClient> with get, set
 
     override this.Program =
-        let commands effects = effects |> List.map (Runtime.command this.Http) |> Cmd.batch
         let init _ =
             let model, effects = Model.init (Routes.parse (this.NavigationManager.ToAbsoluteUri this.NavigationManager.Uri))
-            model, commands effects
+            model, this.Commands effects
         let update message model =
             let model, effects = Model.update message model
-            model, commands effects
+            model, this.Commands effects
         let router =
             { new IRouter<Model, Message> with
                 member _.GetRoute model = (Routes.url (Model.route model)).TrimStart('/')
@@ -27,3 +26,6 @@ type App() =
                 member _.NotFound = Some(Navigate Route.NotFound) }
         Program.mkProgram init update View.app
         |> Program.withRouter router
+
+    member private this.Commands (effects: Effect list) : Cmd<Message> =
+        effects |> List.map (Runtime.command this.Http) |> Cmd.batch

@@ -22,11 +22,11 @@ module rec Runtime =
         let action =
             match traversal with
             | Traversal.Follow link -> Explore.follow link
-            | Traversal.Back -> Explore.back
-            | Traversal.Renew -> Explore.renew
+            | Traversal.Back -> (Explore.back ())
+            | Traversal.Renew -> (Explore.renew ())
         let composed = explore {
             let! _ = action
-            return! Explore.here
+            return! (Explore.here ())
         }
         let! answer = Explore.run (GraphRead.explorer http) trail composed
         return answer |> Result.map snd

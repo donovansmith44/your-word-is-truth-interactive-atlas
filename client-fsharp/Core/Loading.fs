@@ -33,9 +33,13 @@ module LoadState =
 
 type ReadSession<'a> = private { Request: Request<'a>; State: LoadState<'a> }
 
-module ReadSession =
-    let beginRead identity request state = { Request = request; State = LoadState.beginRead identity state }
-    let state session = session.State
-    let request session = session.Request
+module rec ReadSession =
     let retry identity session = beginRead identity session.Request session.State
+
+    let beginRead identity request state = { Request = request; State = LoadState.beginRead identity state }
+
+    let state session = session.State
+
+    let request session = session.Request
+
     let complete identity answer session = { session with State = LoadState.complete identity answer session.State }

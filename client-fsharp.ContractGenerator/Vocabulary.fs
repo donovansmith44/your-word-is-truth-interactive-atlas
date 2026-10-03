@@ -3,11 +3,10 @@ namespace BibleAtlas.FSharp.ContractGenerator
 open System.Text
 open System.Text.Json
 
-module Vocabulary =
+module rec Vocabulary =
     let generate (source: string) =
         try
             use document = JsonDocument.Parse(source)
-            let text key (element: JsonElement) = element.GetProperty(key: string).GetString()
             let directed =
                 [ for relation in document.RootElement.GetProperty("relations").EnumerateArray() do
                       let forward, inverse = text "forward" relation, text "inverse" relation
@@ -26,3 +25,5 @@ module Vocabulary =
                     output.AppendLine($"        | EdgeKind.{Generator.name kind} -> EdgeKind.{Generator.name dual}") |> ignore
                 Ok(output.ToString().Replace("\r\n", "\n"))
         with error -> Error error.Message
+
+    let private text (key: string) (element: JsonElement) : string = element.GetProperty(key: string).GetString()

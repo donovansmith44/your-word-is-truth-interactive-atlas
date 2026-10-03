@@ -1,0 +1,49 @@
+  Determining projects to restore...
+  All projects are up-to-date for restore.
+  BibleAtlas.Client.ContractGenerator -> /home/donovan/w/CX-FSHARP-wire/client.ContractGenerator/bin/Debug/net10.0/BibleAtlas.Client.ContractGenerator.dll
+  BibleAtlas.FSharp.ContractGenerator -> /home/donovan/w/CX-FSHARP-wire/client-fsharp.ContractGenerator/bin/Debug/net10.0/BibleAtlas.FSharp.ContractGenerator.dll
+  BibleAtlas.FSharp.Core -> /home/donovan/w/CX-FSHARP-wire/client-fsharp/Core/bin/Debug/net10.0/BibleAtlas.FSharp.Core.dll
+  BibleAtlas.FSharp.Client -> /home/donovan/w/CX-FSHARP-wire/client-fsharp/bin/Debug/net10.0/BibleAtlas.FSharp.Client.dll
+  BibleAtlas.FSharp.Client (Blazor output) -> /home/donovan/w/CX-FSHARP-wire/client-fsharp/bin/Debug/net10.0/wwwroot
+  BibleAtlas.FSharp.Tests -> /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/bin/Debug/net10.0/BibleAtlas.FSharp.Tests.dll
+Test run for /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/bin/Debug/net10.0/BibleAtlas.FSharp.Tests.dll (.NETCoreApp,Version=v10.0)
+A total of 1 test files matched the specified pattern.
+  Failed BibleAtlas.FSharp.Tests.ExploreLaws.constructing an exploration defers its whole computation until execution [21 ms]
+  Error Message:
+   FsCheck.Xunit.PropertyFailedException :
+Falsifiable, after 1 test (2 shrinks) (11843857876209809333,6853461031602415433).
+Last step was invoked with size of 2 and seed of (3210831180995474835,17685211898329704199):
+Original:
+-2
+Shrunk:
+0
+
+---- System.NotSupportedException : Dynamic invocation of Delay is not supported
+  Stack Trace:
+
+----- Inner Stack Trace -----
+   at FSharpPlus.Control.Delay.Delay[I](Default1 _mthd, FSharpFunc`2 x, Delay _arg2)
+   at <StartupCode$BibleAtlas-FSharp-Core>.$Explore.Delay@1-2.Invoke(Trail s)
+   at BibleAtlas.FSharp.Explore.run[a](Explorer explorer, Trail trail, Explore`1 _arg2) in /home/donovan/w/CX-FSHARP-wire/client-fsharp/Core/Exploration/Explore.fs:line 61
+   at BibleAtlas.FSharp.Tests.ExploreLaws.run[a](Explore`1 walk) in /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/ExploreLaws.fs:line 58
+   at BibleAtlas.FSharp.Tests.ExploreLaws.constructing an exploration defers its whole computation until execution(Int32 value) in /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/ExploreLaws.fs:line 33
+   at InvokeStub_ExploreLaws.constructing an exploration defers its whole computation until execution(Object, Span`1)
+   at System.Reflection.MethodBaseInvoker.InvokeWithOneArg(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
+--- End of stack trace from previous location ---
+   at FsCheck.Runner.invokeAndThrowInner@592-1.Invoke(Object[] o) in C:\Users\kurts\Projects\FsCheck\src\FsCheck\Runner.fs:line 595
+   at <StartupCode$FSharp-Core>.$Reflect.Invoke@1230.Invoke(T1 inp) in /__w/1/s/src/fsharp/src/FSharp.Core/reflect.fs:line 1230
+   at System.Lazy`1.ViaFactory(LazyThreadSafetyMode mode)
+   at System.Lazy`1.ExecutionAndPublication(LazyHelper executionAndPublication, Boolean useDefaultConstructor)
+   at System.Lazy`1.CreateValue()
+   at FsCheck.Testable.Prop.safeForce[a](Lazy`1 body) in C:\Users\kurts\Projects\FsCheck\src\FsCheck\Testable.fs:line 164
+  Failed BibleAtlas.FSharp.Tests.ExplorationTests.the exploration computation expression composes reads without losing the trail [60 ms]
+  Error Message:
+   System.NotSupportedException : Dynamic invocation of Delay is not supported
+  Stack Trace:
+     at FSharpPlus.Control.Delay.Delay[I](Default1 _mthd, FSharpFunc`2 x, Delay _arg2)
+   at <StartupCode$BibleAtlas-FSharp-Core>.$Explore.Delay@1-2.Invoke(Trail s)
+   at BibleAtlas.FSharp.Explore.run[a](Explorer explorer, Trail trail, Explore`1 _arg2) in /home/donovan/w/CX-FSHARP-wire/client-fsharp/Core/Exploration/Explore.fs:line 61
+   at BibleAtlas.FSharp.Tests.ExplorationTests.run[a](Explore`1 action) in /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/ExplorationTests.fs:line 85
+   at BibleAtlas.FSharp.Tests.ExplorationTests.the exploration computation expression composes reads without losing the trail() in /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/ExplorationTests.fs:line 34
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)

@@ -1,0 +1,26 @@
+{
+  "base": "f32b616",
+  "gateCarry": "79671ab",
+  "authoredFsFiles": 66,
+  "generatedFsFiles": 2,
+  "syntaxOrderProperties": 13,
+  "normalTests": {
+    "passed": 167,
+    "failed": 0,
+    "skipped": 0
+  },
+  "debugWasm": {
+    "warnings": 0,
+    "errors": 0
+  },
+  "generatedFilesUnchanged": true,
+  "pendingBodies": 61,
+  "unused": {
+    "beforeBinderRemoval": 295,
+    "afterBinderRemoval": 294,
+    "compilerErrors": 0,
+    "wholeModelReachabilityCertified": false
+  },
+  "libraryDelayCandidate": "rejected: dynamic Delay is unsupported for the actual Reader-State-Result-Async stack; old full run stopped after two failures and an undelivered async command",
+  "goalComplete": false
+}

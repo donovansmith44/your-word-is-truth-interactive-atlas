@@ -14,7 +14,7 @@ let ``exploration obeys the monad left identity`` () =
 
 [<Fact>]
 let ``exploration obeys the monad right identity including its trail`` () =
-    Assert.Equal(run Explore.here, run (Explore.here |> Explore.bind Explore.result))
+    Assert.Equal(run (Explore.here ()), run ((Explore.here ()) |> Explore.bind Explore.result))
 
 [<Fact>]
 let ``exploration obeys associativity including its whole trail`` () =
@@ -27,11 +27,11 @@ let ``exploration obeys associativity including its whole trail`` () =
 let ``the exploration computation expression composes reads without losing the trail`` () =
     let explore = ExploreBuilder()
     let action = explore {
-        let! current = Explore.here
+        let! current = (Explore.here ())
         let! same = explore { return current }
         return! Explore.result same
     }
-    Assert.Equal(run Explore.here, run action)
+    Assert.Equal(run (Explore.here ()), run action)
 
 [<Fact>]
 let ``an exploration failure short circuits later reads and preserves no false arrival`` () =
@@ -42,7 +42,7 @@ let ``an exploration failure short circuits later reads and preserves no false a
 let ``Back records the dual step while cancelling the visible breadcrumb`` () =
     let target = node "Person:target" "root"
     let outward = trail |> Trail.follow { Kind = EdgeKind.Contains; Target = target }
-    let actual = Explore.run explorer outward Explore.back |> Async.RunSynchronously
+    let actual = Explore.run explorer outward (Explore.back ()) |> Async.RunSynchronously
     let expectedTrail = outward |> Trail.follow { Kind = EdgeKind.MemberOf; Target = start }
     Assert.Equal(Ok(start, expectedTrail), actual)
     Assert.Equal<Step list>([], Trail.breadcrumb expectedTrail)

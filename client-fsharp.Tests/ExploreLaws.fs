@@ -12,12 +12,12 @@ let ``exploration left identity preserves the complete result and trail for ever
 
 [<Property>]
 let ``exploration right identity preserves a successful or failed stateful walk`` (fails: bool) =
-    let walk = if fails then Explore.follow link else Explore.back
+    let walk = if fails then Explore.follow link else (Explore.back ())
     Assert.Equal(run walk, run (walk |> Explore.bind Explore.result))
 
 [<Property>]
 let ``exploration associativity preserves failures and the entire trail`` (value: int) (firstFails: bool) (secondFails: bool) =
-    let first value = if firstFails then Explore.follow link |> Explore.map (fun _ -> value) else Explore.back |> Explore.map (fun _ -> value)
+    let first value = if firstFails then Explore.follow link |> Explore.map (fun _ -> value) else (Explore.back ()) |> Explore.map (fun _ -> value)
     let second value = if secondFails then Explore.follow link |> Explore.map (fun _ -> string value) else Explore.result (string value)
     let walk = Explore.result value
     Assert.Equal(run (walk |> Explore.bind first |> Explore.bind second), run (walk |> Explore.bind (fun result -> first result |> Explore.bind second)))

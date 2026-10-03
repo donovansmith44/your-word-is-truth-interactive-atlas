@@ -19,7 +19,7 @@ type Explorable =
     | NodeExplorable of root: ArtifactRoot * node: NodeRecord
     | EdgeExplorable of root: ArtifactRoot * edge: EdgeRecord
 
-module Explorable =
+module rec Explorable =
     let fold node edge resolved =
         match resolved with
         | NodeExplorable(_, record) -> node record
@@ -42,10 +42,10 @@ module Explorable =
         | NodeExplorable(_, node) -> Element.Node { Node = node }
         | EdgeExplorable(_, edge) -> Element.Edge { Edge = edge }
 
+    let internal sameIdentity left right =
+        Positions.sameIdentity (position left) (position right)
+
     let position element =
         match element with
         | NodeExplorable(_, node) -> PositionRef.Node { Node = { Id = node.Id; Kind = node.Kind; Label = node.Label } }
         | EdgeExplorable(_, edge) -> PositionRef.Edge { Edge = { Id = edge.Id; Kind = edge.Kind; Label = edge.Label } }
-
-    let internal sameIdentity left right =
-        Positions.sameIdentity (position left) (position right)

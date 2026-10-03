@@ -47,12 +47,11 @@ open BibleAtlas.FSharp.Contract
 
 type TextPiece = { Text: string; IsWordsOfChrist: bool; Anchor: Anchor option }
 
-module TextRuns =
+module rec TextRuns =
     let runs (unit: UnitText) =
         let offsets = unit.Text.EnumerateRunes() |> Seq.scan (fun offset rune -> offset + rune.Utf16SequenceLength) 0 |> Seq.toArray
-        let utf16 scalar = offsets[max 0 (min scalar (offsets.Length - 1))]
-        let red = unit.WordsOfChrist |> List.map (fun span -> utf16 span.Start, utf16 span.End)
-        let anchored = unit.Anchors |> List.map (fun anchor -> utf16 anchor.Start, utf16 anchor.End, anchor)
+        let red = unit.WordsOfChrist |> List.map (fun span -> utf16 offsets span.Start, utf16 offsets span.End)
+        let anchored = unit.Anchors |> List.map (fun anchor -> utf16 offsets anchor.Start, utf16 offsets anchor.End, anchor)
         let cuts =
             [0; unit.Text.Length]
             @ List.collect (fun (start, finish) -> [start; finish]) red
@@ -68,3 +67,5 @@ module TextRuns =
             | (first :: earlier) :: rest when first.IsWordsOfChrist = piece.IsWordsOfChrist -> (piece :: first :: earlier) :: rest
             | _ -> [piece] :: runs) []
         |> List.rev |> List.map List.rev
+
+    let private utf16 (offsets: int array) scalar = offsets[max 0 (min scalar (offsets.Length - 1))]

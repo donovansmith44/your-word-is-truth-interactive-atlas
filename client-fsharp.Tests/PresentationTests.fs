@@ -53,11 +53,10 @@ let ``a map or era card uses the whole served window label`` (suffix: uint16) (i
 let ``a place card composes its name and date claims without a blurb`` (suffix: uint16) =
     let record = node suffix
     let span = window suffix
-    let claim label = { Label = label; When = span; Note = None; Verses = []; Event = None }
     let canonical = $"Served canonical name {suffix}"
     let established = $"Served establishment {suffix}"
     let destroyed = $"Served destruction {suffix}"
-    let place = { record with Kind = NodeKind.Place; Place = Some { Lat = 1.; Lon = 2.; DisplayName = $"Served display name {suffix}"; CanonicalName = Some canonical; Established = Some(claim established); Destroyed = Some(claim destroyed) } }
+    let place = { record with Kind = NodeKind.Place; Place = Some { Lat = 1.; Lon = 2.; DisplayName = $"Served display name {suffix}"; CanonicalName = Some canonical; Established = Some(claim span established); Destroyed = Some(claim span destroyed) } }
     let fields = [{ Name = FieldName.CanonicalName; Value = canonical }; { Name = FieldName.Established; Value = established }; { Name = FieldName.Destroyed; Value = destroyed }; { Name = FieldName.Provenance; Value = record.Provenance.Title }]
     Assert.Equal(Ok(PopoverPresentation.Card { Title = record.Label; Fields = fields }), present record.Version (Element.Node { Node = place }))
 
@@ -81,3 +80,5 @@ let node (suffix: uint16) : NodeRecord =
 
 let private window (suffix: uint16) =
     { From = { Value = -1406; Label = $"Served from {suffix}" }; To = { Value = -1200; Label = $"Served to {suffix}" }; Label = $"Served window label {suffix}" }
+
+let private claim span label : DateClaim = { Label = label; When = span; Note = None; Verses = []; Event = None }

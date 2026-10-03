@@ -1,0 +1,34 @@
+{
+  "reason": "Rejected library delay threw in the old full run; the corrected full suite completed 167/0. Stop only the verified old session descendants.",
+  "parentPid": 729958,
+  "processes": [
+    {
+      "pid": 730147,
+      "command": "/home/donovan/.dotnet/dotnet exec --runtimeconfig /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/bin/Debug/net10.0/BibleAtlas.FSharp.Tests.runtimeconfig.json --depsfile /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/bin/Debug/net10.0/BibleAtlas.FSharp.Tests.deps.json /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/bin/Debug/net10.0/testhost.dll --port 35677 --endpoint 127.0.0.1:035677 --role client --parentprocessid 730134 --telemetryoptedin false "
+    },
+    {
+      "pid": 730134,
+      "command": "/home/donovan/.dotnet/dotnet exec /home/donovan/.dotnet/sdk/10.0.401/vstest.console.dll --framework:.NETCoreApp,Version=v10.0 /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/bin/Debug/net10.0/BibleAtlas.FSharp.Tests.dll --logger:Console;Verbosity=minimal --nologo --artifactsProcessingMode-collect --testSessionCorrelationId:729964_a04c6782-866a-4f94-9cab-f8c849ea9418 "
+    },
+    {
+      "pid": 730098,
+      "command": "/home/donovan/.dotnet/sdk/10.0.401/MSBuild /nologo /nodemode:2 /nodereuse:False /low:False /parentpacketversion:4 "
+    },
+    {
+      "pid": 729990,
+      "command": "/home/donovan/.dotnet/dotnet /home/donovan/.dotnet/sdk/10.0.401/MSBuild.dll /noautoresponse /nologo /nodemode:1 /nodeReuse:false /low:false "
+    },
+    {
+      "pid": 729989,
+      "command": "/home/donovan/.dotnet/dotnet /home/donovan/.dotnet/sdk/10.0.401/MSBuild.dll /noautoresponse /nologo /nodemode:1 /nodeReuse:false /low:false "
+    },
+    {
+      "pid": 729988,
+      "command": "/home/donovan/.dotnet/dotnet /home/donovan/.dotnet/sdk/10.0.401/MSBuild.dll /noautoresponse /nologo /nodemode:1 /nodeReuse:false /low:false "
+    },
+    {
+      "pid": 729964,
+      "command": "dotnet test client-fsharp.Tests/BibleAtlas.FSharp.Tests.fsproj --nologo -v minimal "
+    }
+  ]
+}
