@@ -3,7 +3,7 @@
 //! that exists in the text -- belongs to `validate`. A curator-friendly range expands into single verses.
 
 use anyhow::{bail, Context, Result};
-use atlas_core::data::{BookAuthorship, BookMeta, BookNarrationWindow, CatechismItem, CatechismPart, ChronologyAnchor, Era, Event, EventId, EventKind, FulfillmentSeed, Landmark, LandMaskRegion, Narrative, NamedAfterSeed, BrethrenSeed, ParentageExclusion, ParentageSeed, PeopleGroupReclassify, PeopleGroupSeed, PlaceBlurbEntry, PlaceDateClaim, PlaceHistory, PlaceNameAlias, PlaceNameEntry, PersonId, Polity, PolityDelta, PolityEra, TypologySeed};
+use atlas_core::data::{BookAuthorship, BookMeta, BookNarrationWindow, CatechismItem, CatechismPart, ChronologyAnchor, Era, Event, EventId, EventKind, FulfillmentSeed, Landmark, LandMaskRegion, Narrative, NamedAfterSeed, BrethrenSeed, ParentageExclusion, ParentageSeed, PeopleGroupReclassify, PeopleGroupSeed, PlaceDateClaim, PlaceHistory, PlaceNameAlias, PlaceNameEntry, PersonId, Polity, PolityDelta, PolityEra, TypologySeed};
 use atlas_core::refs::ScriptureRef;
 use atlas_core::time::TimeRange;
 use serde::Deserialize;
@@ -519,8 +519,6 @@ struct PlaceToml {
     id: String,
     #[serde(default, rename = "name")]
     names: Vec<NameToml>,
-    #[serde(default, rename = "blurb")]
-    blurbs: Vec<BlurbToml>,
     #[serde(default)]
     established: Option<DateClaimToml>,
     #[serde(default)]
@@ -534,14 +532,6 @@ struct NameToml {
     to: i32,
     #[serde(default)]
     verses: Vec<String>,
-}
-
-#[derive(Deserialize)]
-struct BlurbToml {
-    text: String,
-    from: i32,
-    to: i32,
-    breadth: String,
 }
 
 /// Exactly one of `year` or `from`+`to` is required: both, or neither, is a curator authoring mistake and a
@@ -591,18 +581,10 @@ pub fn parse_place_history(input: &str) -> Result<Vec<PlaceHistory>> {
             names.push(PlaceNameEntry { name: n.name, when, verses: n.verses });
         }
 
-        let mut blurbs = Vec::with_capacity(p.blurbs.len());
-        for b in p.blurbs {
-            let when = TimeRange::new(b.from, b.to).map_err(|src| {
-                anyhow::anyhow!("place '{}' blurb '{}...' (from={}, to={}): {}", p.id, &b.text.chars().take(24).collect::<String>(), b.from, b.to, src)
-            })?;
-            blurbs.push(PlaceBlurbEntry { text: b.text, when, breadth: b.breadth });
-        }
-
         let established = p.established.map(|c| resolve_date_claim(c, &p.id, "established")).transpose()?;
         let destroyed = p.destroyed.map(|c| resolve_date_claim(c, &p.id, "destroyed")).transpose()?;
 
-        out.push(PlaceHistory { id: p.id, names, blurbs, established, destroyed });
+        out.push(PlaceHistory { id: p.id, names, established, destroyed });
     }
     Ok(out)
 }

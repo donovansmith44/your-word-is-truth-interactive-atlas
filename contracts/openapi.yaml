@@ -3,7 +3,7 @@ openapi: 3.1.0
 info:
   title: Bible Atlas API
   description: The Bible Atlas HTTP API, generated from the Rust that serves it. The `x-atlas-relations` extension lists every relation this atlas joins two nodes by, each with the label its forward and its inverse neighbours are asked for and the words each is displayed by, so a consumer builds its own vocabulary from that list rather than writing one out.
-  version: 0.25.0
+  version: 0.26.0
 paths:
   /api/books:
     get:
@@ -2102,16 +2102,12 @@ components:
       additionalProperties: false
     PlaceDetail:
       type: object
-      description: Where one place is (latitude north positive, longitude east positive), the name a reader of the King James Version knows it by, its plain canonical name only where that differs, a sentence on its history across every period recorded for it, and when it was founded and fell, each only where recorded.
+      description: Where one place is (latitude north positive, longitude east positive), the name a reader of the King James Version knows it by, its plain canonical name only where that differs, and when it was founded and fell, each only where recorded.
       required:
       - lat
       - lon
       - display_name
       properties:
-        blurb:
-          type:
-          - string
-          - 'null'
         canonical_name:
           type:
           - string

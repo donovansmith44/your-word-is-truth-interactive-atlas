@@ -42,19 +42,19 @@ test('NAME-1: a window fully inside one curated era never shows the OTHER era\'s
   expect(record.label).toBe('Hebron');
 });
 
-test('BLURB-1: exactly one blurb shows, the record\'s own, whatever the window', async ({ page }) => {
+test('NOBLURB: a place popover shows no blurb, whatever the window', async ({ page }) => {
   // Arrange
-  const blurb: string = (await api.node('Place:jerusalem')).place.blurb;
+  const record = await api.node('Place:jerusalem');
 
   // Act
   await openJerusalem(page, -1060, -1050);
 
   // Assert
-  await expect(page.getByTestId('popover-field-Blurb')).toHaveCount(1);
-  await expect(page.getByTestId('popover-field-Blurb')).toContainText(blurb);
+  await expect(page.getByTestId('popover-title')).toHaveText(record.label);
+  await expect(page.getByTestId('popover-field-Blurb')).toHaveCount(0);
   await openJerusalem(page, -4004, 100);
-  await expect(page.getByTestId('popover-field-Blurb')).toHaveCount(1);
-  await expect(page.getByTestId('popover-field-Blurb')).toContainText(blurb);
+  await expect(page.getByTestId('popover-title')).toHaveText(record.label);
+  await expect(page.getByTestId('popover-field-Blurb')).toHaveCount(0);
 });
 
 test('DATE-1: the place\'s established and destroyed dates are fields of its record in the popover', async ({ page }) => {
@@ -90,7 +90,7 @@ test('place record fields are absent for a place with no curated history', async
   const w = { from: -1406, to: -1405 };
   const scene = await api.sceneTime(w.from, w.to);
   const records = await Promise.all(scene.places.map((p: any) => api.node(p.node.id)));
-  const index = records.findIndex((r: any) => !r.place.blurb && !r.place.established && !r.place.destroyed);
+  const index = records.findIndex((r: any) => !r.place.established && !r.place.destroyed);
   test.skip(index < 0, 'no uncurated place lit in this window');
   const plain = scene.places[index];
   await page.goto(`/world?from=${w.from}&to=${w.to}`);
@@ -100,7 +100,6 @@ test('place record fields are absent for a place with no curated history', async
 
   // Assert
   await expect(page.getByTestId('popover-card-title')).toHaveText(records[index].label);
-  await expect(page.getByTestId('popover-field-Blurb')).toHaveCount(0);
   await expect(page.getByTestId('popover-field-Established')).toHaveCount(0);
   await expect(page.getByTestId('popover-field-Destroyed')).toHaveCount(0);
 });

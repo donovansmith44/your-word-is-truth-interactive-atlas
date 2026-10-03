@@ -1,7 +1,7 @@
 use std::collections::BTreeMap;
 
 use atlas_core::data::AtlasData;
-use atlas_core::history::{default_blurb, resolve_display_name_and_canonical};
+use atlas_core::history::resolve_display_name_and_canonical;
 use atlas_core::time::TimeRange;
 use atlas_graph_types::canon::ids::{any_node_id_str, parse_any_node_id};
 use atlas_graph_types::graph::Graph;
@@ -16,7 +16,6 @@ use crate::sqlite::SqliteError;
 pub struct PlaceDefault {
     pub display_name: String,
     pub canonical_name: Option<String>,
-    pub blurb: Option<String>,
 }
 
 #[derive(Debug, Clone, Default, PartialEq)]
@@ -38,8 +37,7 @@ impl Geography {
                 NodePayload::Place { canonical, .. } => {
                     let history = atlas.place_history_for(&node.id.raw);
                     let (display_name, canonical_name) = resolve_display_name_and_canonical(canonical, history, None, atlas.place_name_alias_for(&node.id.raw));
-                    let blurb = history.and_then(|history| default_blurb(&history.blurbs)).map(|blurb| blurb.text.clone());
-                    geography.places.insert(node.id.clone(), PlaceDefault { display_name, canonical_name, blurb });
+                    geography.places.insert(node.id.clone(), PlaceDefault { display_name, canonical_name });
                 }
                 _ => {}
             }
@@ -64,7 +62,7 @@ impl Geography {
         let places = self
             .places
             .iter()
-            .map(|(place, default)| vec![Col::Text(any_node_id_str(place)), Col::Text(default.display_name.clone()), text_or_null(&default.canonical_name), text_or_null(&default.blurb)])
+            .map(|(place, default)| vec![Col::Text(any_node_id_str(place)), Col::Text(default.display_name.clone()), text_or_null(&default.canonical_name)])
             .collect();
         vec![ExtraTable { spec: &POLITY_REIGN, rows: reigns }, ExtraTable { spec: &PLACE_DEFAULT, rows: places }]
     }
@@ -81,8 +79,8 @@ impl Geography {
         }
         for row in read_table(conn, &PLACE_DEFAULT)? {
             match row.as_slice() {
-                [Col::Text(place), Col::Text(display_name), canonical_name, blurb] => {
-                    let default = PlaceDefault { display_name: display_name.clone(), canonical_name: optional_text(canonical_name, PLACE_DEFAULT.name)?, blurb: optional_text(blurb, PLACE_DEFAULT.name)? };
+                [Col::Text(place), Col::Text(display_name), canonical_name] => {
+                    let default = PlaceDefault { display_name: display_name.clone(), canonical_name: optional_text(canonical_name, PLACE_DEFAULT.name)? };
                     geography.places.insert(node_id(place, PLACE_DEFAULT.name)?, default);
                 }
                 other => return Err(unreadable(PLACE_DEFAULT.name, other)),

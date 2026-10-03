@@ -2053,7 +2053,6 @@ async fn a_place_record_carries_its_coordinates_its_name_and_its_dated_founding_
     // Arrange
     let app = compiled_app();
     let place = real_atlas().0.places.iter().find(|p| p.id == "jerusalem").cloned().unwrap();
-    let blurb = atlas_core::history::default_blurb(&real_atlas().0.place_history_for("jerusalem").unwrap().blurbs).unwrap().text.clone();
     // Act
     let (status, record, _) = get(&app, "/api/node/Place:jerusalem").await;
     // Assert
@@ -2065,7 +2064,6 @@ async fn a_place_record_carries_its_coordinates_its_name_and_its_dated_founding_
                 "lat": place.lat,
                 "lon": place.lon,
                 "display_name": "Jerusalem",
-                "blurb": blurb,
                 "established": {
                     "when": { "from": { "value": -1003, "label": "1003 BC" }, "to": { "value": -1003, "label": "1003 BC" }, "label": "1003 BC" },
                     "label": "c. 1003 BC",
@@ -2673,7 +2671,6 @@ const CONQUEST_ERA: &str = "conquest-judges";
 const CONQUEST_MAP: &str = "Map:era-conquest-judges";
 const CONQUEST_ERA_NODE: &str = "Era:conquest-judges";
 const A_POLITY_OF_MANY_ERAS: &str = "judah";
-const A_PLACE_OF_MANY_BLURBS: &str = "jerusalem";
 const A_PASSAGE_NAMING_PLACES: &str = "GEN.13";
 
 async fn era_window(app: &axum::Router, era: &str) -> serde_json::Value {
@@ -2749,20 +2746,6 @@ async fn a_polity_record_serves_its_compiled_reign_as_the_span_of_its_eras() {
 
     // Assert
     assert_eq!((status, eras.len() > 1, record["polity"].clone()), (StatusCode::OK, true, serde_json::json!({ "reign": reign })));
-}
-
-#[tokio::test]
-async fn a_place_record_serves_its_compiled_default_blurb_where_one_is_recorded() {
-    // Arrange
-    let app = compiled_app();
-    let history = real_atlas().0.place_history_for(A_PLACE_OF_MANY_BLURBS).unwrap().clone();
-    let blurb = atlas_core::history::default_blurb(&history.blurbs).unwrap().text.clone();
-
-    // Act
-    let (status, record, _) = get(&app, &format!("/api/node/Place:{A_PLACE_OF_MANY_BLURBS}")).await;
-
-    // Assert
-    assert_eq!((status, history.blurbs.len() > 1, record["place"]["blurb"].clone()), (StatusCode::OK, true, serde_json::json!(blurb)));
 }
 
 #[tokio::test]

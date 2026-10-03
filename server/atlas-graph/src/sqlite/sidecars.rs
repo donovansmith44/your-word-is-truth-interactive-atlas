@@ -6,7 +6,7 @@ use std::collections::HashMap;
 use atlas_core::data::{
     EventId,
     AtlasData, BookMeta, BookNarrationWindow, Canon, CanonBook, CatechismItem, CatechismPart, CatechismQuestion,
-    ChronologyAnchor, Landmark, LandmarkKind, LandmarkSize, PlaceBlurbEntry, PlaceDateClaim, PlaceHistory,
+    ChronologyAnchor, Landmark, LandmarkKind, LandmarkSize, PlaceDateClaim, PlaceHistory,
     PlaceNameAlias, PlaceNameEntry,
 };
 use atlas_core::sources::{Confidence, ProvenanceEntry, SourceCategory, SourceEntry, SourcesDocument};
@@ -59,11 +59,6 @@ pub static PLACE_HISTORY_NAME: TableSpec = TableSpec {
     columns: &["place_id", "ord", "name", "from_year", "to_year"],
     pk: &["place_id", "ord"],
 };
-pub static PLACE_HISTORY_BLURB: TableSpec = TableSpec {
-    name: "place_history_blurb",
-    columns: &["place_id", "ord", "text", "from_year", "to_year", "breadth"],
-    pk: &["place_id", "ord"],
-};
 pub static PLACE_HISTORY_VERSE: TableSpec = TableSpec {
     name: "place_history_verse",
     columns: &["place_id", "owner_kind", "owner_ord", "ord", "sref"],
@@ -89,7 +84,7 @@ pub static PROVENANCE_ENTRY: TableSpec =
     TableSpec { name: "provenance_entry", columns: &["id", "ord", "source", "confidence", "locator"], pk: &["id"] };
 
 /// The 21 sidecar specs in `extra_tables_of(Core)` order, after the five graph-derived tables.
-pub static SIDECAR_SPECS: [&TableSpec; 21] = [
+pub static SIDECAR_SPECS: [&TableSpec; 20] = [
     &CANON_BOOK,
     &CANON_CHAPTER_VERSES,
     &BOOK_META,
@@ -104,7 +99,6 @@ pub static SIDECAR_SPECS: [&TableSpec; 21] = [
     &CATECHISM_QUESTION_VERSE,
     &PLACE_HISTORY,
     &PLACE_HISTORY_NAME,
-    &PLACE_HISTORY_BLURB,
     &PLACE_HISTORY_VERSE,
     &PLACE_NAME_ALIAS,
     &PLACE_NAME_ALIAS_VERSE,
@@ -218,7 +212,7 @@ pub fn fold_sidecars(atlas: &AtlasData, sources: &SourcesDocument) -> Result<Vec
             }
         }
     }
-    let (mut ph, mut ph_name, mut ph_blurb, mut ph_verse) = (vec![], vec![], vec![], vec![]);
+    let (mut ph, mut ph_name, mut ph_verse) = (vec![], vec![], vec![]);
     let mut histories: Vec<_> = atlas.place_history.values().collect();
     histories.sort_by(|a, b| a.id.as_bytes().cmp(b.id.as_bytes()));
     for h in histories {
@@ -230,9 +224,6 @@ pub fn fold_sidecars(atlas: &AtlasData, sources: &SourcesDocument) -> Result<Vec
             for (vord, v) in n.verses.iter().enumerate() {
                 ph_verse.push(vec![t(&h.id), i(0i64), i(ord as i64), i(vord as i64), t(v)]);
             }
-        }
-        for (ord, b) in h.blurbs.iter().enumerate() {
-            ph_blurb.push(vec![t(&h.id), i(ord as i64), t(&b.text), i(b.when.from_year), i(b.when.to_year), t(&b.breadth)]);
         }
         for (kind, claim) in [(1i64, &h.established), (2i64, &h.destroyed)] {
             if let Some(c) = claim {
@@ -297,7 +288,6 @@ pub fn fold_sidecars(atlas: &AtlasData, sources: &SourcesDocument) -> Result<Vec
         ExtraTable { spec: &CATECHISM_QUESTION_VERSE, rows: question_verse },
         ExtraTable { spec: &PLACE_HISTORY, rows: ph },
         ExtraTable { spec: &PLACE_HISTORY_NAME, rows: ph_name },
-        ExtraTable { spec: &PLACE_HISTORY_BLURB, rows: ph_blurb },
         ExtraTable { spec: &PLACE_HISTORY_VERSE, rows: ph_verse },
         ExtraTable { spec: &PLACE_NAME_ALIAS, rows: alias },
         ExtraTable { spec: &PLACE_NAME_ALIAS_VERSE, rows: alias_verse },
@@ -497,19 +487,13 @@ pub fn unfold(conn: &Connection) -> Result<(AtlasData, SourcesDocument), SqliteE
         };
         let established = claim(&r[1], &r[2], &r[3], &r[4])?;
         let destroyed = claim(&r[5], &r[6], &r[7], &r[8])?;
-        place_history.insert(id.clone(), PlaceHistory { id, names: Vec::new(), blurbs: Vec::new(), established, destroyed });
+        place_history.insert(id.clone(), PlaceHistory { id, names: Vec::new(), established, destroyed });
     }
     for r in rows(&PLACE_HISTORY_NAME)? {
         let t = "place_history_name";
         let id = text(&r[0], t)?;
         let h = place_history.get_mut(&id).ok_or_else(|| SqliteError(format!("{t}: unknown place {id}")))?;
         h.names.push(PlaceNameEntry { name: text(&r[2], t)?, when: TimeRange { from_year: int(&r[3], t)? as i32, to_year: int(&r[4], t)? as i32 }, verses: Vec::new() });
-    }
-    for r in rows(&PLACE_HISTORY_BLURB)? {
-        let t = "place_history_blurb";
-        let id = text(&r[0], t)?;
-        let h = place_history.get_mut(&id).ok_or_else(|| SqliteError(format!("{t}: unknown place {id}")))?;
-        h.blurbs.push(PlaceBlurbEntry { text: text(&r[2], t)?, when: TimeRange { from_year: int(&r[3], t)? as i32, to_year: int(&r[4], t)? as i32 }, breadth: text(&r[5], t)? });
     }
     for r in rows(&PLACE_HISTORY_VERSE)? {
         let t = "place_history_verse";

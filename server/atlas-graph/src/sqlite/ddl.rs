@@ -444,7 +444,7 @@ CREATE TABLE polity_reign (
   polity_id TEXT PRIMARY KEY, from_year INTEGER NOT NULL, to_year INTEGER NOT NULL
 ) WITHOUT ROWID;
 CREATE TABLE place_default (
-  place_id TEXT PRIMARY KEY, display_name TEXT NOT NULL, canonical_name TEXT, blurb TEXT
+  place_id TEXT PRIMARY KEY, display_name TEXT NOT NULL, canonical_name TEXT
 ) WITHOUT ROWID;
 CREATE TABLE event_date (
   event_id  TEXT PRIMARY KEY,
@@ -519,10 +519,6 @@ CREATE TABLE place_history (
 ) WITHOUT ROWID;
 CREATE TABLE place_history_name (
   place_id TEXT NOT NULL, ord INTEGER NOT NULL, name TEXT NOT NULL, from_year INTEGER NOT NULL, to_year INTEGER NOT NULL,
-  PRIMARY KEY (place_id, ord)
-) WITHOUT ROWID;
-CREATE TABLE place_history_blurb (
-  place_id TEXT NOT NULL, ord INTEGER NOT NULL, text TEXT NOT NULL, from_year INTEGER NOT NULL, to_year INTEGER NOT NULL, breadth TEXT NOT NULL,
   PRIMARY KEY (place_id, ord)
 ) WITHOUT ROWID;
 CREATE TABLE place_history_verse (

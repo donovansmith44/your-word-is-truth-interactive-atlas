@@ -99,15 +99,13 @@ pub struct EventDetail {
 
 #[derive(Debug, Serialize, utoipa::ToSchema)]
 #[serde(deny_unknown_fields)]
-#[schema(description = "Where one place is (latitude north positive, longitude east positive), the name a reader of the King James Version knows it by, its plain canonical name only where that differs, a sentence on its history across every period recorded for it, and when it was founded and fell, each only where recorded.")]
+#[schema(description = "Where one place is (latitude north positive, longitude east positive), the name a reader of the King James Version knows it by, its plain canonical name only where that differs, and when it was founded and fell, each only where recorded.")]
 pub struct PlaceDetail {
     pub lat: f64,
     pub lon: f64,
     pub display_name: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub canonical_name: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub blurb: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub established: Option<super::DateClaim>,
     #[serde(skip_serializing_if = "Option::is_none")]

@@ -37,7 +37,7 @@ test('quiet dot hover card: hovering Jerusalem\'s quiet dot in the primeval era 
   await page.getByTestId('quiet-marker-jerusalem').dispatchEvent('click');
 
   await expect(page.getByTestId('popover-title')).toHaveText(record.label);
-  await expect(page.getByTestId('popover-field-Blurb')).toContainText(record.place.blurb);
+  await expect(page.getByTestId('popover-field-Blurb')).toHaveCount(0);
   await expect(page.getByTestId('popover-field-Established')).toContainText(record.place.established.label);
   await expect(page.getByTestId('popover-field-Destroyed')).toContainText(record.place.destroyed.label);
   await expect(page.getByTestId('popover-section-site-of-heading')).toHaveText(`Site of (${siteOf})`);
