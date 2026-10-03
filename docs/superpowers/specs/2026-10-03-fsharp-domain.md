@@ -1,44 +1,50 @@
-# F# domain sign-off proposal
+# F# domain: actual modules and remaining decisions
 
-**Not ready for sign-off:** Claude pre-review 4f6eb12 requires revision; owner ops 0057d41 requires declarations in their actual compiling modules. [Revision obligations](../reports/2026-10-02-fsharp-client-domain-revision.md). The original proposal below remains a superseded checkpoint until the real-module revision replaces it.
+**Partial revision; not ready for whole-domain sign-off.** The declarations below
+compile in Core. Each link is the sole declaration of its types and operations;
+the spec does not duplicate them. The standalone proposal signatures from
+6118be2 have been removed under owner ruling ops 0057d41. Claude's
+[pre-review](https://github.com/donovansmith44/your-word-is-truth-interactive-atlas/blob/4f6eb12/docs/superpowers/reports/2026-10-03-fsharp-domain-prereview.md)
+and the [revision obligations](../reports/2026-10-02-fsharp-client-domain-revision.md)
+remain the full open inventory.
 
-Proposal only: no DTOs, effects, UI or implementation. Owner rulings on ops
-`2e2be49`, `570f5b9`, `7572dae`; costume audit `a78559f` remains open.
-[Full laws, admission boundaries and library survey](../reports/2026-10-02-fsharp-client-domain.md).
-Every proposed type is below; linked signatures show all cases, fields and operations.
-
-| Module / every type | Required guarantee |
+| Actual module | Meaning and evidence |
 |---|---|
-| [Model.fsi](../../../client-fsharp/Domain/Model.fsi): `NonEmpty<'a>`, `Positive`, `DisplayText`, `ArtifactRoot`, `NodeId`, `EdgeId`, `EventId`, `StoryId`, `BookId`, `TranslationId`, `DocumentId`, `RelationKind`, `EntityKind`, `BibleBook`, `BibleChapter`, `BibleVerse`, `BiblePassage`, `ConcordParagraph`, `ConcordPassage`, `Year`, `YearSpan`, `YearCoverage`, `TextBody`, `HistoricalAccount`, `PassageContext`, `YearContext`, `SpanContext`, `ConcurrentEvents`, `Endpoints<'a>`, `YearEra`, `Direction`, `RelationDirection`, `UnitReference`, `Passage`, `BibleSelection`, `ConcordSelection`, `TextUnit`, `Event`, `Entity`, `Node`, `ElementId`, `Edge`, `Element`, `Position`, `ResolvedValue`, `Chronology`, `StoryStep`, `EventContext`, `JourneyProblem`, `WindowProblem`, `DomainFailure`, `Validation<'a>` | Private admitted identities/references; closed kinds; events group nonempty historical passage accounts. Year is atomic, BC/AD has no zero, spans have ordered endpoints; coverage preserves gaps. Chronology has one earlier/one later plus concurrent set, separate from story steps. Bible citations share canonical verse identity; Small Catechism paragraphs are Concord units. No copied canon/id grammar or inferred historical facts. |
-| [Structures.fsi](../../../client-fsharp/Domain/Structures.fsi): `Rooted<'a>`, `Resolved`, `Transition`, `TrailCapacity`, `TrailCursor`, `TrailPage`, `EarlierSteps`, `Trail`, `Renewal`, `RenewalEvidence`, `StepOutcome`, `BackOutcome`, `Reading`, `ReadingKey`, `NeighbourKey`, `TextCursor`, `EdgeCursor`, `ReadingPage`, `NeighbourPage`, `ReadingWindow`, `NeighbourWindow`, `NeighbourCapacity`, `FrontierCapacity`, `WholeChapter`, `ReadingExtent`, `ReadingPageKey`, `NeighbourPageKey`, `PageCacheKey`, `CachedPage`, `CacheCapacity`, `PageCache`, `Frontier`, `Focus` | One root per resolved value/trail/window/cache. Step needs served edge evidence; renewal needs coherent positions **and edges**. Trail holds at most its explicit capacity, earlier steps use server receipts. Reading pages 20, resident reading 40; WholeChapter holds exactly one chapter. Neighbour and aggregate frontier capacities are explicit and separate. Cache is finite immutable LRU keyed by root/query/direction/cursor; no visited-prefix history. |
-| [BoundaryModel.fsi](../../../client-fsharp/Domain/BoundaryModel.fsi): `ArrayIndex`, `LineNumber`, `ByteColumn`, `ScalarOffset`, `Utf16Offset`, `ScalarSpan`, `Utf16Span`, `HttpUrl`, `Latitude`, `Longitude`, `ColorToken`, `WireField`, `DocumentField`, `Vocabulary`, `Discriminator`, `Bound`, `Keyword`, `ClientStatus`, `ServerStatus`, `RefusalCode`, `TextPosition`, `Path<'step>`, `JsonStep`, `DocumentStep`, `JsonPath`, `DocumentPath`, `JsonKind`, `IdentityFailure`, `WireFailure`, `ContractError`, `TransientFailure`, `TerminalFailure`, `ReadFailure`, `BoundaryFailure` | One generated wire-admission door. Private scalar wrappers have validating Result doors. Structured paths contain fields and checked indices; errors are closed cases without English. Syntax positions are real, no fabricated path. HTTP(S) URLs, coordinate bounds, palette tokens, status ranges and scalar/UTF16 spans are checked. Transient/terminal failures are separate; only transient can retry. |
+| [Positive](../../../client-fsharp/Core/Domain/Positive.fs) | A positive count, rather than an integer with a label. Zero and negative inputs return its own closed refusal. [Properties](../../../client-fsharp.Tests/Domain/PositiveLaws.fs). |
+| [NonEmpty](../../../client-fsharp/Core/Domain/NonEmpty.fs) | A private adapter around FSharpPlus's nonempty list. Empty input is refused; singleton, create, append and map retain complete ordered values. Append is associative; map preserves identity and composition. [Properties](../../../client-fsharp.Tests/Domain/NonEmptyLaws.fs). |
+| [ArrayIndex](../../../client-fsharp/Core/Admission/ArrayIndex.fs) | A zero-based, nonnegative array position, distinct from document positions. [Properties](../../../client-fsharp.Tests/Domain/ArrayIndexLaws.fs). |
+| [DocumentPosition](../../../client-fsharp/Core/Admission/DocumentPosition.fs) | One-based line and byte column, separately admitted and retained as a structured location. Neither door accepts zero or a negative number. [Properties](../../../client-fsharp.Tests/Domain/DocumentPositionLaws.fs). |
+| [Coordinates](../../../client-fsharp/Core/Admission/Coordinates.fs) | Finite latitude/longitude inside their respective inclusive bounds. Nonfinite input and finite out-of-range input have distinct refusals. [Properties](../../../client-fsharp.Tests/Domain/CoordinatesLaws.fs). |
+| [HttpUrl](../../../client-fsharp/Core/Admission/HttpUrl.fs) | An absolute HTTP(S) visit URL parsed by System.Uri. Relative/malformed input and other schemes return distinct refusals; admitted spelling is preserved. [Properties](../../../client-fsharp.Tests/Domain/HttpUrlLaws.fs). |
 
-[Algebras.fsi](../../../client-fsharp/Domain/Algebras.fsi) declares every pure operation.
-Property families required **test-first after sign-off**:
+These are independent domain/admission leaves, not a new UI or a replacement
+wire vocabulary. For example, a supplied count of zero fails admission; an empty
+collection cannot become a nonempty account collection; a latitude of NaN cannot
+enter a map position. The application will consume the approved modules through
+its admission adapters after the full model is reviewed. No future contract type
+or producer is copied into the client to fill a missing dependency.
 
-| Algebra | Laws |
-|---|---|
-| Nonempty/positive | Nonempty output; append associativity; map identity/composition; positive admission iff >0. |
-| Years/references | Total order; ordered same-corpus containment. Hull: associative, commutative, idempotent, no empty identity. Coverage union additionally has empty identity and preserves gaps. References use admitted ordinals, never labels. |
-| Trail | Begin/back at origin identities; resident step/back inverse; bounded evidence. Cross-root step requests renewal. Accepted renewal preserves exact journey/order on one root; refusal leaves the old value. Same-root complete renewal idempotent. |
-| Paging | Same-query identity; append/prepend preserve admitted pages; resident <=40 at >=10,000 turns. Wrong root/query/cursor, oversize and empty continuation refuse whole. Eviction means append/prepend are **not** inverses; saved server receipts recover pages. WholeChapter is a separate approved extent. |
-| Cache/focus | Capacity always holds; deterministic LRU; root/query/direction/cursor distinguish keys. Same-root rebase identity, new-root rebase clears old entries and is idempotent. Focus accepts only subject/root-coherent windows within aggregate budget. |
-| Failures/admission | Result bind associativity/identity; independent validation accumulates nonempty failures in declaration order. Every scalar door has valid and invalid generators. Paths preserve structured steps; syntax/value failures never invent missing information. Failed transitions never partially install state. |
+The [public-surface property](../../../client-fsharp.Tests/Domain/AdmissionSurfaceLaws.fs)
+compiles all eight public doors and independently attempts all eight forbidden
+constructors. The normal regression project discovers these domain properties;
+the small DomainLaws project also runs them without a browser build.
 
-Closure gates enumerate **all** client/generator/test/generated sources and every
-scalar door: private wrapper, exactly one validating door, no unchecked alternate,
-no primitive semantic fields or error prose, structural compound values, invalid
-input coverage, negative compile cases, independent expected values, every schema
-keyword consumed or explicitly refused. `DisplayText` is unparsed served prose;
-framework-owned HTTP injection is the sole sanctioned unchecked shell exception.
+The remaining tour must cover served identities/root seals; Year and spans;
+Bible/Concord containers, passage/history/text parts; graph elements, chronology
+and stories; bounded reading/neighbour windows and cache; trail renewal and
+focus; structured wire/contract/read failures. Those actual modules and their
+laws are still owed. Each private scalar must have one validating Result door
+with its own reachable closed failure and independent invalid-input properties.
 
-Library choices: Microsoft.OpenApi + YamlReader for generation; Thoth Core + STJ
-for generated codecs; FsToolkit.ErrorHandling for composition; existing Bolero
-router and framework file/URI APIs. Survey links/licences/maintenance and adoption
-gates are in the full notes. WASM/AOT compatibility still needs executable gates.
+The six choices already sent by Claude remain pending with the owner: Year
+admission, event dating, trail retention, shared container model, served
+vocabulary, and paged concurrent events. Existing owner rulings on shared
+containers, canonical verse identities, focus change and bounded reads still
+bind the design. Unlanded WIREID/Year/FOCUS-3 contracts are producer dependencies.
+There are no invented client year/passage constructors or server trail receipts.
 
-Server/contract gaps (TIME, passage contexts, canonical reference identity,
-before/after/history receipts) remain explicit dependencies. No endpoints or
-compiled facts are invented on the client. Abstract representations are proposals,
-not evidence of admission. Four signatures pass syntax parsing only; domain laws,
-all 89 costume fixes, parity and any further exemplar/view work await this sign-off.
+The [survey and validation record](../reports/2026-10-02-fsharp-client-domain-revision.md)
+states the dependency choices and what has actually run. The 89-instance costume
+audit, all-source admission/keyword closure, whole-domain sign-off, all-file
+newspaper order and 100% parity remain open. No further view/exemplar expansion
+or retirement of the C# client is claimed by this checkpoint.

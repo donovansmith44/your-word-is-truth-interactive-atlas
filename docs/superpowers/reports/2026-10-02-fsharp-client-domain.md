@@ -1,11 +1,20 @@
 # F# client domain proposal: detailed laws and library survey
 
-**Proposal for domain sign-off; no implementation or parity claim.** Owner rulings:
+**Historical, superseded proposal at 6118be2; not current domain authority.**
+Claude's pre-review found 6 Critical, 10 Important and 8 Minor issues. The four
+proposal signatures were deleted under ops 0057d41. Their historical links below
+point to that exact checkpoint, not active declarations. Read the
+[current actual-module tour](../specs/2026-10-03-fsharp-domain.md) and
+[revision record](2026-10-02-fsharp-client-domain-revision.md) instead. Statements
+about server trail receipts, event coverage, cursor names and reference shapes
+below describe the rejected proposal and must not be implemented as written.
+
+**Original proposal; no implementation or parity claim.** Owner rulings:
 ops `2e2be49`, `570f5b9`, `7572dae`. This replaces further view/exemplar work.
 The four small signature files under `client-fsharp/Domain/` are the complete
 proposed interfaces. They are not wired into the client or shared contract.
 
-| Domain types — every declaration in [Model.fsi](../../../client-fsharp/Domain/Model.fsi) | Meaning and invariant |
+| Domain types — every declaration in [Model.fsi](https://github.com/donovansmith44/your-word-is-truth-interactive-atlas/blob/6118be2/client-fsharp/Domain/Model.fsi) | Meaning and invariant |
 |---|---|
 | `NonEmpty<'a>`, `Positive`, `DisplayText`, `Endpoints<'a>` | A witnessed nonempty collection; a strictly positive count; explicitly unparsed prose; two endpoints. |
 | `ArtifactRoot`, `NodeId`, `EdgeId`, `EventId`, `StoryId`, `BookId`, `TranslationId`, `DocumentId`, `RelationKind`, `EntityKind` | Opaque admitted identities/vocabularies. Event/story ids cannot substitute a person/place id. Leaves/vocabularies are generated from the single shared authority; no copied id grammar, canon, kind list or wire DTO imports. `EntityKind` excludes text/event because `Node` carries those cases separately; no catechism-item identity survives the approved replacement. |
@@ -15,14 +24,14 @@ proposed interfaces. They are not wired into the client or shared contract.
 | `Direction`, `RelationDirection`, `Chronology`, `StoryStep`, `EventContext`, `ConcurrentEvents` | One earlier event, one later event, a concurrent event set; no self/concurrent overlap. Stories have their own identity and previous/next step. Story order never substitutes chronology. Relation directions are typed and their dual comes from the relation declaration. |
 | `JourneyProblem`, `WindowProblem`, `DomainFailure`, `Validation<'a>` | Closed typed failures; independent validation can accumulate a nonempty list. No HTTP status, exception, JSON object, DTO, renderer or effect lives in this model. |
 
-| Data structures — every declaration in [Structures.fsi](../../../client-fsharp/Domain/Structures.fsi) | Invariant and bound |
+| Data structures — every declaration in [Structures.fsi](https://github.com/donovansmith44/your-word-is-truth-interactive-atlas/blob/6118be2/client-fsharp/Domain/Structures.fsi) | Invariant and bound |
 |---|---|
 | `Rooted<'a>`, `Resolved`, `Transition` | A private root seal, admitted position/value correspondence and a transition witnessed by a served edge. No kind/identity/root mismatch can be installed through public constructors. |
 | `TrailCapacity`, `TrailCursor`, `TrailPage`, `EarlierSteps`, `Trail`, `Renewal`, `RenewalEvidence`, `StepOutcome`, `BackOutcome` | One coherent resident journey with explicit finite step capacity. Old steps are paged through opaque history receipts, rather than forgotten or held forever. Back either returns the previous trail or a typed requirement for earlier steps; at the actual start it is a no-op. `RenewalEvidence` is an admitted coherent batch containing the resident positions **and edge evidence**, on one new root; its decoder validates exact requested identities and path order, rather than accepting an arbitrary nonempty list. Renewal resolves them together. A missing/changed step refuses the replacement. |
 | `Reading`, `ReadingKey`, `NeighbourKey`, `TextCursor`, `EdgeCursor`, `ReadingPage`, `NeighbourPage`, `ReadingWindow`, `NeighbourWindow`, `NeighbourCapacity`, `FrontierCapacity`, `WholeChapter`, `ReadingExtent` | Bible selection always has a translation; Concord selection has none. Distinct cursors carry their root/query witness. Reading pages default to **20**, the resident paged reading to **40** units. Sliding evicts whole oldest page segments and preserves served before/after receipts; it never invents offsets/references. Neighbour windows have a positive explicit `NeighbourCapacity` in units; `Focuses.beginAt` takes a separate `FrontierCapacity` limiting aggregate resident neighbour units. A page/window exceeding either budget refuses without changing the previous value. The finite generated relation vocabulary bounds empty-window metadata; no history of evicted windows is retained. `CompleteChapter` is the approved separate mode: exactly one whole chapter, not a whole corpus and not falsely subject to 40. |
 | `ReadingPageKey`, `NeighbourPageKey`, `PageCacheKey`, `CachedPage`, `CacheCapacity`, `PageCache`, `Frontier`, `Focus` | Cache keys include root, selection/relation/direction **and cursor**. Capacity is a finite positive policy parameter; immutable LRU eviction. Focus holds a resolved subject and its bounded lazy relation windows; no CSS/HTML or re-derived fact. No whole-collection prefetch. |
 
-Every operation is declared in [Algebras.fsi](../../../client-fsharp/Domain/Algebras.fsi).
+Every operation is declared in [Algebras.fsi](https://github.com/donovansmith44/your-word-is-truth-interactive-atlas/blob/6118be2/client-fsharp/Domain/Algebras.fsi).
 The following are the property families to implement **test-first after sign-off**;
 they are executable specifications to be written, not tests already passed.
 
@@ -54,7 +63,7 @@ the already ruled reading policy. Validation of the eventual implementation,
 100% parity and migration from current generated DTOs remain ahead.
 
 The admission boundary is separate from the domain and contains no wire DTOs.
-Every declaration in [BoundaryModel.fsi](../../../client-fsharp/Domain/BoundaryModel.fsi):
+Every declaration in [BoundaryModel.fsi](https://github.com/donovansmith44/your-word-is-truth-interactive-atlas/blob/6118be2/client-fsharp/Domain/BoundaryModel.fsi):
 `ArrayIndex`, `LineNumber`, `ByteColumn`, `ScalarOffset`, `Utf16Offset`, `ScalarSpan`,
 `Utf16Span`, `HttpUrl`, `Latitude`, `Longitude`, `ColorToken`, `WireField`,
 `DocumentField`, `Vocabulary`, `Discriminator`, `Bound`, `Keyword`, `ClientStatus`,

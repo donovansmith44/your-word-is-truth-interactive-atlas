@@ -1,0 +1,21 @@
+  BibleAtlas.FSharp.ContractGenerator -> /home/donovan/w/CX-FSHARP/client-fsharp.ContractGenerator/bin/Debug/net10.0/BibleAtlas.FSharp.ContractGenerator.dll
+  BibleAtlas.FSharp.Core -> /home/donovan/w/CX-FSHARP/client-fsharp/Core/bin/Debug/net10.0/BibleAtlas.FSharp.Core.dll
+  DomainLaws -> /home/donovan/w/CX-FSHARP/client-fsharp.Tests/Domain/bin/Debug/net10.0/DomainLaws.dll
+Test run for /home/donovan/w/CX-FSHARP/client-fsharp.Tests/Domain/bin/Debug/net10.0/DomainLaws.dll (.NETCoreApp,Version=v10.0)
+A total of 1 test files matched the specified pattern.
+[xUnit.net 00:00:01.62]     BibleAtlas.FSharp.Tests.Domain.AdmissionSurfaceLaws.every new private representation refuses direct construction while its public door compiles [FAIL]
+  Failed BibleAtlas.FSharp.Tests.Domain.AdmissionSurfaceLaws.every new private representation refuses direct construction while its public door compiles [1 s]
+  Error Message:
+   FsCheck.Xunit.PropertyFailedException : 
+Falsifiable, after 1 test (0 shrinks) (7537702151614106969,8888840295875120683). 
+Last step was invoked with size of 11 and seed of (3595548342401973665,8585265095772260193):
+Original:
+0us
+
+---- System.Exception : Expected true, got false.
+  Stack Trace:
+  
+----- Inner Stack Trace -----
+
+
+Failed!  - Failed:     1, Passed:     0, Skipped:     0, Total:     1, Duration: 1 s - DomainLaws.dll (net10.0)

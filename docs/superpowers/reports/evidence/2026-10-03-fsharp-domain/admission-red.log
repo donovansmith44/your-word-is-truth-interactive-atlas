@@ -1,0 +1,154 @@
+  Determining projects to restore...
+  Restored /home/donovan/w/CX-FSHARP/client-fsharp/Core/BibleAtlas.FSharp.Core.fsproj (in 1.28 sec).
+  Restored /home/donovan/w/CX-FSHARP/client-fsharp.Tests/Domain/DomainLaws.fsproj (in 1.32 sec).
+  1 of 3 projects are up-to-date for restore.
+  BibleAtlas.FSharp.ContractGenerator -> /home/donovan/w/CX-FSHARP/client-fsharp.ContractGenerator/bin/Debug/net10.0/BibleAtlas.FSharp.ContractGenerator.dll
+  BibleAtlas.FSharp.Core -> /home/donovan/w/CX-FSHARP/client-fsharp/Core/bin/Debug/net10.0/BibleAtlas.FSharp.Core.dll
+  DomainLaws -> /home/donovan/w/CX-FSHARP/client-fsharp.Tests/Domain/bin/Debug/net10.0/DomainLaws.dll
+Test run for /home/donovan/w/CX-FSHARP/client-fsharp.Tests/Domain/bin/Debug/net10.0/DomainLaws.dll (.NETCoreApp,Version=v10.0)
+A total of 1 test files matched the specified pattern.
+[xUnit.net 00:00:00.24]     BibleAtlas.FSharp.Tests.Domain.ArrayIndexLaws.array index admission accepts exactly nonnegative integers [FAIL]
+[xUnit.net 00:00:00.24]     BibleAtlas.FSharp.Tests.Domain.PositiveLaws.positive admission accepts exactly positive integers and preserves their value [FAIL]
+[xUnit.net 00:00:00.24]     BibleAtlas.FSharp.Tests.Domain.DocumentPositionLaws.document lines are one based and preserve every valid value [FAIL]
+[xUnit.net 00:00:00.24]     BibleAtlas.FSharp.Tests.Domain.DocumentPositionLaws.document byte columns are one based and preserve every valid value [FAIL]
+[xUnit.net 00:00:00.24]     BibleAtlas.FSharp.Tests.Domain.HttpUrlLaws.HTTP and HTTPS admission preserves a complete generated absolute URL [FAIL]
+[xUnit.net 00:00:00.24]     BibleAtlas.FSharp.Tests.Domain.CoordinatesLaws.longitude rejects nonfinite and out of range values as distinct failures [FAIL]
+  Failed BibleAtlas.FSharp.Tests.Domain.ArrayIndexLaws.array index admission accepts exactly nonnegative integers [52 ms]
+  Error Message:
+   FsCheck.Xunit.PropertyFailedException : 
+Falsifiable, after 3 tests (1 shrink) (6114590521271875088,11413818099797350259). 
+Last step was invoked with size of 4 and seed of (6371434058607107967,15617438408535019449).
+Replay directly at failing step with (6371434058607107967,15617438408535019449,4).
+Original:
+4
+Shrunk:
+0
+
+---- System.Exception : Expected true, got false.
+  Stack Trace:
+  
+----- Inner Stack Trace -----
+
+  Failed BibleAtlas.FSharp.Tests.Domain.PositiveLaws.positive admission accepts exactly positive integers and preserves their value [1 ms]
+  Error Message:
+   FsCheck.Xunit.PropertyFailedException : 
+Falsifiable, after 2 tests (1 shrink) (4383558336543637095,16370582147865931021). 
+Last step was invoked with size of 3 and seed of (9039558358484366181,4176729017952769223).
+Replay directly at failing step with (9039558358484366181,4176729017952769223,3).
+Original:
+2
+Shrunk:
+1
+
+---- System.Exception : Expected true, got false.
+  Stack Trace:
+  
+----- Inner Stack Trace -----
+
+  Failed BibleAtlas.FSharp.Tests.Domain.DocumentPositionLaws.document lines are one based and preserve every valid value [52 ms]
+  Error Message:
+   FsCheck.Xunit.PropertyFailedException : 
+Falsifiable, after 2 tests (2 shrinks) (5820633780252583404,4706473956164473581). 
+Last step was invoked with size of 3 and seed of (12721813349186572098,12003365041049324939).
+Replay directly at failing step with (12721813349186572098,12003365041049324939,3).
+Original:
+3L
+Shrunk:
+1L
+
+---- System.Exception : Expected true, got false.
+  Stack Trace:
+  
+----- Inner Stack Trace -----
+
+  Failed BibleAtlas.FSharp.Tests.Domain.DocumentPositionLaws.document byte columns are one based and preserve every valid value [< 1 ms]
+  Error Message:
+   FsCheck.Xunit.PropertyFailedException : 
+Falsifiable, after 1 test (0 shrinks) (16693233418814433608,5940882802582845545). 
+Last step was invoked with size of 2 and seed of (11320040498162212127,14566559768946019271):
+Original:
+1L
+
+---- System.Exception : Expected true, got false.
+  Stack Trace:
+  
+----- Inner Stack Trace -----
+
+  Failed BibleAtlas.FSharp.Tests.Domain.HttpUrlLaws.HTTP and HTTPS admission preserves a complete generated absolute URL [63 ms]
+  Error Message:
+   FsCheck.Xunit.PropertyFailedException : 
+Falsifiable, after 1 test (0 shrinks) (3379366120402774266,18228021689287074635). 
+Last step was invoked with size of 2 and seed of (8361276676058249230,16272605903710259951):
+Original:
+(false, 0us)
+
+---- System.Exception : Expected true, got false.
+  Stack Trace:
+  
+----- Inner Stack Trace -----
+
+  Failed BibleAtlas.FSharp.Tests.Domain.CoordinatesLaws.longitude rejects nonfinite and out of range values as distinct failures [11 ms]
+  Error Message:
+   FsCheck.Xunit.PropertyFailedException : 
+Falsifiable, after 1 test (1 shrink) (6744554112775463860,13611193428878510737). 
+Last step was invoked with size of 2 and seed of (12183928633953091383,5918447839295137003):
+Original:
+1.797693135e+308
+Shrunk:
+0.0
+
+---- System.Exception : Expected true, got false.
+  Stack Trace:
+  
+----- Inner Stack Trace -----
+
+[xUnit.net 00:00:00.25]     BibleAtlas.FSharp.Tests.Domain.CoordinatesLaws.latitude rejects nonfinite and out of range values as distinct failures [FAIL]
+[xUnit.net 00:00:00.25]     BibleAtlas.FSharp.Tests.Domain.HttpUrlLaws.non web schemes are refused before a visit link is admitted [FAIL]
+[xUnit.net 00:00:00.25]     BibleAtlas.FSharp.Tests.Domain.NonEmptyLaws.nonempty admission refuses empty input and preserves every nonempty list [FAIL]
+  Failed BibleAtlas.FSharp.Tests.Domain.CoordinatesLaws.latitude rejects nonfinite and out of range values as distinct failures [1 ms]
+  Error Message:
+   FsCheck.Xunit.PropertyFailedException : 
+Falsifiable, after 1 test (1 shrink) (17308831162785301278,7824975275490478775). 
+Last step was invoked with size of 2 and seed of (2178106513145111603,16933510805604266821):
+Original:
+-1.180969236
+Shrunk:
+0.0
+
+---- System.Exception : Expected true, got false.
+  Stack Trace:
+  
+----- Inner Stack Trace -----
+
+  Failed BibleAtlas.FSharp.Tests.Domain.HttpUrlLaws.non web schemes are refused before a visit link is admitted [4 ms]
+  Error Message:
+   FsCheck.Xunit.PropertyFailedException : 
+Falsifiable, after 1 test (1 shrink) (3487410339592143228,5080141308181519171). 
+Last step was invoked with size of 2 and seed of (2885997568939229840,5877321333872640901):
+Original:
+2us
+Shrunk:
+0us
+
+---- System.Exception : Expected true, got false.
+  Stack Trace:
+  
+----- Inner Stack Trace -----
+
+  Failed BibleAtlas.FSharp.Tests.Domain.NonEmptyLaws.nonempty admission refuses empty input and preserves every nonempty list [3 ms]
+  Error Message:
+   FsCheck.Xunit.PropertyFailedException : 
+Falsifiable, after 1 test (2 shrinks) (1616986234939563388,12282426373892849993). 
+Last step was invoked with size of 2 and seed of (13086732770746622989,5686926184362814501):
+Original:
+[-1]
+Shrunk:
+[0]
+
+---- System.Exception : Expected true, got false.
+  Stack Trace:
+  
+----- Inner Stack Trace -----
+
+
+Failed!  - Failed:     9, Passed:     7, Skipped:     0, Total:    16, Duration: 841 ms - DomainLaws.dll (net10.0)
