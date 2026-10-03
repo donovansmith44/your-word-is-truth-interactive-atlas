@@ -20,9 +20,7 @@ fn minimal_graph(data: &AtlasData) -> Arc<GraphService> {
 fn real_sources_document() -> SourcesDocument {
     let path = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data/curated/sources.toml");
     let input = std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("reading {}: {e}", path.display()));
-    let doc = atlas_etl::sources::parse_sources(&input).expect("data/curated/sources.toml must parse");
-    atlas_etl::sources::validate_structure(&doc).expect("data/curated/sources.toml structural validation");
-    doc
+    atlas_etl::sources::admit_sources(&input).expect("data/curated/sources.toml must be admitted").into_document()
 }
 
 async fn get(app: &axum::Router, uri: &str) -> (StatusCode, serde_json::Value) {

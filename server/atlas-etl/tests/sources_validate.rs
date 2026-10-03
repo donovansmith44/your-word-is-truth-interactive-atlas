@@ -9,8 +9,7 @@ fn repo_root_file(rel: &str) -> String {
 #[test]
 fn sources_toml_reconciles_1to1_against_licenses_md_per_source_table() {
     let toml_input = repo_root_file("data/curated/sources.toml");
-    let doc = atlas_etl::sources::parse_sources(&toml_input).expect("data/curated/sources.toml must parse");
-    atlas_etl::sources::validate_structure(&doc).expect("data/curated/sources.toml structural validation");
+    let doc = atlas_etl::sources::admit_sources(&toml_input).expect("data/curated/sources.toml must be admitted").into_document();
 
     let licenses_md = repo_root_file("LICENSES.md");
     atlas_etl::sources::validate_against_licenses(&doc, &licenses_md).expect(
@@ -23,7 +22,7 @@ fn sources_toml_reconciles_1to1_against_licenses_md_per_source_table() {
 #[test]
 fn per_source_table_has_the_expected_row_count() {
     let toml_input = repo_root_file("data/curated/sources.toml");
-    let doc = atlas_etl::sources::parse_sources(&toml_input).expect("data/curated/sources.toml must parse");
+    let doc = atlas_etl::sources::admit_sources(&toml_input).expect("data/curated/sources.toml must be admitted").into_document();
     assert_eq!(
         doc.sources.len(),
         20,
@@ -38,7 +37,7 @@ fn per_source_table_has_the_expected_row_count() {
 #[test]
 fn compiled_sources_json_matches_a_fresh_generation_from_curated_toml() {
     let toml_input = repo_root_file("data/curated/sources.toml");
-    let doc = atlas_etl::sources::parse_sources(&toml_input).expect("data/curated/sources.toml must parse");
+    let doc = atlas_etl::sources::admit_sources(&toml_input).expect("data/curated/sources.toml must be admitted").into_document();
 
     let compiled = repo_root_file("data/compiled/sources.json");
     let on_disk: atlas_core::sources::SourcesDocument =
@@ -54,9 +53,8 @@ fn compiled_sources_json_matches_a_fresh_generation_from_curated_toml() {
 #[test]
 fn the_provenance_join_table_is_structurally_sound() {
     let toml_input = repo_root_file("data/curated/sources.toml");
-    let doc = atlas_etl::sources::parse_sources(&toml_input).expect("data/curated/sources.toml must parse");
+    let doc = atlas_etl::sources::admit_sources(&toml_input).expect("the [[provenance]] rows must name real sources and real confidences").into_document();
     assert!(!doc.provenances.is_empty(), "the [[provenance]] join table must not be empty -- every piece of data needs a source (owner order 1)");
-    atlas_etl::sources::validate_structure(&doc).expect("the [[provenance]] rows must name real sources and real confidences");
 }
 
 #[test]
@@ -96,8 +94,7 @@ unknown variant `Probably`, expected one of `CanonicalText`, `Curated`, `Importe
 #[test]
 fn a_malformed_provenance_row_fails_validation_loudly() {
     let check = |extra: &str, needle: &str, why: &str| {
-        let doc = atlas_etl::sources::parse_sources(&format!("{PROVENANCE_BASE}{extra}")).expect("the fixture must parse");
-        let err = atlas_etl::sources::validate_structure(&doc).expect_err(why);
+        let err = atlas_etl::sources::admit_sources(&format!("{PROVENANCE_BASE}{extra}")).expect_err(why);
         assert!(err.to_string().contains(needle), "expected an error mentioning '{needle}', got: {err}");
     };
 
@@ -151,7 +148,7 @@ source = \"s\"
 confidence = \"Probably\"
 ");
     // Act
-    let refused = atlas_etl::sources::parse_sources(&off_vocabulary).expect_err("a confidence no member answers to must not even parse");
+    let refused = atlas_etl::sources::admit_sources(&off_vocabulary).expect_err("a confidence no member answers to must not even parse");
     // Assert
     assert_eq!(format!("{refused:#}"), CONFIDENCE_REFUSAL);
 }
@@ -163,7 +160,7 @@ const ONE_TYPEFACE: &str = "| Overpass typeface | SIL Open Font License 1.1 | Bu
 #[test]
 fn the_law_s_domain_is_the_ingested_sources_of_the_per_source_table_so_a_bundled_client_asset_is_outside_it() {
     // Arrange
-    let doc = atlas_etl::sources::parse_sources(PROVENANCE_BASE).unwrap();
+    let doc = atlas_etl::sources::admit_sources(PROVENANCE_BASE).unwrap().into_document();
     let licenses_md = format!("{ONE_INGESTED_SOURCE}\n## Bundled client assets\n\n| Asset | License | Use |\n|---|---|---|\n{ONE_TYPEFACE}");
     // Act
     let reconciled = atlas_etl::sources::validate_against_licenses(&doc, &licenses_md);
@@ -174,7 +171,7 @@ fn the_law_s_domain_is_the_ingested_sources_of_the_per_source_table_so_a_bundled
 #[test]
 fn a_client_asset_filed_among_the_ingested_sources_is_refused_and_pointed_at_its_own_table() {
     // Arrange
-    let doc = atlas_etl::sources::parse_sources(PROVENANCE_BASE).unwrap();
+    let doc = atlas_etl::sources::admit_sources(PROVENANCE_BASE).unwrap().into_document();
     let licenses_md = format!("{ONE_INGESTED_SOURCE}{ONE_TYPEFACE}");
     // Act
     let refused = atlas_etl::sources::validate_against_licenses(&doc, &licenses_md).unwrap_err().to_string();
@@ -193,4 +190,48 @@ fn the_real_licenses_file_keeps_its_bundled_client_assets_out_of_the_per_source_
     // Assert
     assert!(per_source < client_assets);
     assert!(licenses_md[client_assets..].contains("typeface"));
+}
+
+#[test]
+fn every_ambiguous_or_dangling_registry_is_refused_at_the_door_the_compile_reads_titles_through() {
+    // Arrange
+    let registry = repo_root_file("data/curated/sources.toml");
+    let admitted = atlas_etl::sources::admit_sources(&registry).expect("data/curated/sources.toml must be admitted").into_document();
+    let another_source = |of: &str| admitted.sources.iter().find(|s| s.id != of).expect("the registry lists more than one source").id.clone();
+    let provenance = |id: &str, source: &str| format!("{registry}\n[[provenance]]\nid = \"{id}\"\nsource = \"{source}\"\nconfidence = \"Imported\"\n");
+    let source = |id: &str, category: &str| {
+        format!("{registry}\n[[source]]\nid = \"{id}\"\ncategory = \"{category}\"\ntitle = \"Another title\"\nwhat_it_is = \"x\"\nwhat_we_built = \"y\"\nlicense = \"z\"\nlicenses_row_key = \"k\"\n")
+    };
+    let ambiguous: Vec<String> = admitted
+        .provenances
+        .iter()
+        .flat_map(|p| [provenance(&p.id, &another_source(&p.source)), provenance(&format!("{}-dangling", p.id), "no-such-source")])
+        .chain(admitted.sources.iter().map(|s| source(&s.id, &s.category)))
+        .collect();
+
+    // Act
+    let admitted_anyway: Vec<&String> = ambiguous.iter().filter(|r| atlas_etl::sources::admit_sources(r).is_ok()).collect();
+
+    // Assert
+    assert_eq!(
+        (ambiguous.len(), admitted_anyway),
+        (2 * admitted.provenances.len() + admitted.sources.len(), Vec::<&String>::new())
+    );
+}
+
+#[test]
+fn every_admitted_provenance_is_titled_by_the_source_it_names_whatever_locator_it_carries() {
+    // Arrange
+    let admitted = atlas_etl::sources::admit_sources(&repo_root_file("data/curated/sources.toml")).expect("data/curated/sources.toml must be admitted");
+    let doc = admitted.document();
+    let named = |p: &atlas_core::sources::ProvenanceEntry| doc.sources.iter().find(|s| s.id == p.source).map(|s| s.title.as_str());
+
+    // Act
+    let titles = admitted.provenance_titles();
+
+    // Assert
+    let expected: Vec<(Option<&str>, Option<&str>)> = doc.provenances.iter().map(|p| (named(p), named(p))).collect();
+    let titled: Vec<(Option<&str>, Option<&str>)> =
+        doc.provenances.iter().map(|p| (titles.title_of(&p.id), titles.title_of(&format!("{}/a/locator", p.id)))).collect();
+    assert_eq!(titled, expected);
 }
