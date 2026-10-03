@@ -4,4 +4,3 @@ test a_title_index_built_from_rows_with_distinct_ids_holds_every_row ... ok
 test a_title_index_built_from_rows_with_a_repeated_id_is_refused_naming_that_id ... ok
 
 test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
-
