@@ -1,0 +1,3 @@
+1024 generated locator-title cases pass; all prior 32 missing-source, 32 duplicate-source and 32 duplicate-provenance registries now refused by the compiler's exact admitted door.
+32 prior public-constructor conflicting-ID inputs now refused with the complete typed error.
+All 86 full-curated-TOML ambiguous/dangling mutations now refused; all 33 prior public-constructor mutations of its complete title map now refused.

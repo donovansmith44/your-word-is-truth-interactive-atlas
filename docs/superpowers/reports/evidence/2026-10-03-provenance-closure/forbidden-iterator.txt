@@ -1,0 +1,21 @@
+exit_code: 1
+error[E0277]: a value of type `ProvenanceTitles` cannot be built from an iterator over elements of type `(String, String)`
+ --> docs/superpowers/reports/evidence/2026-10-03-provenance-closure/forbidden-iterator.rs:3:126
+  |
+3 |     let _: ProvenanceTitles = vec![("id".to_string(), "One".to_string()), ("id".to_string(), "Two".to_string())].into_iter().collect();
+  |                                                                                                                              ^^^^^^^ value of type `ProvenanceTitles` cannot be built from `std::iter::Iterator<Item=(String, String)>`
+  |
+  = help: the trait `FromIterator<(String, String)>` is not implemented for `ProvenanceTitles`
+note: the method call chain might not have had the expected associated types
+ --> docs/superpowers/reports/evidence/2026-10-03-provenance-closure/forbidden-iterator.rs:3:114
+  |
+3 |     let _: ProvenanceTitles = vec![("id".to_string(), "One".to_string()), ("id".to_string(), "Two".to_string())].into_iter().collect();
+  |                               ---------------------------------------------------------------------------------- ^^^^^^^^^^^ `Iterator::Item` is `(String, String)` here
+  |                               |
+  |                               this expression has type `Vec<(String, String)>`
+note: required by a bound in `collect`
+ --> /rustc/8bab26f4f68e0e26f0bb7960be334d5b520ea452/library/core/src/iter/traits/iterator.rs:2077:4
+
+error: aborting due to 1 previous error
+
+For more information about this error, try `rustc --explain E0277`.

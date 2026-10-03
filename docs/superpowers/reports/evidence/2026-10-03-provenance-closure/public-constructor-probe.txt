@@ -1,0 +1,2 @@
+2112 duplicate cases refused with the exact conflicting id, including identical/conflicting titles at every insertion position.
+The complete ordered 32-row result, empty/default result, clone and 1024 nested locator lookups pass across a separately compiled public consumer.
