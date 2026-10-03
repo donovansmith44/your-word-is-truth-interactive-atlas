@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <IsTestProject>true</IsTestProject>
+    <IsPackable>false</IsPackable>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="SchemaLaws.fs" />
+    <Compile Include="../PropertyTests.fs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(JsonSchemaSource)/src/JsonSchema/JsonSchema.csproj" AdditionalProperties="GeneratePackageOnBuild=false" />
+    <ProjectReference Include="../../client-fsharp/Core/BibleAtlas.FSharp.Core.fsproj" />
+    <PackageReference Include="YamlDotNet" Version="18.1.0" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
+    <PackageReference Include="xunit" Version="2.9.3" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="3.1.4" />
+    <PackageReference Include="FsCheck.Xunit" Version="3.4.0" />
+  </ItemGroup>
+  <Target Name="RequireJsonSchemaSource" BeforeTargets="PrepareForBuild">
+    <Error Condition="'$(JsonSchemaSource)' == ''" Text="Set JsonSchemaSource to the pinned MIT source checkout documented in the JSON validation report." />
+  </Target>
+</Project>

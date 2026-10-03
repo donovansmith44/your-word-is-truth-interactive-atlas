@@ -1,0 +1,567 @@
+  BibleAtlas.FSharp.ContractGenerator -> /home/donovan/w/CX-FSHARP-wire/client-fsharp.ContractGenerator/bin/Debug/net10.0/BibleAtlas.FSharp.ContractGenerator.dll
+  BibleAtlas.FSharp.Core -> /home/donovan/w/CX-FSHARP-wire/client-fsharp/Core/bin/Debug/net10.0/BibleAtlas.FSharp.Core.dll
+  BibleAtlas.Client.ContractGenerator -> /home/donovan/w/CX-FSHARP-wire/client.ContractGenerator/bin/Debug/net10.0/BibleAtlas.Client.ContractGenerator.dll
+  BibleAtlas.FSharp.Client -> /home/donovan/w/CX-FSHARP-wire/client-fsharp/bin/Debug/net10.0/BibleAtlas.FSharp.Client.dll
+  BibleAtlas.FSharp.Client (Blazor output) -> /home/donovan/w/CX-FSHARP-wire/client-fsharp/bin/Debug/net10.0/wwwroot
+  BibleAtlas.FSharp.Tests -> /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/bin/Debug/net10.0/BibleAtlas.FSharp.Tests.dll
+Test run for /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/bin/Debug/net10.0/BibleAtlas.FSharp.Tests.dll (.NETCoreApp,Version=v10.0)
+A total of 1 test files matched the specified pattern.
+[xUnit.net 00:00:00.00] xUnit.net VSTest Adapter v3.1.4+50e68bbb8b (64-bit .NET 10.0.12)
+[xUnit.net 00:00:00.08]   Discovering: BibleAtlas.FSharp.Tests
+[xUnit.net 00:00:00.13]   Discovered:  BibleAtlas.FSharp.Tests
+[xUnit.net 00:00:00.15]   Starting:    BibleAtlas.FSharp.Tests
+[xUnit.net 00:00:00.36]     BibleAtlas.FSharp.Tests.TransportTests.a typed HTTP read refuses a record missing its required fields [FAIL]
+[xUnit.net 00:00:00.36]       FsCheck.Xunit.PropertyFailedException : 
+[xUnit.net 00:00:00.36]       Falsifiable, after 1 test (0 shrinks) (557450099344216243,13856811051066097483). 
+[xUnit.net 00:00:00.36]       Last step was invoked with size of 2 and seed of (13125785256158808909,12229146807353620127):
+[xUnit.net 00:00:00.36]       Original:
+[xUnit.net 00:00:00.36]       0us
+[xUnit.net 00:00:00.36]       
+[xUnit.net 00:00:00.36]       ---- Assert.Equal() Failure: Values differ
+[xUnit.net 00:00:00.36]       Expected: Microsoft.FSharp.Core.FSharpResult`2[BibleAtlas.FSharp.Contract.NodeRecord,BibleAtlas.FSharp.Failure]
+[xUnit.net 00:00:00.36]       Actual:   Microsoft.FSharp.Core.FSharpResult`2[BibleAtlas.FSharp.Contract.NodeRecord,BibleAtlas.FSharp.Failure]
+[xUnit.net 00:00:00.36]       Stack Trace:
+[xUnit.net 00:00:00.36]         
+[xUnit.net 00:00:00.36]         ----- Inner Stack Trace -----
+[xUnit.net 00:00:00.36]         /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/TransportTests.fs(29,0): at BibleAtlas.FSharp.Tests.TransportTests.a typed HTTP read refuses a record missing its required fields(UInt16 suffix)
+[xUnit.net 00:00:00.36]            at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+[xUnit.net 00:00:00.36]            at System.Reflection.MethodBaseInvoker.InvokeDirectByRefWithFewArgs(Object obj, Span`1 copyOfArgs, BindingFlags invokeAttr)
+[xUnit.net 00:00:00.36]         --- End of stack trace from previous location ---
+[xUnit.net 00:00:00.36]         C:\Users\kurts\Projects\FsCheck\src\FsCheck\Runner.fs(595,0): at FsCheck.Runner.invokeAndThrowInner@592-1.Invoke(Object[] o)
+[xUnit.net 00:00:00.36]         /__w/1/s/src/fsharp/src/FSharp.Core/reflect.fs(1230,0): at <StartupCode$FSharp-Core>.$Reflect.Invoke@1230.Invoke(T1 inp)
+[xUnit.net 00:00:00.36]            at System.Lazy`1.ViaFactory(LazyThreadSafetyMode mode)
+[xUnit.net 00:00:00.36]            at System.Lazy`1.ExecutionAndPublication(LazyHelper executionAndPublication, Boolean useDefaultConstructor)
+[xUnit.net 00:00:00.36]            at System.Lazy`1.CreateValue()
+[xUnit.net 00:00:00.36]         C:\Users\kurts\Projects\FsCheck\src\FsCheck\Testable.fs(164,0): at FsCheck.Testable.Prop.safeForce[a](Lazy`1 body)
+[xUnit.net 00:00:00.36]     BibleAtlas.FSharp.Tests.Domain.JsonFailureLaws.a nested wrong kind retains its exact generated field path [FAIL]
+[xUnit.net 00:00:00.36]       FsCheck.Xunit.PropertyFailedException : 
+[xUnit.net 00:00:00.36]       Falsifiable, after 1 test (1 shrink) (6414815301073044159,3047847636115838763). 
+[xUnit.net 00:00:00.36]       Last step was invoked with size of 2 and seed of (937342741012667161,10350328691844496101):
+[xUnit.net 00:00:00.36]       Original:
+[xUnit.net 00:00:00.36]       1us
+[xUnit.net 00:00:00.36]       Shrunk:
+[xUnit.net 00:00:00.36]       0us
+[xUnit.net 00:00:00.36]       
+[xUnit.net 00:00:00.36]       ---- Assert.Equal() Failure: Values differ
+[xUnit.net 00:00:00.36]       Expected: Microsoft.FSharp.Core.FSharpResult`2[BibleAtlas.FSharp.Contract.NodeRef,BibleAtlas.FSharp.Failure]
+[xUnit.net 00:00:00.36]       Actual:   Microsoft.FSharp.Core.FSharpResult`2[BibleAtlas.FSharp.Contract.NodeRef,BibleAtlas.FSharp.Failure]
+[xUnit.net 00:00:00.36]       Stack Trace:
+[xUnit.net 00:00:00.36]         
+[xUnit.net 00:00:00.36]         ----- Inner Stack Trace -----
+[xUnit.net 00:00:00.36]         /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/Domain/JsonFailureLaws.fs(44,0): at BibleAtlas.FSharp.Tests.Domain.JsonFailureLaws.a nested wrong kind retains its exact generated field path(UInt16 suffix)
+[xUnit.net 00:00:00.36]            at InvokeStub_JsonFailureLaws.a nested wrong kind retains its exact generated field path(Object, Span`1)
+[xUnit.net 00:00:00.36]            at System.Reflection.MethodBaseInvoker.InvokeWithOneArg(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
+[xUnit.net 00:00:00.36]         --- End of stack trace from previous location ---
+[xUnit.net 00:00:00.36]         C:\Users\kurts\Projects\FsCheck\src\FsCheck\Runner.fs(595,0): at FsCheck.Runner.invokeAndThrowInner@592-1.Invoke(Object[] o)
+[xUnit.net 00:00:00.36]         /__w/1/s/src/fsharp/src/FSharp.Core/reflect.fs(1230,0): at <StartupCode$FSharp-Core>.$Reflect.Invoke@1230.Invoke(T1 inp)
+[xUnit.net 00:00:00.36]            at System.Lazy`1.ViaFactory(LazyThreadSafetyMode mode)
+[xUnit.net 00:00:00.36]            at System.Lazy`1.ExecutionAndPublication(LazyHelper executionAndPublication, Boolean useDefaultConstructor)
+[xUnit.net 00:00:00.36]            at System.Lazy`1.CreateValue()
+[xUnit.net 00:00:00.36]         C:\Users\kurts\Projects\FsCheck\src\FsCheck\Testable.fs(164,0): at FsCheck.Testable.Prop.safeForce[a](Lazy`1 body)
+[xUnit.net 00:00:00.37]     BibleAtlas.FSharp.Tests.Domain.JsonFailureLaws.malformed JSON retains its exact zero based line and byte position without prose [FAIL]
+[xUnit.net 00:00:00.37]       FsCheck.Xunit.PropertyFailedException : 
+[xUnit.net 00:00:00.37]       Falsifiable, after 1 test (1 shrink) (3225005317519170820,5133039013421574917). 
+[xUnit.net 00:00:00.37]       Last step was invoked with size of 2 and seed of (4200298002739498445,8163639832590812417):
+[xUnit.net 00:00:00.37]       Original:
+[xUnit.net 00:00:00.37]       146uy
+[xUnit.net 00:00:00.37]       Shrunk:
+[xUnit.net 00:00:00.37]       0uy
+[xUnit.net 00:00:00.37]       
+[xUnit.net 00:00:00.37]       ---- Assert.Equal() Failure: Values differ
+[xUnit.net 00:00:00.37]       Expected: Microsoft.FSharp.Core.FSharpResult`2[BibleAtlas.FSharp.Contract.NodeRef,BibleAtlas.FSharp.Failure]
+[xUnit.net 00:00:00.37]       Actual:   Microsoft.FSharp.Core.FSharpResult`2[BibleAtlas.FSharp.Contract.NodeRef,BibleAtlas.FSharp.Failure]
+[xUnit.net 00:00:00.37]       Stack Trace:
+[xUnit.net 00:00:00.37]         
+[xUnit.net 00:00:00.37]         ----- Inner Stack Trace -----
+[xUnit.net 00:00:00.37]         /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/Domain/JsonFailureLaws.fs(19,0): at BibleAtlas.FSharp.Tests.Domain.JsonFailureLaws.malformed JSON retains its exact zero based line and byte position without prose(Byte suffix)
+[xUnit.net 00:00:00.37]            at InvokeStub_JsonFailureLaws.malformed JSON retains its exact zero based line and byte position without prose(Object, Span`1)
+[xUnit.net 00:00:00.37]            at System.Reflection.MethodBaseInvoker.InvokeWithOneArg(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
+[xUnit.net 00:00:00.37]         --- End of stack trace from previous location ---
+[xUnit.net 00:00:00.37]         C:\Users\kurts\Projects\FsCheck\src\FsCheck\Runner.fs(595,0): at FsCheck.Runner.invokeAndThrowInner@592-1.Invoke(Object[] o)
+[xUnit.net 00:00:00.37]         /__w/1/s/src/fsharp/src/FSharp.Core/reflect.fs(1230,0): at <StartupCode$FSharp-Core>.$Reflect.Invoke@1230.Invoke(T1 inp)
+[xUnit.net 00:00:00.37]            at System.Lazy`1.ViaFactory(LazyThreadSafetyMode mode)
+[xUnit.net 00:00:00.37]            at System.Lazy`1.ExecutionAndPublication(LazyHelper executionAndPublication, Boolean useDefaultConstructor)
+[xUnit.net 00:00:00.37]            at System.Lazy`1.CreateValue()
+[xUnit.net 00:00:00.37]         C:\Users\kurts\Projects\FsCheck\src\FsCheck\Testable.fs(164,0): at FsCheck.Testable.Prop.safeForce[a](Lazy`1 body)
+[xUnit.net 00:00:00.37]     BibleAtlas.FSharp.Tests.Domain.JsonFailureLaws.a wrong JSON primitive retains the whole serializer location [FAIL]
+[xUnit.net 00:00:00.37]       FsCheck.Xunit.PropertyFailedException : 
+[xUnit.net 00:00:00.37]       Falsifiable, after 1 test (1 shrink) (13443544390703023107,996294431692257109). 
+[xUnit.net 00:00:00.37]       Last step was invoked with size of 2 and seed of (10798372724385144012,12509502326735611305):
+[xUnit.net 00:00:00.37]       Original:
+[xUnit.net 00:00:00.37]       1us
+[xUnit.net 00:00:00.37]       Shrunk:
+[xUnit.net 00:00:00.37]       0us
+[xUnit.net 00:00:00.37]       
+[xUnit.net 00:00:00.37]       ---- Assert.Equal() Failure: Values differ
+[xUnit.net 00:00:00.37]       Expected: Microsoft.FSharp.Core.FSharpResult`2[System.Int32,BibleAtlas.FSharp.Failure]
+[xUnit.net 00:00:00.37]       Actual:   Microsoft.FSharp.Core.FSharpResult`2[System.Int32,BibleAtlas.FSharp.Failure]
+[xUnit.net 00:00:00.37]       Stack Trace:
+[xUnit.net 00:00:00.37]         
+[xUnit.net 00:00:00.37]         ----- Inner Stack Trace -----
+[xUnit.net 00:00:00.37]         /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/Domain/JsonFailureLaws.fs(38,0): at BibleAtlas.FSharp.Tests.Domain.JsonFailureLaws.a wrong JSON primitive retains the whole serializer location(UInt16 suffix)
+[xUnit.net 00:00:00.37]            at InvokeStub_JsonFailureLaws.a wrong JSON primitive retains the whole serializer location(Object, Span`1)
+[xUnit.net 00:00:00.37]            at System.Reflection.MethodBaseInvoker.InvokeWithOneArg(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
+[xUnit.net 00:00:00.37]         --- End of stack trace from previous location ---
+[xUnit.net 00:00:00.37]         C:\Users\kurts\Projects\FsCheck\src\FsCheck\Runner.fs(595,0): at FsCheck.Runner.invokeAndThrowInner@592-1.Invoke(Object[] o)
+[xUnit.net 00:00:00.37]         /__w/1/s/src/fsharp/src/FSharp.Core/reflect.fs(1230,0): at <StartupCode$FSharp-Core>.$Reflect.Invoke@1230.Invoke(T1 inp)
+[xUnit.net 00:00:00.37]            at System.Lazy`1.ViaFactory(LazyThreadSafetyMode mode)
+[xUnit.net 00:00:00.37]            at System.Lazy`1.ExecutionAndPublication(LazyHelper executionAndPublication, Boolean useDefaultConstructor)
+[xUnit.net 00:00:00.37]            at System.Lazy`1.CreateValue()
+[xUnit.net 00:00:00.37]         C:\Users\kurts\Projects\FsCheck\src\FsCheck\Testable.fs(164,0): at FsCheck.Testable.Prop.safeForce[a](Lazy`1 body)
+[xUnit.net 00:00:00.37]     BibleAtlas.FSharp.Tests.TransportTests.the application failure vocabulary exposes structured reads and no raw failure string constructor [FAIL]
+[xUnit.net 00:00:00.37]       FsCheck.Xunit.PropertyFailedException : 
+[xUnit.net 00:00:00.37]       Falsifiable, after 1 test (0 shrinks) (13449316736021484892,3118531283115627715). 
+[xUnit.net 00:00:00.37]       Last step was invoked with size of 100 and seed of (17911905117883263162,8050974358153365357):
+[xUnit.net 00:00:00.37]       Original:
+[xUnit.net 00:00:00.37]       <null>
+[xUnit.net 00:00:00.37]       
+[xUnit.net 00:00:00.37]       ---- Assert.Equal() Failure: Collections differ
+[xUnit.net 00:00:00.37]       Expected: [Tuple ("Read", [···]), Tuple ("ArtifactMoved", [···])]
+[xUnit.net 00:00:00.37]       Actual:   [Tuple ("Read", [···]), Tuple ("Contract", [···]), Tuple ("ArtifactMoved", [···])]
+[xUnit.net 00:00:00.37]       Stack Trace:
+[xUnit.net 00:00:00.37]         
+[xUnit.net 00:00:00.37]         ----- Inner Stack Trace -----
+[xUnit.net 00:00:00.37]         /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/TransportTests.fs(110,0): at BibleAtlas.FSharp.Tests.TransportTests.the application failure vocabulary exposes structured reads and no raw failure string constructor()
+[xUnit.net 00:00:00.37]            at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+[xUnit.net 00:00:00.37]            at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+[xUnit.net 00:00:00.37]         --- End of stack trace from previous location ---
+[xUnit.net 00:00:00.37]         C:\Users\kurts\Projects\FsCheck\src\FsCheck\Runner.fs(595,0): at FsCheck.Runner.invokeAndThrowInner@592-1.Invoke(Object[] o)
+[xUnit.net 00:00:00.37]         /__w/1/s/src/fsharp/src/FSharp.Core/reflect.fs(1230,0): at <StartupCode$FSharp-Core>.$Reflect.Invoke@1230.Invoke(T1 inp)
+[xUnit.net 00:00:00.37]            at System.Lazy`1.ViaFactory(LazyThreadSafetyMode mode)
+[xUnit.net 00:00:00.37]            at System.Lazy`1.ExecutionAndPublication(LazyHelper executionAndPublication, Boolean useDefaultConstructor)
+[xUnit.net 00:00:00.37]            at System.Lazy`1.CreateValue()
+[xUnit.net 00:00:00.37]         C:\Users\kurts\Projects\FsCheck\src\FsCheck\Testable.fs(164,0): at FsCheck.Testable.Prop.safeForce[a](Lazy`1 body)
+[xUnit.net 00:00:00.39]     BibleAtlas.FSharp.Tests.Domain.JsonFailureLaws.JSON null cannot become a successful contract answer of any current answer shape [FAIL]
+[xUnit.net 00:00:00.39]       FsCheck.Xunit.PropertyFailedException : 
+[xUnit.net 00:00:00.39]       Falsifiable, after 1 test (1 shrink) (18329503504483596370,244717900781200357). 
+[xUnit.net 00:00:00.39]       Last step was invoked with size of 2 and seed of (14126414378071430112,1641438061341178863):
+[xUnit.net 00:00:00.39]       Original:
+[xUnit.net 00:00:00.39]       224uy
+[xUnit.net 00:00:00.39]       Shrunk:
+[xUnit.net 00:00:00.39]       0uy
+[xUnit.net 00:00:00.39]       
+[xUnit.net 00:00:00.39]       ---- Assert.Equal() Failure: Values differ
+[xUnit.net 00:00:00.39]       Expected: Tuple (Microsoft.FSharp.Core.FSharpResult`2[System.Object,BibleAtlas.FSharp.Failure], Microsoft.FSharp.Core.FSharpResult`2[System.Object,BibleAtlas.FSharp.Failure], Microsoft.FSharp.Core.FSharpResult`2[System.Object,BibleAtlas.FSharp.Failure], Microsoft.FSharp.Core.FSharpResult`2[System.Object,BibleAtlas.FSharp.Failure])
+[xUnit.net 00:00:00.39]       Actual:   Tuple (Microsoft.FSharp.Core.FSharpResult`2[System.Object,BibleAtlas.FSharp.Failure], Microsoft.FSharp.Core.FSharpResult`2[System.Object,BibleAtlas.FSharp.Failure], Microsoft.FSharp.Core.FSharpResult`2[System.Object,BibleAtlas.FSharp.Failure], Microsoft.FSharp.Core.FSharpResult`2[System.Object,BibleAtlas.FSharp.Failure])
+[xUnit.net 00:00:00.39]       Stack Trace:
+[xUnit.net 00:00:00.39]         
+[xUnit.net 00:00:00.39]         ----- Inner Stack Trace -----
+[xUnit.net 00:00:00.39]         /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/Domain/JsonFailureLaws.fs(26,0): at BibleAtlas.FSharp.Tests.Domain.JsonFailureLaws.JSON null cannot become a successful contract answer of any current answer shape(Byte suffix)
+[xUnit.net 00:00:00.39]            at InvokeStub_JsonFailureLaws.JSON null cannot become a successful contract answer of any current answer shape(Object, Span`1)
+[xUnit.net 00:00:00.39]            at System.Reflection.MethodBaseInvoker.InvokeWithOneArg(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
+[xUnit.net 00:00:00.39]         --- End of stack trace from previous location ---
+[xUnit.net 00:00:00.39]         C:\Users\kurts\Projects\FsCheck\src\FsCheck\Runner.fs(595,0): at FsCheck.Runner.invokeAndThrowInner@592-1.Invoke(Object[] o)
+[xUnit.net 00:00:00.39]         /__w/1/s/src/fsharp/src/FSharp.Core/reflect.fs(1230,0): at <StartupCode$FSharp-Core>.$Reflect.Invoke@1230.Invoke(T1 inp)
+[xUnit.net 00:00:00.39]            at System.Lazy`1.ViaFactory(LazyThreadSafetyMode mode)
+[xUnit.net 00:00:00.39]            at System.Lazy`1.ExecutionAndPublication(LazyHelper executionAndPublication, Boolean useDefaultConstructor)
+[xUnit.net 00:00:00.39]            at System.Lazy`1.CreateValue()
+[xUnit.net 00:00:00.39]         C:\Users\kurts\Projects\FsCheck\src\FsCheck\Testable.fs(164,0): at FsCheck.Testable.Prop.safeForce[a](Lazy`1 body)
+[xUnit.net 00:00:00.39]     BibleAtlas.FSharp.Tests.Domain.JsonFailureLaws.a missing required field retains the serializer location instead of interpreting its message [FAIL]
+[xUnit.net 00:00:00.39]       FsCheck.Xunit.PropertyFailedException : 
+[xUnit.net 00:00:00.39]       Falsifiable, after 1 test (1 shrink) (12970765144829817404,6670325376711209775). 
+[xUnit.net 00:00:00.39]       Last step was invoked with size of 2 and seed of (15305104299775375650,5099651348872569093):
+[xUnit.net 00:00:00.39]       Original:
+[xUnit.net 00:00:00.39]       1us
+[xUnit.net 00:00:00.39]       Shrunk:
+[xUnit.net 00:00:00.39]       0us
+[xUnit.net 00:00:00.39]       
+[xUnit.net 00:00:00.39]       ---- Assert.Equal() Failure: Values differ
+[xUnit.net 00:00:00.39]       Expected: Microsoft.FSharp.Core.FSharpResult`2[BibleAtlas.FSharp.Contract.NodeRecord,BibleAtlas.FSharp.Failure]
+[xUnit.net 00:00:00.39]       Actual:   Microsoft.FSharp.Core.FSharpResult`2[BibleAtlas.FSharp.Contract.NodeRecord,BibleAtlas.FSharp.Failure]
+[xUnit.net 00:00:00.39]       Stack Trace:
+[xUnit.net 00:00:00.39]         
+[xUnit.net 00:00:00.39]         ----- Inner Stack Trace -----
+[xUnit.net 00:00:00.39]         /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/Domain/JsonFailureLaws.fs(32,0): at BibleAtlas.FSharp.Tests.Domain.JsonFailureLaws.a missing required field retains the serializer location instead of interpreting its message(UInt16 suffix)
+[xUnit.net 00:00:00.39]            at InvokeStub_JsonFailureLaws.a missing required field retains the serializer location instead of interpreting its message(Object, Span`1)
+[xUnit.net 00:00:00.39]            at System.Reflection.MethodBaseInvoker.InvokeWithOneArg(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
+[xUnit.net 00:00:00.39]         --- End of stack trace from previous location ---
+[xUnit.net 00:00:00.39]         C:\Users\kurts\Projects\FsCheck\src\FsCheck\Runner.fs(595,0): at FsCheck.Runner.invokeAndThrowInner@592-1.Invoke(Object[] o)
+[xUnit.net 00:00:00.39]         /__w/1/s/src/fsharp/src/FSharp.Core/reflect.fs(1230,0): at <StartupCode$FSharp-Core>.$Reflect.Invoke@1230.Invoke(T1 inp)
+[xUnit.net 00:00:00.39]            at System.Lazy`1.ViaFactory(LazyThreadSafetyMode mode)
+[xUnit.net 00:00:00.39]            at System.Lazy`1.ExecutionAndPublication(LazyHelper executionAndPublication, Boolean useDefaultConstructor)
+[xUnit.net 00:00:00.39]            at System.Lazy`1.CreateValue()
+[xUnit.net 00:00:00.39]         C:\Users\kurts\Projects\FsCheck\src\FsCheck\Testable.fs(164,0): at FsCheck.Testable.Prop.safeForce[a](Lazy`1 body)
+  Failed BibleAtlas.FSharp.Tests.Domain.JsonFailureLaws.a nested wrong kind retains its exact generated field path [133 ms]
+  Error Message:
+   FsCheck.Xunit.PropertyFailedException : 
+Falsifiable, after 1 test (1 shrink) (6414815301073044159,3047847636115838763). 
+Last step was invoked with size of 2 and seed of (937342741012667161,10350328691844496101):
+Original:
+1us
+Shrunk:
+0us
+
+---- Assert.Equal() Failure: Values differ
+Expected: Microsoft.FSharp.Core.FSharpResult`2[BibleAtlas.FSharp.Contract.NodeRef,BibleAtlas.FSharp.Failure]
+Actual:   Microsoft.FSharp.Core.FSharpResult`2[BibleAtlas.FSharp.Contract.NodeRef,BibleAtlas.FSharp.Failure]
+  Stack Trace:
+  
+----- Inner Stack Trace -----
+   at BibleAtlas.FSharp.Tests.Domain.JsonFailureLaws.a nested wrong kind retains its exact generated field path(UInt16 suffix) in /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/Domain/JsonFailureLaws.fs:line 44
+   at InvokeStub_JsonFailureLaws.a nested wrong kind retains its exact generated field path(Object, Span`1)
+   at System.Reflection.MethodBaseInvoker.InvokeWithOneArg(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
+--- End of stack trace from previous location ---
+   at FsCheck.Runner.invokeAndThrowInner@592-1.Invoke(Object[] o) in C:\Users\kurts\Projects\FsCheck\src\FsCheck\Runner.fs:line 595
+   at <StartupCode$FSharp-Core>.$Reflect.Invoke@1230.Invoke(T1 inp) in /__w/1/s/src/fsharp/src/FSharp.Core/reflect.fs:line 1230
+   at System.Lazy`1.ViaFactory(LazyThreadSafetyMode mode)
+   at System.Lazy`1.ExecutionAndPublication(LazyHelper executionAndPublication, Boolean useDefaultConstructor)
+   at System.Lazy`1.CreateValue()
+   at FsCheck.Testable.Prop.safeForce[a](Lazy`1 body) in C:\Users\kurts\Projects\FsCheck\src\FsCheck\Testable.fs:line 164
+  Failed BibleAtlas.FSharp.Tests.TransportTests.a typed HTTP read refuses a record missing its required fields [133 ms]
+  Error Message:
+   FsCheck.Xunit.PropertyFailedException : 
+Falsifiable, after 1 test (0 shrinks) (557450099344216243,13856811051066097483). 
+Last step was invoked with size of 2 and seed of (13125785256158808909,12229146807353620127):
+Original:
+0us
+
+---- Assert.Equal() Failure: Values differ
+Expected: Microsoft.FSharp.Core.FSharpResult`2[BibleAtlas.FSharp.Contract.NodeRecord,BibleAtlas.FSharp.Failure]
+Actual:   Microsoft.FSharp.Core.FSharpResult`2[BibleAtlas.FSharp.Contract.NodeRecord,BibleAtlas.FSharp.Failure]
+  Stack Trace:
+  
+----- Inner Stack Trace -----
+   at BibleAtlas.FSharp.Tests.TransportTests.a typed HTTP read refuses a record missing its required fields(UInt16 suffix) in /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/TransportTests.fs:line 29
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeDirectByRefWithFewArgs(Object obj, Span`1 copyOfArgs, BindingFlags invokeAttr)
+--- End of stack trace from previous location ---
+   at FsCheck.Runner.invokeAndThrowInner@592-1.Invoke(Object[] o) in C:\Users\kurts\Projects\FsCheck\src\FsCheck\Runner.fs:line 595
+   at <StartupCode$FSharp-Core>.$Reflect.Invoke@1230.Invoke(T1 inp) in /__w/1/s/src/fsharp/src/FSharp.Core/reflect.fs:line 1230
+   at System.Lazy`1.ViaFactory(LazyThreadSafetyMode mode)
+   at System.Lazy`1.ExecutionAndPublication(LazyHelper executionAndPublication, Boolean useDefaultConstructor)
+   at System.Lazy`1.CreateValue()
+   at FsCheck.Testable.Prop.safeForce[a](Lazy`1 body) in C:\Users\kurts\Projects\FsCheck\src\FsCheck\Testable.fs:line 164
+  Failed BibleAtlas.FSharp.Tests.Domain.JsonFailureLaws.malformed JSON retains its exact zero based line and byte position without prose [6 ms]
+  Error Message:
+   FsCheck.Xunit.PropertyFailedException : 
+Falsifiable, after 1 test (1 shrink) (3225005317519170820,5133039013421574917). 
+Last step was invoked with size of 2 and seed of (4200298002739498445,8163639832590812417):
+Original:
+146uy
+Shrunk:
+0uy
+
+---- Assert.Equal() Failure: Values differ
+Expected: Microsoft.FSharp.Core.FSharpResult`2[BibleAtlas.FSharp.Contract.NodeRef,BibleAtlas.FSharp.Failure]
+Actual:   Microsoft.FSharp.Core.FSharpResult`2[BibleAtlas.FSharp.Contract.NodeRef,BibleAtlas.FSharp.Failure]
+  Stack Trace:
+  
+----- Inner Stack Trace -----
+   at BibleAtlas.FSharp.Tests.Domain.JsonFailureLaws.malformed JSON retains its exact zero based line and byte position without prose(Byte suffix) in /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/Domain/JsonFailureLaws.fs:line 19
+   at InvokeStub_JsonFailureLaws.malformed JSON retains its exact zero based line and byte position without prose(Object, Span`1)
+   at System.Reflection.MethodBaseInvoker.InvokeWithOneArg(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
+--- End of stack trace from previous location ---
+   at FsCheck.Runner.invokeAndThrowInner@592-1.Invoke(Object[] o) in C:\Users\kurts\Projects\FsCheck\src\FsCheck\Runner.fs:line 595
+   at <StartupCode$FSharp-Core>.$Reflect.Invoke@1230.Invoke(T1 inp) in /__w/1/s/src/fsharp/src/FSharp.Core/reflect.fs:line 1230
+   at System.Lazy`1.ViaFactory(LazyThreadSafetyMode mode)
+   at System.Lazy`1.ExecutionAndPublication(LazyHelper executionAndPublication, Boolean useDefaultConstructor)
+   at System.Lazy`1.CreateValue()
+   at FsCheck.Testable.Prop.safeForce[a](Lazy`1 body) in C:\Users\kurts\Projects\FsCheck\src\FsCheck\Testable.fs:line 164
+  Failed BibleAtlas.FSharp.Tests.Domain.JsonFailureLaws.a wrong JSON primitive retains the whole serializer location [3 ms]
+  Error Message:
+   FsCheck.Xunit.PropertyFailedException : 
+Falsifiable, after 1 test (1 shrink) (13443544390703023107,996294431692257109). 
+Last step was invoked with size of 2 and seed of (10798372724385144012,12509502326735611305):
+Original:
+1us
+Shrunk:
+0us
+
+---- Assert.Equal() Failure: Values differ
+Expected: Microsoft.FSharp.Core.FSharpResult`2[System.Int32,BibleAtlas.FSharp.Failure]
+Actual:   Microsoft.FSharp.Core.FSharpResult`2[System.Int32,BibleAtlas.FSharp.Failure]
+  Stack Trace:
+  
+----- Inner Stack Trace -----
+   at BibleAtlas.FSharp.Tests.Domain.JsonFailureLaws.a wrong JSON primitive retains the whole serializer location(UInt16 suffix) in /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/Domain/JsonFailureLaws.fs:line 38
+   at InvokeStub_JsonFailureLaws.a wrong JSON primitive retains the whole serializer location(Object, Span`1)
+   at System.Reflection.MethodBaseInvoker.InvokeWithOneArg(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
+--- End of stack trace from previous location ---
+   at FsCheck.Runner.invokeAndThrowInner@592-1.Invoke(Object[] o) in C:\Users\kurts\Projects\FsCheck\src\FsCheck\Runner.fs:line 595
+   at <StartupCode$FSharp-Core>.$Reflect.Invoke@1230.Invoke(T1 inp) in /__w/1/s/src/fsharp/src/FSharp.Core/reflect.fs:line 1230
+   at System.Lazy`1.ViaFactory(LazyThreadSafetyMode mode)
+   at System.Lazy`1.ExecutionAndPublication(LazyHelper executionAndPublication, Boolean useDefaultConstructor)
+   at System.Lazy`1.CreateValue()
+   at FsCheck.Testable.Prop.safeForce[a](Lazy`1 body) in C:\Users\kurts\Projects\FsCheck\src\FsCheck\Testable.fs:line 164
+  Failed BibleAtlas.FSharp.Tests.TransportTests.the application failure vocabulary exposes structured reads and no raw failure string constructor [12 ms]
+  Error Message:
+   FsCheck.Xunit.PropertyFailedException : 
+Falsifiable, after 1 test (0 shrinks) (13449316736021484892,3118531283115627715). 
+Last step was invoked with size of 100 and seed of (17911905117883263162,8050974358153365357):
+Original:
+<null>
+
+---- Assert.Equal() Failure: Collections differ
+Expected: [Tuple ("Read", [···]), Tuple ("ArtifactMoved", [···])]
+Actual:   [Tuple ("Read", [···]), Tuple ("Contract", [···]), Tuple ("ArtifactMoved", [···])]
+  Stack Trace:
+  
+----- Inner Stack Trace -----
+   at BibleAtlas.FSharp.Tests.TransportTests.the application failure vocabulary exposes structured reads and no raw failure string constructor() in /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/TransportTests.fs:line 110
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+--- End of stack trace from previous location ---
+   at FsCheck.Runner.invokeAndThrowInner@592-1.Invoke(Object[] o) in C:\Users\kurts\Projects\FsCheck\src\FsCheck\Runner.fs:line 595
+   at <StartupCode$FSharp-Core>.$Reflect.Invoke@1230.Invoke(T1 inp) in /__w/1/s/src/fsharp/src/FSharp.Core/reflect.fs:line 1230
+   at System.Lazy`1.ViaFactory(LazyThreadSafetyMode mode)
+   at System.Lazy`1.ExecutionAndPublication(LazyHelper executionAndPublication, Boolean useDefaultConstructor)
+   at System.Lazy`1.CreateValue()
+   at FsCheck.Testable.Prop.safeForce[a](Lazy`1 body) in C:\Users\kurts\Projects\FsCheck\src\FsCheck\Testable.fs:line 164
+  Failed BibleAtlas.FSharp.Tests.Domain.JsonFailureLaws.JSON null cannot become a successful contract answer of any current answer shape [19 ms]
+  Error Message:
+   FsCheck.Xunit.PropertyFailedException : 
+Falsifiable, after 1 test (1 shrink) (18329503504483596370,244717900781200357). 
+Last step was invoked with size of 2 and seed of (14126414378071430112,1641438061341178863):
+Original:
+224uy
+Shrunk:
+0uy
+
+---- Assert.Equal() Failure: Values differ
+Expected: Tuple (Microsoft.FSharp.Core.FSharpResult`2[System.Object,BibleAtlas.FSharp.Failure], Microsoft.FSharp.Core.FSharpResult`2[System.Object,BibleAtlas.FSharp.Failure], Microsoft.FSharp.Core.FSharpResult`2[System.Object,BibleAtlas.FSharp.Failure], Microsoft.FSharp.Core.FSharpResult`2[System.Object,BibleAtlas.FSharp.Failure])
+Actual:   Tuple (Microsoft.FSharp.Core.FSharpResult`2[System.Object,BibleAtlas.FSharp.Failure], Microsoft.FSharp.Core.FSharpResult`2[System.Object,BibleAtlas.FSharp.Failure], Microsoft.FSharp.Core.FSharpResult`2[System.Object,BibleAtlas.FSharp.Failure], Microsoft.FSharp.Core.FSharpResult`2[System.Object,BibleAtlas.FSharp.Failure])
+  Stack Trace:
+  
+----- Inner Stack Trace -----
+   at BibleAtlas.FSharp.Tests.Domain.JsonFailureLaws.JSON null cannot become a successful contract answer of any current answer shape(Byte suffix) in /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/Domain/JsonFailureLaws.fs:line 26
+   at InvokeStub_JsonFailureLaws.JSON null cannot become a successful contract answer of any current answer shape(Object, Span`1)
+   at System.Reflection.MethodBaseInvoker.InvokeWithOneArg(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
+--- End of stack trace from previous location ---
+   at FsCheck.Runner.invokeAndThrowInner@592-1.Invoke(Object[] o) in C:\Users\kurts\Projects\FsCheck\src\FsCheck\Runner.fs:line 595
+   at <StartupCode$FSharp-Core>.$Reflect.Invoke@1230.Invoke(T1 inp) in /__w/1/s/src/fsharp/src/FSharp.Core/reflect.fs:line 1230
+   at System.Lazy`1.ViaFactory(LazyThreadSafetyMode mode)
+   at System.Lazy`1.ExecutionAndPublication(LazyHelper executionAndPublication, Boolean useDefaultConstructor)
+   at System.Lazy`1.CreateValue()
+   at FsCheck.Testable.Prop.safeForce[a](Lazy`1 body) in C:\Users\kurts\Projects\FsCheck\src\FsCheck\Testable.fs:line 164
+  Failed BibleAtlas.FSharp.Tests.Domain.JsonFailureLaws.a missing required field retains the serializer location instead of interpreting its message [< 1 ms]
+  Error Message:
+   FsCheck.Xunit.PropertyFailedException : 
+Falsifiable, after 1 test (1 shrink) (12970765144829817404,6670325376711209775). 
+Last step was invoked with size of 2 and seed of (15305104299775375650,5099651348872569093):
+Original:
+1us
+Shrunk:
+0us
+
+---- Assert.Equal() Failure: Values differ
+Expected: Microsoft.FSharp.Core.FSharpResult`2[BibleAtlas.FSharp.Contract.NodeRecord,BibleAtlas.FSharp.Failure]
+Actual:   Microsoft.FSharp.Core.FSharpResult`2[BibleAtlas.FSharp.Contract.NodeRecord,BibleAtlas.FSharp.Failure]
+  Stack Trace:
+  
+----- Inner Stack Trace -----
+   at BibleAtlas.FSharp.Tests.Domain.JsonFailureLaws.a missing required field retains the serializer location instead of interpreting its message(UInt16 suffix) in /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/Domain/JsonFailureLaws.fs:line 32
+   at InvokeStub_JsonFailureLaws.a missing required field retains the serializer location instead of interpreting its message(Object, Span`1)
+   at System.Reflection.MethodBaseInvoker.InvokeWithOneArg(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
+--- End of stack trace from previous location ---
+   at FsCheck.Runner.invokeAndThrowInner@592-1.Invoke(Object[] o) in C:\Users\kurts\Projects\FsCheck\src\FsCheck\Runner.fs:line 595
+   at <StartupCode$FSharp-Core>.$Reflect.Invoke@1230.Invoke(T1 inp) in /__w/1/s/src/fsharp/src/FSharp.Core/reflect.fs:line 1230
+   at System.Lazy`1.ViaFactory(LazyThreadSafetyMode mode)
+   at System.Lazy`1.ExecutionAndPublication(LazyHelper executionAndPublication, Boolean useDefaultConstructor)
+   at System.Lazy`1.CreateValue()
+   at FsCheck.Testable.Prop.safeForce[a](Lazy`1 body) in C:\Users\kurts\Projects\FsCheck\src\FsCheck\Testable.fs:line 164
+  Passed BibleAtlas.FSharp.Tests.Domain.JsonFailureLaws.readable generated records retain their complete value through the shared JSON door [15 ms]
+  Passed BibleAtlas.FSharp.Tests.TransportTests.a typed HTTP read returns the whole element page [33 ms]
+  Passed BibleAtlas.FSharp.Tests.Domain.JsonFailureLaws.wire failures expose only syntax null and unreadable answer observations and no invented semantic categories [< 1 ms]
+  Passed BibleAtlas.FSharp.Tests.TransportTests.unexpected HTTP statuses retain their evidence and invalid codes have server-error retryability [33 ms]
+  Passed BibleAtlas.FSharp.Tests.TransportTests.generated requests compose escaped paths and the contract enum spellings [68 ms]
+  Passed BibleAtlas.FSharp.Tests.TransportTests.a user-cancelled HTTP read is distinct from a retryable interruption [9 ms]
+  Passed BibleAtlas.FSharp.Tests.TransportTests.every client refusal retains its exact admitted status and published error code [6 ms]
+  Passed BibleAtlas.FSharp.Tests.TransportTests.every malformed refusal body preserves its HTTP classification without inventing an error code [7 ms]
+  Passed BibleAtlas.FSharp.Tests.TransportTests.an interrupted HTTP request completes with an explicit retryable failure [4 ms]
+  Passed BibleAtlas.FSharp.Tests.TransportTests.every server refusal retains its exact admitted status and published error code [4 ms]
+[xUnit.net 00:00:12.71]     BibleAtlas.FSharp.Tests.Domain.AdmissionSurfaceLaws.every private representation refuses direct construction while its own public door compiles [FAIL]
+[xUnit.net 00:00:12.71]       FsCheck.Xunit.PropertyFailedException : 
+[xUnit.net 00:00:12.71]       Falsifiable, after 1 test (1 shrink) (3277697655394771004,4594596231314862645). 
+[xUnit.net 00:00:12.71]       Last step was invoked with size of 34 and seed of (1198139297052839552,12691572251439795811):
+[xUnit.net 00:00:12.71]       Original:
+[xUnit.net 00:00:12.71]       23us
+[xUnit.net 00:00:12.71]       Shrunk:
+[xUnit.net 00:00:12.71]       0us
+[xUnit.net 00:00:12.71]       
+[xUnit.net 00:00:12.71]       ---- Expected [{| Door = "Positive.admit 1"
+[xUnit.net 00:00:12.71]           Outcomes = [Some ([], []); Some ([], [1093])] |};
+[xUnit.net 00:00:12.71]        {| Door = "NonEmpty.admit [1]"
+[xUnit.net 00:00:12.71]           Outcomes = [Some ([], []); Some ([], [1093])] |};
+[xUnit.net 00:00:12.71]        {| Door = "Rooted.admit 0us 0us [1]"
+[xUnit.net 00:00:12.71]           Outcomes = [Some ([], []); Some ([], [1093])] |};
+[xUnit.net 00:00:12.71]        {| Door = "Rooted.admit 0us 1us [1] |> Result.mapError id"
+[xUnit.net 00:00:12.71]           Outcomes = [Some ([], []); Some ([], [1093])] |};
+[xUnit.net 00:00:12.71]        {| Door =
+[xUnit.net 00:00:12.71]            "Positive.admit 1 |> Result.map (BibleAtlas.FSharp.Paging.PageCache<uint16, int, int>.Empty 0us)"
+[xUnit.net 00:00:12.71]           Outcomes = [Some ([], []); Some ([], [1093; 1093; 1093; 1093; 1093; 1093])] |};
+[xUnit.net 00:00:12.71]        {| Door =
+[xUnit.net 00:00:12.71]            "Positive.admit 1 |> Result.map (fun capacity -> (BibleAtlas.FSharp.Paging.PageCache<uint16, int, int>.Empty 0us capacity).Lookup 0)"
+[xUnit.net 00:00:12.71]           Outcomes = [Some ([], []); Some ([], [1093])] |};
+[xUnit.net 00:00:12.71]        {| Door = "ArrayIndices.admit 0"
+[xUnit.net 00:00:12.71]           Outcomes = [Some ([], []); Some ([], [1093])] |};
+[xUnit.net 00:00:12.71]        {| Door = "LineNumbers.admit 1L"
+[xUnit.net 00:00:12.71]           Outcomes = [Some ([], []); Some ([], [1093])] |};
+[xUnit.net 00:00:12.71]        {| Door = "ByteColumns.admit 1L"
+[xUnit.net 00:00:12.71]           Outcomes = [Some ([], []); Some ([], [1093])] |};
+[xUnit.net 00:00:12.71]        {| Door = "Latitudes.admit 0.0"
+[xUnit.net 00:00:12.71]           Outcomes = [Some ([], []); Some ([], [1093])] |};
+[xUnit.net 00:00:12.71]        {| Door = "Longitudes.admit 0.0"
+[xUnit.net 00:00:12.71]           Outcomes = [Some ([], []); Some ([], [1093])] |};
+[xUnit.net 00:00:12.71]        {| Door =
+[xUnit.net 00:00:12.71]            "RefusalStatuses.client 400 |> Result.map (fun status -> BibleAtlas.FSharp.Failure.Read(ReadFailure.Terminal(TerminalFailure.ClientRefusal(status, None))))"
+[xUnit.net 00:00:12.71]           Outcomes = [Some ([], []); Some ([], [39])] |};
+[xUnit.net 00:00:12.71]        {| Door =
+[xUnit.net 00:00:12.71]            "ReadFailure.Terminal(TerminalFailure.InvalidAnswer WireFailure.NullAnswer) |> BibleAtlas.FSharp.Failure.Read"
+[xUnit.net 00:00:12.71]           Outcomes = [Some ([], []); Some ([], [39])] |};
+[xUnit.net 00:00:12.71]        {| Door = "RefusalStatuses.client 400"
+[xUnit.net 00:00:12.71]           Outcomes = [Some ([], []); Some ([], [1093])] |};
+[xUnit.net 00:00:12.71]        {| Door = "RefusalStatuses.server 500"
+[xUnit.net 00:00:12.71]           Outcomes = [Some ([], []); Some ([], [1093])] |};
+[xUnit.net 00:00:12.71]        {| Door = "HttpUrls.admit "https://example.org/""
+[xUnit.net 00:00:12.71]           Outcomes = [Some ([], []); Some ([], [1093])] |}]
+[xUnit.net 00:00:12.71]       Actual [{| Door = "Positive.admit 1"
+[xUnit.net 00:00:12.71]           Outcomes = [Some ([], []); Some ([], [1093])] |};
+[xUnit.net 00:00:12.71]        {| Door = "NonEmpty.admit [1]"
+[xUnit.net 00:00:12.71]           Outcomes = [Some ([], []); Some ([], [1093])] |};
+[xUnit.net 00:00:12.71]        {| Door = "Rooted.admit 0us 0us [1]"
+[xUnit.net 00:00:12.71]           Outcomes = [Some ([], []); Some ([], [1093])] |};
+[xUnit.net 00:00:12.71]        {| Door = "Rooted.admit 0us 1us [1] |> Result.mapError id"
+[xUnit.net 00:00:12.71]           Outcomes = [Some ([], []); Some ([], [1093])] |};
+[xUnit.net 00:00:12.71]        {| Door =
+[xUnit.net 00:00:12.71]            "Positive.admit 1 |> Result.map (BibleAtlas.FSharp.Paging.PageCache<uint16, int, int>.Empty 0us)"
+[xUnit.net 00:00:12.71]           Outcomes = [Some ([], []); Some ([], [1093; 1093; 1093; 1093; 1093; 1093])] |};
+[xUnit.net 00:00:12.71]        {| Door =
+[xUnit.net 00:00:12.71]            "Positive.admit 1 |> Result.map (fun capacity -> (BibleAtlas.FSharp.Paging.PageCache<uint16, int, int>.Empty 0us capacity).Lookup 0)"
+[xUnit.net 00:00:12.71]           Outcomes = [Some ([], []); Some ([], [1093])] |};
+[xUnit.net 00:00:12.71]        {| Door = "ArrayIndices.admit 0"
+[xUnit.net 00:00:12.71]           Outcomes = [Some ([], []); Some ([], [1093])] |};
+[xUnit.net 00:00:12.71]        {| Door = "LineNumbers.admit 1L"
+[xUnit.net 00:00:12.71]           Outcomes = [Some ([], []); Some ([], [1093])] |};
+[xUnit.net 00:00:12.71]        {| Door = "ByteColumns.admit 1L"
+[xUnit.net 00:00:12.71]           Outcomes = [Some ([], []); Some ([], [1093])] |};
+[xUnit.net 00:00:12.71]        {| Door = "Latitudes.admit 0.0"
+[xUnit.net 00:00:12.71]           Outcomes = [Some ([], []); Some ([], [1093])] |};
+[xUnit.net 00:00:12.71]        {| Door = "Longitudes.admit 0.0"
+[xUnit.net 00:00:12.71]           Outcomes = [Some ([], []); Some ([], [1093])] |};
+[xUnit.net 00:00:12.71]        {| Door =
+[xUnit.net 00:00:12.71]            "RefusalStatuses.client 400 |> Result.map (fun status -> BibleAtlas.FSharp.Failure.Read(ReadFailure.Terminal(TerminalFailure.ClientRefusal(status, None))))"
+[xUnit.net 00:00:12.71]           Outcomes = [Some ([], []); Some ([], [39])] |};
+[xUnit.net 00:00:12.71]        {| Door =
+[xUnit.net 00:00:12.71]            "ReadFailure.Terminal(TerminalFailure.InvalidAnswer WireFailure.NullAnswer) |> BibleAtlas.FSharp.Failure.Read"
+[xUnit.net 00:00:12.71]           Outcomes = [Some ([], []); Some ([], [])] |};
+[xUnit.net 00:00:12.71]        {| Door = "RefusalStatuses.client 400"
+[xUnit.net 00:00:12.71]           Outcomes = [Some ([], []); Some ([], [1093])] |};
+[xUnit.net 00:00:12.71]        {| Door = "RefusalStatuses.server 500"
+[xUnit.net 00:00:12.71]           Outcomes = [Some ([], []); Some ([], [1093])] |};
+[xUnit.net 00:00:12.71]        {| Door = "HttpUrls.admit "https://example.org/""
+[xUnit.net 00:00:12.71]           Outcomes = [Some ([], []); Some ([], [1093])] |}]
+[xUnit.net 00:00:12.71]       Stack Trace:
+[xUnit.net 00:00:12.71]         
+[xUnit.net 00:00:12.71]         ----- Inner Stack Trace -----
+[xUnit.net 00:00:12.71]         /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/Domain/AdmissionSurfaceLaws.fs(53,0): at BibleAtlas.FSharp.Tests.Domain.AdmissionSurfaceLaws.every private representation refuses direct construction while its own public door compiles(UInt16 suffix)
+[xUnit.net 00:00:12.71]            at InvokeStub_AdmissionSurfaceLaws.every private representation refuses direct construction while its own public door compiles(Object, Span`1)
+[xUnit.net 00:00:12.71]            at System.Reflection.MethodBaseInvoker.InvokeWithOneArg(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
+[xUnit.net 00:00:12.71]         --- End of stack trace from previous location ---
+[xUnit.net 00:00:12.71]         C:\Users\kurts\Projects\FsCheck\src\FsCheck\Runner.fs(595,0): at FsCheck.Runner.invokeAndThrowInner@592-1.Invoke(Object[] o)
+[xUnit.net 00:00:12.71]         /__w/1/s/src/fsharp/src/FSharp.Core/reflect.fs(1230,0): at <StartupCode$FSharp-Core>.$Reflect.Invoke@1230.Invoke(T1 inp)
+[xUnit.net 00:00:12.71]            at System.Lazy`1.ViaFactory(LazyThreadSafetyMode mode)
+[xUnit.net 00:00:12.71]            at System.Lazy`1.ExecutionAndPublication(LazyHelper executionAndPublication, Boolean useDefaultConstructor)
+[xUnit.net 00:00:12.71]            at System.Lazy`1.CreateValue()
+[xUnit.net 00:00:12.71]         C:\Users\kurts\Projects\FsCheck\src\FsCheck\Testable.fs(164,0): at FsCheck.Testable.Prop.safeForce[a](Lazy`1 body)
+[xUnit.net 00:00:12.71]   Finished:    BibleAtlas.FSharp.Tests
+  Failed BibleAtlas.FSharp.Tests.Domain.AdmissionSurfaceLaws.every private representation refuses direct construction while its own public door compiles [12 s]
+  Error Message:
+   FsCheck.Xunit.PropertyFailedException : 
+Falsifiable, after 1 test (1 shrink) (3277697655394771004,4594596231314862645). 
+Last step was invoked with size of 34 and seed of (1198139297052839552,12691572251439795811):
+Original:
+23us
+Shrunk:
+0us
+
+---- Expected [{| Door = "Positive.admit 1"
+    Outcomes = [Some ([], []); Some ([], [1093])] |};
+ {| Door = "NonEmpty.admit [1]"
+    Outcomes = [Some ([], []); Some ([], [1093])] |};
+ {| Door = "Rooted.admit 0us 0us [1]"
+    Outcomes = [Some ([], []); Some ([], [1093])] |};
+ {| Door = "Rooted.admit 0us 1us [1] |> Result.mapError id"
+    Outcomes = [Some ([], []); Some ([], [1093])] |};
+ {| Door =
+     "Positive.admit 1 |> Result.map (BibleAtlas.FSharp.Paging.PageCache<uint16, int, int>.Empty 0us)"
+    Outcomes = [Some ([], []); Some ([], [1093; 1093; 1093; 1093; 1093; 1093])] |};
+ {| Door =
+     "Positive.admit 1 |> Result.map (fun capacity -> (BibleAtlas.FSharp.Paging.PageCache<uint16, int, int>.Empty 0us capacity).Lookup 0)"
+    Outcomes = [Some ([], []); Some ([], [1093])] |};
+ {| Door = "ArrayIndices.admit 0"
+    Outcomes = [Some ([], []); Some ([], [1093])] |};
+ {| Door = "LineNumbers.admit 1L"
+    Outcomes = [Some ([], []); Some ([], [1093])] |};
+ {| Door = "ByteColumns.admit 1L"
+    Outcomes = [Some ([], []); Some ([], [1093])] |};
+ {| Door = "Latitudes.admit 0.0"
+    Outcomes = [Some ([], []); Some ([], [1093])] |};
+ {| Door = "Longitudes.admit 0.0"
+    Outcomes = [Some ([], []); Some ([], [1093])] |};
+ {| Door =
+     "RefusalStatuses.client 400 |> Result.map (fun status -> BibleAtlas.FSharp.Failure.Read(ReadFailure.Terminal(TerminalFailure.ClientRefusal(status, None))))"
+    Outcomes = [Some ([], []); Some ([], [39])] |};
+ {| Door =
+     "ReadFailure.Terminal(TerminalFailure.InvalidAnswer WireFailure.NullAnswer) |> BibleAtlas.FSharp.Failure.Read"
+    Outcomes = [Some ([], []); Some ([], [39])] |};
+ {| Door = "RefusalStatuses.client 400"
+    Outcomes = [Some ([], []); Some ([], [1093])] |};
+ {| Door = "RefusalStatuses.server 500"
+    Outcomes = [Some ([], []); Some ([], [1093])] |};
+ {| Door = "HttpUrls.admit "https://example.org/""
+    Outcomes = [Some ([], []); Some ([], [1093])] |}]
+Actual [{| Door = "Positive.admit 1"
+    Outcomes = [Some ([], []); Some ([], [1093])] |};
+ {| Door = "NonEmpty.admit [1]"
+    Outcomes = [Some ([], []); Some ([], [1093])] |};
+ {| Door = "Rooted.admit 0us 0us [1]"
+    Outcomes = [Some ([], []); Some ([], [1093])] |};
+ {| Door = "Rooted.admit 0us 1us [1] |> Result.mapError id"
+    Outcomes = [Some ([], []); Some ([], [1093])] |};
+ {| Door =
+     "Positive.admit 1 |> Result.map (BibleAtlas.FSharp.Paging.PageCache<uint16, int, int>.Empty 0us)"
+    Outcomes = [Some ([], []); Some ([], [1093; 1093; 1093; 1093; 1093; 1093])] |};
+ {| Door =
+     "Positive.admit 1 |> Result.map (fun capacity -> (BibleAtlas.FSharp.Paging.PageCache<uint16, int, int>.Empty 0us capacity).Lookup 0)"
+    Outcomes = [Some ([], []); Some ([], [1093])] |};
+ {| Door = "ArrayIndices.admit 0"
+    Outcomes = [Some ([], []); Some ([], [1093])] |};
+ {| Door = "LineNumbers.admit 1L"
+    Outcomes = [Some ([], []); Some ([], [1093])] |};
+ {| Door = "ByteColumns.admit 1L"
+    Outcomes = [Some ([], []); Some ([], [1093])] |};
+ {| Door = "Latitudes.admit 0.0"
+    Outcomes = [Some ([], []); Some ([], [1093])] |};
+ {| Door = "Longitudes.admit 0.0"
+    Outcomes = [Some ([], []); Some ([], [1093])] |};
+ {| Door =
+     "RefusalStatuses.client 400 |> Result.map (fun status -> BibleAtlas.FSharp.Failure.Read(ReadFailure.Terminal(TerminalFailure.ClientRefusal(status, None))))"
+    Outcomes = [Some ([], []); Some ([], [39])] |};
+ {| Door =
+     "ReadFailure.Terminal(TerminalFailure.InvalidAnswer WireFailure.NullAnswer) |> BibleAtlas.FSharp.Failure.Read"
+    Outcomes = [Some ([], []); Some ([], [])] |};
+ {| Door = "RefusalStatuses.client 400"
+    Outcomes = [Some ([], []); Some ([], [1093])] |};
+ {| Door = "RefusalStatuses.server 500"
+    Outcomes = [Some ([], []); Some ([], [1093])] |};
+ {| Door = "HttpUrls.admit "https://example.org/""
+    Outcomes = [Some ([], []); Some ([], [1093])] |}]
+  Stack Trace:
+  
+----- Inner Stack Trace -----
+   at BibleAtlas.FSharp.Tests.Domain.AdmissionSurfaceLaws.every private representation refuses direct construction while its own public door compiles(UInt16 suffix) in /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/Domain/AdmissionSurfaceLaws.fs:line 53
+   at InvokeStub_AdmissionSurfaceLaws.every private representation refuses direct construction while its own public door compiles(Object, Span`1)
+   at System.Reflection.MethodBaseInvoker.InvokeWithOneArg(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
+--- End of stack trace from previous location ---
+   at FsCheck.Runner.invokeAndThrowInner@592-1.Invoke(Object[] o) in C:\Users\kurts\Projects\FsCheck\src\FsCheck\Runner.fs:line 595
+   at <StartupCode$FSharp-Core>.$Reflect.Invoke@1230.Invoke(T1 inp) in /__w/1/s/src/fsharp/src/FSharp.Core/reflect.fs:line 1230
+   at System.Lazy`1.ViaFactory(LazyThreadSafetyMode mode)
+   at System.Lazy`1.ExecutionAndPublication(LazyHelper executionAndPublication, Boolean useDefaultConstructor)
+   at System.Lazy`1.CreateValue()
+   at FsCheck.Testable.Prop.safeForce[a](Lazy`1 body) in C:\Users\kurts\Projects\FsCheck\src\FsCheck\Testable.fs:line 164
+
+Test Run Failed.
+Total tests: 18
+     Passed: 10
+     Failed: 8
+ Total time: 13.1064 Seconds

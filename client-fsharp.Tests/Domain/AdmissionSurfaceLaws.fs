@@ -31,6 +31,7 @@ let ``every private representation refuses direct construction while its own pub
           {| Public = "Latitudes.admit 0.0"; Forbidden = "Latitude nan"; Errors = [inaccessibleRepresentation] |}
           {| Public = "Longitudes.admit 0.0"; Forbidden = "Longitude infinity"; Errors = [inaccessibleRepresentation] |}
           {| Public = "RefusalStatuses.client 400 |> Result.map (fun status -> BibleAtlas.FSharp.Failure.Read(ReadFailure.Terminal(TerminalFailure.ClientRefusal(status, None))))"; Forbidden = "BibleAtlas.FSharp.Failure.Transport \"raw reason\""; Errors = [missingMember] |}
+          {| Public = "ReadFailure.Terminal(TerminalFailure.InvalidAnswer WireFailure.NullAnswer) |> BibleAtlas.FSharp.Failure.Read"; Forbidden = "BibleAtlas.FSharp.Failure.Contract \"raw reason\""; Errors = [missingMember] |}
           {| Public = "RefusalStatuses.client 400"; Forbidden = "ClientStatus 400"; Errors = [inaccessibleRepresentation] |}
           {| Public = "RefusalStatuses.server 500"; Forbidden = "ServerStatus 500"; Errors = [inaccessibleRepresentation] |}
           {| Public = "HttpUrls.admit \"https://example.org/\""; Forbidden = "HttpUrl (System.Uri \"file:///tmp/source\")"; Errors = [inaccessibleRepresentation] |} ]

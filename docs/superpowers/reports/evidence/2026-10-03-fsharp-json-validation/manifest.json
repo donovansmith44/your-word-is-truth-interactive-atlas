@@ -1,0 +1,813 @@
+{
+  "base": "5748bf9",
+  "producer": "da7e00d",
+  "source_commit": "399f198431f65cf6896fe6038f833ef6d0b27a39",
+  "source_only_changes": [
+    "src/Json.More/Json.More.csproj",
+    "src/JsonPointer/JsonPointer.csproj",
+    "src/JsonSchema/JsonSchema.csproj"
+  ],
+  "source_comparison": "Git clean LF representation; checkout CRLF normalization accounted for",
+  "source_license_sha256": "baebca0309090f4eca1b7a82c836cc91e48b2b92139c2280fb0ff69af922c2ae",
+  "packages": [
+    {
+      "package": "FSharp.Core/10.1.401",
+      "license": "MIT",
+      "license_type": "expression",
+      "authors": "Microsoft",
+      "copyright": "\u00a9 Microsoft Corporation. All rights reserved.",
+      "nuspec_sha256": "07c3bce2c1304ba12ce635503b61209937cd9e364d7ee94384d6056a5b403145"
+    },
+    {
+      "package": "FSharp.SystemTextJson/1.4.36",
+      "license": "MIT",
+      "license_type": "expression",
+      "authors": "Loic Denuziere",
+      "copyright": null,
+      "nuspec_sha256": "442d6178c755ab3f1b2b72f7ad0405929bb4fc06c445b01d674718cbdb70fc2b"
+    },
+    {
+      "package": "FSharpPlus/1.9.1",
+      "license": "Apache-2.0",
+      "license_type": "expression",
+      "authors": "gusty,wallymathieu",
+      "copyright": "2012-2024 Gustavo M. Wild - Oskar Gewalli (and contributors https://github.com/fsprojects/FSharpPlus/graphs/contributors)",
+      "nuspec_sha256": "f01c41f2ba4e0e63126368c5fd92b0c1547a563d3be99f60d8ef2f9ee19a89c3"
+    },
+    {
+      "package": "FsCheck.Xunit/3.4.0",
+      "license": "BSD-3-Clause",
+      "license_type": "expression",
+      "authors": "Kurt Schelfthout and contributors",
+      "copyright": "Copyright 2008-2026",
+      "nuspec_sha256": "d93c080def451871d76600ec5b296901380aeeec9c5ba4f7f3c5dc30482f2035"
+    },
+    {
+      "package": "FsCheck/3.4.0",
+      "license": "BSD-3-Clause",
+      "license_type": "expression",
+      "authors": "Kurt Schelfthout and contributors",
+      "copyright": "Copyright 2008-2026",
+      "nuspec_sha256": "ce753ba282500b5b7a29d1a87093afda4a9c7bdd5762dcb5e18acd01c1142613"
+    },
+    {
+      "package": "Humanizer.Core/3.0.10",
+      "license": "MIT",
+      "license_type": "expression",
+      "authors": "Claire Novotny, Mehdi Khalili",
+      "copyright": "Copyright (c) .NET Foundation and Contributors",
+      "nuspec_sha256": "07d999aaff5f7cbdfa7c7d23662dd3641e70f9ca8b33a5ff246d2917395548bf"
+    },
+    {
+      "package": "Microsoft.CodeCoverage/17.14.1",
+      "license": "MIT",
+      "license_type": "expression",
+      "authors": "Microsoft",
+      "copyright": "\u00a9 Microsoft Corporation. All rights reserved.",
+      "nuspec_sha256": "e8a419e9a7d1045db037afaea25cee698e035acf29e21805ef501bef317d5b5b"
+    },
+    {
+      "package": "Microsoft.NET.Test.Sdk/17.14.1",
+      "license": "MIT",
+      "license_type": "expression",
+      "authors": "Microsoft",
+      "copyright": "\u00a9 Microsoft Corporation. All rights reserved.",
+      "nuspec_sha256": "4be5fe2a9a8685231d30a32509fc10c97057d377b9ea22c33a7a3ac017cfce69"
+    },
+    {
+      "package": "Microsoft.TestPlatform.ObjectModel/17.14.1",
+      "license": "MIT",
+      "license_type": "expression",
+      "authors": "Microsoft",
+      "copyright": "\u00a9 Microsoft Corporation. All rights reserved.",
+      "nuspec_sha256": "46d770701d691e3617a59d7a0ffbd7b07bfe727a945648db3a629401d6a07ea1"
+    },
+    {
+      "package": "Microsoft.TestPlatform.TestHost/17.14.1",
+      "license": "MIT",
+      "license_type": "expression",
+      "authors": "Microsoft",
+      "copyright": "\u00a9 Microsoft Corporation. All rights reserved.",
+      "nuspec_sha256": "2988ea729e27c2ddbe49e8f1be039124580cc18be40c2be4cb120d4078068bb3"
+    },
+    {
+      "package": "Newtonsoft.Json/13.0.3",
+      "license": "MIT",
+      "license_type": "expression",
+      "authors": "James Newton-King",
+      "copyright": "Copyright \u00a9 James Newton-King 2008",
+      "nuspec_sha256": "64aeffca22289eeb3bd32cbe72722ac878d2eadcee9f8885f17daa2e8357c518"
+    },
+    {
+      "package": "YamlDotNet/18.1.0",
+      "license": "MIT",
+      "license_type": "expression",
+      "authors": "Antoine Aubry",
+      "copyright": "Copyright (c) Antoine Aubry and contributors",
+      "nuspec_sha256": "362c3e6b2b0a04cae354ab97ea3d4d3945bb20390c7dcd2a696b73dc012b3036"
+    },
+    {
+      "package": "xunit.abstractions/2.0.3",
+      "license": null,
+      "license_type": null,
+      "authors": "James Newkirk,Brad Wilson",
+      "copyright": null,
+      "nuspec_sha256": "e59191df9e3047dd953b695c886597786ac2771f66897baa40877f643da9f7b1"
+    },
+    {
+      "package": "xunit.analyzers/1.18.0",
+      "license": "Apache-2.0",
+      "license_type": "expression",
+      "authors": "jnewkirk,bradwilson,marcind",
+      "copyright": "Copyright (C) .NET Foundation",
+      "nuspec_sha256": "270ffb0dce41126154f16bad2ee025da605185fb5308247877745e5eef97689e"
+    },
+    {
+      "package": "xunit.assert/2.9.3",
+      "license": "Apache-2.0",
+      "license_type": "expression",
+      "authors": "jnewkirk,bradwilson",
+      "copyright": "Copyright (C) .NET Foundation",
+      "nuspec_sha256": "e3f99045088c262b14a62dd93cf025912e9e653f5ce1d77e7f858238e0bcb508"
+    },
+    {
+      "package": "xunit.core/2.9.3",
+      "license": "Apache-2.0",
+      "license_type": "expression",
+      "authors": "jnewkirk,bradwilson",
+      "copyright": "Copyright (C) .NET Foundation",
+      "nuspec_sha256": "08c844d40924a386d7600e2523c57f1a2a1d6a77c03b8c0001501831944a0691"
+    },
+    {
+      "package": "xunit.extensibility.core/2.9.3",
+      "license": "Apache-2.0",
+      "license_type": "expression",
+      "authors": "jnewkirk,bradwilson",
+      "copyright": "Copyright (C) .NET Foundation",
+      "nuspec_sha256": "0c5886e9320c6dd828e50048c27cf355314fe20e2d8d4026b4a3a9fe42d4a359"
+    },
+    {
+      "package": "xunit.extensibility.execution/2.9.3",
+      "license": "Apache-2.0",
+      "license_type": "expression",
+      "authors": "jnewkirk,bradwilson",
+      "copyright": "Copyright (C) .NET Foundation",
+      "nuspec_sha256": "9c5498549b5200b65ba0c7e0d4597c269c6bbb2e374ea8f1c28d76dc3f3a0bdd"
+    },
+    {
+      "package": "xunit.runner.visualstudio/3.1.4",
+      "license": "Apache-2.0",
+      "license_type": "expression",
+      "authors": "jnewkirk,bradwilson",
+      "copyright": "Copyright (C) .NET Foundation",
+      "nuspec_sha256": "5cb4620571521ee8627f8d81c3341aee015bccee0e2054caa08bbe43f7351436"
+    },
+    {
+      "package": "xunit/2.9.3",
+      "license": "Apache-2.0",
+      "license_type": "expression",
+      "authors": "jnewkirk,bradwilson",
+      "copyright": "Copyright (C) .NET Foundation",
+      "nuspec_sha256": "8f3373c5260b2acec2874a280640e0fbb9ac538d754880d7abaa4473c3497d25"
+    }
+  ],
+  "query_fixtures": [
+    "contents-bad-corpus.json",
+    "contents-bible.json",
+    "contents-concord.json",
+    "element-read.json",
+    "event-page-ab-ur.json",
+    "focus-anchor.json",
+    "focus-bad-ref.json",
+    "focus-catechismitem.json",
+    "focus-commentaryitem.json",
+    "focus-era.json",
+    "focus-event.json",
+    "focus-narrative.json",
+    "focus-not-found.json",
+    "focus-person.json",
+    "focus-place.json",
+    "focus-polity.json",
+    "focus-textunit.json",
+    "focus-translation.json",
+    "focus-traversal-target.json",
+    "scene-bad-ref.json",
+    "scene-bad-window.json",
+    "scene-scripture.json",
+    "scene-time.json",
+    "text-window-bad-corpus.json",
+    "text-window-bad-scope.json",
+    "text-window-chapter-backward-bad-dir.json",
+    "text-window-concord-chapter-bad-scope.json",
+    "text-window-mat-4-19.json",
+    "text-window-mat-5-4.json",
+    "text-window-multi.json",
+    "text-window-single.json",
+    "traversal-bad-kind.json",
+    "traversal-cites-limit1.json",
+    "traversal-cites.json",
+    "traversal-located-at.json"
+  ],
+  "authored_source_files": [
+    "client-fsharp/Core/Admission/ArrayIndex.fs",
+    "client-fsharp/Core/Admission/Coordinates.fs",
+    "client-fsharp/Core/Admission/DocumentPosition.fs",
+    "client-fsharp/Core/Admission/Failure.fs",
+    "client-fsharp/Core/Admission/GraphFailure.fs",
+    "client-fsharp/Core/Admission/GraphRead.fs",
+    "client-fsharp/Core/Admission/HttpUrl.fs",
+    "client-fsharp/Core/Admission/Json.fs",
+    "client-fsharp/Core/Admission/Paths.fs",
+    "client-fsharp/Core/Admission/ReadFailure.fs",
+    "client-fsharp/Core/Admission/Scalars.fs",
+    "client-fsharp/Core/Admission/TextSpans.fs",
+    "client-fsharp/Core/Admission/WireFailure.fs",
+    "client-fsharp/Core/Api.fs",
+    "client-fsharp/Core/Domain/Containers.fs",
+    "client-fsharp/Core/Domain/Graph.fs",
+    "client-fsharp/Core/Domain/History.fs",
+    "client-fsharp/Core/Domain/NonEmpty.fs",
+    "client-fsharp/Core/Domain/Position.fs",
+    "client-fsharp/Core/Domain/Positive.fs",
+    "client-fsharp/Core/Domain/Rooted.fs",
+    "client-fsharp/Core/Domain/Skeleton.fs",
+    "client-fsharp/Core/Domain/Text.fs",
+    "client-fsharp/Core/Domain/Time.fs",
+    "client-fsharp/Core/Domain/YearReading.fs",
+    "client-fsharp/Core/Exploration/Explore.fs",
+    "client-fsharp/Core/Exploration/Focus.fs",
+    "client-fsharp/Core/Exploration/Trail.fs",
+    "client-fsharp/Core/Loading.fs",
+    "client-fsharp/Core/Model.fs",
+    "client-fsharp/Core/Paging/NeighbourWindow.fs",
+    "client-fsharp/Core/Paging/PageCache.fs",
+    "client-fsharp/Core/Paging/ReadingWindow.fs",
+    "client-fsharp/Core/Presentation.fs",
+    "client-fsharp/Main.fs",
+    "client-fsharp/Program.fs",
+    "client-fsharp/Runtime.fs",
+    "client-fsharp/View.fs",
+    "client-fsharp.Tests/AnchoredTextTests.fs",
+    "client-fsharp.Tests/ContractIdentityLaws.fs",
+    "client-fsharp.Tests/ContractShapeTests.fs",
+    "client-fsharp.Tests/ContractTests.fs",
+    "client-fsharp.Tests/Domain/AdmissionSurfaceLaws.fs",
+    "client-fsharp.Tests/Domain/ArrayIndexLaws.fs",
+    "client-fsharp.Tests/Domain/CoordinatesLaws.fs",
+    "client-fsharp.Tests/Domain/DeclarationLaws.fs",
+    "client-fsharp.Tests/Domain/DocumentPositionLaws.fs",
+    "client-fsharp.Tests/Domain/GraphFailureLaws.fs",
+    "client-fsharp.Tests/Domain/HttpUrlLaws.fs",
+    "client-fsharp.Tests/Domain/JsonFailureLaws.fs",
+    "client-fsharp.Tests/Domain/NonEmptyLaws.fs",
+    "client-fsharp.Tests/Domain/PageCacheLaws.fs",
+    "client-fsharp.Tests/Domain/PositiveLaws.fs",
+    "client-fsharp.Tests/Domain/ReadFailureLaws.fs",
+    "client-fsharp.Tests/Domain/RootedLaws.fs",
+    "client-fsharp.Tests/Domain/StatusLaws.fs",
+    "client-fsharp.Tests/ExplorationTests.fs",
+    "client-fsharp.Tests/ExploreLaws.fs",
+    "client-fsharp.Tests/GeneratorTests.fs",
+    "client-fsharp.Tests/GraphTests.fs",
+    "client-fsharp.Tests/ModelTests.fs",
+    "client-fsharp.Tests/PresentationTests.fs",
+    "client-fsharp.Tests/PropertyTests.fs",
+    "client-fsharp.Tests/RuntimeTests.fs",
+    "client-fsharp.Tests/SchemaSpike/SchemaLaws.fs",
+    "client-fsharp.Tests/SourceOrderTests.fs",
+    "client-fsharp.Tests/StateTests.fs",
+    "client-fsharp.Tests/TransportTests.fs",
+    "client-fsharp.Tests/ViewTests.fs",
+    "client-fsharp.Tests/WireFixtures.fs",
+    "client-fsharp.ContractGenerator/Generator.fs",
+    "client-fsharp.ContractGenerator/Program.fs",
+    "client-fsharp.ContractGenerator/Vocabulary.fs"
+  ],
+  "generated_sha256": {
+    "Wire.g.fs": "72656755da812fff3b4bce21ae7dddb2cfa12e2c96623b01719a613f6ef7f988",
+    "Vocabulary.g.fs": "70fa71de281c2f9f5dda56ccc35109364f82dfe378f98000233984863e507dca"
+  },
+  "evidence_sha256": {
+    "json-behavior-red-2.log": "c9fdc3cabe067b38e80a7d8ba633970e201d5ea7a54d02ee559c5f054081026f",
+    "json-binary-restore-compilation.log": "475ff83d9ccc276e5757a52cb9836636cdd14f693ef5801f79d27d015da27776",
+    "json-category-green.log": "b043b1a64419bc1cae736d4e2e8f197d93a44eb6753503771a239863dda821bc",
+    "json-category-red.log": "0c7b4bde1a6ec44a3f7a5fb9b303b9243bcb576423e52c4d6868131bd45d2138",
+    "json-declarations.err": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "json-declarations.json": "f011225b35b42ee9bc24e66b9b1a4245389083c264896e361e94ff9190c66366",
+    "json-everything-LICENSE.txt": "baebca0309090f4eca1b7a82c836cc91e48b2b92139c2280fb0ff69af922c2ae",
+    "json-full-green.log": "ed3c2fdb389af875c15edefc3f365ec4ac856f09bb2a688f4e2ca1bc649c4dbd",
+    "json-location-characterization.log": "b69e5154915e4cc2d6e30c2ab7377bd6a25e61f8e41909d1228f1cce1107de50",
+    "json-schema-fit-9.log": "d286e64213d6ad81c5e9b53af4497a4f6c9b4bd0a7cbeb3f8d913741b92b05d7",
+    "json-schema-fit-final.log": "b9bff52f6952410fa761f037e6eadaaf1c36b9027e51122fcbd40e0363d02497",
+    "json-schema-fit-green.log": "595f34729c0fac2ba65057f1aaba9b6985e2823847aec3ed23113327067c37da",
+    "json-source-build-tool-warning.log": "47741de2595a3c452c9d71088e43d89c533c411537a1cb4fcfc7d7da72016aa5",
+    "json-source-link.patch": "a1229c63adcd537e9ce27b0feeb7ee7221be38e64f895879f7b4d3569e5872e2",
+    "json-vocabulary-red.log": "d2c6b6f584c670fffd75e753a1aa82dd055356000811aaf8d9ff1668670e810b",
+    "json-wasm-debug.log": "bb50f6b1df299d0e2d22d1d8ec153210d72e2d6a92bcf7b9851c63854c0b8103"
+  },
+  "source_project_packages": [
+    {
+      "project": "Json.More",
+      "package": "Microsoft.Bcl.AsyncInterfaces/10.0.5",
+      "license": "MIT",
+      "license_url": "https://licenses.nuget.org/MIT",
+      "nuspec_sha256": "6d71dfb73b718c6e4aef965dbb34dc9ea5f10824ade22e429721d2dd903d7159"
+    },
+    {
+      "project": "Json.More",
+      "package": "Microsoft.Build.Tasks.Git/10.0.401",
+      "license": "MIT",
+      "license_url": "https://licenses.nuget.org/MIT",
+      "nuspec_sha256": "f349fa9f867d97c19931d48026fe532cc53d38f1cd0f736149e18189996b6ced"
+    },
+    {
+      "project": "Json.More",
+      "package": "Microsoft.NET.ILLink.Tasks/10.0.12",
+      "license": "MIT",
+      "license_url": "https://licenses.nuget.org/MIT",
+      "nuspec_sha256": "bf5762457b552fed442157eb53c6c6693ded498ecfd5581a77cbdb3898bda628"
+    },
+    {
+      "project": "Json.More",
+      "package": "Microsoft.NET.ILLink.Tasks/8.0.31",
+      "license": "MIT",
+      "license_url": "https://licenses.nuget.org/MIT",
+      "nuspec_sha256": "659cafe18c710517b2cab4864aa3521ba757d3bbf0ea6a2d56718f5268eefa44"
+    },
+    {
+      "project": "Json.More",
+      "package": "Microsoft.NET.ILLink.Tasks/9.0.20",
+      "license": "MIT",
+      "license_url": "https://licenses.nuget.org/MIT",
+      "nuspec_sha256": "b4d6355993cf0cbe204af98d4bd00dba0ab8541009f43b259dc16e6316f5d02f"
+    },
+    {
+      "project": "Json.More",
+      "package": "Microsoft.NETCore.Platforms/1.1.0",
+      "license": null,
+      "license_url": "http://go.microsoft.com/fwlink/?LinkId=329770",
+      "nuspec_sha256": "20fa15a4509e2dff05d0bf2fc1f9ec4f59dd948f2c327e7f92d7c12ce3414b88"
+    },
+    {
+      "project": "Json.More",
+      "package": "Microsoft.SourceLink.Common/10.0.401",
+      "license": "MIT",
+      "license_url": "https://licenses.nuget.org/MIT",
+      "nuspec_sha256": "5bd769fc552a5143e996d64497d151f2d020d3c24020cd1ffa8b1d7694aed64c"
+    },
+    {
+      "project": "Json.More",
+      "package": "Microsoft.SourceLink.GitHub/10.0.401",
+      "license": "MIT",
+      "license_url": "https://licenses.nuget.org/MIT",
+      "nuspec_sha256": "2ab9ebd6deacfc1e25e558a1346e1249d176d530d77953213dbed9d24a8bcbd0"
+    },
+    {
+      "project": "Json.More",
+      "package": "NETStandard.Library/2.0.3",
+      "license": null,
+      "license_url": "https://github.com/dotnet/standard/blob/master/LICENSE.TXT",
+      "nuspec_sha256": "be3eb47978bc0dcff6109c6706bfee6315792dcb83dc6c59998f9ccc4e1ab270"
+    },
+    {
+      "project": "Json.More",
+      "package": "PolySharp/1.15.0",
+      "license": "MIT",
+      "license_url": "https://licenses.nuget.org/MIT",
+      "nuspec_sha256": "0f7d0c7e130505a23992a6d9248ed08fd144528e29bfd8e332f0b7be706c6c58"
+    },
+    {
+      "project": "Json.More",
+      "package": "System.Buffers/4.6.1",
+      "license": "MIT",
+      "license_url": "https://licenses.nuget.org/MIT",
+      "nuspec_sha256": "be89a209f57ae6cd84ca406ee73762d7eb3fe686198a3e6032e6c77e90e9cb8d"
+    },
+    {
+      "project": "Json.More",
+      "package": "System.Collections.Immutable/10.0.5",
+      "license": "MIT",
+      "license_url": "https://licenses.nuget.org/MIT",
+      "nuspec_sha256": "94d6f0eb1f2efaeff02dd060403a5aefd4b2317bf280aac1662f8f504b88f918"
+    },
+    {
+      "project": "Json.More",
+      "package": "System.IO.Hashing/10.0.12",
+      "license": "MIT",
+      "license_url": "https://licenses.nuget.org/MIT",
+      "nuspec_sha256": "23762c4a6fbc6165ffbc22731127998978526b1cf775a0bb86ecba5080a5ffec"
+    },
+    {
+      "project": "Json.More",
+      "package": "System.IO.Pipelines/10.0.5",
+      "license": "MIT",
+      "license_url": "https://licenses.nuget.org/MIT",
+      "nuspec_sha256": "6dbe25d6de6e32061e19b6081b02c1ee3cccafdc029a62f92105cc9d284c0e05"
+    },
+    {
+      "project": "Json.More",
+      "package": "System.Memory/4.6.3",
+      "license": "MIT",
+      "license_url": "https://licenses.nuget.org/MIT",
+      "nuspec_sha256": "98fc2db30bed06f405323c9899ae51486acf2e284ab775eb62afe41d6dd1f82d"
+    },
+    {
+      "project": "Json.More",
+      "package": "System.Numerics.Vectors/4.6.1",
+      "license": "MIT",
+      "license_url": "https://licenses.nuget.org/MIT",
+      "nuspec_sha256": "15440dd053506902802cdfaab77d05688a18e120bff464bf03c61636fbab1014"
+    },
+    {
+      "project": "Json.More",
+      "package": "System.Runtime.CompilerServices.Unsafe/6.1.2",
+      "license": "MIT",
+      "license_url": "https://licenses.nuget.org/MIT",
+      "nuspec_sha256": "79f5f27fd1038d84896f0dc80cca839d66b8d4df8024f805961534b174d01909"
+    },
+    {
+      "project": "Json.More",
+      "package": "System.Text.Encodings.Web/10.0.5",
+      "license": "MIT",
+      "license_url": "https://licenses.nuget.org/MIT",
+      "nuspec_sha256": "b59d45f8402e37b953ac4a859d896787071805e6fee7d74798f093d9f9e55abc"
+    },
+    {
+      "project": "Json.More",
+      "package": "System.Text.Json/10.0.5",
+      "license": "MIT",
+      "license_url": "https://licenses.nuget.org/MIT",
+      "nuspec_sha256": "8815df659b8c72738321d9fe7e6e36edc00d3a283c22007295d600873a486666"
+    },
+    {
+      "project": "Json.More",
+      "package": "System.Threading.Tasks.Extensions/4.6.3",
+      "license": "MIT",
+      "license_url": "https://licenses.nuget.org/MIT",
+      "nuspec_sha256": "64cd22321f9ce0f46349f2c24e5759d4117f6a15bc6015eb711efb991561bf6d"
+    },
+    {
+      "project": "JsonPointer",
+      "package": "Humanizer.Core/2.14.1",
+      "license": "MIT",
+      "license_url": "https://licenses.nuget.org/MIT",
+      "nuspec_sha256": "9233ebeabcf74461613f4d3a71d503d0bfa8a7754e62fab83ace72110daf77e7"
+    },
+    {
+      "project": "JsonPointer",
+      "package": "Humanizer.Core/3.0.10",
+      "license": "MIT",
+      "license_url": "https://licenses.nuget.org/MIT",
+      "nuspec_sha256": "07d999aaff5f7cbdfa7c7d23662dd3641e70f9ca8b33a5ff246d2917395548bf"
+    },
+    {
+      "project": "JsonPointer",
+      "package": "Microsoft.Bcl.AsyncInterfaces/10.0.5",
+      "license": "MIT",
+      "license_url": "https://licenses.nuget.org/MIT",
+      "nuspec_sha256": "6d71dfb73b718c6e4aef965dbb34dc9ea5f10824ade22e429721d2dd903d7159"
+    },
+    {
+      "project": "JsonPointer",
+      "package": "Microsoft.Build.Tasks.Git/10.0.401",
+      "license": "MIT",
+      "license_url": "https://licenses.nuget.org/MIT",
+      "nuspec_sha256": "f349fa9f867d97c19931d48026fe532cc53d38f1cd0f736149e18189996b6ced"
+    },
+    {
+      "project": "JsonPointer",
+      "package": "Microsoft.NET.ILLink.Tasks/10.0.12",
+      "license": "MIT",
+      "license_url": "https://licenses.nuget.org/MIT",
+      "nuspec_sha256": "bf5762457b552fed442157eb53c6c6693ded498ecfd5581a77cbdb3898bda628"
+    },
+    {
+      "project": "JsonPointer",
+      "package": "Microsoft.NET.ILLink.Tasks/8.0.31",
+      "license": "MIT",
+      "license_url": "https://licenses.nuget.org/MIT",
+      "nuspec_sha256": "659cafe18c710517b2cab4864aa3521ba757d3bbf0ea6a2d56718f5268eefa44"
+    },
+    {
+      "project": "JsonPointer",
+      "package": "Microsoft.NET.ILLink.Tasks/9.0.20",
+      "license": "MIT",
+      "license_url": "https://licenses.nuget.org/MIT",
+      "nuspec_sha256": "b4d6355993cf0cbe204af98d4bd00dba0ab8541009f43b259dc16e6316f5d02f"
+    },
+    {
+      "project": "JsonPointer",
+      "package": "Microsoft.NETCore.Platforms/1.1.0",
+      "license": null,
+      "license_url": "http://go.microsoft.com/fwlink/?LinkId=329770",
+      "nuspec_sha256": "20fa15a4509e2dff05d0bf2fc1f9ec4f59dd948f2c327e7f92d7c12ce3414b88"
+    },
+    {
+      "project": "JsonPointer",
+      "package": "Microsoft.SourceLink.Common/10.0.401",
+      "license": "MIT",
+      "license_url": "https://licenses.nuget.org/MIT",
+      "nuspec_sha256": "5bd769fc552a5143e996d64497d151f2d020d3c24020cd1ffa8b1d7694aed64c"
+    },
+    {
+      "project": "JsonPointer",
+      "package": "Microsoft.SourceLink.GitHub/10.0.401",
+      "license": "MIT",
+      "license_url": "https://licenses.nuget.org/MIT",
+      "nuspec_sha256": "2ab9ebd6deacfc1e25e558a1346e1249d176d530d77953213dbed9d24a8bcbd0"
+    },
+    {
+      "project": "JsonPointer",
+      "package": "NETStandard.Library/2.0.3",
+      "license": null,
+      "license_url": "https://github.com/dotnet/standard/blob/master/LICENSE.TXT",
+      "nuspec_sha256": "be3eb47978bc0dcff6109c6706bfee6315792dcb83dc6c59998f9ccc4e1ab270"
+    },
+    {
+      "project": "JsonPointer",
+      "package": "PolySharp/1.15.0",
+      "license": "MIT",
+      "license_url": "https://licenses.nuget.org/MIT",
+      "nuspec_sha256": "0f7d0c7e130505a23992a6d9248ed08fd144528e29bfd8e332f0b7be706c6c58"
+    },
+    {
+      "project": "JsonPointer",
+      "package": "System.Buffers/4.6.1",
+      "license": "MIT",
+      "license_url": "https://licenses.nuget.org/MIT",
+      "nuspec_sha256": "be89a209f57ae6cd84ca406ee73762d7eb3fe686198a3e6032e6c77e90e9cb8d"
+    },
+    {
+      "project": "JsonPointer",
+      "package": "System.Collections.Immutable/10.0.5",
+      "license": "MIT",
+      "license_url": "https://licenses.nuget.org/MIT",
+      "nuspec_sha256": "94d6f0eb1f2efaeff02dd060403a5aefd4b2317bf280aac1662f8f504b88f918"
+    },
+    {
+      "project": "JsonPointer",
+      "package": "System.ComponentModel.Annotations/5.0.0",
+      "license": "MIT",
+      "license_url": "https://licenses.nuget.org/MIT",
+      "nuspec_sha256": "81b52aa34460e41f850b163546fa6e72e007499e2b8ed7396c217944b2ec778f"
+    },
+    {
+      "project": "JsonPointer",
+      "package": "System.IO.Hashing/10.0.12",
+      "license": "MIT",
+      "license_url": "https://licenses.nuget.org/MIT",
+      "nuspec_sha256": "23762c4a6fbc6165ffbc22731127998978526b1cf775a0bb86ecba5080a5ffec"
+    },
+    {
+      "project": "JsonPointer",
+      "package": "System.IO.Pipelines/10.0.5",
+      "license": "MIT",
+      "license_url": "https://licenses.nuget.org/MIT",
+      "nuspec_sha256": "6dbe25d6de6e32061e19b6081b02c1ee3cccafdc029a62f92105cc9d284c0e05"
+    },
+    {
+      "project": "JsonPointer",
+      "package": "System.Memory/4.6.3",
+      "license": "MIT",
+      "license_url": "https://licenses.nuget.org/MIT",
+      "nuspec_sha256": "98fc2db30bed06f405323c9899ae51486acf2e284ab775eb62afe41d6dd1f82d"
+    },
+    {
+      "project": "JsonPointer",
+      "package": "System.Numerics.Vectors/4.6.1",
+      "license": "MIT",
+      "license_url": "https://licenses.nuget.org/MIT",
+      "nuspec_sha256": "15440dd053506902802cdfaab77d05688a18e120bff464bf03c61636fbab1014"
+    },
+    {
+      "project": "JsonPointer",
+      "package": "System.Runtime.CompilerServices.Unsafe/6.1.2",
+      "license": "MIT",
+      "license_url": "https://licenses.nuget.org/MIT",
+      "nuspec_sha256": "79f5f27fd1038d84896f0dc80cca839d66b8d4df8024f805961534b174d01909"
+    },
+    {
+      "project": "JsonPointer",
+      "package": "System.Text.Encodings.Web/10.0.5",
+      "license": "MIT",
+      "license_url": "https://licenses.nuget.org/MIT",
+      "nuspec_sha256": "b59d45f8402e37b953ac4a859d896787071805e6fee7d74798f093d9f9e55abc"
+    },
+    {
+      "project": "JsonPointer",
+      "package": "System.Text.Json/10.0.5",
+      "license": "MIT",
+      "license_url": "https://licenses.nuget.org/MIT",
+      "nuspec_sha256": "8815df659b8c72738321d9fe7e6e36edc00d3a283c22007295d600873a486666"
+    },
+    {
+      "project": "JsonPointer",
+      "package": "System.Threading.Tasks.Extensions/4.6.3",
+      "license": "MIT",
+      "license_url": "https://licenses.nuget.org/MIT",
+      "nuspec_sha256": "64cd22321f9ce0f46349f2c24e5759d4117f6a15bc6015eb711efb991561bf6d"
+    },
+    {
+      "project": "JsonSchema",
+      "package": "Humanizer.Core/2.14.1",
+      "license": "MIT",
+      "license_url": "https://licenses.nuget.org/MIT",
+      "nuspec_sha256": "9233ebeabcf74461613f4d3a71d503d0bfa8a7754e62fab83ace72110daf77e7"
+    },
+    {
+      "project": "JsonSchema",
+      "package": "Humanizer.Core/3.0.10",
+      "license": "MIT",
+      "license_url": "https://licenses.nuget.org/MIT",
+      "nuspec_sha256": "07d999aaff5f7cbdfa7c7d23662dd3641e70f9ca8b33a5ff246d2917395548bf"
+    },
+    {
+      "project": "JsonSchema",
+      "package": "Microsoft.Bcl.AsyncInterfaces/10.0.5",
+      "license": "MIT",
+      "license_url": "https://licenses.nuget.org/MIT",
+      "nuspec_sha256": "6d71dfb73b718c6e4aef965dbb34dc9ea5f10824ade22e429721d2dd903d7159"
+    },
+    {
+      "project": "JsonSchema",
+      "package": "Microsoft.Build.Tasks.Git/10.0.401",
+      "license": "MIT",
+      "license_url": "https://licenses.nuget.org/MIT",
+      "nuspec_sha256": "f349fa9f867d97c19931d48026fe532cc53d38f1cd0f736149e18189996b6ced"
+    },
+    {
+      "project": "JsonSchema",
+      "package": "Microsoft.NET.ILLink.Tasks/10.0.12",
+      "license": "MIT",
+      "license_url": "https://licenses.nuget.org/MIT",
+      "nuspec_sha256": "bf5762457b552fed442157eb53c6c6693ded498ecfd5581a77cbdb3898bda628"
+    },
+    {
+      "project": "JsonSchema",
+      "package": "Microsoft.NET.ILLink.Tasks/8.0.31",
+      "license": "MIT",
+      "license_url": "https://licenses.nuget.org/MIT",
+      "nuspec_sha256": "659cafe18c710517b2cab4864aa3521ba757d3bbf0ea6a2d56718f5268eefa44"
+    },
+    {
+      "project": "JsonSchema",
+      "package": "Microsoft.NET.ILLink.Tasks/9.0.20",
+      "license": "MIT",
+      "license_url": "https://licenses.nuget.org/MIT",
+      "nuspec_sha256": "b4d6355993cf0cbe204af98d4bd00dba0ab8541009f43b259dc16e6316f5d02f"
+    },
+    {
+      "project": "JsonSchema",
+      "package": "Microsoft.NETCore.Platforms/1.1.0",
+      "license": null,
+      "license_url": "http://go.microsoft.com/fwlink/?LinkId=329770",
+      "nuspec_sha256": "20fa15a4509e2dff05d0bf2fc1f9ec4f59dd948f2c327e7f92d7c12ce3414b88"
+    },
+    {
+      "project": "JsonSchema",
+      "package": "Microsoft.SourceLink.Common/10.0.401",
+      "license": "MIT",
+      "license_url": "https://licenses.nuget.org/MIT",
+      "nuspec_sha256": "5bd769fc552a5143e996d64497d151f2d020d3c24020cd1ffa8b1d7694aed64c"
+    },
+    {
+      "project": "JsonSchema",
+      "package": "Microsoft.SourceLink.GitHub/10.0.401",
+      "license": "MIT",
+      "license_url": "https://licenses.nuget.org/MIT",
+      "nuspec_sha256": "2ab9ebd6deacfc1e25e558a1346e1249d176d530d77953213dbed9d24a8bcbd0"
+    },
+    {
+      "project": "JsonSchema",
+      "package": "NETStandard.Library/2.0.3",
+      "license": null,
+      "license_url": "https://github.com/dotnet/standard/blob/master/LICENSE.TXT",
+      "nuspec_sha256": "be3eb47978bc0dcff6109c6706bfee6315792dcb83dc6c59998f9ccc4e1ab270"
+    },
+    {
+      "project": "JsonSchema",
+      "package": "PolySharp/1.15.0",
+      "license": "MIT",
+      "license_url": "https://licenses.nuget.org/MIT",
+      "nuspec_sha256": "0f7d0c7e130505a23992a6d9248ed08fd144528e29bfd8e332f0b7be706c6c58"
+    },
+    {
+      "project": "JsonSchema",
+      "package": "System.Buffers/4.6.1",
+      "license": "MIT",
+      "license_url": "https://licenses.nuget.org/MIT",
+      "nuspec_sha256": "be89a209f57ae6cd84ca406ee73762d7eb3fe686198a3e6032e6c77e90e9cb8d"
+    },
+    {
+      "project": "JsonSchema",
+      "package": "System.Collections.Immutable/10.0.5",
+      "license": "MIT",
+      "license_url": "https://licenses.nuget.org/MIT",
+      "nuspec_sha256": "94d6f0eb1f2efaeff02dd060403a5aefd4b2317bf280aac1662f8f504b88f918"
+    },
+    {
+      "project": "JsonSchema",
+      "package": "System.ComponentModel.Annotations/5.0.0",
+      "license": "MIT",
+      "license_url": "https://licenses.nuget.org/MIT",
+      "nuspec_sha256": "81b52aa34460e41f850b163546fa6e72e007499e2b8ed7396c217944b2ec778f"
+    },
+    {
+      "project": "JsonSchema",
+      "package": "System.IO.Hashing/10.0.12",
+      "license": "MIT",
+      "license_url": "https://licenses.nuget.org/MIT",
+      "nuspec_sha256": "23762c4a6fbc6165ffbc22731127998978526b1cf775a0bb86ecba5080a5ffec"
+    },
+    {
+      "project": "JsonSchema",
+      "package": "System.IO.Pipelines/10.0.5",
+      "license": "MIT",
+      "license_url": "https://licenses.nuget.org/MIT",
+      "nuspec_sha256": "6dbe25d6de6e32061e19b6081b02c1ee3cccafdc029a62f92105cc9d284c0e05"
+    },
+    {
+      "project": "JsonSchema",
+      "package": "System.Memory/4.6.3",
+      "license": "MIT",
+      "license_url": "https://licenses.nuget.org/MIT",
+      "nuspec_sha256": "98fc2db30bed06f405323c9899ae51486acf2e284ab775eb62afe41d6dd1f82d"
+    },
+    {
+      "project": "JsonSchema",
+      "package": "System.Numerics.Vectors/4.6.1",
+      "license": "MIT",
+      "license_url": "https://licenses.nuget.org/MIT",
+      "nuspec_sha256": "15440dd053506902802cdfaab77d05688a18e120bff464bf03c61636fbab1014"
+    },
+    {
+      "project": "JsonSchema",
+      "package": "System.Runtime.CompilerServices.Unsafe/6.1.2",
+      "license": "MIT",
+      "license_url": "https://licenses.nuget.org/MIT",
+      "nuspec_sha256": "79f5f27fd1038d84896f0dc80cca839d66b8d4df8024f805961534b174d01909"
+    },
+    {
+      "project": "JsonSchema",
+      "package": "System.Text.Encodings.Web/10.0.5",
+      "license": "MIT",
+      "license_url": "https://licenses.nuget.org/MIT",
+      "nuspec_sha256": "b59d45f8402e37b953ac4a859d896787071805e6fee7d74798f093d9f9e55abc"
+    },
+    {
+      "project": "JsonSchema",
+      "package": "System.Text.Json/10.0.5",
+      "license": "MIT",
+      "license_url": "https://licenses.nuget.org/MIT",
+      "nuspec_sha256": "8815df659b8c72738321d9fe7e6e36edc00d3a283c22007295d600873a486666"
+    },
+    {
+      "project": "JsonSchema",
+      "package": "System.Threading.Tasks.Extensions/4.6.3",
+      "license": "MIT",
+      "license_url": "https://licenses.nuget.org/MIT",
+      "nuspec_sha256": "64cd22321f9ce0f46349f2c24e5759d4117f6a15bc6015eb711efb991561bf6d"
+    }
+  ],
+  "binary_package_metadata": [
+    {
+      "package": "jsonschema.net/9.4.0",
+      "license_file": "OSMFEULA.txt",
+      "require_license_acceptance": "true",
+      "repository": {
+        "type": "git",
+        "url": "https://github.com/json-everything/json-everything",
+        "branch": "refs/heads/master",
+        "commit": "399f198431f65cf6896fe6038f833ef6d0b27a39"
+      },
+      "nuspec_sha256": "96db25fe7dc36ab8a39cff76f20c859053e2dcc13f20aee20842d8860ee7721e",
+      "license_sha256": "5c805ac94dfdb4a3be55547f04a2f4b9f1bb87d7e9ee6d6fe54b0e72093900c3"
+    },
+    {
+      "package": "jsonpointer.net/7.0.2",
+      "license_file": "OSMFEULA.txt",
+      "require_license_acceptance": "true",
+      "repository": {
+        "type": "git",
+        "url": "https://github.com/json-everything/json-everything",
+        "branch": "refs/heads/master",
+        "commit": "399f198431f65cf6896fe6038f833ef6d0b27a39"
+      },
+      "nuspec_sha256": "ef462d81d706387d86f880795c7664363c99a9cb326eaee6f1c5c5cbc7efcde5",
+      "license_sha256": "5c805ac94dfdb4a3be55547f04a2f4b9f1bb87d7e9ee6d6fe54b0e72093900c3"
+    },
+    {
+      "package": "json.more.net/3.0.1",
+      "license_file": "OSMFEULA.txt",
+      "require_license_acceptance": "true",
+      "repository": {
+        "type": "git",
+        "url": "https://github.com/json-everything/json-everything",
+        "branch": "refs/heads/master",
+        "commit": "8b8ab34027de5ad9f4ed50808b8e4889ca69cf4d"
+      },
+      "nuspec_sha256": "1622819b0864bc1d80fbc100dcb4fbd1161d0b6ac6de7c34474e87aa93aa8322",
+      "license_sha256": "5c805ac94dfdb4a3be55547f04a2f4b9f1bb87d7e9ee6d6fe54b0e72093900c3"
+    }
+  ]
+}

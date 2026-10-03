@@ -25,7 +25,8 @@ let ``a typed HTTP read refuses a record missing its required fields`` (suffix: 
     use http = new HttpClient(handler, BaseAddress = Uri "http://example.test/")
     let request = Reads.nodeRecord (WireFixtures.identity<NodeId> $"Person:{suffix}")
     let actual = Api.read http CancellationToken.None request |> Async.RunSynchronously
-    Assert.Equal(Error(Contract "Missing field for record type BibleAtlas.FSharp.Contract.NodeRecord: edge_summary"), actual)
+    let expected = BibleAtlas.FSharp.Failure.Read(ReadFailure.Terminal(TerminalFailure.InvalidAnswer(WireFailure.UnreadableAnswer { Path = Some "$"; LineNumber = Some 0L; BytePositionInLine = Some (int64 (System.Text.Encoding.UTF8.GetByteCount body)) })))
+    Assert.Equal(Error expected, actual)
 
 [<Property>]
 let ``a typed HTTP read returns the whole element page`` (suffix: uint16) =
@@ -103,9 +104,9 @@ let ``unexpected HTTP statuses retain their evidence and invalid codes have serv
     Assert.Equal(Error(BibleAtlas.FSharp.Failure.Read expected), actual)
 
 [<Property(MaxTest = 1)>]
-let ``the application failure vocabulary exposes structured reads and no raw transport string constructor`` () =
+let ``the application failure vocabulary exposes structured reads and no raw failure string constructor`` () =
     let actual = FSharpType.GetUnionCases(typeof<Failure>) |> Array.map (fun case -> case.Name, case.GetFields() |> Array.map (fun field -> field.PropertyType) |> Array.toList) |> Array.toList
-    let expected = ["Read", [typeof<ReadFailure>]; "Contract", [typeof<string>]; "ArtifactMoved", [typeof<ArtifactRoot>; typeof<ArtifactRoot>]]
+    let expected = ["Read", [typeof<ReadFailure>]; "ArtifactMoved", [typeof<ArtifactRoot>; typeof<ArtifactRoot>]]
     Assert.Equal<(string * Type list) list>(expected, actual)
 
 let private clientStatus status =

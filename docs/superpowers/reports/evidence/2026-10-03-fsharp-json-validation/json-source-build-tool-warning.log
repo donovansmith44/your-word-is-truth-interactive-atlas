@@ -1,0 +1,15 @@
+  Determining projects to restore...
+  Restored /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/SchemaSpike/SchemaSpike.fsproj (in 154 ms).
+/home/donovan/mut/codex-json-schema-fit-source/src/JsonSchema/JsonSchema.csproj : warning NU1902: Package 'Microsoft.Build.Tasks.Git' 10.0.201 has a known moderate severity vulnerability, https://github.com/advisories/GHSA-23fw-v26w-5fgq [/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/SchemaSpike/SchemaSpike.fsproj]
+/home/donovan/mut/codex-json-schema-fit-source/src/JsonPointer/JsonPointer.csproj : warning NU1902: Package 'Microsoft.Build.Tasks.Git' 10.0.201 has a known moderate severity vulnerability, https://github.com/advisories/GHSA-23fw-v26w-5fgq [/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/SchemaSpike/SchemaSpike.fsproj]
+/home/donovan/mut/codex-json-schema-fit-source/src/Json.More/Json.More.csproj : warning NU1902: Package 'Microsoft.Build.Tasks.Git' 10.0.201 has a known moderate severity vulnerability, https://github.com/advisories/GHSA-23fw-v26w-5fgq [/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/SchemaSpike/SchemaSpike.fsproj]
+  Restored /home/donovan/mut/codex-json-schema-fit-source/src/JsonPointer/JsonPointer.csproj (in 2.86 sec).
+  Restored /home/donovan/mut/codex-json-schema-fit-source/src/Json.More/Json.More.csproj (in 2.86 sec).
+  Restored /home/donovan/mut/codex-json-schema-fit-source/src/JsonSchema/JsonSchema.csproj (in 2.86 sec).
+/home/donovan/mut/codex-json-schema-fit-source/src/Json.More/Json.More.csproj : warning NU1902: Package 'Microsoft.Build.Tasks.Git' 10.0.201 has a known moderate severity vulnerability, https://github.com/advisories/GHSA-23fw-v26w-5fgq [TargetFramework=net10.0]
+/home/donovan/mut/codex-json-schema-fit-source/src/JsonPointer/JsonPointer.csproj : warning NU1902: Package 'Microsoft.Build.Tasks.Git' 10.0.201 has a known moderate severity vulnerability, https://github.com/advisories/GHSA-23fw-v26w-5fgq [TargetFramework=net10.0]
+/home/donovan/mut/codex-json-schema-fit-source/src/JsonSchema/JsonSchema.csproj : warning NU1902: Package 'Microsoft.Build.Tasks.Git' 10.0.201 has a known moderate severity vulnerability, https://github.com/advisories/GHSA-23fw-v26w-5fgq [TargetFramework=net10.0]
+  Json.More -> /home/donovan/mut/codex-json-schema-fit-source/src/Json.More/bin/Debug/net10.0/Json.More.dll
+  JsonPointer -> /home/donovan/mut/codex-json-schema-fit-source/src/JsonPointer/bin/Debug/net10.0/JsonPointer.Net.dll
+  JsonSchema -> /home/donovan/mut/codex-json-schema-fit-source/src/JsonSchema/bin/Debug/net10.0/JsonSchema.Net.dll
+/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/SchemaSpike/SchemaLaws.fs(33,70): error FS0597: This argument expression needs parentheses. Expressions involving function or method calls must be parenthesized when passed as arguments, e.g. 'printfn "%s" (arg.Trim())'. [/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/SchemaSpike/SchemaSpike.fsproj]

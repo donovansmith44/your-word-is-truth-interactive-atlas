@@ -1,0 +1,58 @@
+  BibleAtlas.FSharp.ContractGenerator -> /home/donovan/w/CX-FSHARP-wire/client-fsharp.ContractGenerator/bin/Debug/net10.0/BibleAtlas.FSharp.ContractGenerator.dll
+  BibleAtlas.Client.ContractGenerator -> /home/donovan/w/CX-FSHARP-wire/client.ContractGenerator/bin/Debug/net10.0/BibleAtlas.Client.ContractGenerator.dll
+  BibleAtlas.FSharp.Core -> /home/donovan/w/CX-FSHARP-wire/client-fsharp/Core/bin/Debug/net10.0/BibleAtlas.FSharp.Core.dll
+  BibleAtlas.FSharp.Client -> /home/donovan/w/CX-FSHARP-wire/client-fsharp/bin/Debug/net10.0/BibleAtlas.FSharp.Client.dll
+  BibleAtlas.FSharp.Client (Blazor output) -> /home/donovan/w/CX-FSHARP-wire/client-fsharp/bin/Debug/net10.0/wwwroot
+  BibleAtlas.FSharp.Tests -> /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/bin/Debug/net10.0/BibleAtlas.FSharp.Tests.dll
+Test run for /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/bin/Debug/net10.0/BibleAtlas.FSharp.Tests.dll (.NETCoreApp,Version=v10.0)
+A total of 1 test files matched the specified pattern.
+[xUnit.net 00:00:00.00] xUnit.net VSTest Adapter v3.1.4+50e68bbb8b (64-bit .NET 10.0.12)
+[xUnit.net 00:00:00.07]   Discovering: BibleAtlas.FSharp.Tests
+[xUnit.net 00:00:00.13]   Discovered:  BibleAtlas.FSharp.Tests
+[xUnit.net 00:00:00.15]   Starting:    BibleAtlas.FSharp.Tests
+  Passed BibleAtlas.FSharp.Tests.Domain.JsonFailureLaws.malformed JSON retains its exact zero based line and byte position without prose [60 ms]
+  Passed BibleAtlas.FSharp.Tests.Domain.ReadFailureLaws.transient refusals alone are retryable while every terminal category and cancellation stays distinct [115 ms]
+  Passed BibleAtlas.FSharp.Tests.TransportTests.a typed HTTP read refuses a record missing its required fields [152 ms]
+  Passed BibleAtlas.FSharp.Tests.TransportTests.the application failure vocabulary exposes structured reads and no raw failure string constructor [3 ms]
+  Passed BibleAtlas.FSharp.Tests.TransportTests.a typed HTTP read returns the whole element page [27 ms]
+  Passed BibleAtlas.FSharp.Tests.TransportTests.unexpected HTTP statuses retain their evidence and invalid codes have server-error retryability [20 ms]
+  Passed BibleAtlas.FSharp.Tests.Domain.JsonFailureLaws.a nested converter failure retains its reported fragment location without inventing a field path [154 ms]
+  Passed BibleAtlas.FSharp.Tests.Domain.JsonFailureLaws.a wrong JSON primitive retains the whole serializer location [4 ms]
+  Passed BibleAtlas.FSharp.Tests.Domain.JsonFailureLaws.JSON null cannot become a successful contract answer of any current answer shape [3 ms]
+  Passed BibleAtlas.FSharp.Tests.Domain.JsonFailureLaws.a missing required field retains the serializer location instead of interpreting its message [8 ms]
+  Passed BibleAtlas.FSharp.Tests.Domain.JsonFailureLaws.readable generated records retain their complete value through the shared JSON door [12 ms]
+  Passed BibleAtlas.FSharp.Tests.Domain.JsonFailureLaws.wire failures expose only syntax null and unreadable answer observations and no invented semantic categories [< 1 ms]
+  Passed BibleAtlas.FSharp.Tests.Domain.JsonFailureLaws.primitive refusal positions retain the original whitespace envelope rather than a reparsed fragment [3 ms]
+  Passed BibleAtlas.FSharp.Tests.TransportTests.generated requests compose escaped paths and the contract enum spellings [84 ms]
+  Passed BibleAtlas.FSharp.Tests.TransportTests.a user-cancelled HTTP read is distinct from a retryable interruption [14 ms]
+  Passed BibleAtlas.FSharp.Tests.TransportTests.every client refusal retains its exact admitted status and published error code [6 ms]
+  Passed BibleAtlas.FSharp.Tests.TransportTests.every malformed refusal body preserves its HTTP classification without inventing an error code [8 ms]
+  Passed BibleAtlas.FSharp.Tests.TransportTests.an interrupted HTTP request completes with an explicit retryable failure [6 ms]
+  Passed BibleAtlas.FSharp.Tests.TransportTests.every server refusal retains its exact admitted status and published error code [4 ms]
+  Passed BibleAtlas.FSharp.Tests.ContractTests.text references retain every field of either closed corpus case [346 ms]
+  Passed BibleAtlas.FSharp.Tests.ContractTests.missing elements preserve the whole generated requested identity [2 ms]
+  Passed BibleAtlas.FSharp.Tests.SourceOrderTests.the order gate finds a fixture used through a served record field [390 ms]
+  Passed BibleAtlas.FSharp.Tests.ContractTests.a Concord text window preserves its complete generated unit when the optional heading is null [74 ms]
+  Passed BibleAtlas.FSharp.Tests.SourceOrderTests.the order gate refuses a helper above its caller and accepts descending intent [45 ms]
+  Passed BibleAtlas.FSharp.Tests.SourceOrderTests.the order gate checks type member helpers below their first member caller [78 ms]
+  Passed BibleAtlas.FSharp.Tests.SourceOrderTests.the order gate preserves private helper checking inside nested modules [68 ms]
+  Passed BibleAtlas.FSharp.Tests.SourceOrderTests.the order gate permits local inputs before computations that consume them [45 ms]
+  Passed BibleAtlas.FSharp.Tests.SourceOrderTests.the order gate distinguishes a shadowing parameter from the outer helper [42 ms]
+  Passed BibleAtlas.FSharp.Tests.SourceOrderTests.the order gate checks helpers reached through a qualified module reference [75 ms]
+  Passed BibleAtlas.FSharp.Tests.SourceOrderTests.the order gate checks every exported helper regardless of its visibility [64 ms]
+  Passed BibleAtlas.FSharp.Tests.SourceOrderTests.the order gate permits module data before an operation that reads it [41 ms]
+  Passed BibleAtlas.FSharp.Tests.SourceOrderTests.the order gate finds module helpers called inside nested and destructured bindings [107 ms]
+  Passed BibleAtlas.FSharp.Tests.SourceOrderTests.the order gate distinguishes a shadowing lambda argument from the outer helper [64 ms]
+  Passed BibleAtlas.FSharp.Tests.SourceOrderTests.the order gate checks local helper chains within their binding scope [101 ms]
+  Passed BibleAtlas.FSharp.Tests.SourceOrderTests.helper functions members and shared test fixtures follow their first caller in every FSharp source [2 s]
+  Passed BibleAtlas.FSharp.Tests.ContractTests.both committed contents documents retain every served field under generated artifact roots [7 s]
+  Passed BibleAtlas.FSharp.Tests.ContractTests.the committed text fixture retains its complete served payload under generated artifact roots [156 ms]
+  Passed BibleAtlas.FSharp.Tests.ContractTests.unknown corpus discriminators and book vocabulary values stay contract failures [6 ms]
+  Passed BibleAtlas.FSharp.Tests.ContractTests.a null contract record stays refused through every generated JSON whitespace envelope [19 ms]
+[xUnit.net 00:00:18.21]   Finished:    BibleAtlas.FSharp.Tests
+  Passed BibleAtlas.FSharp.Tests.Domain.AdmissionSurfaceLaws.every private representation refuses direct construction while its own public door compiles [18 s]
+
+Test Run Successful.
+Total tests: 40
+     Passed: 40
+ Total time: 18.5800 Seconds
