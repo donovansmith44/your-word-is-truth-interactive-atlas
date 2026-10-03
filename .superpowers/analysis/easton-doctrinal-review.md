@@ -1,6 +1,6 @@
 # Easton doctrinal review — CX-R2 working inventory
 
-**Status: in progress.** The artifact mapping and broad source screening are complete; this is not yet the finished “every doctrinal entry” review required by the brief. 51 passages below have specific review notes; 185 complete source fragments also have explicit contextual dispositions in the coverage ledger. The remaining candidate inventory is mechanically selected and still needs contextual review; unselected entries are not certified doctrinally neutral. No entry has been approved, suppressed or rewritten. Donovan and the Pastor make the rulings.
+**Status: in progress.** The artifact mapping and broad source screening are complete; this is not yet the finished “every doctrinal entry” review required by the brief. 52 passages below have specific review notes; 212 complete source fragments also have explicit contextual dispositions in the coverage ledger. The remaining candidate inventory is mechanically selected and still needs contextual review; unselected entries are not certified doctrinally neutral. No entry has been approved, suppressed or rewritten. Donovan and the Pastor make the rulings.
 
 ## Scope and provenance
 
@@ -167,6 +167,16 @@ Source `recxDlVubG4fKephU` · family `d-p23.2` · served text: `Person:dan_973` 
 ```
 
 Review what the categorical disappearance from both natural and spiritual Israel means. Revelation 7:4–8 omits Dan from that particular list, while Ezekiel 48:1–2 explicitly names Dan’s portion. An omitted tribal name does not itself establish exclusion of every member from salvation. Compare FC SD XI’s direction to election in Christ and the revealed promise. This is a question about the quoted inference, not a decision about the interpretation of either prophetic list. KJV passages and the confession checked on 2026-10-03: [Revelation 7:4–8](https://www.biblegateway.com/passage/?search=Revelation%207%3A4-8&version=KJV), [Ezekiel 48:1–2](https://www.biblegateway.com/passage/?search=Ezekiel%2048%3A1-2&version=KJV). [Confessional comparison](https://bookofconcord.org/solid-declaration/election/).
+
+### Gideon — degree 54
+
+Source `recBduY9tzVbpLjRc` · family `g-p166.6` · served text: `Person:gideon_1314` (54).
+
+```text
+Called also Jerubbaal ([Judg. 6:29](/judg#Judg.6.29), [32](/judg#Judg.6.32)), was the first of the judges whose history is circumstantially narrated ([Judg. 6](/judg#Judg.6)-8). His calling is the commencement of the second period in the history of the judges. After the victory gained by Deborah and Barak over Jabin, Israel once more sank into idolatry, and the Midianites (q.v.) and Amalekites, with other “children of the east,” crossed the Jordan each year for seven successive years for the purpose of plundering and desolating the land. Gideon received a direct call from God to undertake the task of delivering the land from these warlike invaders. He was of the family of Abiezer ([Josh. 17:2](/josh#Josh.17.2); [1 Chr. 7:18](/1chr#1Chr.7.18)), and of the little township of Ophrah ([Judg. 6:11](/judg#Judg.6.11)). First, with ten of his servants, he overthrew the altars of Baal and cut down the asherah which was upon it, and then blew the trumpet of alarm, and the people flocked to his standard on the crest of Mount Gilboa to the number of twenty-two thousand men. These were, however, reduced to only three hundred. These, strangely armed with torches and pitchers and trumpets, rushed in from three different points on the camp of Midian at midnight, in the valley to the north of Moreh, with the terrible war-cry, “For the Lord and for Gideon” ([Judg. 7:18](/judg#Judg.7.18), R.V.). Terror-stricken, the Midianites were put into dire confusion, and in the darkness slew one another, so that only fifteen thousand out of the great army of one hundred and twenty thousand escaped alive. The memory of this great deliverance impressed itself deeply on the mind of the nation ([1 Sam. 12:11](/1sam#1Sam.12.11); [Ps. 83:11](/ps#Ps.83.11); [Isa. 9:4](/isa#Isa.9.4); [10:26](/isa#Isa.10.26); [Heb. 11:32](/heb#Heb.11.32)). The land had now rest for forty years. Gideon died in a good old age, and was buried in the sepulchre of his fathers. Soon after his death a change came over the people. They again forgot Jehovah, and turned to the worship of Baalim, “neither shewed they kindness to the house of Jerubbaal” ([Judg. 8:35](/judg#Judg.8.35)). Gideon left behind him seventy sons, a feeble, sadly degenerated race, with one exception, that of Abimelech, who seems to have had much of the courage and energy of his father, yet of restless and unscrupulous ambition. He gathered around him a band who slaughtered all Gideon’s sons, except Jotham, upon one stone.
+```
+
+Flag the account of the initial force: Easton says twenty-two thousand assembled before the reduction to three hundred, while Judges 7:3 identifies twenty-two thousand as those who departed and ten thousand as those who remained. Compare the complete Judges 7:1–8 narrative and its stated purpose of preventing Israel from claiming its own deliverance. This is a Scripture-faithfulness question, not evidence of a distinctive Presbyterian doctrine; the Pastor decides the disposition. [Judges 7:1–8, KJV](https://www.biblegateway.com/passage/?search=Judges%207%3A1-8&version=KJV), checked 2026-10-03. [Confessional comparison](https://bookofconcord.org/solid-declaration/rule-and-norm/).
 
 ### Adoption 3 — degree 0
 
@@ -540,7 +550,7 @@ The entry explicitly rejects perfection in this life. Preserve that qualificatio
 
 ## Contextual coverage ledger — continued 2026-10-03
 
-These 185 complete fragments were read in context, including numbered siblings and the Effectual call cross-reference. A disposition of no specific conflict is a review observation, not pastoral approval. The remaining rows still require examination. Confessional comparison links were checked against the published texts on 2026-10-01; the new FC SD V, rule/norm, AC III and AC IX links, plus Matthew 12:40, Acts 22:16, Judges 18:30, Revelation 7:4–8 and Ezekiel 48:1–2, were checked on 2026-10-03; FC SD XI was rechecked for the Dan question.
+These 212 complete fragments were read in context, including numbered siblings and the Effectual call cross-reference. A disposition of no specific conflict is a review observation, not pastoral approval. The remaining rows still require examination. Confessional comparison links were checked against the published texts on 2026-10-01; the new FC SD V, rule/norm, AC III and AC IX links, plus Matthew 12:40, Acts 22:16, Judges 18:30, Revelation 7:4–8 and Ezekiel 48:1–2, were checked on 2026-10-03; FC SD XI was rechecked for the Dan question. Judges 7:1–8 and FC SD rule/norm were checked for the Gideon question on 2026-10-03.
 
 | Source | Heading | Contextual disposition |
 |---|---|---|
@@ -609,6 +619,18 @@ These 185 complete fragments were read in context, including numbered siblings a
 | `recui5O3vzyPJq61V` | Elisha | Read full prophetic call, miracles, judgment, succession and posthumous revival narrative. No specific Lutheran conflict identified. Reporting the biblical revival at the grave does not by itself command relic invocation or establish relics as a promised means of grace. |
 | `recJRI5mZAuXTy54x` | Rehoboam | Read complete kingdom division, prophetic restraint, Egyptian invasion and spiritual-decay account. The quoted divine purpose does not develop a doctrine that God authors sin; no specific Lutheran conflict identified. |
 | `recrCDMhdfx2e3hv0` | Shiloh | Read both the messianic-title interpretations and the sanctuary/place history. The Messianic reading and scriptural alternatives are shown openly; no specific Lutheran conflict identified. Sanctuary geography is not presented as an independent means of grace. |
+| `recGRVPPQIiFGb5Vc` | Zedekiah 1 | King biography describing evil, refusal of prophetic counsel, siege and captivity as divine wrath; historical judgment language does not itself conflict with Lutheran teaching. No specific doctrinal conflict identified. |
+| `recBduY9tzVbpLjRc` | Gideon | Complete biography read; direct divine call, deliverance and later relapse into idolatry are narrative subjects. Added a qualified Scripture-faithfulness note on the initial army count against Judges 7:3; no distinct Presbyterian doctrine inferred. |
+| `recjoKHImvs27koXe` | Sarah | Complete biography and Galatians 4 allegory/Hebrews 11 faith summary; no specific doctrinal conflict identified. Historical age/genealogy assertions are not certified by this doctrinal disposition. |
+| `recmDzAHHiDqAw0dV` | Jesse | Davidic genealogy and stem/root language linked to the Messiah, plus asylum narrative; no specific doctrinal conflict identified in this complete fragment. |
+| `recX04XxVSDcW96kr` | Baal 1 | Historical account of Canaanite/Phoenician worship and Israelite idolatry, including local Baals and ritual description; deity-identification claims are source history, not an endorsement of worship or a distinct Lutheran doctrinal disagreement here. |
+| `rec4L4x0rzsmT3nah` | Jehu 4 | Complete royal biography read: anointing, violence, destruction of Baal worship and continued golden-calf worship; final providential character quotation is not a general Christian authorization of violence. No specific Lutheran conflict identified in the account. |
+| `rec0ZC5xav9ZDcUGZ` | Rachel | Complete biography, teraphim, traditional tomb veneration and Jeremiah/Matthew fulfillment; reported Jewish veneration is not prescribed Christian invocation. No specific Lutheran conflict identified; traditional location claim is not certified by this disposition. |
+| `recbUSVI2Oh685mGC` | Issachar | Genealogy, tribal census/allotment, Gerizim ceremony and paired prophetic blessings; no specific doctrinal conflict identified. Numerical and geographical details are not validated by this doctrinal read. |
+| `recTRXWyX3cw7r31i` | Laban 1 | Family relationships and Jacob’s flight/marriages; historical account, no distinct doctrine asserted. |
+| `recM5Vtyk1TehOrFU` | Gibeon | Complete city history read, including the rash oath, sanctuary service, famine judgment and Solomon’s dream/sacrifices; these are particular narratives, not an independent rule for church polity or forgiveness. No specific Lutheran conflict identified; historical/site claims remain unverified by this disposition. |
+| `recYRWZAkSrdQvoyM` | Esther | Deliverance narrative plus a devotional character portrait and claim of providential instrumentality; no specific Lutheran conflict identified. Divine providence and courageous action alone do not assert merit or a means of grace. |
+| `recZdywwpKuhrgTkr` | Gilgal 1 | Site-history sibling: law reading, Samuel’s sacrifices, allegiance to Saul and later idolatry. No distinct Lutheran doctrinal disagreement identified; separate-site identifications are not doctrinally certified. |
 | `recj926YN5intN3aY` | Dan | Read complete name gloss “A judge”; no doctrinal proposition supplied. |
 | `recwNJZnKaFjnRShm` | Joseph 4 | Foster-father biography, including a qualified death inference; no specific Christological contradiction identified. |
 | `recLDPzqIqCcOC0il` | Jeroboam 2 | Read full reign, prosperity, calf worship and contemporary-prophet account with Jeroboam 1. Distinguishes material prosperity from moral faithfulness; no specific Lutheran conflict identified. |
@@ -616,7 +638,10 @@ These 185 complete fragments were read in context, including numbered siblings a
 | `recBblnKBmIUb8Pi5` | Hebron 2 | Read complete Kohathite identification; genealogical information only, no specific doctrinal conflict identified. |
 | `rec8Qm7h425BYpWZT` | Hebron 3 | Read the complete two-verse citation-only fragment; no doctrinal proposition beyond its scriptural reference supplied. |
 | `recyXsfPAttNL3DpD` | Joseph 5 | Christ’s actual death and burial narrated; no specific Lutheran contradiction identified. |
+| `rec6xSfPVJOXTrLfk` | Jehu 3 | Prophet son of Hanani pronouncing judgment against Baasha; historical prophetic judgment does not itself constitute a doctrinal disagreement. |
+| `recKfSV2GEIOQUGbk` | Zedekiah 2 | False-prophet sibling, son of Chenaanah; narrative identification, no distinctive doctrine asserted. |
 | `recxyLW249Nw70XiX` | Jehoshaphat 3 | Read complete annalist/state-officer identification; civil office, not a teaching about the church’s ministry. |
+| `recfxkNc1Q1KZDdaq` | Baal 2 | Personal-name/genealogical sibling (Benjamite son of Jehiel); not the deity article. No distinct doctrinal assertion. |
 | `recEVTygvYxkRHTCJ` | Bethsaida 1 | Complete family fragment read with opening and fragment 2; apostles/ministry and site description, no specific doctrinal conflict identified. |
 | `recC8SCHj3sHsnYPC` | Eleazar 5 | Read complete Merarite-Levite identification; genealogical information only, no specific doctrinal conflict identified. |
 | `reczmVGPF9PGwi3Ur` | Jehoshaphat 6 | Read complete Jehu-parentage identification; genealogical information only, no specific doctrinal conflict identified. |
@@ -624,26 +649,35 @@ These 185 complete fragments were read in context, including numbered siblings a
 | `rec7StbiZY9CvxFx0` | Jeremiah 5 | Historical family identification; no doctrinal claim. |
 | `recALFJf6A4HEzHxQ` | Saul 1 | Historical identification of an Edomite king; no doctrinal claim. |
 | `recEevTdwXAPW9MMa` | Ahab 2 | False-prophet identification; no independent doctrinal assertion. |
+| `recyRnrikNp50K24R` | Baal | Heading/meaning only (lord); read with deity, personal-name and place siblings. No distinct doctrinal assertion in this fragment. |
 | `rec1u7PVJdJEdllHq` | Eleazar | Read complete name gloss “God has helped”; no independent doctrinal argument supplied. |
 | `rec730hnGWGlZCrx0` | Eleazar 3 | Read complete Davidic-hero identification and water episode; biographical information only, no specific doctrinal conflict identified. |
 | `reckaKL1qn3LwpXxU` | Hezekiah | Name etymology only; no doctrinal claim. |
+| `rec8bP2wLO5LVMn1A` | Jehu 1 | Genealogical sibling, son of Obed and father of Azariah; no distinct doctrinal assertion. |
 | `reclWWU1ZOmjG9RHk` | Joseph | Name etymology only; no doctrinal claim. |
 | `recEqPDWb5lCFTLnj` | Joseph 2 | Historical identification of an Asaphite musician; no doctrinal claim. |
 | `reci7kZFYCoLD21U9` | Joseph 3 | Genealogical names in Luke; no doctrinal controversy stated. |
+| `reczRauT5B9kPo8Wh` | Zedekiah | Heading/meaning (righteousness of Jehovah), read with king, false-prophet and prince siblings; no distinct doctrinal assertion. |
 | `recd297kQwArNfr2A` | Eleazar 2 | Read complete ark-custodian consecration and touching restriction. Describes an Old Testament charge, not a doctrine of sanctification or an unrestricted rule for Christian ministry; no specific Lutheran conflict identified. |
 | `recYA8ZN2EyKgVv3X` | Eleazar 4 | Read complete returning priest/sacred-vessel identification; historical office only, no specific doctrinal conflict identified. |
+| `recixO0SyUM9FdakK` | Gilgal 2 | Jordan-camp sibling: memorial stones, Passover, circumcision and tabernacle move; ritual history, not a new Christian conscience obligation or theory of sacramental efficacy. |
 | `reclbasBQnKWtTkkF` | Isaiah 4 | Read complete Ezra citation-only fragment; no doctrinal proposition beyond the reference supplied. |
 | `recvl9v67459bmeME` | Jehoshaphat 4 | Read complete royal-purveyor identification; civil administration only, no specific doctrinal conflict identified. |
+| `recduVdWaYeO6lxr8` | Jehu | Meaning/heading (Jehovah is he), read with all four personal-name siblings; no distinct doctrinal assertion. |
 | `recrIKiqirin2Q6Qe` | Joseph 6 | Historical apostolic candidate identification; no independent ministry doctrine stated. |
 | `recjcXTfzIB18LkZj` | Manasseh | Name etymology and Genesis citation; no doctrinal claim identified. |
+| `rec5PMJrj0KsjmMgV` | Zedekiah 3 | Prince-of-Judah sibling, son of Hananiah; genealogical/historical identification only. |
 | `recWs49mLuV5s65aH` | Bethel 2 | Read complete district identification and two citations; geography only, no specific doctrinal conflict identified. |
 | `recLlbrb7X5AqDPvL` | Bethel 3 | Read complete town identification and two citations; geography only, no specific doctrinal conflict identified. |
 | `rectUuVx5okbQ9khC` | Bethlehem 2 | Read complete Zebulun-town identification and location; geography only, no specific doctrinal conflict identified. |
+| `recg8gp9lTzsUr27u` | Gilgal 3 | Prophetic-school site sibling and qualified geographical identification; no distinct doctrinal assertion. |
 | `recRgQ2haO7c8ZiFp` | Jehoshaphat 2 | Read complete priest/ark-removal identification; historical office only, no argument about the Christian ministry supplied. |
+| `recRCbzkNtprpYmtD` | Jehu 2 | Benjamite-slinger sibling joining David; historical identification only. |
 | `recBjgvEZ6rn1Qjag` | Jeremiah 1 | Historical warrior identification; no doctrinal claim. |
 | `recRMp6OyahoylMnU` | Jeremiah 2 | Historical warrior identification; no doctrinal claim. |
 | `recBNApH88e2PdJCo` | Jeremiah 3 | Historical warrior identification; no doctrinal claim. |
 | `recPXpfZ6WoP3BsdY` | Jeremiah 4 | Historical tribal-chief identification; no doctrinal claim. |
+| `recObK86wv9bJn77V` | Laban 2 | Desert-route place sibling with a qualified identification; no distinct doctrinal assertion. |
 | `recWR53AYL0ujtLo0` | Adoption | General lexical definition, not yet spiritual adoption. |
 | `recWNh1YAMoCt2AoM` | Adoption 1 | Historical family adoption examples; no doctrinal conflict identified. |
 | `rec9c52uOcndVtnwO` | Adoption 2 | National adoption citations; do not equate this with individual election to salvation. |
@@ -652,6 +686,7 @@ These 185 complete fragments were read in context, including numbered siblings a
 | `recKHJy9mvyKelVDO` | Assurance | Full entry reread; final never-lost principle supports existing perseverance flag. |
 | `recNetpk6zoj3yfeC` | Atonement | Doctrinal; added qualified satisfaction/reconciliation note. |
 | `recOmO7oy69H0LcfJ` | Atonement, Day of | Historical observance, dates and citations; no adverse doctrinal claim identified in this fragment. |
+| `recitG0feCeBjFuF6` | Baal 3 | Simeonite place-name sibling with a qualified identification; no distinct doctrinal assertion. |
 | `recuddAt24giKhBJj` | Baptism for the dead | Doctrinal/exegetical alternatives; added note distinguishing report from endorsement. |
 | `recd4jkCMKpeHouiB` | Baptism of Christ | Christological; added qualified substitution/office note. |
 | `rectZZHERX5H3EIto` | Baptism, Christian | Complete entry reread, including mode and infant-membership argument; existing sacramental-symbolism note retained. |
@@ -685,6 +720,7 @@ These 185 complete fragments were read in context, including numbered siblings a
 | `recJm027ie1tah129` | Gad | Read complete fortune/luck name gloss; describes a name, not permission to trust luck as a rival to God. |
 | `recUPDGwmRiUleB76` | Gennesaret | Name etymology only; no doctrinal claim. |
 | `recVdz7Ipz2MDsnVJ` | Gennesaret 2 | Lake-name cross-reference; no doctrinal claim. |
+| `rec2uYRjq7PIh9P4f` | Gilgal | Meaning/heading (rolling), read with all three site siblings; no distinct doctrinal assertion. |
 | `recRjKTwmy52Z8ZFF` | Grace 1 | Lexical form/person sense; no soteriological claim. |
 | `recY2Mx5ig0hiL4HN` | Grace 2 | Lexical favour/kindness sense; no specific conflict identified. |
 | `recGBkH1wCATvpGD2` | Grace 3 | Doctrinal forgiving-mercy definition; no specific conflict identified. |
@@ -707,6 +743,7 @@ These 185 complete fragments were read in context, including numbered siblings a
 | `recxipXViqnzLhlyd` | Jordan 5 | Complete family fragment read with opening and 1–4/6. Miraculous crossings and John’s historical baptismal ministry; no assertion about the Christian sacrament’s gift or mode. |
 | `recEzHsl2g9QURALH` | Jordan 6 | Complete family fragment read with opening and 1–5. Christ’s baptism recalled in one verse citation; no specific Lutheran conflict identified. |
 | `recEyTAdgltFmScJh` | Justification | Complete forensic/imputed/instrumental account read; existing note preserves its express denial of faith’s merit. |
+| `recUPf5gUWPb8dTfL` | Laban | Heading/meaning (white), read with personal-name and desert-place siblings; no distinct doctrinal assertion. |
 | `recnhRxODiGy5JEWs` | Lord’s day | Historical Sunday usage; does not by itself impose a permanent day-law. |
 | `rec1IHbeuH4UJSiEU` | Lord’s Supper | Names, institution citations and introduction to numbered purposes; no separate conflict beyond family notes. |
 | `recOeN8tCaQrW82vC` | Lord’s Supper 1 | Commemoration is one listed purpose; does not say merely memorial. |
@@ -730,7 +767,7 @@ These 185 complete fragments were read in context, including numbered siblings a
 | `recg6sNo5SuVX2cmY` | Saul | Name etymology only; no doctrinal claim. |
 | `recWa74xqz5F3gbGF` | Saul 3 | Apostolic name and cross-reference; read together with the complete Paul entry. |
 
-Coverage: 193 distinct source rows have a specific note or contextual disposition; 1,900 screened candidates remain without either. Of the original 4,313 nonempty unselected rows, 4,267 remain without a contextual disposition and still require the separate semantic sweep.
+Coverage: 220 distinct source rows have a specific note or contextual disposition; 1,882 screened candidates remain without either. Of the original 4,313 nonempty unselected rows, 4,258 remain without a contextual disposition and still require the separate semantic sweep.
 
 ## Broad screening inventory — contextual review pending
 
