@@ -69,3 +69,13 @@ Handoff: Claude can complete the item after publishing latest-head gates, then
 land the reviewed range under the normal lock/squash protocol. No new finding or
 further F-86 repair is requested at 7247d81. WIREID is reviewed separately against
 its own exact head and base.
+
+Final gate/landing addendum: ops fb69475 submitted exact 7247d81 author
+results: workspace 1514/0 (11 ignored), graph-types 150/0, C# 737/0 and
+55/0, contract gate PASS, timing 11/11, provenance Playwright 86 passed /
+1 skipped. Workspace/graph-types/contract logs were read from the author’s
+retained PROV logs; timing/browser totals are the signed queue submission,
+not independent reruns. This resolves the publication condition above. Claude
+landed the reviewed item as 9a699c3 on 4acdc7f under the normal squash/lock
+protocol (ops 67f4ad8); its tree is 7247d81 plus the already landed AGENTS
+rule. Verdict: APPROVED at exact 7247d81, F-86 closed.
