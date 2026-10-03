@@ -284,3 +284,48 @@ module Reads =
     val textWindow: string -> int option -> WindowDir option -> TextScope option -> Corpus option -> Request<TextWindow>
     val xrefs: string -> Request<(CrossRef) list>
 ```
+
+The graph effect interpreter resolves an ordered list of served positions. The generic elements operation may page; the interpreter rejects a root change and malformed cardinality/identity instead of admitting a partial journey. A resolver has one public read, independent of the surface that requested it.
+
+```fsharp
+module Graph =
+    val explorer: System.Net.Http.HttpClient -> Explorer
+```
+
+Position identity is the shared comparison door for traversal and the effect interpreter. Labels may change across roots; identity compares the typed kind and id.
+
+```fsharp
+module Positions =
+    val id: PositionRef -> string
+    val sameIdentity: PositionRef -> PositionRef -> bool
+```
+
+The model owns focus state. Commands retain a snapshot of the journey they started from; completions can replace only their current request identity. The traversal intent is data, interpreted through the exploration algebra in Runtime.
+
+```fsharp
+[<RequireQualifiedAccess>]
+type Traversal = Follow of Link | Back | Renew
+[<RequireQualifiedAccess>]
+type FocusState =
+    | Closed
+    | Opening of RequestId * PositionRef
+    | Opened of Trail
+    | Walking of RequestId * Trail * Traversal
+    | CouldNotOpen of PositionRef * Failure
+    | CouldNotWalk of Trail * Traversal * Failure
+
+type Model = { Route: Route; Serial: RequestId; Contents: Map<Corpus, LoadState<Contents>>; Reading: LoadState<TextWindow>; Sources: LoadState<SourcesDocument>; Focus: FocusState }
+type Message =
+    | Navigate of Route | Retry
+    | ContentsLoaded of Corpus * RequestId * Result<Contents, Failure>
+    | TextLoaded of RequestId * Result<TextWindow, Failure>
+    | SourcesLoaded of RequestId * Result<SourcesDocument, Failure>
+    | OpenPosition of PositionRef | Traverse of Traversal | CloseFocus | RetryFocus
+    | FocusLoaded of RequestId * Result<Trail, Failure>
+type Effect =
+    | ReadContents of Corpus * RequestId
+    | ReadText of RequestId * Request<TextWindow>
+    | ReadSources of RequestId
+    | ReadOpening of RequestId * PositionRef
+    | WalkFocus of RequestId * Trail * Traversal
+```

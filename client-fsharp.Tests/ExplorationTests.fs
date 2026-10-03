@@ -88,3 +88,8 @@ let ``every generated edge kind has a dual and duality is involutive`` () =
                      for relation in source.RootElement.GetProperty("symmetric").EnumerateArray() do yield relation.GetProperty("label").GetString(), relation.GetProperty("label").GetString() ] |> List.sort
     let spelling kind = Json.encode kind |> fun value -> JsonSerializer.Deserialize<string> value
     Assert.Equal<(string * string) list>(expected, all |> List.map (fun kind -> spelling kind, spelling (EdgeKinds.dual kind)) |> List.sort)
+
+[<Fact>]
+let ``a node record cannot be stamped with a different element page root`` () =
+    let served = Resolved.element start
+    Assert.Equal(Error(ArtifactMoved("page-root", "root")), Resolved.ofElement "page-root" served)

@@ -34,3 +34,11 @@ Category: structurally incomplete contract records entering successful client st
 Next: Reader/Concord whole-view tests and rendering, contents/pickers, MVU focus with bounded neighbour windows and word hydration, selection/storage/saved journeys, Kretzmann, World/map/time and split/follow. Consume reviewed FOCUS changes, retain a pinned reference, then run the actual clients side by side, the existing UX inventory, resource/usage/source laws and all completion gates. Root LICENSES.md/runtime distribution attribution needs reconciliation with Claude's ongoing licensing change; dependency notes are in client-fsharp/THIRD-PARTY.md. F# mutation tooling/coverage remains to be established under the owner's window/protocol.
 
 There is no Codex-held lock and no remaining browser/server process from this checkpoint. The C# client is not retired. No completion note or review status is issued for this partial slice.
+
+## Focus-state follow-up
+
+After the foundation checkpoint, the typed graph interpreter and Elmish focus states bring the F# suite to **65 passed**, zero skipped (`/tmp/codex-fsharp-focus-state-green.log`). Red logs: `/tmp/codex-fsharp-graph-red.log`, `/tmp/codex-fsharp-focus-state-red.log`, `/tmp/codex-fsharp-focus-runtime-red.log`.
+
+Graph.explorer implements the one Resolve read through generated generic element requests. It walks protocol pages, checks the returned identities/cardinality and root, rejects nonterminal empty pages and extra pages, and never admits a missing element. Resolved.ofElement also checks the node record's own version against the page root. Positions is the one kind/id comparison door; labels may change during renewal. FocusState is a closed union retaining the exact opening or traversal for Retry. Stale/closed requests cannot replace focus. Runtime interprets opening/Follow/Back/Renew through the tested algebra; the Back command makes no HTTP call.
+
+This follow-up is state/transport groundwork. Its newest code has the 65-test build gate; the recorded AOT/browser gates above belong to the earlier 49-test foundation, and will be repeated after the next rendered slice. Focus UI, frontiers and Reader/Concord rendering remain pending. A-NOBLURB entered review during this work; Codex switches to that review before extending the migration.

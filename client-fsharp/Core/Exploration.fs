@@ -3,6 +3,19 @@ namespace BibleAtlas.FSharp
 open BibleAtlas.FSharp.Contract
 
 type Link = { Kind: EdgeKind; Target: PositionRef }
+
+module Positions =
+    let id position =
+        match position with
+        | PositionRef.Node position -> position.Node.Id
+        | PositionRef.Edge position -> position.Edge.Id
+
+    let sameIdentity left right =
+        match left, right with
+        | PositionRef.Node left, PositionRef.Node right -> left.Node.Kind = right.Node.Kind && left.Node.Id = right.Node.Id
+        | PositionRef.Edge left, PositionRef.Edge right -> left.Edge.Kind = right.Edge.Kind && left.Edge.Id = right.Edge.Id
+        | PositionRef.Node _, PositionRef.Edge _ | PositionRef.Edge _, PositionRef.Node _ -> false
+
 type Resolved =
     private
     | NodeResolved of root: string * node: NodeRecord
@@ -11,7 +24,9 @@ type Resolved =
 module Resolved =
     let ofElement root element =
         match element with
-        | Element.Node node -> Ok(NodeResolved(root, node.Node))
+        | Element.Node node ->
+            if node.Node.Version = root then Ok(NodeResolved(root, node.Node))
+            else Error(ArtifactMoved(root, node.Node.Version))
         | Element.Edge edge -> Ok(EdgeResolved(root, edge.Edge))
         | Element.Missing missing -> Error(Contract $"the element read names nothing for {missing.Id}")
 
@@ -30,10 +45,7 @@ module Resolved =
         | EdgeResolved(_, edge) -> PositionRef.Edge { Edge = { Id = edge.Id; Kind = edge.Kind; Label = edge.Label } }
 
     let internal sameIdentity left right =
-        match position left, position right with
-        | PositionRef.Node left, PositionRef.Node right -> left.Node.Kind = right.Node.Kind && left.Node.Id = right.Node.Id
-        | PositionRef.Edge left, PositionRef.Edge right -> left.Edge.Kind = right.Edge.Kind && left.Edge.Id = right.Edge.Id
-        | PositionRef.Node _, PositionRef.Edge _ | PositionRef.Edge _, PositionRef.Node _ -> false
+        Positions.sameIdentity (position left) (position right)
 
 type Step = { Kind: EdgeKind; Target: Resolved }
 type Trail = private { Start: Resolved; Steps: Step list }

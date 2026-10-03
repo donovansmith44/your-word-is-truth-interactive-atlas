@@ -48,12 +48,25 @@ module Routes =
         | Route.Sources -> "/sources"
         | Route.NotFound -> "/not-found"
 
+[<RequireQualifiedAccess>]
+type Traversal = Follow of Link | Back | Renew
+
+[<RequireQualifiedAccess>]
+type FocusState =
+    | Closed
+    | Opening of RequestId * PositionRef
+    | Opened of Trail
+    | Walking of RequestId * Trail * Traversal
+    | CouldNotOpen of PositionRef * Failure
+    | CouldNotWalk of Trail * Traversal * Failure
+
 type Model =
     { Route: Route
       Serial: RequestId
       Contents: Map<Corpus, LoadState<Contents>>
       Reading: LoadState<TextWindow>
-      Sources: LoadState<SourcesDocument> }
+      Sources: LoadState<SourcesDocument>
+      Focus: FocusState }
 
 type Message =
     | Navigate of Route
@@ -61,21 +74,28 @@ type Message =
     | ContentsLoaded of Corpus * RequestId * Result<Contents, Failure>
     | TextLoaded of RequestId * Result<TextWindow, Failure>
     | SourcesLoaded of RequestId * Result<SourcesDocument, Failure>
+    | OpenPosition of PositionRef
+    | Traverse of Traversal
+    | CloseFocus
+    | RetryFocus
+    | FocusLoaded of RequestId * Result<Trail, Failure>
 
 type Effect =
     | ReadContents of Corpus * RequestId
     | ReadText of RequestId * Request<TextWindow>
     | ReadSources of RequestId
+    | ReadOpening of RequestId * PositionRef
+    | WalkFocus of RequestId * Trail * Traversal
 
 module Model =
     let private concordPageSize = 20
 
     let rec init route =
-        loadView { Route = route; Serial = RequestId.initial; Contents = Map.empty; Reading = Empty; Sources = Empty }
+        loadView { Route = route; Serial = RequestId.initial; Contents = Map.empty; Reading = Empty; Sources = Empty; Focus = FocusState.Closed }
 
     and update message model =
         match message with
-        | Navigate route -> loadView { model with Route = route; Serial = RequestId.next model.Serial; Reading = Empty }
+        | Navigate route -> loadView { model with Route = route; Serial = RequestId.next model.Serial; Reading = Empty; Focus = FocusState.Closed }
         | Retry ->
             let reset state = match state with Failed _ -> Empty | Empty | Loading _ | Ready _ -> state
             loadView { model with Serial = RequestId.next model.Serial; Contents = Map.map (fun _ state -> reset state) model.Contents; Reading = reset model.Reading; Sources = reset model.Sources }
@@ -86,6 +106,28 @@ module Model =
             else loadView { model with Contents = Map.add corpus complete model.Contents }
         | TextLoaded(request, answer) -> { model with Reading = LoadState.complete request answer model.Reading }, []
         | SourcesLoaded(request, answer) -> { model with Sources = LoadState.complete request answer model.Sources }, []
+        | OpenPosition position ->
+            let request = RequestId.next model.Serial
+            { model with Serial = request; Focus = FocusState.Opening(request, position) }, [ReadOpening(request, position)]
+        | Traverse traversal ->
+            match model.Focus with
+            | FocusState.Opened trail | FocusState.Walking(_, trail, _) | FocusState.CouldNotWalk(trail, _, _) ->
+                let request = RequestId.next model.Serial
+                { model with Serial = request; Focus = FocusState.Walking(request, trail, traversal) }, [WalkFocus(request, trail, traversal)]
+            | FocusState.Closed | FocusState.Opening _ | FocusState.CouldNotOpen _ -> model, []
+        | CloseFocus -> { model with Serial = RequestId.next model.Serial; Focus = FocusState.Closed }, []
+        | RetryFocus ->
+            match model.Focus with
+            | FocusState.CouldNotOpen(position, _) -> update (OpenPosition position) model
+            | FocusState.CouldNotWalk(_, traversal, _) -> update (Traverse traversal) model
+            | FocusState.Closed | FocusState.Opening _ | FocusState.Opened _ | FocusState.Walking _ -> model, []
+        | FocusLoaded(request, answer) ->
+            match model.Focus with
+            | FocusState.Opening(pending, position) when pending = request ->
+                { model with Focus = match answer with Ok trail -> FocusState.Opened trail | Error failure -> FocusState.CouldNotOpen(position, failure) }, []
+            | FocusState.Walking(pending, trail, traversal) when pending = request ->
+                { model with Focus = match answer with Ok trail -> FocusState.Opened trail | Error failure -> FocusState.CouldNotWalk(trail, traversal, failure) }, []
+            | FocusState.Closed | FocusState.Opening _ | FocusState.Opened _ | FocusState.Walking _ | FocusState.CouldNotOpen _ | FocusState.CouldNotWalk _ -> model, []
 
     and private loadView model =
         match model.Route with
