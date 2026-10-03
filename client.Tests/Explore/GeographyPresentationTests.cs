@@ -30,7 +30,6 @@ public sealed class GeographyPresentationTests
     private const string CanonicalNameField = "Canonical name";
     private const string EstablishedField = "Established";
     private const string DestroyedField = "Destroyed";
-    private const string BlurbField = "Blurb";
     private const string ProvenanceField = "Provenance";
 
     private static readonly TimeRange ConquestWindow = ServedGraph.Range(new Year(label: "1451 BC", value: -1450), new Year(label: "1400 BC", value: -1399), "1451 BC – 1400 BC");
@@ -144,7 +143,7 @@ public sealed class GeographyPresentationTests
     }
 
     [Fact]
-    public async Task A_place_card_lists_only_the_served_fields()
+    public async Task A_place_card_has_no_blurb()
     {
         // Arrange
         var (presenter, bethel) = Serve(ServedGraph.Card(NodeKind.Place, Bethel, BethelLabel) with
@@ -157,7 +156,7 @@ public sealed class GeographyPresentationTests
 
         // Assert
         Assert.Equal(
-            new Presentation.Card(BethelLabel, [new Presentation.Field(CanonicalNameField, BethelCanonical), new Presentation.Field(BlurbField, BethelBlurb), new Presentation.Field(ProvenanceField, ServedGraph.Provenance)]),
+            new Presentation.Card(BethelLabel, [new Presentation.Field(CanonicalNameField, BethelCanonical), new Presentation.Field(ProvenanceField, ServedGraph.Provenance)]),
             presented);
     }
 
@@ -168,7 +167,7 @@ public sealed class GeographyPresentationTests
         var destroyed = BethelEstablished with { Label = "722 BC" };
         var (presenter, bethel) = Serve(ServedGraph.Card(NodeKind.Place, Bethel, BethelLabel) with
         {
-            Place = ServedGraph.PlaceAt(BethelLabel, BethelLat, BethelLon) with { CanonicalName = BethelCanonical, Established = BethelEstablished, Destroyed = destroyed, Blurb = BethelBlurb },
+            Place = ServedGraph.PlaceAt(BethelLabel, BethelLat, BethelLon) with { CanonicalName = BethelCanonical, Established = BethelEstablished, Destroyed = destroyed },
         });
 
         // Act
@@ -182,7 +181,6 @@ public sealed class GeographyPresentationTests
                     new Presentation.Field(CanonicalNameField, BethelCanonical),
                     new Presentation.Field(EstablishedField, BethelEstablished.Label),
                     new Presentation.Field(DestroyedField, destroyed.Label),
-                    new Presentation.Field(BlurbField, BethelBlurb),
                     new Presentation.Field(ProvenanceField, ServedGraph.Provenance),
                 ]),
             presented);

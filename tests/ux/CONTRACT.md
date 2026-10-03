@@ -1668,9 +1668,9 @@ Popover (shared): `popover`, `popover-title`, `popover-breadcrumb-back`,
   `popover-section-card` / `popover-card-title` / `popover-field-{Name}` (FOCUS-6;
   the served element's record as a card, rendered by `FocusView`: the title is the
   record's label, window-free; one field per present value, `Name` one of `Window`,
-  `Canonical name`, `Established`, `Destroyed`, `Blurb`, `Reign`, `Provenance`, the
-  value text being the served label verbatim; a place's period name, blurb and date
-  claims are these fields -- see ALIAS-1 / BLURB-1 below),
+  `Canonical name`, `Established`, `Destroyed`, `Reign`, `Provenance`, the
+  value text being the served label verbatim; a place's period name and date
+  claims are these fields -- see ALIAS-1 below; a place has no blurb, NOBLURB below),
   `popover-up-{edgeKind}-{nodeId}` (FOCUS-6; an up-crumb button per `member-of` /
   `shown-on` neighbour, e.g. a place's `popover-up-shown-on-Map:era-gospels`; follows it),
   `popover-child-{edgeKind}-{nodeId}` (FOCUS-6; inline `contains` / `shows` children),
@@ -4901,21 +4901,9 @@ Notes:
   range whose text names a specific year (e.g. a destruction date) must
   therefore reach that exact year, not stop one short of it (fix round 1,
   M1: Jerusalem's own destruction-year blurb had exactly this off-by-one).
-- BLURB-1 (batch-e-brief.md): the place POPOVER shows at most one blurb,
-  `popover-field-Blurb`, the place's compiled default (FOCUS-6: window-free;
-  removed in FOCUS-6 (OPEN 3): the per-window choice below survives only in
-  the server's history resolution, no longer on any place surface). The rule
-  as written: never a stack -- a window inside exactly one of a place's own `"era"`-
-  breadth ranges shows that blurb; a window spanning more than one of them
-  shows a `"broad"`-breadth blurb instead (falling back to an `"era"` pick
-  if no `"broad"` blurb is curated); a window inside NEITHER a place's
-  `"era"` ranges NOR any `"broad"` one shows no blurb at all.
-  A window that touches ZERO `"era"` ranges (a gap between two curated
-  eras) but that a `"broad"` range still intersects is NOT the "matches
-  nothing" case -- it shows the `"broad"` blurb (fix round 1, M1: this
-  branch existed since the first batch-e commits but was undocumented
-  here; a window inside such a gap is still, truthfully, inside the
-  place's whole history, so the broad summary is shown rather than nothing).
+- NOBLURB (owner 2026-10-02, "Get rid of the blurbs on locations"; replaces
+  BLURB-1): no place surface shows a blurb -- `popover-field-Blurb` never
+  renders, whatever the window -- and the served place record carries none.
 - QUIET-1 (batch-e2-brief.md, "the ever-present graph" -- user direction 2026-08-19:
   "all of the cities in our graph are available in any timerange rather than just
   loading those which are biblically active at the time"): for every time-mode window,
@@ -4968,7 +4956,7 @@ Notes:
   (LABEL-1) or a `place-chooser-{placeId}` row opens that place's served node in the
   ExplorerPopover as its window-free record: `popover-title` and `popover-card-title`
   = the record label; `popover-field-{Name}` for each present value (`Canonical name`,
-  `Established`, `Destroyed`, `Blurb`, `Provenance`); the `shown-on` Maps as
+  `Established`, `Destroyed`, `Provenance`; never a `Blurb`, NOBLURB); the `shown-on` Maps as
   `popover-up-shown-on-{mapId}` crumbs; its events as `popover-section-site-of`
   (`popover-link-site-of-{eventId}`, initial clamp 20, `-more`/`-collapse`); its
   verses as `popover-section-mentioned-in`. Nothing in it is scoped to the slider's
