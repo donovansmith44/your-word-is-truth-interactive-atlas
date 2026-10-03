@@ -155,3 +155,42 @@ confidence = \"Probably\"
     // Assert
     assert_eq!(format!("{refused:#}"), CONFIDENCE_REFUSAL);
 }
+
+const ONE_INGESTED_SOURCE: &str = "## Per-source table\n\n| Source | License | Use |\n|---|---|---|\n| k, an ingested source | Public domain | Redistributed |\n";
+
+const ONE_TYPEFACE: &str = "| Overpass typeface | SIL Open Font License 1.1 | Bundled, unmodified |\n";
+
+#[test]
+fn the_law_s_domain_is_the_ingested_sources_of_the_per_source_table_so_a_bundled_presentation_asset_is_outside_it() {
+    // Arrange
+    let doc = atlas_etl::sources::parse_sources(PROVENANCE_BASE).unwrap();
+    let licenses_md = format!("{ONE_INGESTED_SOURCE}\n## Bundled presentation assets\n\n| Asset | License | Use |\n|---|---|---|\n{ONE_TYPEFACE}");
+    // Act
+    let reconciled = atlas_etl::sources::validate_against_licenses(&doc, &licenses_md);
+    // Assert
+    assert!(reconciled.is_ok(), "{reconciled:?}");
+}
+
+#[test]
+fn a_presentation_asset_filed_among_the_ingested_sources_is_refused_and_pointed_at_its_own_table() {
+    // Arrange
+    let doc = atlas_etl::sources::parse_sources(PROVENANCE_BASE).unwrap();
+    let licenses_md = format!("{ONE_INGESTED_SOURCE}{ONE_TYPEFACE}");
+    // Act
+    let refused = atlas_etl::sources::validate_against_licenses(&doc, &licenses_md).unwrap_err().to_string();
+    // Assert
+    assert!(refused.contains("Overpass typeface"), "{refused}");
+    assert!(refused.contains("'## Bundled presentation assets'"), "{refused}");
+}
+
+#[test]
+fn the_real_licenses_file_keeps_its_bundled_presentation_assets_out_of_the_per_source_table() {
+    // Arrange
+    let licenses_md = repo_root_file("LICENSES.md");
+    // Act
+    let per_source = licenses_md.find("## Per-source table").unwrap();
+    let presentation = licenses_md.find("## Bundled presentation assets").expect("LICENSES.md carries its presentation assets in their own table");
+    // Assert
+    assert!(per_source < presentation);
+    assert!(licenses_md[presentation..].contains("typeface"));
+}

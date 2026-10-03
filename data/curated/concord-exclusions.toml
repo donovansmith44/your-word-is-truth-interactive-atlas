@@ -1,0 +1,144 @@
+# The served Book of Concord is the 1921 Triglot (Bente-Dau) English text
+# only. The vendored bookofconcord.org pages also carry a copyrighted modern
+# translation, the site's own editorial notes, and site furniture; each such
+# piece is named here with its kind and the Triglot check that rules it out,
+# and the ETL (server/atlas-etl/src/concord.rs) excludes it at compile.
+# Evidence: docs/superpowers/reports/2026-10-03-f79-concord-licensing.md.
+# "OCR line" cites the Internet Archive Concordia Triglotta (1921) OCR,
+# concordiatriglot00unse_djvu.txt.
+#
+# [[article]]  a whole vendored article, by document and slug.
+# [[unit]]     a whole vendored paragraph, by document, slug and its exact
+#              cleaned text; it is dropped before numbering, so it never
+#              takes a paragraph number.
+# [[strip]]    an exact fragment of a served unit, by its served position,
+#              replaced by `with` (empty when omitted); it must occur once.
+# markers      text that no served Concord unit or title may contain.
+#              "*" also covers a stray "**".
+
+markers = ["©", "bookofconcord", "http", "Readers Edition", "*"]
+
+[[article]]
+document = "small-catechism"
+slug = "/small-catechism/christian-questions-and-answers/"
+kind = "copyrighted-translation"
+triglot = "Not printed in the Triglot: its Historical Introduction only discusses the Questions (OCR line 14205). The vendored text is the 1986 Concordia Publishing House translation, under the page's own notice 'From Luther's Small Catechism © 1986 Concordia Publishing House. All rights reserved' (small-catechism.html lines 1390-1396); 'Do you believe that you are a sinner' occurs nowhere in the Triglot. Served as BoC 7.10.0-7.10.20 (21 units) until 2026-10-03."
+
+[[article]]
+document = "small-catechism"
+slug = "/small-catechism/prefaratory-notes/"
+kind = "site-furniture"
+triglot = "A note on the site's 1986 PDF edition; no Triglot counterpart. Never served."
+
+[[article]]
+document = "small-catechism"
+slug = "/small-catechism/small-catechism-pdf/"
+kind = "site-furniture"
+triglot = "A purchase and download link for the site's PDF; no Triglot counterpart. Never served."
+
+[[unit]]
+document = "ecumenical-creeds"
+slug = "/ecumenical-creeds/apostles-creed/"
+text = "* catholic means “universal” and is not a reference to the Roman Catholic Church."
+kind = "editorial-note"
+triglot = "The Triglot's Apostles' Creed carries no note; 'catholic means' occurs nowhere in the Triglot. Served as BoC 2.1.4 until 2026-10-03."
+
+[[unit]]
+document = "ecumenical-creeds"
+slug = "/ecumenical-creeds/apostles-creed/"
+text = "Biblical references for the Apostles' Creed can be found here ."
+kind = "site-furniture"
+triglot = "A link to a page of the site; 'Biblical references' occurs nowhere in the Triglot. Served as BoC 2.1.5 until 2026-10-03."
+
+[[unit]]
+document = "defense"
+slug = "/defense/of-free-will/"
+text = "(http://bocl.org?AP+IV+1) and [AP IV"
+kind = "site-furniture"
+triglot = "The site's link rendering of the Triglot's page reference '(See p. 119 and 153.)' in Apology XVIII (OCR line 87858); its marker '1' is a link target, not a paragraph. Served as the phantom BoC 4.17.70 until 2026-10-03."
+
+[[unit]]
+document = "defense"
+slug = "/defense/of-free-will/"
+text = "(http://bocl.org?AP+IV+106))"
+kind = "site-furniture"
+triglot = "The second half of the same link residue; its marker '106' is a link target, not a paragraph. Served as the phantom BoC 4.17.106 until 2026-10-03."
+
+[[strip]]
+part = 2
+article = 1
+paragraph = 3
+text = "catholic* Church"
+with = "catholic Church"
+kind = "editorial-note"
+triglot = "The reference mark for the excluded note; the Triglot reads 'the holy catholic Church' unmarked."
+
+[[strip]]
+part = 4
+article = 5
+paragraph = 212
+text = "The following, through paragraph 213, are left out of the Readers Edition."
+kind = "editorial-note"
+triglot = "A note about the site's own Readers Edition; 'Readers Edition' occurs nowhere in the Triglot, whose Apology IV continues straight into '[All prudent men will see…'."
+
+[[strip]]
+part = 4
+article = 17
+paragraph = 69
+text = "Of Justification . (see [AP IV"
+with = "Of Justification."
+kind = "site-furniture"
+triglot = "The opening of the bocl.org link residue; the Triglot reads 'in the article Of Justification. (See p. 119 and 153.)' (OCR line 87858), whose page reference the site replaced with links."
+
+[[strip]]
+part = 7
+article = 6
+paragraph = 1
+text = "?*"
+with = "?"
+kind = "editorial-note"
+triglot = "The reference mark for the excluded 7.6.4 note; the Triglot reads 'What is Confession?' unmarked."
+
+[[strip]]
+part = 7
+article = 6
+paragraph = 4
+text = "thus: **Reverend"
+with = "thus: Reverend"
+kind = "markup-residue"
+triglot = "A stray Markdown bold marker; the Triglot reads 'Reverend and dear sir' with no mark."
+
+[[strip]]
+part = 7
+article = 6
+paragraph = 4
+text = "* These questions may not have been composed by Luther himself but reflect his teachings and were included in editions of the Small Catechism during his lifetime."
+kind = "editorial-note"
+triglot = "A bookofconcord.org note; the Triglot's Small Catechism V ends at '…general form of confession for the unlearned.' (OCR line 116404) and 'may not have been composed' occurs nowhere in it."
+
+[[strip]]
+part = 9
+article = 6
+paragraph = 1
+text = "**AFFIRMATIVE THESES"
+with = "AFFIRMATIVE THESES"
+kind = "markup-residue"
+triglot = "A stray Markdown bold marker before the Epitome V heading the site ran into the paragraph."
+
+[[strip]]
+part = 10
+article = 9
+paragraph = 1
+text = "**STATUS CONTROVERSIAE."
+with = "STATUS CONTROVERSIAE."
+kind = "markup-residue"
+triglot = "A stray Markdown bold marker opening the Solid Declaration VII 'Status Controversiae' heading the site ran into the paragraph."
+
+[[strip]]
+part = 10
+article = 9
+paragraph = 1
+text = "In This Article.**"
+with = "In This Article."
+kind = "markup-residue"
+triglot = "The matching closing Markdown bold marker of the same heading."

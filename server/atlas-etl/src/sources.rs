@@ -141,7 +141,7 @@ pub fn validate_against_licenses(doc: &SourcesDocument, licenses_md: &str) -> Re
 
     if !unmatched_rows.is_empty() {
         bail!(
-            "LICENSES.md's per-source table has {} row(s) with no matching data/curated/sources.toml entry -- a source was added to LICENSES.md but not to the Sources page's data (batch-s-brief.md requirement 3, fail loud):\n{}",
+            "LICENSES.md's per-source table has {} row(s) with no matching data/curated/sources.toml entry -- a source was added to LICENSES.md but not to the Sources page's data (batch-s-brief.md requirement 3, fail loud); a bundled presentation asset (a typeface, an icon) is not an ingested source and is listed under '## Bundled presentation assets', which this law does not read:\n{}",
             unmatched_rows.len(),
             unmatched_rows.iter().map(|r| format!("  - {r}")).collect::<Vec<_>>().join("\n")
         );

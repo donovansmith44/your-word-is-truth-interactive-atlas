@@ -30,12 +30,6 @@ pub const DOCUMENTS: &[ConcordDocSpec] = &[
     ConcordDocSpec { part: 10, key: "solid-declaration", title: "Formula of Concord: Solid Declaration" },
 ];
 
-/// Two sections of the Small Catechism's root page are modern site furniture -- a PDF-availability blurb and a
-/// purchase link -- genuinely headed, but not part of the confessional text: excluded by name and counted.
-fn is_skipped_article(doc_key: &str, slug: &str) -> bool {
-    doc_key == "small-catechism" && (slug == "/small-catechism/prefaratory-notes/" || slug == "/small-catechism/small-catechism-pdf/")
-}
-
 /// The Smalcald Articles are the one exception: that document's root page embeds only a one-paragraph editorial blurb
 /// per Part, and the real numbered article text lives on separate per-article pages with a DIFFERENT template -- an
 /// `<h2>` title followed directly by numbered paragraphs. Those pages are vendored and spliced in after the blurb.
@@ -74,14 +68,14 @@ const SMALCALD_EXTRAS: &[SmalcaldExtra] = &[
 
 /// Splices each sub-article in right after its own anchor slug, then renumbers every article in the final order.
 /// Returns whatever disclosures the sub-pages produced -- the same anomaly class any other article can carry.
-fn splice_smalcald_extras(doc: &mut ConcordDocument, sub_dir: &Path) -> Result<Vec<String>> {
+fn splice_smalcald_extras(doc: &mut ConcordDocument, sub_dir: &Path, ledger: &mut ExclusionLedger) -> Result<Vec<String>> {
     let mut disclosures = Vec::new();
     let mut insert_at: BTreeMap<usize, Vec<ConcordArticle>> = BTreeMap::new();
     for extra in SMALCALD_EXTRAS {
         let idx = doc.articles.iter().position(|a| a.slug == extra.after_slug).with_context(|| format!("smalcald-articles: splice target '{}' not found among parsed articles", extra.after_slug))?;
         let path = sub_dir.join(format!("{}.html", extra.file_stem));
         let html = std::fs::read_to_string(&path).with_context(|| format!("reading {}", path.display()))?;
-        let (title, paragraphs, anomalies) = parse_single_article_page(&html, extra.title_fallback);
+        let (title, paragraphs, anomalies) = parse_single_article_page(&html, extra.title_fallback, &mut |text| ledger.drops_unit(doc.key, extra.full_slug, text));
         for a in &anomalies {
             disclosures.push(format!("smalcald-articles/{}: {}", extra.full_slug, a));
         }
@@ -102,7 +96,7 @@ fn splice_smalcald_extras(doc: &mut ConcordDocument, sub_dir: &Path) -> Result<V
 /// One per-article page: an `<h2>` title followed directly by numbered paragraphs, ending at the page's own
 /// trailing navigation widget rather than at the footer. That widget carries no markers of its own but sits
 /// between content and footer, so leaving it in would leak its navigation text into the last paragraph's prose.
-fn parse_single_article_page(html: &str, title_fallback: &str) -> (String, Vec<ConcordParagraph>, Vec<String>) {
+fn parse_single_article_page(html: &str, title_fallback: &str, drop: &mut dyn FnMut(&str) -> bool) -> (String, Vec<ConcordParagraph>, Vec<String>) {
     let main = main_content_slice(html);
     let (title, body_start) = match main.find("<h2>") {
         Some(h2_open) => match main[h2_open..].find("</h2>") {
@@ -117,7 +111,7 @@ fn parse_single_article_page(html: &str, title_fallback: &str) -> (String, Vec<C
     let rest = &main[body_start..];
     let end = rest.find(r#"<div class="next-previous-box"#).unwrap_or(rest.len());
     let body = &rest[..end];
-    let (paragraphs, anomalies) = group_and_number_paragraphs(body);
+    let (paragraphs, anomalies) = group_and_number_paragraphs(body, drop);
     (title, paragraphs, anomalies)
 }
 
@@ -152,6 +146,8 @@ pub struct ConcordStats {
     pub articles: usize,
     pub paragraphs: usize,
     pub skipped_articles: usize,
+    pub excluded_units: usize,
+    pub stripped_fragments: usize,
     /// One line per disclosed structural anomaly -- synthetic numbering used, an article skipped, a source-side
     /// label collision remapped -- named by document and article, never silent.
     pub disclosures: Vec<String>,
@@ -179,14 +175,18 @@ pub fn read_all(root: &Path, curated_dir: &Path) -> Result<ConcordCorpus> {
     let titles_path = curated_dir.join("concord-titles.toml");
     let titles_text = std::fs::read_to_string(&titles_path).with_context(|| format!("reading {}", titles_path.display()))?;
     let titles = crate::curated::parse_concord_titles(&titles_text)?;
+    let exclusions_path = curated_dir.join("concord-exclusions.toml");
+    let exclusions_text = std::fs::read_to_string(&exclusions_path).with_context(|| format!("reading {}", exclusions_path.display()))?;
+    let exclusions = parse_concord_exclusions(&exclusions_text)?;
     let mut docs = Vec::with_capacity(DOCUMENTS.len());
     let mut stats = ConcordStats::default();
+    let mut ledger = ExclusionLedger::new(&exclusions);
     for spec in DOCUMENTS {
         let path = root.join(format!("{}.html", spec.key));
         let html = std::fs::read_to_string(&path).with_context(|| format!("reading {}", path.display()))?;
-        let (mut doc, mut disclosures, skipped) = parse_document(&html, spec)?;
+        let (mut doc, mut disclosures, skipped) = parse_document(&html, spec, &mut ledger)?;
         if spec.key == "smalcald-articles" {
-            let extra_disclosures = splice_smalcald_extras(&mut doc, &root.join("smalcald-sub"))?;
+            let extra_disclosures = splice_smalcald_extras(&mut doc, &root.join("smalcald-sub"), &mut ledger)?;
             disclosures.extend(extra_disclosures);
         }
         stats.documents += 1;
@@ -198,8 +198,14 @@ pub fn read_all(root: &Path, curated_dir: &Path) -> Result<ConcordCorpus> {
         stats.skipped_articles += skipped;
         docs.push(doc);
     }
+    ledger.every_entry_matched_once()?;
+    stats.excluded_units = ledger.unit_hits.iter().sum();
     apply_title_overrides(&mut docs, &titles)?;
-    Ok(ConcordCorpus { documents: docs, stats })
+    stats.stripped_fragments = apply_strips(&mut docs, &exclusions.strip)?;
+    let corpus = ConcordCorpus { documents: docs, stats };
+    no_excluded_material_is_served(&corpus, &exclusions)?;
+    no_served_text_carries_a_non_triglot_marker(&corpus, &exclusions.markers)?;
+    Ok(corpus)
 }
 
 /// Keyed by the served `(document, article)` position, which is final only after the Smalcald splice has
@@ -217,7 +223,7 @@ fn apply_title_overrides(docs: &mut [ConcordDocument], titles: &[ConcordTitleOve
 
 /// The SAME function runs over all ten documents: nothing here branches on which document it is except the skip
 /// list and the single-article fallback title, both disclosed structural facts rather than parsing forks.
-fn parse_document(html: &str, spec: &ConcordDocSpec) -> Result<(ConcordDocument, Vec<String>, usize)> {
+fn parse_document(html: &str, spec: &ConcordDocSpec, ledger: &mut ExclusionLedger) -> Result<(ConcordDocument, Vec<String>, usize)> {
     let main = main_content_slice(html);
     let raw_articles = find_articles(main);
     let mut articles = Vec::new();
@@ -228,20 +234,21 @@ fn parse_document(html: &str, spec: &ConcordDocSpec) -> Result<(ConcordDocument,
     if raw_articles.is_empty() {
         // No heading anywhere: a single-article document, the whole-book preface.
         article_no += 1;
-        let (paragraphs, anomalies) = group_and_number_paragraphs(main);
+        let slug = format!("/{}/", spec.key);
+        let (paragraphs, anomalies) = group_and_number_paragraphs(main, &mut |text| ledger.drops_unit(spec.key, &slug, text));
         for a in &anomalies {
             disclosures.push(format!("{}: {}", spec.key, a));
         }
-        articles.push(ConcordArticle { article: article_no, slug: format!("/{}/", spec.key), title: spec.title.to_string(), paragraphs });
+        articles.push(ConcordArticle { article: article_no, slug, title: spec.title.to_string(), paragraphs });
     } else {
         for raw in &raw_articles {
-            if is_skipped_article(spec.key, &raw.href) {
+            if let Some(kind) = ledger.drops_article(spec.key, &raw.href) {
                 skipped += 1;
-                disclosures.push(format!("{}: skipped non-confessional article '{}' ({}) -- modern site furniture, not Book of Concord text", spec.key, raw.href, raw.title));
+                disclosures.push(format!("{}: skipped non-Triglot article '{}' ({}) -- {kind:?}, on concord-exclusions.toml", spec.key, raw.href, raw.title));
                 continue;
             }
             article_no += 1;
-            let (paragraphs, anomalies) = group_and_number_paragraphs(raw.body);
+            let (paragraphs, anomalies) = group_and_number_paragraphs(raw.body, &mut |text| ledger.drops_unit(spec.key, &raw.href, text));
             for a in &anomalies {
                 disclosures.push(format!("{}/{}: {}", spec.key, raw.href, a));
             }
@@ -370,13 +377,13 @@ fn is_ans_suffixed(id: &str) -> bool {
 
 /// Groups the body's markers into paragraphs and assigns each its paragraph number, returning the paragraphs in
 /// order plus any disclosed anomalies.
-fn group_and_number_paragraphs(body: &str) -> (Vec<ConcordParagraph>, Vec<String>) {
+fn group_and_number_paragraphs(body: &str, drop: &mut dyn FnMut(&str) -> bool) -> (Vec<ConcordParagraph>, Vec<String>) {
     let markers = find_markers(body);
     let mut anomalies = Vec::new();
 
     if markers.is_empty() {
         // No native numbering at all: fall back to splitting on paragraph tags, numbered sequentially.
-        let paragraphs = split_on_paragraph_tags(body);
+        let paragraphs: Vec<String> = split_on_paragraph_tags(body).into_iter().filter(|text| !drop(text)).collect();
         if !paragraphs.is_empty() {
             anomalies.push(format!("no native paragraph numbering in source -- {} paragraph(s) assigned synthetic sequential positions 1..{}", paragraphs.len(), paragraphs.len()));
         }
@@ -424,9 +431,12 @@ fn group_and_number_paragraphs(body: &str) -> (Vec<ConcordParagraph>, Vec<String
     for (gid, raw) in per_group_raw {
         let base = group_base[gid];
         let text = clean_paragraph_text(&raw);
+        if drop(&text) {
+            continue;
+        }
         let assigned = match base {
             Some(n) if n > last_assigned => n,
-            None if gid == 0 => 0,
+            None if out.is_empty() => 0,
             _ => {
                 let a = last_assigned + 1;
                 if let Some(n) = base {
@@ -628,6 +638,169 @@ pub struct ConcordTitleOverride {
     pub title: String,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum NonTriglotKind {
+    CopyrightedTranslation,
+    EditorialNote,
+    SiteFurniture,
+    MarkupResidue,
+}
+
+#[derive(Debug, Clone, PartialEq, serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ExcludedArticle {
+    pub document: String,
+    pub slug: String,
+    pub kind: NonTriglotKind,
+    pub triglot: String,
+}
+
+#[derive(Debug, Clone, PartialEq, serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ExcludedUnit {
+    pub document: String,
+    pub slug: String,
+    pub text: String,
+    pub kind: NonTriglotKind,
+    pub triglot: String,
+}
+
+#[derive(Debug, Clone, PartialEq, serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct StrippedFragment {
+    pub part: u8,
+    pub article: u16,
+    pub paragraph: u16,
+    pub text: String,
+    #[serde(default)]
+    pub with: String,
+    pub kind: NonTriglotKind,
+    pub triglot: String,
+}
+
+#[derive(Debug, Clone, Default, PartialEq, serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ConcordExclusions {
+    pub markers: Vec<String>,
+    #[serde(default)]
+    pub article: Vec<ExcludedArticle>,
+    #[serde(default)]
+    pub unit: Vec<ExcludedUnit>,
+    #[serde(default)]
+    pub strip: Vec<StrippedFragment>,
+}
+
+pub fn parse_concord_exclusions(input: &str) -> Result<ConcordExclusions> {
+    toml::from_str(input).context("concord-exclusions.toml: invalid TOML or does not match the markers/[[article]]/[[unit]]/[[strip]] schema")
+}
+
+struct ExclusionLedger<'a> {
+    exclusions: &'a ConcordExclusions,
+    article_hits: Vec<usize>,
+    unit_hits: Vec<usize>,
+}
+
+impl<'a> ExclusionLedger<'a> {
+    fn new(exclusions: &'a ConcordExclusions) -> Self {
+        ExclusionLedger { exclusions, article_hits: vec![0; exclusions.article.len()], unit_hits: vec![0; exclusions.unit.len()] }
+    }
+
+    fn drops_article(&mut self, document: &str, slug: &str) -> Option<NonTriglotKind> {
+        let i = self.exclusions.article.iter().position(|x| x.document == document && x.slug == slug)?;
+        self.article_hits[i] += 1;
+        Some(self.exclusions.article[i].kind)
+    }
+
+    fn drops_unit(&mut self, document: &str, slug: &str, text: &str) -> bool {
+        match self.exclusions.unit.iter().position(|x| x.document == document && x.slug == slug && x.text == text) {
+            Some(i) => {
+                self.unit_hits[i] += 1;
+                true
+            }
+            None => false,
+        }
+    }
+
+    fn every_entry_matched_once(&self) -> Result<()> {
+        let articles = self.exclusions.article.iter().zip(&self.article_hits).filter(|(_, n)| **n != 1).map(|(x, n)| format!("[[article]] {}{} matched {n} time(s)", x.document, x.slug));
+        let units = self.exclusions.unit.iter().zip(&self.unit_hits).filter(|(_, n)| **n != 1).map(|(x, n)| format!("[[unit]] {}{} {:?} matched {n} time(s)", x.document, x.slug, x.text));
+        let unmatched: Vec<String> = articles.chain(units).collect();
+        if unmatched.is_empty() {
+            Ok(())
+        } else {
+            anyhow::bail!("concord-exclusions.toml: every entry must match exactly one vendored article or unit:\n{}", unmatched.join("\n"))
+        }
+    }
+}
+
+fn apply_strips(docs: &mut [ConcordDocument], strips: &[StrippedFragment]) -> Result<usize> {
+    for x in strips {
+        let at = format!("{}.{}.{}", x.part, x.article, x.paragraph);
+        let unit = docs
+            .iter_mut()
+            .filter(|d| d.part == x.part)
+            .flat_map(|d| d.articles.iter_mut())
+            .filter(|a| a.article == x.article)
+            .flat_map(|a| a.paragraphs.iter_mut())
+            .find(|p| p.paragraph == x.paragraph)
+            .with_context(|| format!("concord-exclusions.toml: [[strip]] names {at}, which is not served"))?;
+        let occurrences = unit.text.matches(x.text.as_str()).count();
+        if occurrences != 1 {
+            anyhow::bail!("concord-exclusions.toml: [[strip]] {:?} occurs {occurrences} time(s) in {at}; it must occur exactly once", x.text);
+        }
+        unit.text = collapse_ws(&unit.text.replacen(x.text.as_str(), &x.with, 1));
+    }
+    Ok(strips.len())
+}
+
+pub fn no_excluded_material_is_served(corpus: &ConcordCorpus, exclusions: &ConcordExclusions) -> Result<()> {
+    let mut offenders = Vec::new();
+    for d in &corpus.documents {
+        for a in &d.articles {
+            if exclusions.article.iter().any(|x| x.document == d.key && x.slug == a.slug) {
+                offenders.push(format!("{}{}: an excluded article is served as article {}", d.key, a.slug, a.article));
+            }
+            for p in &a.paragraphs {
+                if exclusions.unit.iter().any(|x| x.document == d.key && x.slug == a.slug && x.text == p.text) {
+                    offenders.push(format!("{}.{}.{}: an excluded unit is served: {:?}", d.part, a.article, p.paragraph, p.text));
+                }
+                for x in exclusions.strip.iter().filter(|x| (x.part, x.article, x.paragraph) == (d.part, a.article, p.paragraph)) {
+                    if p.text.contains(x.text.as_str()) {
+                        offenders.push(format!("{}.{}.{}: an excluded fragment is served: {:?}", d.part, a.article, p.paragraph, x.text));
+                    }
+                }
+            }
+        }
+    }
+    if offenders.is_empty() {
+        Ok(())
+    } else {
+        anyhow::bail!("{} piece(s) of non-Triglot material on concord-exclusions.toml are served:\n{}", offenders.len(), offenders.join("\n"))
+    }
+}
+
+pub fn no_served_text_carries_a_non_triglot_marker(corpus: &ConcordCorpus, markers: &[String]) -> Result<()> {
+    let mut offenders = Vec::new();
+    for d in &corpus.documents {
+        for a in &d.articles {
+            for m in markers.iter().filter(|m| a.title.contains(m.as_str())) {
+                offenders.push(format!("{}.{} title carries {m:?}: {:?}", d.part, a.article, a.title));
+            }
+            for p in &a.paragraphs {
+                for m in markers.iter().filter(|m| p.text.contains(m.as_str())) {
+                    offenders.push(format!("{}.{}.{} carries {m:?}: {:?}", d.part, a.article, p.paragraph, p.text));
+                }
+            }
+        }
+    }
+    if offenders.is_empty() {
+        Ok(())
+    } else {
+        anyhow::bail!("{} served Concord text(s) carry a non-Triglot marker:\n{}", offenders.len(), offenders.join("\n"))
+    }
+}
+
 #[derive(serde::Deserialize)]
 struct ScOverlapFile {
     link: Vec<ScOverlapRow>,
@@ -650,6 +823,178 @@ mod tests {
 
     fn titles_of(docs: &[ConcordDocument]) -> Vec<Vec<&str>> {
         docs.iter().map(|d| d.articles.iter().map(|a| a.title.as_str()).collect()).collect()
+    }
+
+    fn served(key: &'static str, slug: &str, paragraphs: &[(u16, &str)]) -> ConcordCorpus {
+        let paragraphs = paragraphs.iter().map(|(n, t)| ConcordParagraph { paragraph: *n, source_label: n.to_string(), text: t.to_string() }).collect();
+        let article = ConcordArticle { article: 1, slug: slug.to_string(), title: "Title".to_string(), paragraphs };
+        ConcordCorpus { documents: vec![ConcordDocument { part: 2, key, title: key, articles: vec![article] }], stats: ConcordStats::default() }
+    }
+
+    fn exclusions(input: &str) -> ConcordExclusions {
+        parse_concord_exclusions(input).unwrap()
+    }
+
+    const ONE_OF_EACH: &str = r#"
+markers = ["http", "*"]
+[[article]]
+document = "ecumenical-creeds"
+slug = "/ecumenical-creeds/questions/"
+kind = "copyrighted-translation"
+triglot = "absent"
+[[unit]]
+document = "ecumenical-creeds"
+slug = "/ecumenical-creeds/apostles-creed/"
+text = "A site note."
+kind = "site-furniture"
+triglot = "absent"
+[[strip]]
+part = 2
+article = 1
+paragraph = 3
+text = "a mark"
+kind = "editorial-note"
+triglot = "absent"
+"#;
+
+    #[test]
+    fn the_exclusion_law_refuses_a_served_excluded_article_naming_it() {
+        // Arrange
+        let corpus = served("ecumenical-creeds", "/ecumenical-creeds/questions/", &[(1, "Text.")]);
+        // Act
+        let refused = no_excluded_material_is_served(&corpus, &exclusions(ONE_OF_EACH)).unwrap_err().to_string();
+        // Assert
+        assert!(refused.contains("ecumenical-creeds/ecumenical-creeds/questions/: an excluded article is served"), "{refused}");
+    }
+
+    #[test]
+    fn the_exclusion_law_refuses_a_served_excluded_unit_naming_its_position() {
+        // Arrange
+        let corpus = served("ecumenical-creeds", "/ecumenical-creeds/apostles-creed/", &[(1, "I believe."), (4, "A site note.")]);
+        // Act
+        let refused = no_excluded_material_is_served(&corpus, &exclusions(ONE_OF_EACH)).unwrap_err().to_string();
+        // Assert
+        assert!(refused.contains("2.1.4: an excluded unit is served"), "{refused}");
+    }
+
+    #[test]
+    fn the_exclusion_law_refuses_a_served_excluded_fragment_naming_its_position() {
+        // Arrange
+        let corpus = served("ecumenical-creeds", "/ecumenical-creeds/apostles-creed/", &[(3, "Text with a mark in it.")]);
+        // Act
+        let refused = no_excluded_material_is_served(&corpus, &exclusions(ONE_OF_EACH)).unwrap_err().to_string();
+        // Assert
+        assert!(refused.contains("2.1.3: an excluded fragment is served"), "{refused}");
+    }
+
+    #[test]
+    fn the_exclusion_law_admits_a_corpus_that_serves_none_of_the_excluded_material() {
+        // Arrange
+        let corpus = served("ecumenical-creeds", "/ecumenical-creeds/apostles-creed/", &[(3, "Text in it."), (4, "Another.")]);
+        // Act
+        let admitted = no_excluded_material_is_served(&corpus, &exclusions(ONE_OF_EACH));
+        // Assert
+        assert!(admitted.is_ok(), "{admitted:?}");
+    }
+
+    #[test]
+    fn the_marker_law_refuses_every_served_text_carrying_a_marker_naming_each() {
+        // Arrange
+        let corpus = served("ecumenical-creeds", "/ecumenical-creeds/apostles-creed/", &[(1, "(http://bocl.org?AP+IV+1)"), (2, "the holy catholic* Church"), (3, "Clean.")]);
+        // Act
+        let refused = no_served_text_carries_a_non_triglot_marker(&corpus, &exclusions(ONE_OF_EACH).markers).unwrap_err().to_string();
+        // Assert
+        assert!(refused.starts_with("2 served Concord text(s)"), "{refused}");
+        assert!(refused.contains("2.1.1 carries \"http\""), "{refused}");
+        assert!(refused.contains("2.1.2 carries \"*\""), "{refused}");
+    }
+
+    #[test]
+    fn the_marker_law_refuses_a_served_title_carrying_a_marker() {
+        // Arrange
+        let mut corpus = served("ecumenical-creeds", "/ecumenical-creeds/apostles-creed/", &[(1, "Clean.")]);
+        corpus.documents[0].articles[0].title = "**Heading".to_string();
+        // Act
+        let refused = no_served_text_carries_a_non_triglot_marker(&corpus, &exclusions(ONE_OF_EACH).markers).unwrap_err().to_string();
+        // Assert
+        assert!(refused.contains("2.1 title carries \"*\""), "{refused}");
+    }
+
+    #[test]
+    fn an_exclusion_without_its_triglot_check_is_refused_by_the_parse() {
+        // Arrange
+        let input = "markers = []\n[[unit]]\ndocument = \"defense\"\nslug = \"/defense/x/\"\ntext = \"t\"\nkind = \"site-furniture\"\n";
+        // Act
+        let refused = parse_concord_exclusions(input);
+        // Assert
+        assert!(refused.is_err());
+    }
+
+    #[test]
+    fn an_exclusion_of_a_kind_outside_the_four_is_refused_by_the_parse() {
+        // Arrange
+        let input = "markers = []\n[[unit]]\ndocument = \"defense\"\nslug = \"/defense/x/\"\ntext = \"t\"\nkind = \"misc\"\ntriglot = \"absent\"\n";
+        // Act
+        let refused = parse_concord_exclusions(input);
+        // Assert
+        assert!(refused.is_err());
+    }
+
+    const LINK_RESIDUE_BETWEEN_69_AND_70: &str = r#"<p><span id="a" class="bocanchor"><span id="a-acontent" class="bocanchor-content">69</span></span> Of Justification. <span id="b" class="bocanchor"><span id="b-acontent" class="bocanchor-content">1</span></span>(http://bocl.org?AP+IV+1) <span id="c" class="bocanchor"><span id="c-acontent" class="bocanchor-content">70</span></span> Nor, indeed.</p>"#;
+
+    #[test]
+    fn an_excluded_unit_is_dropped_before_numbering_so_the_next_paragraph_keeps_its_source_number() {
+        // Arrange
+        let residue = "(http://bocl.org?AP+IV+1)";
+        // Act
+        let (paras, _) = group_and_number_paragraphs(LINK_RESIDUE_BETWEEN_69_AND_70, &mut |text| text == residue);
+        // Assert
+        let numbered: Vec<(u16, &str)> = paras.iter().map(|p| (p.paragraph, p.text.as_str())).collect();
+        assert_eq!(numbered, vec![(69, "Of Justification."), (70, "Nor, indeed.")]);
+    }
+
+    #[test]
+    fn an_exclusion_entry_that_matches_nothing_is_refused_naming_it() {
+        // Arrange
+        let ex = exclusions(ONE_OF_EACH);
+        let mut ledger = ExclusionLedger::new(&ex);
+        ledger.drops_article("ecumenical-creeds", "/ecumenical-creeds/questions/");
+        // Act
+        let refused = ledger.every_entry_matched_once().unwrap_err().to_string();
+        // Assert
+        assert!(refused.contains("[[unit]] ecumenical-creeds/ecumenical-creeds/apostles-creed/ \"A site note.\" matched 0 time(s)"), "{refused}");
+        assert!(!refused.contains("[[article]]"), "{refused}");
+    }
+
+    #[test]
+    fn a_strip_replaces_its_one_occurrence_and_collapses_the_space_it_leaves() {
+        // Arrange
+        let mut docs = served("ecumenical-creeds", "/ecumenical-creeds/apostles-creed/", &[(3, "Text with a mark in it.")]).documents;
+        // Act
+        let stripped = apply_strips(&mut docs, &exclusions(ONE_OF_EACH).strip).unwrap();
+        // Assert
+        assert_eq!(stripped, 1);
+        assert_eq!(docs[0].articles[0].paragraphs[0].text, "Text with in it.");
+    }
+
+    #[test]
+    fn a_strip_occurring_twice_in_its_unit_is_refused() {
+        // Arrange
+        let mut docs = served("ecumenical-creeds", "/ecumenical-creeds/apostles-creed/", &[(3, "a mark and a mark")]).documents;
+        // Act
+        let refused = apply_strips(&mut docs, &exclusions(ONE_OF_EACH).strip).unwrap_err().to_string();
+        // Assert
+        assert!(refused.contains("occurs 2 time(s) in 2.1.3"), "{refused}");
+    }
+
+    #[test]
+    fn a_strip_naming_an_unserved_position_is_refused() {
+        // Arrange
+        let mut docs = served("ecumenical-creeds", "/ecumenical-creeds/apostles-creed/", &[(4, "a mark")]).documents;
+        // Act
+        let refused = apply_strips(&mut docs, &exclusions(ONE_OF_EACH).strip).unwrap_err().to_string();
+        // Assert
+        assert!(refused.contains("names 2.1.3, which is not served"), "{refused}");
     }
 
     #[test]
@@ -683,7 +1028,7 @@ mod tests {
 
     #[test]
     fn small_catechism_first_commandment_merges_question_and_answer_into_one_paragraph_and_excludes_the_next_heading() {
-        let (paras, anomalies) = group_and_number_paragraphs(SC_FIRST_COMMANDMENT);
+        let (paras, anomalies) = group_and_number_paragraphs(SC_FIRST_COMMANDMENT, &mut |_| false);
         assert!(anomalies.is_empty(), "a clean Q/A merge is not an anomaly: {anomalies:?}");
         assert_eq!(paras.len(), 2, "commandment 1 (merged) + commandment 2 (its own text, article cut short by the fixture)");
         assert_eq!(paras[0].paragraph, 1);
@@ -705,7 +1050,7 @@ in His sight. Rom. 3 and 4.</p>"#;
 
     #[test]
     fn augsburg_confession_article_iv_is_three_plain_sequential_paragraphs() {
-        let (paras, anomalies) = group_and_number_paragraphs(AC_ARTICLE_IV);
+        let (paras, anomalies) = group_and_number_paragraphs(AC_ARTICLE_IV, &mut |_| false);
         assert!(anomalies.is_empty());
         assert_eq!(paras.iter().map(|p| p.paragraph).collect::<Vec<_>>(), vec![1, 2, 3]);
         assert_eq!(paras[2].text, "This faith God imputes for righteousness in His sight. Rom. 3 and 4.");
@@ -723,7 +1068,7 @@ in His sight. Rom. 3 and 4.</p>"#;
 
     #[test]
     fn lords_prayer_introduction_merges_via_explicit_ans_pairing_and_gets_paragraph_zero() {
-        let (paras, anomalies) = group_and_number_paragraphs(LORDS_PRAYER_INTRO);
+        let (paras, anomalies) = group_and_number_paragraphs(LORDS_PRAYER_INTRO, &mut |_| false);
         assert!(anomalies.is_empty());
         assert_eq!(paras.len(), 2);
         assert_eq!(paras[0].paragraph, 0, "the leading unnumbered unit gets 0 -- never collides with the real 1..7 petitions");
@@ -736,7 +1081,7 @@ in His sight. Rom. 3 and 4.</p>"#;
         let body = r#"<p><span id="sc-preface-0001" class="bocanchor"> </span><span id="sc-preface-0001-acontent" class="bocanchor-content">*</span>First.</p>
 <p><span id="sc-preface-0002" class="bocanchor"> </span><span id="sc-preface-0002-acontent" class="bocanchor-content">*</span>Second.</p>
 <p><span id="sc-preface-0003" class="bocanchor"> </span><span id="sc-preface-0003-acontent" class="bocanchor-content">*</span>Third.</p>"#;
-        let (paras, _) = group_and_number_paragraphs(body);
+        let (paras, _) = group_and_number_paragraphs(body, &mut |_| false);
         assert_eq!(paras.len(), 3, "three independently-anchored '*' paragraphs, not one merged blob");
         assert_eq!(paras.iter().map(|p| p.paragraph).collect::<Vec<_>>(), vec![0, 1, 2]);
     }
@@ -744,7 +1089,7 @@ in His sight. Rom. 3 and 4.</p>"#;
     #[test]
     fn a_duplicate_source_label_is_remapped_and_disclosed_not_silently_duplicated() {
         let body = r#"<p><span id="a" class="bocanchor"> </span><span id="a-acontent" class="bocanchor-content">9</span>Question.<span id="b" class="bocanchor"> </span><span id="b-acontent" class="bocanchor-content">9</span>Answer.</p>"#;
-        let (paras, anomalies) = group_and_number_paragraphs(body);
+        let (paras, anomalies) = group_and_number_paragraphs(body, &mut |_| false);
         assert_eq!(paras.len(), 1);
         assert_eq!(paras[0].paragraph, 9);
         assert_eq!(paras[0].text, "Question. Answer.");
@@ -755,7 +1100,7 @@ in His sight. Rom. 3 and 4.</p>"#;
     fn ecumenical_creeds_style_no_markers_falls_back_to_synthetic_sequential_paragraphs() {
         let body = r#"<p>I believe in God the Father Almighty, Maker of heaven and earth.</p>
 <p>And in Jesus Christ, His only Son, our Lord.</p>"#;
-        let (paras, anomalies) = group_and_number_paragraphs(body);
+        let (paras, anomalies) = group_and_number_paragraphs(body, &mut |_| false);
         assert_eq!(paras.len(), 2);
         assert_eq!(paras[0].paragraph, 1);
         assert_eq!(paras[1].paragraph, 2);
@@ -785,7 +1130,7 @@ in His sight. Rom. 3 and 4.</p>"#;
 <p><span id="a" class="bocanchor"> </span><span id="a-acontent" class="bocanchor-content">1</span>To the Readers.</p>
 </main></div><footer>...</footer>"#;
         let spec = ConcordDocSpec { part: 1, key: "preface", title: "Preface to the Book of Concord" };
-        let (doc, _disclosures, _skipped) = parse_document(html, &spec).unwrap();
+        let (doc, _disclosures, _skipped) = parse_document(html, &spec, &mut ExclusionLedger::new(&ConcordExclusions::default())).unwrap();
         assert_eq!(doc.articles.len(), 1);
         assert_eq!(doc.articles[0].article, 1);
         assert_eq!(doc.articles[0].title, "Preface to the Book of Concord");
@@ -801,7 +1146,8 @@ in His sight. Rom. 3 and 4.</p>"#;
 <section><p><span id="a" class="bocanchor"> </span><span id="a-acontent" class="bocanchor-content">1</span>Thou shalt have no other gods.</p></section>
 </main></div><footer>...</footer>"#;
         let spec = ConcordDocSpec { part: 7, key: "small-catechism", title: "The Small Catechism" };
-        let (doc, disclosures, skipped) = parse_document(html, &spec).unwrap();
+        let skips = exclusions("markers = []\n[[article]]\ndocument = \"small-catechism\"\nslug = \"/small-catechism/prefaratory-notes/\"\nkind = \"site-furniture\"\ntriglot = \"absent\"\n");
+        let (doc, disclosures, skipped) = parse_document(html, &spec, &mut ExclusionLedger::new(&skips)).unwrap();
         assert_eq!(skipped, 1);
         assert_eq!(doc.articles.len(), 1, "only the real Ten Commandments article survives");
         assert_eq!(doc.articles[0].article, 1, "article numbering is not perturbed by a skipped predecessor");
