@@ -27,21 +27,26 @@ used to make a future producer appear present.
 | C1 / M8 | Private representations and their checks in real files; plain-language examples and links in the tour. No opaque-name or syntax-only sign-off claim. |
 | C2 / I5 | Admit the served Year node, its label, atlas membership and counted facets/offices. No client year factory or computed previous/next. Pure span operations match the signed Year design. |
 | C3 / M3 | Match dated/undated event representation and precision; chronology only for dated events. Check every real event's attestation availability before requiring a nonempty account collection. |
-| C4 / I9 / I10 | Shared Bible/Concord containers and served passage marks; at least two units; parts/headings/summaries retained. No client passage minting. Text query/cache keys match the actual container read. |
+| C4 / I9 / I10 | Distinct Bible/Concord types sharing one navigation interface/typeclass, plus served passage marks; at least two units; parts/headings/summaries retained. No client passage minting. Text query/cache keys match the actual container read. |
 | C5 / I6 / M7 | Use the generated reference/cursor/vocabulary names once, including the distinct approved cursors. Narrow node kinds from served discriminants, never id prefixes. Stories use Previous/Next. |
-| C6 / I7 / M4 | Remove fictional server trail receipts. Await the recorded trail-retention ruling; expose one step sequence. State inverses with their capacity/eviction preconditions and a callable renewal law. |
+| C6 / I7 / M4 | Remove fictional server trail receipts. Owner ops 75c9925 rules retention of only the last N steps; expose one step sequence. State inverses with their capacity/eviction preconditions and a callable renewal law. |
 | I1 / M5 | Each door returns its own reachable closed failure; user cancellation is separate from retryable transport failure. |
 | I2 / I3 | One focus-change operation for scrolling and arrows; neighbour entries retain the served edge evidence needed to follow. |
-| I4 | At-the-same-time rows use the actual served paged window/cursor, not an eagerly retained complete set. |
+| I4 | **Superseded by owner ops 75c9925:** genuinely simultaneous events load as a short whole list, not all same-year events. The server supplies concurrency at its finest known granularity; the client does not derive it. |
 | I8 | Involution/symmetry, vocabulary and accessor/capacity laws; reference ordering requires an actual served/contract ordering guarantee. No invented ordinals. |
 | M2 / M6 | Retain edge metadata and restrict edge-to-edge endpoints by relation. Cache capacity has one named unit; root/query/cursor equality and invalidation have observable laws. |
 | M1 | Complete library survey and package/WASM gates before implementing collection/composition/cache machinery. |
 
-The six choices already presented by Claude remain owner decisions; this response
-neither answers them on the owner's behalf nor asks them again. Existing rulings
-on shared containers, canonical verse identity, served vocabulary and bounded
-reads are respected now. Unlanded WIREID/TIME/FOCUS-3 shapes are contract
-dependencies, not permission to copy their declarations into the client.
+The initial response left the six questions unanswered. Owner ops 75c9925 now
+answers all six: served Years, one exact/circa event span or undated with no
+chronology, last-N-step trail, distinct Bible/Concord types sharing navigation,
+contract vocabulary, and a short whole list of true concurrent events. Owner
+ops a5f02a1 adds finer Scripture-grounded month/day/festival/weekday associations;
+concurrency uses the finest known time, not same-year membership. An account is
+one unbroken run; fragmented narrative forms multiple accounts. These rulings
+supersede the conflicting rejected proposal and pre-review paging recommendation.
+Unlanded WIREID/amended TIME/FOCUS-3 shapes are producer dependencies, not
+permission to copy their declarations into the client. No questions are repeated.
 
 Library-survey additions: Microsoft.OpenApi + YamlReader **3.10.2**, Thoth.Json.Core
 **0.9.1** + System.Text.Json **0.4.0** (both pre-1.0), FsToolkit.ErrorHandling
@@ -53,7 +58,7 @@ instead of assuming a bespoke NonEmpty is necessary. Package metadata alone
 proves neither trimming size nor WASM/AOT behavior; run those gates before
 adoption or rejection. Reuse FsToolkit validation/composition through the one
 checked boundary, rather than installing a second general-purpose algebra.
-The immutable LRU survey remains to complete; no rejection or custom-cache
+At the initial response, the immutable LRU survey remained to complete; no rejection or custom-cache
 implementation is authorized by an unmeasured size claim.
 
 The initial 89b6283 response changed no production source, compile list or
@@ -137,3 +142,23 @@ owned disposable mutation/build output under CX-I3's retention proposal, and
 check the Windows VHD-host volume as well as guest df. Guest cleanup does not
 compact the VHD. No fresh Cargo/AOT target, shared-artifact write, server or Codex
 lock was needed for this checkpoint.
+
+
+Cache-library survey (2026-10-03; before cache code):
+
+| Candidate | License, maintenance, fit and decision |
+|---|---|
+| [BitFaster.Caching 2.6.1](https://www.nuget.org/packages/BitFaster.Caching/2.6.1), [repository/license](https://github.com/bitfaster/BitFaster.Caching) | MIT, package released 2026-08-27, .NET 10/6/Standard targets. [ConcurrentLru](https://github.com/bitfaster/BitFaster.Caching/wiki/ConcurrentLru) is mutable and approximate: a hit does not immediately reorder eviction. It does not implement the proposed immutable deterministic hit/put state law. Reject for that domain model, not for an unmeasured WASM size claim. |
+| [BitFaster ClassicLru](https://github.com/bitfaster/BitFaster.Caching/blob/main/BitFaster.Caching/Lru/ClassicLru.cs) | Same maintained permissive package. Strict recency, but shared mutable dictionary/linked-list state and locks; lookup changes that state. Cannot live inside immutable Elmish snapshots as the proposed pure PageCache. An effect-owned cache outside the model could use this library if that architecture is chosen, with stale/root law coverage. |
+| [DotNext.Threading 6.8.0](https://www.nuget.org/packages/DotNext.Threading/6.8.0), [cache API](https://dotnet.github.io/dotNext/features/core/cache.html) | MIT, release 2026-09-20, .NET 10. Current RandomAccessCache uses SIEVE, asynchronous mutable operations, not immutable LRU. The older ConcurrentCache API is deprecated. Upstream advertises WASM/NativeAOT portability, but no client spike was run here. Reject for the proposed pure deterministic recency law. |
+| [System.Collections.Immutable](https://learn.microsoft.com/en-us/dotnet/api/system.collections.immutable.immutabledictionary-2?view=net-10.0) and SDK FSharp.Core | MIT, maintained framework libraries already available; persistent maps/lists preserve prior values. They supply collection machinery but no ready LRU. Preferred storage for a small domain-specific capacity/root/recency policy if the approved model requires pure snapshots. No generic cache framework or collection algorithm is justified. |
+
+Searches included .NET immutable LRU packages and primary repository APIs; no
+surveyed cache library supplies the exact pure snapshot/recency algebra. That
+is a scoped fit result, not proof no such library exists. The provisional choice
+is existing immutable collections plus the smallest domain policy; reject each
+mutable/alternate-policy candidate for the reasons above. Final cache API,
+property laws, package choice and native/WASM/runtime-size gates remain ahead
+of implementation and domain approval. No cache package was installed or custom
+LRU implemented in this checkpoint. This advances M1's survey obligation, not
+its remaining adoption/runtime evidence.

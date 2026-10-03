@@ -36,12 +36,21 @@ focus; structured wire/contract/read failures. Those actual modules and their
 laws are still owed. Each private scalar must have one validating Result door
 with its own reachable closed failure and independent invalid-input properties.
 
-The six choices already sent by Claude remain pending with the owner: Year
-admission, event dating, trail retention, shared container model, served
-vocabulary, and paged concurrent events. Existing owner rulings on shared
-containers, canonical verse identities, focus change and bounded reads still
-bind the design. Unlanded WIREID/Year/FOCUS-3 contracts are producer dependencies.
-There are no invented client year/passage constructors or server trail receipts.
+The owner answered Claude's six choices on ops 75c9925: Years are served
+nodes, stepped by served links; an event has one exact/circa span or is undated
+with no chronology; the trail keeps the last N steps; Bible and Concord have
+distinct types sharing one navigation interface/typeclass; contract names and
+the owner's vocabulary win. Concurrency is a short whole list of genuinely
+simultaneous events, not every event in the same year. This owner ruling
+supersedes pre-review I4's proposed paging. An account is one unbroken verse run;
+a fragmented story has multiple accounts of the same event.
+
+Ops a5f02a1 further rules that Scripture-grounded months/days, festivals and
+weekdays refine events within a Year; the client must not infer those dates or
+concurrency. Festivals are explorable. The amended Year/FOCUS-3 and unlanded
+WIREID contracts remain producer dependencies. There are no invented client
+year/passage constructors or server trail receipts. Canonical verse identities,
+one focus-change path and default 20/40 reading bounds remain binding.
 
 The [survey and validation record](../reports/2026-10-02-fsharp-client-domain-revision.md)
 states the dependency choices and what has actually run. The 89-instance costume
