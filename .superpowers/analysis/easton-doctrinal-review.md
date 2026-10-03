@@ -1,6 +1,6 @@
 # Easton doctrinal review — CX-R2 working inventory
 
-**Status: in progress.** The artifact mapping and broad source screening are complete; this is not yet the finished “every doctrinal entry” review required by the brief. 48 passages below have specific review notes; 94 complete source fragments also have explicit contextual dispositions in the coverage ledger. The remaining candidate inventory is mechanically selected and still needs contextual review; unselected entries are not certified doctrinally neutral. No entry has been approved, suppressed or rewritten. Donovan and the Pastor make the rulings.
+**Status: in progress.** The artifact mapping and broad source screening are complete; this is not yet the finished “every doctrinal entry” review required by the brief. 50 passages below have specific review notes; 129 complete source fragments also have explicit contextual dispositions in the coverage ledger. The remaining candidate inventory is mechanically selected and still needs contextual review; unselected entries are not certified doctrinally neutral. No entry has been approved, suppressed or rewritten. Donovan and the Pastor make the rulings.
 
 ## Scope and provenance
 
@@ -117,6 +117,16 @@ The third Person of the adorable Trinity.
 ```
 
 The served description directly teaches the Trinity. Check its complete personal/divine-attribute argument against AC I and III. No specific conflict is identified in the quoted opening. [Confessional comparison](https://bookofconcord.org/augsburg-confession/of-god/).
+
+### Paul — degree 239
+
+Source `recnJnCEEU7YVwC9X` · family `p-p78.3` · served text: `Person:paul_2479` (239).
+
+```text
+This was the moment of his conversion, the most solemn in all his life. Blinded by the dazzling light ([Acts 9:8](/acts#Acts.9.8)), his companions led him into the city, where, absorbed in deep thought for three days, he neither ate nor drank (9:11). Ananias, a disciple living in Damascus, was informed by a vision of the change that had happened to Saul, and was sent to him to open his eyes and admit him by baptism into the Christian church (9:11-16). The whole purpose of his life was now permanently changed.
+```
+
+The baptism summary names admission into the church but not its promise of forgiveness. Compare AC IX with [Acts 22:16, KJV](https://www.biblegateway.com/passage/?search=Acts%2022%3A16&version=KJV), checked 2026-10-03. Ask whether the complete entry’s summary is adequate for pastoral display; its omission is not an explicit denial of baptismal grace, and Paul’s extraordinary conversion is not a universal conversion sequence. [Confessional comparison](https://bookofconcord.org/augsburg-confession/of-baptism/).
 
 ### Tiberias — degree 221
 
@@ -398,6 +408,16 @@ The elements used to represent Christ’s body and blood are bread and wine. The
 
 Flag the explicit denial of reception with the mouth and the restriction to reception by the soul through faith. Compare AC X and FC SD VII on the true body and blood given and received in the Supper. [Confessional comparison](https://bookofconcord.org/solid-declaration/the-holy-supper/).
 
+### Manasseh 2 — degree 0
+
+Source `recqxWugq0Gi9X3So` · family `m-p99.2` · served text: no matching description in this artifact.
+
+```text
+In [Judg. 18:30](/judg#Judg.18.30) the correct reading is “Moses,” and not “Manasseh.” The name “Manasseh” is supposed to have been introduced by some transcriber to avoid the scandal of naming the grandson of Moses the great lawgiver as the founder of an idolatrous religion.
+```
+
+Flag the definite correction of Judges 18:30 and the conjecture about a transcriber’s motive. The [KJV wording](https://www.biblegateway.com/passage/?search=Judges%2018%3A30&version=KJV), checked 2026-10-03, names Manasseh. The Pastor should assess the textual evidence and distinguish a variant-reading argument from a demonstrated corruption or knowledge of a scribe’s intention; this note does not decide which reading is original. Compare FC SD rule/norm for the authority of Scripture rather than an explanatory dictionary. [Confessional comparison](https://bookofconcord.org/solid-declaration/rule-and-norm/).
+
 ### Millennium — degree 0
 
 Source `rec3XIvZDS90St2uo` · family `m-p367.9` · served text: no matching description in this artifact.
@@ -510,7 +530,7 @@ The entry explicitly rejects perfection in this life. Preserve that qualificatio
 
 ## Contextual coverage ledger — continued 2026-10-03
 
-These 94 complete fragments were read in context, including numbered siblings and the Effectual call cross-reference. A disposition of no specific conflict is a review observation, not pastoral approval. The remaining rows still require examination. Confessional comparison links were checked against the published texts on 2026-10-01; the new FC SD V, rule/norm and AC III links, and Matthew 12:40, were checked on 2026-10-03.
+These 129 complete fragments were read in context, including numbered siblings and the Effectual call cross-reference. A disposition of no specific conflict is a review observation, not pastoral approval. The remaining rows still require examination. Confessional comparison links were checked against the published texts on 2026-10-01; the new FC SD V, rule/norm, AC III and AC IX links, plus Matthew 12:40, Acts 22:16 and Judges 18:30, were checked on 2026-10-03.
 
 | Source | Heading | Contextual disposition |
 |---|---|---|
@@ -528,21 +548,51 @@ These 94 complete fragments were read in context, including numbered siblings an
 | `recherNi3exKJw4wQ` | Gethsemane | Complete entry read. Christ’s agony is recalled in a garden/site discussion; no doctrinal claim about either nature or will beyond that recollection identified. |
 | `recszpyGuOXaIj3JD` | Capernaum | Complete entry read. Recorded unbelief/judgment and a quotation from John 6 occur in a geographical/synagogue discussion; no oral-reception or sacramental-denial thesis stated here. |
 | `reccw8Hfkcr6mcO45` | Abraham | Complete biography read; added the promised-Deliverer paragraph. Covenant, circumcision and tested faith are narrative context, with no explicit faith/works condition for justification asserted. |
+| `recFp77E07LoxWulo` | Solomon | Complete biography: wisdom, idolatry and divine displeasure; distinguishes intellectual belief from the heart. No specific Lutheran contradiction identified; does not warrant a judgment about his final salvation. |
+| `rec6fRXQLhIELigzB` | Saul 2 | Complete royal biography: Spirit, disobedience, divine judgment and Endor. The medium episode is reported, not commended; no specific Lutheran contradiction identified. |
 | `recTj9stfSW84FZ9q` | Judah | Complete patriarchal fragment read. Praise, family conduct and blessing are historical narrative; no specific Christian doctrinal conflict identified. |
 | `recIblkI6GS90sPa8` | Nazareth | Complete entry read. Incarnation/virgin-birth recollection and a discussion of unbelief/site/name theories; no specific Lutheran conflict identified. This does not certify its site/name conjectures. |
+| `recnJnCEEU7YVwC9X` | Paul | Complete apostolic biography read; added baptismal-completeness question, distinguishing omitted promise from explicit denial. Historical reconstruction is not asserted as a confessional ruling. |
 | `rec1eO6QbgYOpxsNO` | Gadara | Complete entry read. Demon-healing narrative in a site discussion; no specific Christian doctrinal conflict identified. Traveller-description language is not approved by this limited doctrinal disposition. |
 | `recqLvYFsLt3UIq9A` | Tiberias | Complete entry read; added qualified review of the conjectured restriction of Christ’s city visits. Rabbinical/Masoretic history is contextual, not an asserted new source of Christian doctrine. |
 | `recaosOHQl3jhhelR` | Caesara Philippi | Complete entry read. Pagan sanctuary/imperial worship and Gospel-ministry geography are historical context; no Christian adoption of that worship asserted. |
+| `rec1hmENiT7j0psby` | Joseph 1 | Complete patriarchal biography: dreams, providence and the covenant promise; no specific Lutheran contradiction identified. Historical/chronological reconstructions remain distinct from doctrinal claims. |
+| `recrZ6X8OUiDnjsYE` | Peter | Complete apostolic biography: confession, fall, restoration and ministry; no Petrine-supremacy claim asserted. No specific Lutheran contradiction identified; the Rome claim is historical, not a confessional ruling. |
 | `recirbfCkBPtHP891` | Joshua | Complete entry read; added law/gospel succession typology for review. Circumcision/Passover and conquest references remain historical observances, not imposed Christian rites. |
+| `recjAb0vQR17Yk2Tg` | Tyre | Historical geography, idolatry/judgment citations and apostolic church visit; no distinctive conflicting doctrinal claim identified. |
 | `recW4NnksZcT0wGRF` | Esau | Complete entry read. Birthright/covenant blessing and national conflict, without asserting unconditional damnation or a general decree of reprobation. |
 | `recZxZ4LLDtezvPJT` | Zion | Complete entry read. Geographical and church/heavenly-city senses of the name; no specific Christian doctrinal conflict identified. |
 | `rec7FCSm1R9DdPP1K` | Emmaus | Complete entry read. Resurrection-day meeting in a disputed-site discussion; no specific Christian doctrinal conflict identified. |
 | `rec78MHu2L6oVYLIx` | Isaac 1 | Complete numbered fragment read. Covenant promise and cited New Testament contrasts are narrative/typological context, without a general decree of reprobation asserted. |
+| `recknbdRCHWXB90eg` | Jeremiah 6 | Prophetic calling, preservation of his writings and judgment narrated; no distinctive conflicting doctrine identified. Historical chronology is outside this doctrinal disposition. |
+| `recSN841yUh6SeiCL` | Hezekiah 1 | Idolatry removed, prayer, divine deliverance and miraculous recovery narrated; no specific Lutheran contradiction identified. |
+| `recqyVJZLlX3ISveq` | Decapolis | Geographical inventory and historical Christian migration; no doctrinal claim identified. |
+| `reclkBpMyD0E2VpDz` | Dalmanutha | Geographical Gospel-site identification; no doctrinal claim identified. |
+| `rec4RGiIIqQbRvH2A` | Gennesaret 1 | Historical town/plain description; no doctrinal claim identified. |
+| `recLVuF3Cyx42nwko` | Manasseh 1 | Adoption, census and tribal allotments narrated; not a claim about spiritual adoption or election. No doctrinal contradiction identified. |
+| `recR8lknnsLLlvBhF` | Ahab 1 | Idolatry, prophets and judgment narrated; no distinctive conflicting doctrinal claim identified. |
+| `recwNJZnKaFjnRShm` | Joseph 4 | Foster-father biography, including a qualified death inference; no specific Christological contradiction identified. |
+| `recyXsfPAttNL3DpD` | Joseph 5 | Christ’s actual death and burial narrated; no specific Lutheran contradiction identified. |
 | `recEVTygvYxkRHTCJ` | Bethsaida 1 | Complete family fragment read with opening and fragment 2; apostles/ministry and site description, no specific doctrinal conflict identified. |
+| `recrRozb7znbN0vtd` | Jeremiah | Name etymology only; no doctrinal claim. |
+| `rec7StbiZY9CvxFx0` | Jeremiah 5 | Historical family identification; no doctrinal claim. |
+| `recALFJf6A4HEzHxQ` | Saul 1 | Historical identification of an Edomite king; no doctrinal claim. |
+| `recEevTdwXAPW9MMa` | Ahab 2 | False-prophet identification; no independent doctrinal assertion. |
+| `reckaKL1qn3LwpXxU` | Hezekiah | Name etymology only; no doctrinal claim. |
+| `reclWWU1ZOmjG9RHk` | Joseph | Name etymology only; no doctrinal claim. |
+| `recEqPDWb5lCFTLnj` | Joseph 2 | Historical identification of an Asaphite musician; no doctrinal claim. |
+| `reci7kZFYCoLD21U9` | Joseph 3 | Genealogical names in Luke; no doctrinal controversy stated. |
+| `recrIKiqirin2Q6Qe` | Joseph 6 | Historical apostolic candidate identification; no independent ministry doctrine stated. |
+| `recjcXTfzIB18LkZj` | Manasseh | Name etymology and Genesis citation; no doctrinal claim identified. |
+| `recBjgvEZ6rn1Qjag` | Jeremiah 1 | Historical warrior identification; no doctrinal claim. |
+| `recRMp6OyahoylMnU` | Jeremiah 2 | Historical warrior identification; no doctrinal claim. |
+| `recBNApH88e2PdJCo` | Jeremiah 3 | Historical warrior identification; no doctrinal claim. |
+| `recPXpfZ6WoP3BsdY` | Jeremiah 4 | Historical tribal-chief identification; no doctrinal claim. |
 | `recWR53AYL0ujtLo0` | Adoption | General lexical definition, not yet spiritual adoption. |
 | `recWNh1YAMoCt2AoM` | Adoption 1 | Historical family adoption examples; no doctrinal conflict identified. |
 | `rec9c52uOcndVtnwO` | Adoption 2 | National adoption citations; do not equate this with individual election to salvation. |
 | `recYf9ObqyqrNpAfy` | Adoption 3 | Doctrinal; added qualified justification/adoption note. |
+| `recmknZklVnc0NHPs` | Ahab | Name etymology only; no doctrinal claim. |
 | `recKHJy9mvyKelVDO` | Assurance | Full entry reread; final never-lost principle supports existing perseverance flag. |
 | `recNetpk6zoj3yfeC` | Atonement | Doctrinal; added qualified satisfaction/reconciliation note. |
 | `recOmO7oy69H0LcfJ` | Atonement, Day of | Historical observance, dates and citations; no adverse doctrinal claim identified in this fragment. |
@@ -572,6 +622,8 @@ These 94 complete fragments were read in context, including numbered siblings an
 | `recnDgY2nXn1vl9h2` | Effectual prayer | Prayer efficacy gloss, not an independent conversion theory. |
 | `recDyhhcfSdfrx20R` | Elder | Complete entry reread; existing sole-essential-office question retained. |
 | `recMi4LwuD2vkYNjc` | Election of Grace | All office/national/salvation senses read; existing qualified election note retained. |
+| `recUPDGwmRiUleB76` | Gennesaret | Name etymology only; no doctrinal claim. |
+| `recVdz7Ipz2MDsnVJ` | Gennesaret 2 | Lake-name cross-reference; no doctrinal claim. |
 | `recRjKTwmy52Z8ZFF` | Grace 1 | Lexical form/person sense; no soteriological claim. |
 | `recY2Mx5ig0hiL4HN` | Grace 2 | Lexical favour/kindness sense; no specific conflict identified. |
 | `recGBkH1wCATvpGD2` | Grace 3 | Doctrinal forgiving-mercy definition; no specific conflict identified. |
@@ -596,6 +648,7 @@ These 94 complete fragments were read in context, including numbered siblings an
 | `rec1ecDV7A68TG80o` | Lord’s Supper 3 | Added badge-only fragment display question. |
 | `recVuTGCWMPd6uJCL` | Lord’s Supper 4 | Communion with Christ; meaning clarified by fragment 5, not independently condemned. |
 | `recIvnnGcxMxDbHol` | Lord’s Supper 5 | Explicit oral-reception denial; existing principal review flag retained. |
+| `recqxWugq0Gi9X3So` | Manasseh 2 | Entire idolatry/repentance biography read; no conflict inferred from temporal chastisement. Added textual-claim question about the final Judges 18:30 paragraph. |
 | `recKxWMEHyqlawkx1` | Perseverance of the saints | Complete unconditional-perseverance argument read; existing AC XII flag retained. |
 | `recHp6zgqDNhg8K2H` | Predestination | Entire all-events decree discussion read; existing FC XI flag retained. |
 | `rec1f1omMkyFZO4bX` | Predestination 1 | Added passed-over language question in parent context. |
@@ -608,8 +661,10 @@ These 94 complete fragments were read in context, including numbered siblings an
 | `recuLsHUGpXx3nc4z` | Sabbath | Complete entry reread; universal permanent obligation and cannot-be-abrogated claims support existing flag. |
 | `recA066oodY2jUv2A` | Sabbath day’s journey | Reports Jewish travel-distance tradition; does not impose it on Christians. |
 | `recUo8Q9gX8NkWytZ` | Sanctification | Added no-perfection-in-this-life qualification. |
+| `recg6sNo5SuVX2cmY` | Saul | Name etymology only; no doctrinal claim. |
+| `recWa74xqz5F3gbGF` | Saul 3 | Apostolic name and cross-reference; read together with the complete Paul entry. |
 
-Coverage: 102 distinct source rows have a specific note or contextual disposition; 1,954 screened candidates remain without either. Of the original 4,313 nonempty unselected rows, 4,304 remain without a contextual disposition and still require the separate semantic sweep.
+Coverage: 137 distinct source rows have a specific note or contextual disposition; 1,932 screened candidates remain without either. Of the original 4,313 nonempty unselected rows, 4,291 remain without a contextual disposition and still require the separate semantic sweep.
 
 ## Broad screening inventory — contextual review pending
 
