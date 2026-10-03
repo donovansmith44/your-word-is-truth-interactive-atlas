@@ -1,0 +1,274 @@
+[
+  {
+    "path": "/home/donovan/mut/codex-CX-FSHARP-order-probe/bin",
+    "logical_file_bytes": 34282294,
+    "tracked_files": 0,
+    "symlinks": 0,
+    "blocking_pids": [],
+    "removed": true
+  },
+  {
+    "path": "/home/donovan/mut/codex-CX-FSHARP-order-probe/obj",
+    "logical_file_bytes": 262010,
+    "tracked_files": 0,
+    "symlinks": 0,
+    "blocking_pids": [],
+    "removed": true
+  },
+  {
+    "path": "/home/donovan/w/CX-FSHARP-order/docs/superpowers/reports/evidence/2026-10-03-fsharp-order-coverage/bin",
+    "logical_file_bytes": 34284498,
+    "tracked_files": 0,
+    "symlinks": 0,
+    "blocking_pids": [],
+    "removed": true
+  },
+  {
+    "path": "/home/donovan/w/CX-FSHARP-order/docs/superpowers/reports/evidence/2026-10-03-fsharp-order-coverage/obj",
+    "logical_file_bytes": 273399,
+    "tracked_files": 0,
+    "symlinks": 0,
+    "blocking_pids": [],
+    "removed": true
+  },
+  {
+    "path": "/home/donovan/w/A-WIRE-IDENTITIES-review/client.ContractGenerator/bin",
+    "logical_file_bytes": 2637543,
+    "tracked_files": 0,
+    "symlinks": 0,
+    "blocking_pids": [],
+    "removed": true
+  },
+  {
+    "path": "/home/donovan/w/A-WIRE-IDENTITIES-review/client.ContractGenerator/obj",
+    "logical_file_bytes": 230156,
+    "tracked_files": 0,
+    "symlinks": 0,
+    "blocking_pids": [],
+    "removed": true
+  },
+  {
+    "path": "/home/donovan/w/A-WIRE-IDENTITIES-review/client/Exploring/bin",
+    "logical_file_bytes": 484329,
+    "tracked_files": 0,
+    "symlinks": 0,
+    "blocking_pids": [],
+    "removed": true
+  },
+  {
+    "path": "/home/donovan/w/A-WIRE-IDENTITIES-review/client/Exploring/obj",
+    "logical_file_bytes": 1064024,
+    "tracked_files": 0,
+    "symlinks": 0,
+    "blocking_pids": [],
+    "removed": true
+  },
+  {
+    "path": "/home/donovan/w/A-WIRE-IDENTITIES-review/client/bin",
+    "logical_file_bytes": 74158421,
+    "tracked_files": 0,
+    "symlinks": 0,
+    "blocking_pids": [],
+    "removed": true
+  },
+  {
+    "path": "/home/donovan/w/A-WIRE-IDENTITIES-review/client/obj",
+    "logical_file_bytes": 39456195,
+    "tracked_files": 0,
+    "symlinks": 0,
+    "blocking_pids": [],
+    "removed": true
+  },
+  {
+    "path": "/home/donovan/w/A-WIRE-IDENTITIES-review/client.Tests/bin",
+    "logical_file_bytes": 16339576,
+    "tracked_files": 0,
+    "symlinks": 0,
+    "blocking_pids": [],
+    "removed": true
+  },
+  {
+    "path": "/home/donovan/w/A-WIRE-IDENTITIES-review/client.Tests/obj",
+    "logical_file_bytes": 1918159,
+    "tracked_files": 0,
+    "symlinks": 0,
+    "blocking_pids": [],
+    "removed": true
+  },
+  {
+    "path": "/home/donovan/w/A-WIRE-IDENTITIES-review/client.ContractTests/bin",
+    "logical_file_bytes": 14024758,
+    "tracked_files": 0,
+    "symlinks": 0,
+    "blocking_pids": [],
+    "removed": true
+  },
+  {
+    "path": "/home/donovan/w/A-WIRE-IDENTITIES-review/client.ContractTests/obj",
+    "logical_file_bytes": 1050341,
+    "tracked_files": 0,
+    "symlinks": 0,
+    "blocking_pids": [],
+    "removed": true
+  },
+  {
+    "path": "/home/donovan/mut/codex-WIREID-probe/bin",
+    "logical_file_bytes": 0,
+    "tracked_files": 0,
+    "symlinks": 0,
+    "blocking_pids": [],
+    "removed": true
+  },
+  {
+    "path": "/home/donovan/mut/codex-WIREID-probe/obj",
+    "logical_file_bytes": 81337,
+    "tracked_files": 0,
+    "symlinks": 0,
+    "blocking_pids": [],
+    "removed": true
+  },
+  {
+    "path": "/home/donovan/mut/codex-WIREID-repair-positive/bin",
+    "logical_file_bytes": 3385774,
+    "tracked_files": 0,
+    "symlinks": 0,
+    "blocking_pids": [],
+    "removed": true
+  },
+  {
+    "path": "/home/donovan/mut/codex-WIREID-repair-positive/obj",
+    "logical_file_bytes": 199527,
+    "tracked_files": 0,
+    "symlinks": 0,
+    "blocking_pids": [],
+    "removed": true
+  },
+  {
+    "path": "/home/donovan/mut/codex-WIREID-repair-forbidden/bin",
+    "logical_file_bytes": 0,
+    "tracked_files": 0,
+    "symlinks": 0,
+    "blocking_pids": [],
+    "removed": true
+  },
+  {
+    "path": "/home/donovan/mut/codex-WIREID-repair-forbidden/obj",
+    "logical_file_bytes": 81502,
+    "tracked_files": 0,
+    "symlinks": 0,
+    "blocking_pids": [],
+    "removed": true
+  },
+  {
+    "path": "/home/donovan/mut/codex-CX-FSHARP-wire-probe/bin",
+    "logical_file_bytes": 9779163,
+    "tracked_files": 0,
+    "symlinks": 0,
+    "blocking_pids": [],
+    "removed": true
+  },
+  {
+    "path": "/home/donovan/mut/codex-CX-FSHARP-wire-probe/obj",
+    "logical_file_bytes": 1062215,
+    "tracked_files": 0,
+    "symlinks": 0,
+    "blocking_pids": [],
+    "removed": true
+  },
+  {
+    "path": "/home/donovan/mut/codex-CX-FSHARP-wire-identity-probe/bin",
+    "logical_file_bytes": 36781181,
+    "tracked_files": 0,
+    "symlinks": 0,
+    "blocking_pids": [],
+    "removed": true
+  },
+  {
+    "path": "/home/donovan/mut/codex-CX-FSHARP-wire-identity-probe/obj",
+    "logical_file_bytes": 1140179,
+    "tracked_files": 0,
+    "symlinks": 0,
+    "blocking_pids": [],
+    "removed": true
+  },
+  {
+    "path": "/home/donovan/w/CX-FSHARP-wire/client-fsharp.ContractGenerator/bin",
+    "logical_file_bytes": 3318503,
+    "tracked_files": 0,
+    "symlinks": 0,
+    "blocking_pids": [],
+    "removed": true
+  },
+  {
+    "path": "/home/donovan/w/CX-FSHARP-wire/client-fsharp.ContractGenerator/obj",
+    "logical_file_bytes": 252689,
+    "tracked_files": 0,
+    "symlinks": 0,
+    "blocking_pids": [],
+    "removed": true
+  },
+  {
+    "path": "/home/donovan/w/CX-FSHARP-wire/client-fsharp/Core/bin",
+    "logical_file_bytes": 0,
+    "tracked_files": 0,
+    "symlinks": 0,
+    "blocking_pids": [],
+    "removed": true
+  },
+  {
+    "path": "/home/donovan/w/CX-FSHARP-wire/client-fsharp/Core/obj",
+    "logical_file_bytes": 125632,
+    "tracked_files": 0,
+    "symlinks": 0,
+    "blocking_pids": [],
+    "removed": true
+  },
+  {
+    "path": "/home/donovan/w/CX-FSHARP-wire/client.ContractGenerator/bin",
+    "logical_file_bytes": 2637523,
+    "tracked_files": 0,
+    "symlinks": 0,
+    "blocking_pids": [],
+    "removed": true
+  },
+  {
+    "path": "/home/donovan/w/CX-FSHARP-wire/client.ContractGenerator/obj",
+    "logical_file_bytes": 229686,
+    "tracked_files": 0,
+    "symlinks": 0,
+    "blocking_pids": [],
+    "removed": true
+  },
+  {
+    "path": "/home/donovan/w/CX-FSHARP-wire/docs/superpowers/reports/evidence/2026-10-03-fsharp-wire-identities/generator/bin",
+    "logical_file_bytes": 9333327,
+    "tracked_files": 0,
+    "symlinks": 0,
+    "blocking_pids": [],
+    "removed": true
+  },
+  {
+    "path": "/home/donovan/w/CX-FSHARP-wire/docs/superpowers/reports/evidence/2026-10-03-fsharp-wire-identities/generator/obj",
+    "logical_file_bytes": 230828,
+    "tracked_files": 0,
+    "symlinks": 0,
+    "blocking_pids": [],
+    "removed": true
+  },
+  {
+    "path": "/home/donovan/w/CX-FSHARP-wire/docs/superpowers/reports/evidence/2026-10-03-fsharp-wire-identities/identities/bin",
+    "logical_file_bytes": 36871984,
+    "tracked_files": 0,
+    "symlinks": 0,
+    "blocking_pids": [],
+    "removed": true
+  },
+  {
+    "path": "/home/donovan/w/CX-FSHARP-wire/docs/superpowers/reports/evidence/2026-10-03-fsharp-wire-identities/identities/obj",
+    "logical_file_bytes": 1219265,
+    "tracked_files": 0,
+    "symlinks": 0,
+    "blocking_pids": [],
+    "removed": true
+  }
+]

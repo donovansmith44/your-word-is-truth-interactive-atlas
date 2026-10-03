@@ -100,3 +100,16 @@ once those sites are coherent; then complete structured failures/frontier and th
 mandatory declaration/order work before the owner's whole-skeleton sign-off.
 The parent checkpoint's 61 pending bodies and 294 unused findings remain open.
 No new feature/view or pending domain body was filled. No Codex lock/server remains.
+
+## Stopped-output cleanup
+
+After preserving the pushed sources, complete compact gate logs and reproduction
+projects, checked all 34 named own bin/obj directories for tracked files, symlinks
+and live cwd/exe/fd/mapped-file references. All checks were empty. Removed
+**327,196,018 logical file bytes** of this session's disposable source-order,
+WIREID review and wire-generation output only. Exact paths/checks are retained in
+`cleanup.json`. Source worktrees, probe inputs, reports, logs, raw/cache and Claude's
+outputs remain. WSL now reports about 774 GB free; the Windows VHD host still has
+only about 3.3 GB. This guest cleanup does not compact the VHD or establish host
+headroom. The queue's CX-I3 retention reminder remains in effect; no periodic
+cleanup automation was installed.
