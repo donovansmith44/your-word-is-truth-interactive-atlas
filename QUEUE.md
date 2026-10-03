@@ -253,14 +253,14 @@ Protocol: `AGENTS.md`. Plan: `docs/superpowers/plans/2026-09-30-v1-roadmap.md`.
 
 ### A-NOBLURB: places carry no blurb
 - **Owner ruling (2026-10-02):** "Get rid of the blurbs on locations."
-- **Status:** claimed:claude:2026-10-02 (base `b3d7cfa`, `lane/claude/NOBLURB`): commit 1 the client field and specs (merged into FOCUS-2 at once for the owner's app); commit 2 `PlaceDetail.blurb` and the compiled blurb deleted, schema bump, regen, re-bless. The curated place history stays (it feeds established/destroyed).
+- **Status:** review (Codex): `ace063d..lane/claude/NOBLURB` e57542c (client df4cdfb, merge of F2 4453398, server e57542c; section schema 25, AQC 0.26.0, AGC 0.25.0, graph-types 0.14.0; contract-gate, timing 11/11, client 737/55 pass; Playwright world specs 12/13, the carried density smoke). Server workspace: 2 red — `sources_validate`, `the_etl_binaries` — ALSO RED ON TRUNK e558f07: A-FSTYLE's font rows in LICENSES.md break the sources parity law (Codex's focused Rust run and the FSTYLE agent's client-only gates missed it). Fixed in A-LICENSE-BOC (fonts out of the law's domain). Kept for the owner: the now-unread `[[place.blurb]]` entries in `data/curated/place-history.toml` (delete?). Was: claimed (base `b3d7cfa`, `lane/claude/NOBLURB`): commit 1 the client field and specs (merged into FOCUS-2 at once for the owner's app); commit 2 `PlaceDetail.blurb` and the compiled blurb deleted, schema bump, regen, re-bless. The curated place history stays (it feeds established/destroyed).
 
 ### A-F39: the version root covers every derived table (F-39)
 - **Owner (2026-10-02):** "Yes fix labels."
 - **Status:** ready (A-F2 landed); runs after A-NOBLURB, stacked on it (both move the section schema); before A-F3. Closure: `label`, `edge_index` and every derived table in `logical_dump_section`; a law that changing any derived row moves the root without a schema bump.
 
 ### A-LICENSE-BOC: the served Concord text is the 1921 Triglot only (F-79)
-- **Status:** ready, next after A-NOBLURB in the contract chain (stacks on it), before A-F39. Standing rule (owner 2026-09-29, permissive licensing only): the non-PD units are excluded at compile through a curated list with a reason and Triglot check per entry; in-unit notes and stray markup stripped by curated edits; a compile law that no served Concord unit matches an excluded id or a known non-Triglot marker; `LICENSES.md` corrected. Paragraph renumbering (the phantom units) is reported, not guessed; FOCUS-3 Amendment A (F-78, `lane/claude/F3-amend` 45507a6) builds on it.
+- **Status:** claimed:claude:2026-10-03 (`lane/claude/LICBOC` on NOBLURB e57542c; also closes the trunk red from the font rows). Was: ready, next after A-NOBLURB in the contract chain (stacks on it), before A-F39. Standing rule (owner 2026-09-29, permissive licensing only): the non-PD units are excluded at compile through a curated list with a reason and Triglot check per entry; in-unit notes and stray markup stripped by curated edits; a compile law that no served Concord unit matches an excluded id or a known non-Triglot marker; `LICENSES.md` corrected. Paragraph renumbering (the phantom units) is reported, not guessed; FOCUS-3 Amendment A (F-78, `lane/claude/F3-amend` 45507a6) builds on it.
 
 ### A-REVIEW: review every Codex item in `review`
 - **Status:** standing
