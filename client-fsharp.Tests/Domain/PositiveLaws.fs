@@ -13,4 +13,3 @@ let ``positive admission accepts exactly positive integers and preserves their v
 let ``positive admission refuses zero and every generated negative integer`` (number: uint32) =
     let candidate = -(int (number % uint32 System.Int32.MaxValue))
     Positive.admit candidate = Error PositiveFailure.NonPositive
-

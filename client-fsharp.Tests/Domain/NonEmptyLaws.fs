@@ -34,4 +34,3 @@ let ``map preserves identity and composition without empty output`` (head: int) 
     NonEmpty.map id original = original
     && NonEmpty.map (first >> second) original = (original |> NonEmpty.map first |> NonEmpty.map second)
     && (NonEmpty.map first original |> NonEmpty.toList) = List.map first (head :: tail)
-

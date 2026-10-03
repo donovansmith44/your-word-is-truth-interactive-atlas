@@ -27,4 +27,3 @@ let ``every nonfinite coordinate is refused including all NaN and infinity witne
     let longitude = [Double.NaN; infinite] |> List.map Longitudes.admit
     latitude = [Error LatitudeFailure.NonFiniteLatitude; Error LatitudeFailure.NonFiniteLatitude]
     && longitude = [Error LongitudeFailure.NonFiniteLongitude; Error LongitudeFailure.NonFiniteLongitude]
-

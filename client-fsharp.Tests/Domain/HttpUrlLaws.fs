@@ -18,4 +18,3 @@ let ``non web schemes are refused before a visit link is admitted`` (identity: u
 let ``malformed and relative URLs are refused rather than repaired`` (identity: uint16) =
     let candidates = [null; ""; "https://"; $"/source/{identity}"; $"../source/{identity}"]
     (candidates |> List.map HttpUrls.admit) = List.replicate candidates.Length (Error HttpUrlFailure.MalformedUrl)
-

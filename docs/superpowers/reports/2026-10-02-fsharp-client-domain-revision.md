@@ -95,7 +95,8 @@ are deleted; the old report links its historical 6118be2 declarations and is
 explicitly superseded. No stub, unchecked scalar factory, generic failure bucket
 or future wire declaration remains in these new modules.
 
-Test-first evidence is retained beside this report:
+Test-first evidence is retained beside this report (trailing whitespace normalized;
+original logs remain in the owned mut directory):
 
 | Gate | Exact observed result |
 |---|---|
