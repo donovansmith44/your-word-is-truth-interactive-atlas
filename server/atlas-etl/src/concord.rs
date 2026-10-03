@@ -9,7 +9,8 @@ use anyhow::{Context, Result};
 use atlas_graph_types::text::{Piece, Rendering, TextPartRole};
 use ego_tree::NodeId;
 
-use crate::admission::{Admission, AdmissionStats, Admitted};
+use crate::admission::{Admission, AdmissionStats, Admitted, EditorialReason};
+use crate::triglot::TriglotReference;
 use scraper::{ElementRef, Html, Node, Selector};
 
 /// One document's identity: its part number, its vendored filename stem, and its display title. The part
@@ -86,7 +87,7 @@ fn splice_smalcald_extras(doc: &mut ConcordDocument, sub_dir: &Path, curation: &
         for a in &anomalies {
             disclosures.push(format!("smalcald-articles/{}: {}", extra.full_slug, a));
         }
-        insert_at.entry(idx).or_default().push(ConcordArticle { article: 0, slug: extra.full_slug.to_string(), title, paragraphs });
+        insert_at.entry(idx).or_default().push(ConcordArticle { article: 0, slug: extra.full_slug.to_string(), title, section_title: None, citation: Citation::uncited(), paragraphs });
     }
     for (idx, group) in insert_at.into_iter().rev() {
         for (offset, article) in group.into_iter().enumerate() {
@@ -128,7 +129,34 @@ pub struct ConcordArticle {
     pub article: u16,
     pub slug: String,
     pub title: String,
+    pub section_title: Option<String>,
+    pub citation: Citation,
     pub paragraphs: Vec<ConcordParagraph>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Citation {
+    pub code: String,
+    pub numbering: NumberingAgreement,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum NumberingAgreement {
+    Agrees,
+    ArticleOnly,
+}
+
+impl Citation {
+    pub(crate) fn uncited() -> Citation {
+        Citation { code: String::new(), numbering: NumberingAgreement::ArticleOnly }
+    }
+
+    pub fn label(&self, paragraph: u16) -> String {
+        match self.numbering {
+            NumberingAgreement::Agrees => format!("{} {paragraph}", self.code),
+            NumberingAgreement::ArticleOnly => self.code.clone(),
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -156,6 +184,8 @@ pub struct ConcordStats {
 
 #[derive(Debug, Clone)]
 pub struct ConcordCorpus {
+    pub title: String,
+    pub description: String,
     pub documents: Vec<ConcordDocument>,
     pub stats: ConcordStats,
     pub admissions: Vec<(Admitted, Admission)>,
@@ -205,15 +235,116 @@ pub fn read_all(root: &Path, curated_dir: &Path) -> Result<ConcordCorpus> {
     let policy = crate::admission::parse_admission_policy(&read_curated(curated_dir, "concord-admission.toml")?)?;
     let raw = root.parent().context("data/raw/concord sits inside data/raw")?;
     let reference = crate::triglot::TriglotReference::read(raw, policy.shingle_words)?;
-    let admissions = crate::admission::admit(&docs, &titles, &reference, &policy).map_err(|refusals| {
+    let mut admissions = crate::admission::admit(&docs, &titles, &reference, &policy).map_err(|refusals| {
         anyhow::anyhow!("{} Concord span(s) are not admitted as the 1921 Triglot's:\n{}", refusals.len(), refusals.iter().map(ToString::to_string).collect::<Vec<_>>().join("\n"))
     })?;
+    let corpus_text: CorpusText = toml::from_str(&read_curated(curated_dir, "concord-corpus.toml")?).context("concord-corpus.toml: expected exactly a title and a description")?;
+    admissions.push((Admitted::Description, Admission::Editorial { reason: EditorialReason::CorpusDescription }));
+    let citations: ConcordCitations = toml::from_str(&read_curated(curated_dir, "concord-citations.toml")?).context("concord-citations.toml: invalid TOML or does not match the [[document]]/[[article]]/[[section]] schema")?;
+    cite(&mut docs, &citations, &admissions, &reference, policy.numbering_percent)?;
     stats.admitted = AdmissionStats::of(&admissions);
-    let corpus = ConcordCorpus { documents: docs, stats, admissions };
+    let corpus = ConcordCorpus { title: corpus_text.title, description: corpus_text.description, documents: docs, stats, admissions };
     no_excluded_material_is_served(&corpus, &exclusions)?;
     no_served_text_carries_a_non_triglot_marker(&corpus, &exclusions.markers)?;
     Ok(corpus)
 }
+
+#[derive(serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+struct CorpusText {
+    title: String,
+    description: String,
+}
+
+#[derive(Debug, Clone, PartialEq, serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ConcordCitations {
+    pub document: Vec<DocumentCitation>,
+    #[serde(default)]
+    pub article: Vec<ArticleDesignation>,
+    #[serde(default)]
+    pub section: Vec<SectionTitle>,
+}
+
+#[derive(Debug, Clone, PartialEq, serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct DocumentCitation {
+    pub key: String,
+    pub abbreviation: String,
+}
+
+#[derive(Debug, Clone, PartialEq, serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ArticleDesignation {
+    pub document: String,
+    pub article: u16,
+    pub designation: String,
+}
+
+#[derive(Debug, Clone, PartialEq, serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct SectionTitle {
+    pub document: String,
+    pub article: u16,
+    pub title: String,
+    pub triglot_page: u16,
+}
+
+fn cite(docs: &mut [ConcordDocument], citations: &ConcordCitations, admissions: &[(Admitted, Admission)], reference: &TriglotReference, numbering_percent: u32) -> Result<()> {
+    let mut refusals = Vec::new();
+    let named = |document: &str, article: u16| docs.iter().any(|d| d.key == document && d.articles.iter().any(|a| a.article == article));
+    for row in &citations.article {
+        if !named(&row.document, row.article) {
+            refusals.push(format!("concord-citations.toml: [[article]] {} {} names no served article", row.document, row.article));
+        }
+    }
+    for row in &citations.section {
+        if !named(&row.document, row.article) {
+            refusals.push(format!("concord-citations.toml: [[section]] {} {} names no served article", row.document, row.article));
+        }
+    }
+    for doc in docs.iter_mut() {
+        let Some(abbreviation) = citations.document.iter().find(|row| row.key == doc.key).map(|row| row.abbreviation.as_str()) else {
+            refusals.push(format!("concord-citations.toml: no [[document]] abbreviation for '{}'", doc.key));
+            continue;
+        };
+        for article in doc.articles.iter_mut() {
+            let designation = citations.article.iter().find(|row| row.document == doc.key && row.article == article.article).map(|row| row.designation.as_str());
+            let code = [Some(abbreviation), designation].into_iter().flatten().filter(|part| !part.is_empty()).collect::<Vec<_>>().join(" ");
+            let numbering = numbering_of(doc.part, article, admissions, reference, numbering_percent);
+            article.citation = Citation { code, numbering };
+            article.section_title = citations.section.iter().find(|row| row.document == doc.key && row.article == article.article).map(|row| row.title.clone());
+        }
+    }
+    if refusals.is_empty() {
+        Ok(())
+    } else {
+        anyhow::bail!("{}", refusals.join("\n"))
+    }
+}
+
+fn numbering_of(part: u8, article: &ConcordArticle, admissions: &[(Admitted, Admission)], reference: &TriglotReference, numbering_percent: u32) -> NumberingAgreement {
+    let placed: Vec<bool> = article
+        .paragraphs
+        .iter()
+        .filter_map(|p| {
+            admissions.iter().find_map(|(admitted, admission)| match (admitted, admission) {
+                (Admitted::Paragraph { part: at_part, article: at_article, paragraph }, Admission::Matched { start, .. }) if (*at_part, *at_article, *paragraph) == (part, article.article, p.paragraph) => {
+                    Some(reference.numbers_near(*start).contains(&p.paragraph))
+                }
+                _ => None,
+            })
+        })
+        .collect();
+    let found = placed.iter().filter(|found| **found).count();
+    if !placed.is_empty() && found * PERCENT >= numbering_percent as usize * placed.len() {
+        NumberingAgreement::Agrees
+    } else {
+        NumberingAgreement::ArticleOnly
+    }
+}
+
+const PERCENT: usize = 100;
 
 fn read_curated(curated_dir: &Path, name: &str) -> Result<String> {
     let path = curated_dir.join(name);
@@ -250,7 +381,7 @@ fn parse_document(html: &str, spec: &ConcordDocSpec, curation: &mut Curation) ->
         for a in &anomalies {
             disclosures.push(format!("{}: {}", spec.key, a));
         }
-        articles.push(ConcordArticle { article: article_no, slug, title: spec.title.to_string(), paragraphs });
+        articles.push(ConcordArticle { article: article_no, slug, title: spec.title.to_string(), section_title: None, citation: Citation::uncited(), paragraphs });
     } else {
         for raw in &raw_articles {
             if let Some(kind) = curation.drops_article(spec.key, &raw.href) {
@@ -266,7 +397,7 @@ fn parse_document(html: &str, spec: &ConcordDocSpec, curation: &mut Curation) ->
             if paragraphs.is_empty() {
                 disclosures.push(format!("{}/{}: zero paragraphs parsed (empty article body)", spec.key, raw.href));
             }
-            articles.push(ConcordArticle { article: article_no, slug: raw.href.clone(), title: raw.title.clone(), paragraphs });
+            articles.push(ConcordArticle { article: article_no, slug: raw.href.clone(), title: raw.title.clone(), section_title: None, citation: Citation::uncited(), paragraphs });
         }
     }
 
@@ -646,9 +777,8 @@ pub struct ExcludedRun {
 #[derive(Debug, Clone, PartialEq, serde::Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct StrippedFragment {
-    pub part: u8,
-    pub article: u16,
-    pub paragraph: u16,
+    pub document: String,
+    pub slug: String,
     pub text: String,
     #[serde(default)]
     pub with: String,
@@ -840,20 +970,20 @@ const GAP_CONTEXT: usize = 40;
 
 fn apply_strips(docs: &mut [ConcordDocument], strips: &[StrippedFragment]) -> Result<usize> {
     for x in strips {
-        let at = format!("{}.{}.{}", x.part, x.article, x.paragraph);
-        let unit = docs
+        let at = format!("{}{}", x.document, x.slug);
+        let article = docs
             .iter_mut()
-            .filter(|d| d.part == x.part)
+            .filter(|d| d.key == x.document)
             .flat_map(|d| d.articles.iter_mut())
-            .filter(|a| a.article == x.article)
-            .flat_map(|a| a.paragraphs.iter_mut())
-            .find(|p| p.paragraph == x.paragraph)
+            .find(|a| a.slug == x.slug)
             .with_context(|| format!("concord-exclusions.toml: [[strip]] names {at}, which is not served"))?;
-        let mut pieces = unit.rendering.pieces();
-        let occurrences: usize = pieces.iter().map(|piece| piece.text.matches(x.text.as_str()).count()).sum();
-        if occurrences != 1 {
-            anyhow::bail!("concord-exclusions.toml: [[strip]] {:?} occurs {occurrences} time(s) in one piece of {at}; it must occur exactly once", x.text);
+        let occurrences = |p: &ConcordParagraph| -> usize { p.rendering.pieces().iter().map(|piece| piece.text.matches(x.text.as_str()).count()).sum() };
+        let total: usize = article.paragraphs.iter().map(occurrences).sum();
+        if total != 1 {
+            anyhow::bail!("concord-exclusions.toml: [[strip]] {:?} occurs {total} time(s) within the pieces of {at}; it must occur exactly once", x.text);
         }
+        let unit = article.paragraphs.iter_mut().find(|p| occurrences(p) == 1).expect("the one occurrence lies in a paragraph");
+        let mut pieces = unit.rendering.pieces();
         let piece = pieces.iter_mut().find(|piece| piece.text.contains(x.text.as_str())).expect("the one occurrence lies in a piece");
         piece.text = squeeze_ws(&piece.text.replacen(x.text.as_str(), &x.with, 1));
         unit.rendering = Rendering::compose(&without_doubled_spaces(pieces));
@@ -900,7 +1030,7 @@ pub fn no_excluded_material_is_served(corpus: &ConcordCorpus, exclusions: &Conco
                 if exclusions.unit.iter().any(|x| x.document == d.key && x.slug == a.slug && x.text == text) {
                     offenders.push(format!("{}.{}.{}: an excluded unit is served: {:?}", d.part, a.article, p.paragraph, text));
                 }
-                for x in exclusions.strip.iter().filter(|x| (x.part, x.article, x.paragraph) == (d.part, a.article, p.paragraph)) {
+                for x in exclusions.strip.iter().filter(|x| x.document == d.key && x.slug == a.slug) {
                     if text.contains(x.text.as_str()) {
                         offenders.push(format!("{}.{}.{}: an excluded fragment is served: {:?}", d.part, a.article, p.paragraph, x.text));
                     }
@@ -952,7 +1082,7 @@ mod tests {
     use super::*;
 
     fn document(key: &'static str, titles: &[&str]) -> ConcordDocument {
-        let articles = titles.iter().enumerate().map(|(i, t)| ConcordArticle { article: (i + 1) as u16, slug: format!("/{key}/{i}/"), title: t.to_string(), paragraphs: Vec::new() }).collect();
+        let articles = titles.iter().enumerate().map(|(i, t)| ConcordArticle { article: (i + 1) as u16, slug: format!("/{key}/{i}/"), title: t.to_string(), section_title: None, citation: Citation::uncited(), paragraphs: Vec::new() }).collect();
         ConcordDocument { part: 1, key, title: key, articles }
     }
 
@@ -962,8 +1092,8 @@ mod tests {
 
     fn served(key: &'static str, slug: &str, paragraphs: &[(u16, &str)]) -> ConcordCorpus {
         let paragraphs = paragraphs.iter().map(|(n, t)| ConcordParagraph { paragraph: *n, source_label: n.to_string(), rendering: Rendering::whole(t.to_string()) }).collect();
-        let article = ConcordArticle { article: 1, slug: slug.to_string(), title: "Title".to_string(), paragraphs };
-        ConcordCorpus { documents: vec![ConcordDocument { part: 2, key, title: key, articles: vec![article] }], stats: ConcordStats::default(), admissions: Vec::new() }
+        let article = ConcordArticle { article: 1, slug: slug.to_string(), title: "Title".to_string(), section_title: None, citation: Citation::uncited(), paragraphs };
+        ConcordCorpus { title: "The Book of Concord".to_string(), description: String::new(), documents: vec![ConcordDocument { part: 2, key, title: key, articles: vec![article] }], stats: ConcordStats::default(), admissions: Vec::new() }
     }
 
     fn exclusions(input: &str) -> ConcordExclusions {
@@ -984,9 +1114,8 @@ text = "A site note."
 kind = "site-furniture"
 triglot = "absent"
 [[strip]]
-part = 2
-article = 1
-paragraph = 3
+document = "ecumenical-creeds"
+slug = "/ecumenical-creeds/apostles-creed/"
 text = "a mark"
 kind = "editorial-note"
 triglot = "absent"
@@ -1146,23 +1275,23 @@ triglot = "absent"
     }
 
     #[test]
-    fn a_strip_occurring_twice_in_its_unit_is_refused() {
+    fn a_strip_occurring_twice_in_its_article_is_refused() {
         // Arrange
         let mut docs = served("ecumenical-creeds", "/ecumenical-creeds/apostles-creed/", &[(3, "a mark and a mark")]).documents;
         // Act
         let refused = apply_strips(&mut docs, &exclusions(ONE_OF_EACH).strip).unwrap_err().to_string();
         // Assert
-        assert!(refused.contains("occurs 2 time(s) in one piece of 2.1.3"), "{refused}");
+        assert!(refused.contains("occurs 2 time(s) within the pieces of ecumenical-creeds/ecumenical-creeds/apostles-creed/"), "{refused}");
     }
 
     #[test]
-    fn a_strip_naming_an_unserved_position_is_refused() {
+    fn a_strip_naming_an_unserved_article_is_refused() {
         // Arrange
-        let mut docs = served("ecumenical-creeds", "/ecumenical-creeds/apostles-creed/", &[(4, "a mark")]).documents;
+        let mut docs = served("ecumenical-creeds", "/ecumenical-creeds/nicene-creed/", &[(4, "a mark")]).documents;
         // Act
         let refused = apply_strips(&mut docs, &exclusions(ONE_OF_EACH).strip).unwrap_err().to_string();
         // Assert
-        assert!(refused.contains("names 2.1.3, which is not served"), "{refused}");
+        assert!(refused.contains("names ecumenical-creeds/ecumenical-creeds/apostles-creed/, which is not served"), "{refused}");
     }
 
     #[test]

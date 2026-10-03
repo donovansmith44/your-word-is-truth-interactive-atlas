@@ -1,0 +1,706 @@
+# The 1921 Concordia Triglotta's citation code for each served article, so a
+# paragraph is labelled as readers cite it ("Ap IV 48"): the document's
+# abbreviation, the article's designation, then the paragraph number (from
+# the source, never from here). Where an article's numbering does not agree
+# with the Triglot's (measured at compile against the scan's marginal
+# numbers), its paragraphs carry the article code alone ("Ap IV"). A
+# [[section]] is a title the Triglot prints over a group of articles that
+# the reader never navigates as a level (the Smalcald Articles' three parts).
+
+[[document]]
+key = "preface"
+abbreviation = "Pref"
+
+[[document]]
+key = "ecumenical-creeds"
+abbreviation = ""
+
+[[document]]
+key = "augsburg-confession"
+abbreviation = "AC"
+
+[[document]]
+key = "defense"
+abbreviation = "Ap"
+
+[[document]]
+key = "smalcald-articles"
+abbreviation = "SA"
+
+[[document]]
+key = "power-and-primacy"
+abbreviation = "Tr"
+
+[[document]]
+key = "small-catechism"
+abbreviation = "SC"
+
+[[document]]
+key = "large-catechism"
+abbreviation = "LC"
+
+[[document]]
+key = "epitome"
+abbreviation = "Ep"
+
+[[document]]
+key = "solid-declaration"
+abbreviation = "SD"
+
+[[article]]
+document = "ecumenical-creeds"
+article = 1
+designation = "ApC"
+
+[[article]]
+document = "ecumenical-creeds"
+article = 2
+designation = "NC"
+
+[[article]]
+document = "ecumenical-creeds"
+article = 3
+designation = "Ath"
+
+[[article]]
+document = "augsburg-confession"
+article = 1
+designation = "Pref"
+
+[[article]]
+document = "augsburg-confession"
+article = 2
+designation = "I"
+
+[[article]]
+document = "augsburg-confession"
+article = 3
+designation = "II"
+
+[[article]]
+document = "augsburg-confession"
+article = 4
+designation = "III"
+
+[[article]]
+document = "augsburg-confession"
+article = 5
+designation = "IV"
+
+[[article]]
+document = "augsburg-confession"
+article = 6
+designation = "V"
+
+[[article]]
+document = "augsburg-confession"
+article = 7
+designation = "VI"
+
+[[article]]
+document = "augsburg-confession"
+article = 8
+designation = "VII"
+
+[[article]]
+document = "augsburg-confession"
+article = 9
+designation = "VIII"
+
+[[article]]
+document = "augsburg-confession"
+article = 10
+designation = "IX"
+
+[[article]]
+document = "augsburg-confession"
+article = 11
+designation = "X"
+
+[[article]]
+document = "augsburg-confession"
+article = 12
+designation = "XI"
+
+[[article]]
+document = "augsburg-confession"
+article = 13
+designation = "XII"
+
+[[article]]
+document = "augsburg-confession"
+article = 14
+designation = "XIII"
+
+[[article]]
+document = "augsburg-confession"
+article = 15
+designation = "XIV"
+
+[[article]]
+document = "augsburg-confession"
+article = 16
+designation = "XV"
+
+[[article]]
+document = "augsburg-confession"
+article = 17
+designation = "XVI"
+
+[[article]]
+document = "augsburg-confession"
+article = 18
+designation = "XVII"
+
+[[article]]
+document = "augsburg-confession"
+article = 19
+designation = "XVIII"
+
+[[article]]
+document = "augsburg-confession"
+article = 20
+designation = "XIX"
+
+[[article]]
+document = "augsburg-confession"
+article = 21
+designation = "XX"
+
+[[article]]
+document = "augsburg-confession"
+article = 22
+designation = "XXI"
+
+[[article]]
+document = "augsburg-confession"
+article = 23
+designation = "XXII"
+
+[[article]]
+document = "augsburg-confession"
+article = 24
+designation = "XXIII"
+
+[[article]]
+document = "augsburg-confession"
+article = 25
+designation = "XXIV"
+
+[[article]]
+document = "augsburg-confession"
+article = 26
+designation = "XXV"
+
+[[article]]
+document = "augsburg-confession"
+article = 27
+designation = "XXVI"
+
+[[article]]
+document = "augsburg-confession"
+article = 28
+designation = "XXVII"
+
+[[article]]
+document = "augsburg-confession"
+article = 29
+designation = "XXVIII"
+
+[[article]]
+document = "augsburg-confession"
+article = 30
+designation = "Concl"
+
+[[article]]
+document = "defense"
+article = 1
+designation = "I"
+
+[[article]]
+document = "defense"
+article = 2
+designation = "II"
+
+[[article]]
+document = "defense"
+article = 3
+designation = "III"
+
+[[article]]
+document = "defense"
+article = 4
+designation = "IV"
+
+[[article]]
+document = "defense"
+article = 5
+designation = "III"
+
+[[article]]
+document = "defense"
+article = 6
+designation = "VII/VIII"
+
+[[article]]
+document = "defense"
+article = 7
+designation = "IX"
+
+[[article]]
+document = "defense"
+article = 8
+designation = "X"
+
+[[article]]
+document = "defense"
+article = 9
+designation = "XI"
+
+[[article]]
+document = "defense"
+article = 10
+designation = "XII"
+
+[[article]]
+document = "defense"
+article = 11
+designation = "VI"
+
+[[article]]
+document = "defense"
+article = 12
+designation = "XIII"
+
+[[article]]
+document = "defense"
+article = 13
+designation = "XIV"
+
+[[article]]
+document = "defense"
+article = 14
+designation = "XV"
+
+[[article]]
+document = "defense"
+article = 15
+designation = "XVI"
+
+[[article]]
+document = "defense"
+article = 16
+designation = "XVII"
+
+[[article]]
+document = "defense"
+article = 17
+designation = "XVIII"
+
+[[article]]
+document = "defense"
+article = 18
+designation = "XIX"
+
+[[article]]
+document = "defense"
+article = 19
+designation = "XX"
+
+[[article]]
+document = "defense"
+article = 20
+designation = "XXI"
+
+[[article]]
+document = "defense"
+article = 21
+designation = "XXII"
+
+[[article]]
+document = "defense"
+article = 22
+designation = "XXIII"
+
+[[article]]
+document = "defense"
+article = 23
+designation = "XXIV"
+
+[[article]]
+document = "defense"
+article = 24
+designation = "XXVII"
+
+[[article]]
+document = "defense"
+article = 25
+designation = "XXVIII"
+
+[[article]]
+document = "defense"
+article = 26
+designation = "Pref"
+
+[[article]]
+document = "smalcald-articles"
+article = 1
+designation = "Pref"
+
+[[article]]
+document = "smalcald-articles"
+article = 2
+designation = "I"
+
+[[article]]
+document = "smalcald-articles"
+article = 3
+designation = "I"
+
+[[article]]
+document = "smalcald-articles"
+article = 4
+designation = "I"
+
+[[article]]
+document = "smalcald-articles"
+article = 5
+designation = "I"
+
+[[article]]
+document = "smalcald-articles"
+article = 6
+designation = "II I"
+
+[[article]]
+document = "smalcald-articles"
+article = 7
+designation = "II II"
+
+[[article]]
+document = "smalcald-articles"
+article = 8
+designation = "II III"
+
+[[article]]
+document = "smalcald-articles"
+article = 9
+designation = "II IV"
+
+[[article]]
+document = "smalcald-articles"
+article = 10
+designation = "III I"
+
+[[article]]
+document = "smalcald-articles"
+article = 11
+designation = "III II"
+
+[[article]]
+document = "smalcald-articles"
+article = 12
+designation = "III III"
+
+[[article]]
+document = "smalcald-articles"
+article = 13
+designation = "III IV"
+
+[[article]]
+document = "smalcald-articles"
+article = 14
+designation = "III V"
+
+[[article]]
+document = "smalcald-articles"
+article = 15
+designation = "III VI"
+
+[[article]]
+document = "smalcald-articles"
+article = 16
+designation = "III VII"
+
+[[article]]
+document = "smalcald-articles"
+article = 17
+designation = "III VIII"
+
+[[article]]
+document = "smalcald-articles"
+article = 18
+designation = "III IX"
+
+[[article]]
+document = "smalcald-articles"
+article = 19
+designation = "III X"
+
+[[article]]
+document = "smalcald-articles"
+article = 20
+designation = "III XI"
+
+[[article]]
+document = "smalcald-articles"
+article = 21
+designation = "III XII"
+
+[[article]]
+document = "smalcald-articles"
+article = 22
+designation = "III XIII"
+
+[[article]]
+document = "smalcald-articles"
+article = 23
+designation = "III XIV"
+
+[[article]]
+document = "smalcald-articles"
+article = 24
+designation = "III XV"
+
+[[article]]
+document = "smalcald-articles"
+article = 25
+designation = "Subscr"
+
+[[article]]
+document = "power-and-primacy"
+article = 3
+designation = "Subscr"
+
+[[article]]
+document = "small-catechism"
+article = 1
+designation = "Pref"
+
+[[article]]
+document = "small-catechism"
+article = 2
+designation = "I"
+
+[[article]]
+document = "small-catechism"
+article = 3
+designation = "II"
+
+[[article]]
+document = "small-catechism"
+article = 4
+designation = "III"
+
+[[article]]
+document = "small-catechism"
+article = 5
+designation = "IV"
+
+[[article]]
+document = "small-catechism"
+article = 6
+designation = "V"
+
+[[article]]
+document = "small-catechism"
+article = 7
+designation = "VI"
+
+[[article]]
+document = "small-catechism"
+article = 8
+designation = "Prayers"
+
+[[article]]
+document = "small-catechism"
+article = 9
+designation = "Duties"
+
+[[article]]
+document = "large-catechism"
+article = 1
+designation = "Pref"
+
+[[article]]
+document = "large-catechism"
+article = 2
+designation = "Short Pref"
+
+[[article]]
+document = "large-catechism"
+article = 3
+designation = "I"
+
+[[article]]
+document = "large-catechism"
+article = 4
+designation = "II"
+
+[[article]]
+document = "large-catechism"
+article = 5
+designation = "III"
+
+[[article]]
+document = "large-catechism"
+article = 6
+designation = "IV"
+
+[[article]]
+document = "large-catechism"
+article = 7
+designation = "V"
+
+[[article]]
+document = "epitome"
+article = 1
+designation = "RN"
+
+[[article]]
+document = "epitome"
+article = 2
+designation = "I"
+
+[[article]]
+document = "epitome"
+article = 3
+designation = "II"
+
+[[article]]
+document = "epitome"
+article = 4
+designation = "III"
+
+[[article]]
+document = "epitome"
+article = 5
+designation = "IV"
+
+[[article]]
+document = "epitome"
+article = 6
+designation = "V"
+
+[[article]]
+document = "epitome"
+article = 7
+designation = "VI"
+
+[[article]]
+document = "epitome"
+article = 8
+designation = "VII"
+
+[[article]]
+document = "epitome"
+article = 9
+designation = "VIII"
+
+[[article]]
+document = "epitome"
+article = 10
+designation = "IX"
+
+[[article]]
+document = "epitome"
+article = 11
+designation = "X"
+
+[[article]]
+document = "epitome"
+article = 12
+designation = "XI"
+
+[[article]]
+document = "epitome"
+article = 13
+designation = "XII"
+
+[[article]]
+document = "solid-declaration"
+article = 1
+designation = "Pref"
+
+[[article]]
+document = "solid-declaration"
+article = 2
+designation = "RN"
+
+[[article]]
+document = "solid-declaration"
+article = 3
+designation = "I"
+
+[[article]]
+document = "solid-declaration"
+article = 4
+designation = "II"
+
+[[article]]
+document = "solid-declaration"
+article = 5
+designation = "III"
+
+[[article]]
+document = "solid-declaration"
+article = 6
+designation = "IV"
+
+[[article]]
+document = "solid-declaration"
+article = 7
+designation = "V"
+
+[[article]]
+document = "solid-declaration"
+article = 8
+designation = "VI"
+
+[[article]]
+document = "solid-declaration"
+article = 9
+designation = "VII"
+
+[[article]]
+document = "solid-declaration"
+article = 10
+designation = "VIII"
+
+[[article]]
+document = "solid-declaration"
+article = 11
+designation = "IX"
+
+[[article]]
+document = "solid-declaration"
+article = 12
+designation = "X"
+
+[[article]]
+document = "solid-declaration"
+article = 13
+designation = "XI"
+
+[[article]]
+document = "solid-declaration"
+article = 14
+designation = "XII"
+
+[[section]]
+document = "smalcald-articles"
+article = 2
+title = "The First Part"
+triglot_page = 461
+
+[[section]]
+document = "smalcald-articles"
+article = 6
+title = "The Second Part"
+triglot_page = 461
+
+[[section]]
+document = "smalcald-articles"
+article = 10
+title = "The Third Part of the Articles"
+triglot_page = 477

@@ -42,7 +42,7 @@ pub enum NodePayload {
     /// One node per position in the reading spine, carrying every layer's rendering as
     /// payload (the canonical layer required, the rest optional), so chains stay homogeneous.
     TextUnit { corpus: &'static str, renderings: LayerMap },
-    Container { title: String },
+    Container(crate::container::CorpusContainer),
     /// No date rides here: chronology lives only on `dated-by` edges, so an event's date can
     /// never disagree with its placement. Places and witness verses ride edges too. `verses`
     /// is the container's own top-level set, which is distinct from its witnesses'.

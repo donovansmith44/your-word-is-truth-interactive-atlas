@@ -1,4 +1,4 @@
-use std::collections::{BTreeMap, HashMap};
+use std::collections::{BTreeMap, BTreeSet, HashMap};
 use std::hash::{DefaultHasher, Hash, Hasher};
 use std::path::Path;
 
@@ -36,6 +36,7 @@ pub struct TriglotReference {
     words: Vec<String>,
     leaves: Vec<TriglotLeaf>,
     pages: BTreeMap<TriglotLeaf, TriglotPage>,
+    numbers: BTreeMap<TriglotLeaf, BTreeSet<u16>>,
     shingles: HashMap<u64, Vec<u32>>,
     shingle_words: usize,
 }
@@ -80,13 +81,19 @@ impl TriglotReference {
         for (at, window) in words.windows(shingle_words).enumerate() {
             shingles.entry(shingle_of(window)).or_default().push(at as u32);
         }
-        TriglotReference { words, leaves, pages, shingles, shingle_words }
+        TriglotReference { words, leaves, pages, numbers: marginal_numbers(text, &starts), shingles, shingle_words }
     }
 
     #[cfg(test)]
     pub(crate) fn of_one_leaf(text: &str, page: &str, shingle_words: usize) -> TriglotReference {
         let index = [[0, text.chars().count(), 0, 0]];
         TriglotReference::new(text, &index, &[LeafPage { leaf: 0, page: page.to_string() }], shingle_words)
+    }
+
+    pub fn numbers_near(&self, word: TriglotWord) -> BTreeSet<u16> {
+        let leaf = self.leaves[word.0 as usize].0;
+        let facing = leaf.saturating_sub(FACING_LEAVES_BEFORE)..=leaf + FACING_LEAVES_AFTER;
+        facing.filter_map(|near| self.numbers.get(&TriglotLeaf(near))).flatten().copied().collect()
     }
 
     pub fn page_of(&self, word: TriglotWord) -> Option<TriglotPage> {
@@ -158,6 +165,34 @@ fn hex(bytes: &[u8]) -> String {
 pub struct Found {
     pub start: Option<TriglotWord>,
     pub coverage: Coverage,
+}
+
+const FACING_LEAVES_BEFORE: u16 = 1;
+const FACING_LEAVES_AFTER: u16 = 0;
+
+fn marginal_numbers(text: &str, starts: &[usize]) -> BTreeMap<TriglotLeaf, BTreeSet<u16>> {
+    let mut numbers: BTreeMap<TriglotLeaf, BTreeSet<u16>> = BTreeMap::new();
+    let mut digits = String::new();
+    let mut before = ' ';
+    for (at, c) in text.chars().enumerate() {
+        if c.is_ascii_digit() {
+            if digits.is_empty() && matches!(before, '0'..='9' | '.' | ',') {
+                before = c;
+                continue;
+            }
+            digits.push(c);
+            continue;
+        }
+        if c == ']' {
+            if let Ok(number) = digits.parse() {
+                let leaf = TriglotLeaf((starts.partition_point(|start| *start <= at) - 1) as u16);
+                numbers.entry(leaf).or_default().insert(number);
+            }
+        }
+        digits.clear();
+        before = c;
+    }
+    numbers
 }
 
 fn shingle_of(words: &[String]) -> u64 {
@@ -281,6 +316,16 @@ mod tests {
         let found = [triglot.find("Thou shalt have no other gods", &window, TriglotWord(0)), triglot.find("Thou shalt have no other gods", &window, TriglotWord(7)), triglot.find("Thou shalt have no other gods", &window, TriglotWord(13))];
         // Assert
         assert_eq!(found.map(|found| found.start), [Some(TriglotWord(0)), Some(TriglotWord(9)), None]);
+    }
+
+    #[test]
+    fn a_marginal_paragraph_number_is_a_bracketed_run_of_digits_standing_alone() {
+        // Arrange
+        let triglot = reference("43] Verum exstant clara testimonia. 44] salutem. Paulus 2.16]; 1,5] no");
+        // Act
+        let numbers = triglot.numbers_near(TriglotWord(0));
+        // Assert
+        assert_eq!(numbers, BTreeSet::from([43, 44]));
     }
 
     #[test]

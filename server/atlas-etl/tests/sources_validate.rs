@@ -25,10 +25,10 @@ fn per_source_table_has_the_expected_row_count() {
     let doc = atlas_etl::sources::admit_sources(&toml_input).expect("data/curated/sources.toml must be admitted").into_document();
     assert_eq!(
         doc.sources.len(),
-        20,
-        "data/curated/sources.toml has {} entries, expected 20 (batch-s-brief.md's own finalization \
+        21,
+        "data/curated/sources.toml has {} entries, expected 21 (batch-s-brief.md's own finalization \
          count of 18 at BASE dcb7278, + 3 at LEX-1: STEPBible, MACULA, Strong's, - MACULA when its \
-         ShareAlike domain codes were dropped) -- if a real source \
+         ShareAlike domain codes were dropped, + the Concordia Triglotta scan at FOCUS-3) -- if a real source \
          was intentionally added/removed, update this expected count in the same commit",
         doc.sources.len()
     );

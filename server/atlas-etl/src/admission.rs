@@ -10,6 +10,7 @@ use crate::triglot::{Coverage, TriglotLeaf, TriglotPage, TriglotReference, Trigl
 pub struct AdmissionPolicy {
     pub shingle_words: usize,
     pub threshold_percent: u32,
+    pub numbering_percent: u32,
     pub window: Vec<DocumentWindow>,
     #[serde(default)]
     pub confirmed: Vec<Confirmation>,
@@ -44,6 +45,7 @@ pub enum ConfirmationReason {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum EditorialReason {
     OurTitle,
+    CorpusDescription,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -55,6 +57,7 @@ pub enum Admission {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Admitted {
+    Description,
     Title { part: u8, article: u16 },
     Paragraph { part: u8, article: u16, paragraph: u16 },
 }
@@ -166,7 +169,7 @@ const OPENING_CHARACTERS: usize = 80;
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::concord::{ConcordArticle, ConcordParagraph};
+    use crate::concord::{Citation, ConcordArticle, ConcordParagraph};
     use atlas_graph_types::text::Rendering;
 
     const SHINGLE: usize = 3;
@@ -175,12 +178,12 @@ mod tests {
     const SCAN: &str = "Article XI. Of Confession. Of Confession they teach that Private Absolution ought to be retained in the churches.";
 
     fn policy(confirmed: Vec<Confirmation>) -> AdmissionPolicy {
-        AdmissionPolicy { shingle_words: SHINGLE, threshold_percent: THRESHOLD, window: vec![DocumentWindow { document: "augsburg-confession".to_string(), first_leaf: 0, last_leaf: 0 }], confirmed }
+        AdmissionPolicy { shingle_words: SHINGLE, threshold_percent: THRESHOLD, numbering_percent: THRESHOLD, window: vec![DocumentWindow { document: "augsburg-confession".to_string(), first_leaf: 0, last_leaf: 0 }], confirmed }
     }
 
     fn document(title: &str, paragraphs: &[&str]) -> ConcordDocument {
         let paragraphs = paragraphs.iter().zip(1..).map(|(text, paragraph)| ConcordParagraph { paragraph, source_label: paragraph.to_string(), rendering: Rendering::whole(text.to_string()) }).collect();
-        ConcordDocument { part: 3, key: "augsburg-confession", title: "The Augsburg Confession", articles: vec![ConcordArticle { article: 1, slug: "/augsburg-confession/of-confession/".to_string(), title: title.to_string(), paragraphs }] }
+        ConcordDocument { part: 3, key: "augsburg-confession", title: "The Augsburg Confession", articles: vec![ConcordArticle { article: 1, slug: "/augsburg-confession/of-confession/".to_string(), title: title.to_string(), section_title: None, citation: Citation::uncited(), paragraphs }] }
     }
 
     fn confirmation(begins: &str) -> Confirmation {

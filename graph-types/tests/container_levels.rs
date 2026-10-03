@@ -1,60 +1,33 @@
-use atlas_graph_types::container::{BibleContainer, ConcordContainer, Container, ContainerLevel, SectionTitle};
-use atlas_graph_types::passage::{Passage, PassageMark, ReadingOrder};
-use atlas_graph_types::text::{BibleTag, VerseRef};
+use atlas_graph_types::container::{BibleContainer, ConcordContainer, Container, ContainerLevel};
 use proptest::prelude::*;
 
 const TITLE: &str = "[A-Za-z ]{0,12}";
 
 proptest! {
     #[test]
-    fn a_bible_container_and_a_concord_container_share_the_levels_of_book_and_chapter(title in TITLE, section in proptest::option::of(TITLE)) {
+    fn a_bible_container_and_a_concord_container_share_the_levels_of_book_and_chapter_and_keep_their_titles(title in TITLE, section in proptest::option::of(TITLE)) {
         // Arrange
-        let bible = [
-            BibleContainer::Bible { title: title.clone() },
-            BibleContainer::Book { title: title.clone() },
-            BibleContainer::Chapter { title: title.clone() },
-            BibleContainer::Passage(two_verses()),
-        ];
+        let bible = [BibleContainer::Bible { title: title.clone() }, BibleContainer::Book { title: title.clone() }, BibleContainer::Chapter { title: title.clone() }];
         let concord = [
-            ConcordContainer::BookOfConcord { title: title.clone(), description: title.clone() },
+            ConcordContainer::BookOfConcord { title: title.clone(), description: String::new() },
             ConcordContainer::Document { title: title.clone() },
-            ConcordContainer::Article { title, section_title: section.map(SectionTitle) },
+            ConcordContainer::Article { title: title.clone(), section_title: section },
         ];
 
         // Act
-        let levels = (bible.map(|container| levelled(&container)), concord.map(|container| levelled(&container)));
+        let read = (bible.map(|container| described(&container)), concord.map(|container| described(&container)));
 
         // Assert
         prop_assert_eq!(
-            levels,
+            read,
             (
-                [ContainerLevel::Corpus, ContainerLevel::Book, ContainerLevel::Chapter, ContainerLevel::Passage],
-                [ContainerLevel::Corpus, ContainerLevel::Book, ContainerLevel::Chapter],
+                [(ContainerLevel::Corpus, title.clone()), (ContainerLevel::Book, title.clone()), (ContainerLevel::Chapter, title.clone())],
+                [(ContainerLevel::Corpus, title.clone()), (ContainerLevel::Book, title.clone()), (ContainerLevel::Chapter, title)],
             )
         );
     }
 }
 
-fn levelled(container: &impl Container) -> ContainerLevel {
-    container.level()
-}
-
-struct TwoVerses;
-
-impl ReadingOrder<BibleTag> for TwoVerses {
-    fn position(&self, unit: &VerseRef) -> Option<usize> {
-        [first_verse(), second_verse()].iter().position(|verse| verse == unit)
-    }
-}
-
-fn two_verses() -> Passage<BibleTag> {
-    Passage::new(first_verse(), second_verse(), PassageMark::Plain, &TwoVerses).expect("two verses are a passage")
-}
-
-fn first_verse() -> VerseRef {
-    VerseRef { book: 1, chapter: 1, verse: 1 }
-}
-
-fn second_verse() -> VerseRef {
-    VerseRef { book: 1, chapter: 1, verse: 2 }
+fn described(container: &impl Container) -> (ContainerLevel, String) {
+    (container.level(), container.title().to_string())
 }

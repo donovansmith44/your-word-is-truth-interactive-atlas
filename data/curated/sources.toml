@@ -204,6 +204,16 @@ link = "https://bookofconcord.org"
 licenses_row_key = "The Book of Concord"
 
 [[source]]
+id = "concordia-triglotta-scan"
+category = "lutheran-texts"
+title = "Concordia Triglotta (1921), as scanned"
+what_it_is = "The Internet Archive's scan and OCR of the 1921 St. Louis Concordia Triglotta, the printed book the Book of Concord text above is taken from."
+what_we_built = "Nothing is served from it: every Book of Concord paragraph and title is checked against its English column when the atlas is compiled, and a paragraph the scan garbles is confirmed by hand with the printed page."
+license = "Public domain (published 1921, USA)"
+link = "https://archive.org/details/concordiatriglot00unse"
+licenses_row_key = "*Concordia Triglotta*"
+
+[[source]]
 id = "catechism-mapping"
 category = "lutheran-texts"
 title = "Catechism Verse Mapping"

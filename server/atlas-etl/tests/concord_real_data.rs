@@ -272,12 +272,12 @@ fn every_served_concord_span_is_admitted_against_the_triglot() {
     // Act
     let admitted = concord::read_all(&root, &curated_dir()).map(|c| c.stats.admitted);
     // Assert
-    assert_eq!(admitted.map_err(|refusal| refusal.to_string()), Ok(AdmissionStats { matched: MATCHED_SPANS, confirmed: CONFIRMED_BY_HAND, editorial: OUR_TITLES }));
+    assert_eq!(admitted.map_err(|refusal| refusal.to_string()), Ok(AdmissionStats { matched: MATCHED_SPANS, confirmed: CONFIRMED_BY_HAND, editorial: OUR_WORDS }));
 }
 
 const MATCHED_SPANS: usize = 3864;
 const CONFIRMED_BY_HAND: usize = 6;
-const OUR_TITLES: usize = 61;
+const OUR_WORDS: usize = 62;
 
 #[test]
 fn a_paragraph_the_triglot_does_not_print_is_refused() {
@@ -345,4 +345,100 @@ fn no_paragraph_text_is_admitted_as_our_own_words() {
     let ours: Vec<&Admitted> = c.admissions.iter().filter(|(admitted, admission)| matches!(admitted, Admitted::Paragraph { .. }) && matches!(admission, Admission::Editorial { .. })).map(|(admitted, _)| admitted).collect();
     // Assert
     assert_eq!(ours, Vec::<&Admitted>::new());
+}
+
+#[test]
+fn no_curated_file_numbers_a_paragraph() {
+    // Arrange
+    let curated = std::fs::read_dir(curated_dir()).unwrap().map(|entry| entry.unwrap().path()).filter(|path| path.file_name().unwrap().to_string_lossy().starts_with("concord-"));
+    // Act
+    let mut numbering: Vec<String> = curated
+        .filter(|path| std::fs::read_to_string(path).unwrap().lines().any(|line| line.starts_with("paragraph ") || line.starts_with("paragraphs ")))
+        .map(|path| path.file_name().unwrap().to_string_lossy().into_owned())
+        .collect();
+    numbering.sort();
+    // Assert
+    assert_eq!(numbering, vec!["concord-sc-overlap.toml".to_string()]);
+}
+
+#[test]
+fn every_paragraph_number_is_its_source_marker_except_where_the_source_restarts_its_count() {
+    // Arrange
+    let c = corpus();
+    // Act
+    let mut renumbered: Vec<&str> = c
+        .documents
+        .iter()
+        .flat_map(|d| d.articles.iter())
+        .filter(|a| a.paragraphs.iter().any(|p| p.source_label.split('/').next().and_then(|label| label.chars().take_while(char::is_ascii_digit).collect::<String>().parse::<u16>().ok()).is_some_and(|marker| marker != p.paragraph)))
+        .map(|a| a.slug.as_str())
+        .collect();
+    renumbered.sort();
+    // Assert
+    assert_eq!(renumbered, SOURCES_THAT_RESTART_THEIR_COUNT);
+}
+
+const SOURCES_THAT_RESTART_THEIR_COUNT: [&str; 5] = [
+    "/defense/of-love-and-fulfilling-the-law/",
+    "/large-catechism/preface/",
+    "/smalcald-articles/iii/of-repentance/",
+    "/solid-declaration/election/",
+    "/solid-declaration/person-of-christ/",
+];
+
+#[test]
+fn a_paragraph_is_labelled_by_its_triglot_citation_or_its_article_where_numbering_differs() {
+    // Arrange
+    let c = corpus();
+    // Act
+    let mut article_only: Vec<&str> = Vec::new();
+    let mut mislabelled: Vec<String> = Vec::new();
+    for article in c.documents.iter().flat_map(|d| d.articles.iter()) {
+        if article.citation.numbering == concord::NumberingAgreement::ArticleOnly {
+            article_only.push(article.citation.code.as_str());
+        }
+        for p in &article.paragraphs {
+            let expected = match article.citation.numbering {
+                concord::NumberingAgreement::Agrees => format!("{} {}", article.citation.code, p.paragraph),
+                concord::NumberingAgreement::ArticleOnly => article.citation.code.clone(),
+            };
+            if article.citation.label(p.paragraph) != expected {
+                mislabelled.push(expected);
+            }
+        }
+    }
+    // Assert
+    assert_eq!((article_only, mislabelled), (ARTICLES_NUMBERED_OTHERWISE_THAN_THE_TRIGLOT.to_vec(), Vec::<String>::new()));
+}
+
+const ARTICLES_NUMBERED_OTHERWISE_THAN_THE_TRIGLOT: [&str; 10] = ["Pref", "Ath", "AC XXI", "SC Pref", "SC I", "SC III", "SC V", "SC VI", "LC Short Pref", "SD IX"];
+
+#[test]
+fn the_smalcald_articles_first_article_of_each_part_carries_its_part_title() {
+    // Arrange
+    let c = corpus();
+    // Act
+    let titled: Vec<(&str, &str)> = c.documents.iter().flat_map(|d| d.articles.iter()).filter_map(|a| a.section_title.as_deref().map(|title| (a.slug.as_str(), title))).collect();
+    // Assert
+    assert_eq!(
+        titled,
+        vec![
+            ("/smalcald-articles/i/nature-of-god/", "The First Part"),
+            ("/smalcald-articles/ii/first-and-chief-article/", "The Second Part"),
+            ("/smalcald-articles/iii/of-sin/", "The Third Part of the Articles"),
+        ]
+    );
+}
+
+#[test]
+fn the_book_of_concord_is_titled_and_described_from_data_and_its_description_is_our_own_words() {
+    // Arrange
+    let c = corpus();
+    // Act
+    let description_admitted = c.admissions.iter().filter(|(admitted, _)| *admitted == Admitted::Description).map(|(_, admission)| *admission).collect::<Vec<_>>();
+    // Assert
+    assert_eq!(
+        (c.title.as_str(), c.description.as_str(), description_admitted),
+        ("The Book of Concord", "The Lutheran confessions of 1580 \u{2014} the church's own confession, subordinate to the Scripture it confesses.", vec![Admission::Editorial { reason: admission::EditorialReason::CorpusDescription }])
+    );
 }

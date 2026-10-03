@@ -9,6 +9,10 @@
 # whole). The threshold sits at the lowest coverage among paragraphs checked
 # by hand as Triglot text and above every known non-Triglot text measured in
 # FOCUS-3 (ledger: .superpowers/sdd/2026-10-03-focus3/progress.md).
+# An article's paragraph numbers agree with the Triglot's when at least
+# `numbering_percent` of its matched paragraphs find their number among the
+# marginal numbers ("44]") of the scan leaf they match on or the leaf facing
+# it; otherwise its paragraphs are labelled by the article's code alone.
 # A paragraph the scan garbles is Confirmed by hand: a [[confirmed]] row names
 # it by document, article slug and its opening words, with the Triglot page.
 # A title curated in concord-titles.toml is our own wording (Editorial).
@@ -16,6 +20,7 @@
 
 shingle_words = 6
 threshold_percent = 40
+numbering_percent = 70
 
 [[window]]
 document = "preface"

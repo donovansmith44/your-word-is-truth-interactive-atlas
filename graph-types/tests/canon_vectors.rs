@@ -3,6 +3,7 @@ use atlas_graph_types::canon::{
     DOMAIN_PREFIX, ROOT,
 };
 use atlas_graph_types::chrono::{TimePoint, Year};
+use atlas_graph_types::container::{BibleContainer, ConcordContainer, CorpusContainer};
 use atlas_graph_types::id::{AnyNodeId, NodeKind, SourceId};
 use atlas_graph_types::node::{
     EventWitnessPayload, Node, NodePayload, PolityDeltaPayload, PolityEraPayload,
@@ -354,8 +355,26 @@ fn every_payload_variant_round_trips() {
         },
         Node {
             id: nid(NodeKind::Container, "bible/JHN"),
-            payload: NodePayload::Container { title: "John".into() },
+            payload: NodePayload::Container(CorpusContainer::Bible(BibleContainer::Book { title: "John".into() })),
             provenance: "canon".into(),
+        },
+        Node { id: nid(NodeKind::Container, "bible"), payload: NodePayload::Container(CorpusContainer::Bible(BibleContainer::Bible { title: "The Holy Bible".into() })), provenance: "canon".into() },
+        Node { id: nid(NodeKind::Container, "bible-chapter-JHN-3"), payload: NodePayload::Container(CorpusContainer::Bible(BibleContainer::Chapter { title: "John 3".into() })), provenance: "canon".into() },
+        Node {
+            id: nid(NodeKind::Container, "concord"),
+            payload: NodePayload::Container(CorpusContainer::Concord(ConcordContainer::BookOfConcord { title: "The Book of Concord".into(), description: "The Lutheran confessions of 1580.".into() })),
+            provenance: "concord".into(),
+        },
+        Node { id: nid(NodeKind::Container, "concord-doc-defense"), payload: NodePayload::Container(CorpusContainer::Concord(ConcordContainer::Document { title: "Apology".into() })), provenance: "concord".into() },
+        Node {
+            id: nid(NodeKind::Container, "concord-art-smalcald-articles-2"),
+            payload: NodePayload::Container(CorpusContainer::Concord(ConcordContainer::Article { title: "Article I".into(), section_title: Some("Part I".into()) })),
+            provenance: "concord".into(),
+        },
+        Node {
+            id: nid(NodeKind::Container, "concord-art-defense-4"),
+            payload: NodePayload::Container(CorpusContainer::Concord(ConcordContainer::Article { title: "Article IV".into(), section_title: None })),
+            provenance: "concord".into(),
         },
         Node {
             id: nid(NodeKind::Event, "crossing-the-red-sea"),
@@ -589,7 +608,7 @@ fn every_payload_variant_round_trips() {
         .iter()
         .map(|n| match n.payload {
             NodePayload::TextUnit { .. } => "TextUnit",
-            NodePayload::Container { .. } => "Container",
+            NodePayload::Container(_) => "Container",
             NodePayload::Event { .. } => "Event",
             NodePayload::Narrative { .. } => "Narrative",
             NodePayload::Place { .. } => "Place",
@@ -753,4 +772,18 @@ fn edge_canonical_bytes_are_sorted_decodable_json_over_position_strings() {
     let bytes = edge_canonical_bytes("LocatedAt", &s, &o);
     assert_eq!(String::from_utf8(bytes).unwrap(), r#"{"object":"n:Place:jordan","rel":"LocatedAt","subject":"n:Event:e1"}"#);
     assert_eq!(position_str(&s), "n:Event:e1");
+}
+
+#[test]
+fn a_container_encodes_its_corpus_and_level_around_its_fields() {
+    // Arrange
+    let article = Node {
+        id: nid(NodeKind::Container, "concord-art-smalcald-articles-2"),
+        payload: NodePayload::Container(CorpusContainer::Concord(ConcordContainer::Article { title: "Article I".into(), section_title: Some("Part I".into()) })),
+        provenance: "concord".into(),
+    };
+    // Act
+    let bytes = String::from_utf8(article.encode()).unwrap();
+    // Assert
+    assert_eq!(bytes, r#"{"id":"Container:concord-art-smalcald-articles-2","payload":{"Container":{"Concord":{"Article":{"section_title":"Part I","title":"Article I"}}}},"provenance":"concord"}"#);
 }

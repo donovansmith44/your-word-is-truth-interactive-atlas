@@ -6,6 +6,7 @@ use std::collections::BTreeMap;
 
 use crate::chrono::{TimePoint, Year};
 use crate::id::SourceId;
+use crate::container::{BibleContainer, ConcordContainer, CorpusContainer};
 use crate::node::{
     EventWitnessPayload, Node, NodePayload, PolityDeltaPayload, PolityEraPayload,
 };
@@ -24,6 +25,8 @@ use super::{
 const NODE_KEYS: &[&str] = &["id", "payload", "provenance"];
 const TEXT_UNIT_KEYS: &[&str] = &["corpus", "renderings"];
 const CONTAINER_KEYS: &[&str] = &["title"];
+const CORPUS_CONTAINER_KEYS: &[&str] = &["description", "title"];
+const ARTICLE_KEYS: &[&str] = &["section_title", "title"];
 const EVENT_KEYS: &[&str] = &[
     "acts_section",
     "atlas_section",
@@ -96,9 +99,7 @@ fn payload_to_value(p: &NodePayload) -> Value {
                 ("renderings", layer_map_to_value(renderings)),
             ]),
         ),
-        NodePayload::Container { title } => {
-            variant("Container", obj(vec![("title", str_value(title))]))
-        }
+        NodePayload::Container(container) => variant("Container", container_to_value(container)),
         NodePayload::Event {
             label,
             kind,
@@ -240,10 +241,7 @@ fn payload_from_value(v: &Value, path: &str) -> Result<NodePayload, CanonError> 
                 renderings: layer_map_from_value(m, &p)?,
             })
         }
-        "Container" => {
-            expect_exact_keys(m, &p, CONTAINER_KEYS)?;
-            Ok(NodePayload::Container { title: field_str(m, &p, "title")? })
-        }
+        "Container" => Ok(NodePayload::Container(container_from_value(body, &p)?)),
         "Event" => {
             expect_exact_keys(m, &p, EVENT_KEYS)?;
             let (witnesses, wp) = field_arr(m, &p, "witnesses")?;
@@ -458,6 +456,52 @@ fn piece_from_value(v: &Value, path: &str) -> Result<Piece, CanonError> {
         role: TextPartRole::named(&role).ok_or_else(|| CanonError::new(join(path, "role"), format!("unknown text part role {role:?}")))?,
         text: field_str(m, path, "text")?,
     })
+}
+
+fn container_to_value(container: &CorpusContainer) -> Value {
+    match container {
+        CorpusContainer::Bible(bible) => variant(
+            "Bible",
+            match bible {
+                BibleContainer::Bible { title } => variant("Bible", obj(vec![("title", str_value(title))])),
+                BibleContainer::Book { title } => variant("Book", obj(vec![("title", str_value(title))])),
+                BibleContainer::Chapter { title } => variant("Chapter", obj(vec![("title", str_value(title))])),
+            },
+        ),
+        CorpusContainer::Concord(concord) => variant(
+            "Concord",
+            match concord {
+                ConcordContainer::BookOfConcord { title, description } => {
+                    variant("BookOfConcord", obj(vec![("description", str_value(description)), ("title", str_value(title))]))
+                }
+                ConcordContainer::Document { title } => variant("Document", obj(vec![("title", str_value(title))])),
+                ConcordContainer::Article { title, section_title } => {
+                    variant("Article", obj(vec![("section_title", opt_str(section_title)), ("title", str_value(title))]))
+                }
+            },
+        ),
+    }
+}
+
+fn container_from_value(v: &Value, path: &str) -> Result<CorpusContainer, CanonError> {
+    let (corpus, body) = expect_variant(v, path)?;
+    let p = join(path, corpus);
+    let (level, fields) = expect_variant(body, &p)?;
+    let p = join(&p, level);
+    let m = expect_obj(fields, &p)?;
+    let titled = |keys: &[&str]| -> Result<String, CanonError> {
+        expect_exact_keys(m, &p, keys)?;
+        field_str(m, &p, "title")
+    };
+    match (corpus, level) {
+        ("Bible", "Bible") => Ok(CorpusContainer::Bible(BibleContainer::Bible { title: titled(CONTAINER_KEYS)? })),
+        ("Bible", "Book") => Ok(CorpusContainer::Bible(BibleContainer::Book { title: titled(CONTAINER_KEYS)? })),
+        ("Bible", "Chapter") => Ok(CorpusContainer::Bible(BibleContainer::Chapter { title: titled(CONTAINER_KEYS)? })),
+        ("Concord", "BookOfConcord") => Ok(CorpusContainer::Concord(ConcordContainer::BookOfConcord { title: titled(CORPUS_CONTAINER_KEYS)?, description: field_str(m, &p, "description")? })),
+        ("Concord", "Document") => Ok(CorpusContainer::Concord(ConcordContainer::Document { title: titled(CONTAINER_KEYS)? })),
+        ("Concord", "Article") => Ok(CorpusContainer::Concord(ConcordContainer::Article { title: titled(ARTICLE_KEYS)?, section_title: field_opt_str(m, &p, "section_title")? })),
+        (corpus, level) => Err(CanonError::new(&p, format!("unknown container {corpus} {level}"))),
+    }
 }
 
 fn time_point_to_value(t: &TimePoint) -> Value {

@@ -11,8 +11,11 @@
 # [[unit]]     a whole vendored paragraph, by document, slug and its exact
 #              cleaned text; it is dropped before numbering, so it never
 #              takes a paragraph number.
-# [[strip]]    an exact fragment of a served unit, by its served position,
-#              replaced by `with` (empty when omitted); it must occur once.
+# [[run]]      one source node of an article, by document, slug and its
+#              exact text; it is dropped before paragraphs are formed.
+# [[strip]]    an exact fragment of an article's served text, by document and
+#              slug, replaced by `with` (empty when omitted); it must occur
+#              once in the article.
 # markers      text that no served Concord unit or title may contain.
 #              "*" also covers a stray "**".
 
@@ -65,97 +68,86 @@ kind = "site-furniture"
 triglot = "The second half of the same link residue; its marker '106' is a link target, not a paragraph. Served as the phantom BoC 4.17.106 until 2026-10-03."
 
 [[strip]]
-part = 2
-article = 1
-paragraph = 3
+document = "ecumenical-creeds"
+slug = "/ecumenical-creeds/apostles-creed/"
 text = "catholic* Church"
 with = "catholic Church"
 kind = "editorial-note"
 triglot = "The reference mark for the excluded note; the Triglot reads 'the holy catholic Church' unmarked."
 
 [[strip]]
-part = 4
-article = 5
-paragraph = 212
+document = "defense"
+slug = "/defense/of-love-and-fulfilling-the-law/"
 text = "The following, through paragraph 213, are left out of the Readers Edition."
 kind = "editorial-note"
 triglot = "A note about the site's own Readers Edition; 'Readers Edition' occurs nowhere in the Triglot, whose Apology IV continues straight into '[All prudent men will see…'."
 
 [[strip]]
-part = 4
-article = 17
-paragraph = 69
+document = "defense"
+slug = "/defense/of-free-will/"
 text = "Of Justification . (see [AP IV"
 with = "Of Justification."
 kind = "site-furniture"
 triglot = "The opening of the bocl.org link residue; the Triglot reads 'in the article Of Justification. (See p. 119 and 153.)' (OCR line 87858), whose page reference the site replaced with links."
 
 [[strip]]
-part = 7
-article = 6
-paragraph = 1
+document = "small-catechism"
+slug = "/small-catechism/how-christians-confess/"
 text = "?*"
 with = "?"
 kind = "editorial-note"
 triglot = "The reference mark for the excluded 7.6.4 note; the Triglot reads 'What is Confession?' unmarked."
 
 [[strip]]
-part = 7
-article = 6
-paragraph = 4
+document = "small-catechism"
+slug = "/small-catechism/how-christians-confess/"
 text = "thus: **Reverend"
 with = "thus: Reverend"
 kind = "markup-residue"
 triglot = "A stray Markdown bold marker; the Triglot reads 'Reverend and dear sir' with no mark."
 
 [[strip]]
-part = 7
-article = 6
-paragraph = 4
+document = "small-catechism"
+slug = "/small-catechism/how-christians-confess/"
 text = "* These questions may not have been composed by Luther himself but reflect his teachings and were included in editions of the Small Catechism during his lifetime."
 kind = "editorial-note"
 triglot = "A bookofconcord.org note; the Triglot's Small Catechism V ends at '…general form of confession for the unlearned.' (OCR line 116404) and 'may not have been composed' occurs nowhere in it."
 
 [[strip]]
-part = 9
-article = 6
-paragraph = 1
+document = "epitome"
+slug = "/epitome/law-and-gospel/"
 text = "**AFFIRMATIVE THESES"
 with = "AFFIRMATIVE THESES"
 kind = "markup-residue"
 triglot = "A stray Markdown bold marker before the Epitome V heading the site ran into the paragraph."
 
 [[strip]]
-part = 10
-article = 9
-paragraph = 1
+document = "solid-declaration"
+slug = "/solid-declaration/the-holy-supper/"
 text = "**STATUS CONTROVERSIAE."
 with = "STATUS CONTROVERSIAE."
 kind = "markup-residue"
 triglot = "A stray Markdown bold marker opening the Solid Declaration VII 'Status Controversiae' heading the site ran into the paragraph."
 
 [[strip]]
-part = 10
-article = 9
-paragraph = 1
+document = "solid-declaration"
+slug = "/solid-declaration/the-holy-supper/"
 text = "In This Article.**"
 with = "In This Article."
 kind = "markup-residue"
 triglot = "The matching closing Markdown bold marker of the same heading."
 
 [[strip]]
-part = 9
-article = 6
-paragraph = 11
+document = "epitome"
+slug = "/epitome/law-and-gospel/"
 text = "Rejected.**"
 with = "Rejected."
 kind = "markup-residue"
 triglot = "A stray Markdown bold marker closing the Epitome V 'Negative Theses' heading, served since FOCUS-3 recovers the heading; the Triglot prints the heading unmarked."
 
 [[strip]]
-part = 9
-article = 10
-paragraph = 1
+document = "epitome"
+slug = "/epitome/descent-of-christ-into-hell/"
 text = "This Article.**"
 with = "This Article."
 kind = "markup-residue"
@@ -169,9 +161,8 @@ kind = "editorial-note"
 triglot = "An editor's query left in the page as an <h5> above Apology III (IV II) 1; 'Tappert and Kolb' occurs nowhere in the Triglot, whose Apology III opens 'Here the adversaries urge against us' (p. 157). Never served: the parser dropped it as a heading until FOCUS-3."
 
 [[strip]]
-part = 9
-article = 4
-paragraph = 12
+document = "epitome"
+slug = "/epitome/righteousness-of-faith/"
 text = "NEGATIVE THESES: Rejection of the False Opposite Dogmas."
 with = "ANTITHESIS or NEGATIVA. Contrary Doctrine Rejected."
 kind = "site-wording"

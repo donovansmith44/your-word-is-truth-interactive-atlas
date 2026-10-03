@@ -666,7 +666,7 @@ mod tests {
         }
         g.nodes.insert(
             container_id.erase(),
-            Node { id: container_id.erase(), payload: NodePayload::Container { title: "Article IV. Of Justification.".into() }, provenance: "test".into() },
+            Node { id: container_id.erase(), payload: NodePayload::Container(crate::container::CorpusContainer::Concord(crate::container::ConcordContainer::Article { title: "Article IV. Of Justification.".into(), section_title: None })), provenance: "test".into() },
         );
         let mut content: BTreeSet<Locus<ConcordTag>> = BTreeSet::new();
         content.insert(Locus::whole(p1.clone()));
@@ -698,7 +698,7 @@ mod tests {
         for c in [&book, &ch1, &ch2] {
             g.nodes.insert(
                 c.erase(),
-                Node { id: c.erase(), payload: NodePayload::Container { title: "t".into() }, provenance: "test".into() },
+                Node { id: c.erase(), payload: NodePayload::Container(crate::container::CorpusContainer::Bible(crate::container::BibleContainer::Chapter { title: "t".into() })), provenance: "test".into() },
             );
         }
         g.contains_bible.push(Contains {
