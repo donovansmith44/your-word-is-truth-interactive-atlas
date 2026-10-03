@@ -100,3 +100,12 @@ lane before presenting the actual files to Donovan. Do not sign off the known
 account mismatch at predecessor 3bceb6c. No Rust target, AOT, shared contract,
 artifact, server or lock was created. Compact evidence is retained so stopped
 task-owned bin/obj output can be pruned without losing these results.
+
+After publishing code **eb77e95**, removed this worktree's eight untracked
+bin/obj directories: **229,214,122 logical file bytes**. Verified the pushed head,
+clean tracked state, zero candidate symlinks and no process cwd/open descriptor
+inside a candidate first. [Cleanup inventory](evidence/2026-10-03-fsharp-account-skeleton/cleanup.json)
+records the exact paths and before/after capacity. All compiler sources and
+small outcomes remain committed; reproduction now rebuilds Core. No other
+agent's output or raw/cache directory was removed. WSL still reports about
+742 GB free, while Windows C: has only 3.5 GB; no VHD compaction occurred.

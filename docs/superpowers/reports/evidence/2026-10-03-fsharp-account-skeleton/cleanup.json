@@ -1,0 +1,48 @@
+{
+  "time": "2026-10-03T18:27:51.546116+00:00",
+  "worktree": "/home/donovan/w/CX-FSHARP-accounts",
+  "published_code_head": "eb77e95",
+  "clean_tracked_state": true,
+  "all_candidate_files_untracked": true,
+  "candidate_symlinks": 0,
+  "active_cwds_or_open_descriptors": [],
+  "deleted": [
+    {
+      "path": "client-fsharp/bin",
+      "logical_file_bytes": 108370987
+    },
+    {
+      "path": "client-fsharp/obj",
+      "logical_file_bytes": 57365886
+    },
+    {
+      "path": "client-fsharp/Core/bin",
+      "logical_file_bytes": 1255459
+    },
+    {
+      "path": "client-fsharp/Core/obj",
+      "logical_file_bytes": 2247062
+    },
+    {
+      "path": "client-fsharp.Tests/bin",
+      "logical_file_bytes": 55628658
+    },
+    {
+      "path": "client-fsharp.Tests/obj",
+      "logical_file_bytes": 810530
+    },
+    {
+      "path": "client-fsharp.ContractGenerator/bin",
+      "logical_file_bytes": 3302131
+    },
+    {
+      "path": "client-fsharp.ContractGenerator/obj",
+      "logical_file_bytes": 233409
+    }
+  ],
+  "removed_logical_file_bytes": 229214122,
+  "retained": "pushed source, compiler consumers, build/test outputs and checkpoint hashes",
+  "capacity_before": "Filesystem      Size  Used Avail Use% Mounted on\n/dev/sdd       1007G  215G  742G  23% /\nC:\\             1.4T  1.4T  3.5G 100% /mnt/c\n",
+  "capacity_after": "Filesystem      Size  Used Avail Use% Mounted on\n/dev/sdd       1007G  214G  742G  23% /\nC:\\             1.4T  1.4T  3.5G 100% /mnt/c\n",
+  "vhd_compaction_performed": false
+}
