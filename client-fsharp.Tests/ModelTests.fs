@@ -70,12 +70,12 @@ let ``a text completion after navigation cannot reopen a departed reading`` (Non
     Assert.Equal((replacement, []), Model.update (Page(SurfaceMessage.Reader(ReadingMessage.TextLoaded(model.Serial, Error(Transport reason))))) replacement)
 
 [<Property>]
-let ``source retry advances only its failed operation and keeps its entire last value`` (NonNull title: NonNull<string>) (NonNull reason: NonNull<string>) =
-    let model, _ = Model.init Route.Sources
-    let prior: SourcesDocument = { Categories = [{ Id = "served"; Label = title }]; Sources = []; Provenances = None }
-    let model = { model with Surface = Surface.Sources(Failed(model.Serial, Transport reason, Some prior)) }
+let ``source retry advances only its failed operation with a fresh loading state`` (NonNull reason: NonNull<string>) =
+    let start, _ = Model.init Route.Sources
+    let model, _ = Model.update (Page(SurfaceMessage.Sources(SourcesMessage.Loaded(start.Serial, Error(ReadFailure.Unreachable reason))))) start
     let request = RequestId.next model.Serial
-    let expected = { model with Serial = request; Surface = Surface.Sources(Loading(request, Some prior)) }
+    let source, _ = Sources.init request
+    let expected = { model with Serial = request; Surface = Surface.Sources source }
     Assert.Equal((expected, [ReadSources request]), Model.update (Page(SurfaceMessage.Sources SourcesMessage.Retry)) model)
 
 [<Property>]
@@ -194,7 +194,8 @@ let ``a failed contents read retries only contents with a new identity`` (NonNul
 let ``a current source completion installs the whole served answer without starting another read`` (NonNull title: NonNull<string>) =
     let model, _ = Model.init Route.Sources
     let answer: SourcesDocument = { Categories = [{ Id = "served"; Label = title }]; Sources = []; Provenances = None }
-    let expected = { model with Surface = Surface.Sources(Ready answer) }
+    let source, _ = Sources.init model.Serial |> fst |> Sources.update (RequestId.next model.Serial) (SourcesMessage.Loaded(model.Serial, Ok answer))
+    let expected = { model with Surface = Surface.Sources source }
     Assert.Equal((expected, []), Model.update (Page(SurfaceMessage.Sources(SourcesMessage.Loaded(model.Serial, Ok answer)))) model)
 
 [<Property>]
@@ -307,7 +308,12 @@ let private surfaceFixtures request failure : Surface list =
     let source: SourcesDocument = { Categories = []; Sources = []; Provenances = None }
     [yield! states |> List.map (fun state -> Surface.Reader(readerPage None state))
      yield! states |> List.map (fun state -> Surface.Concord(concordPage None state))
-     yield! [Empty; Loading(request, None); Ready source; Failed(request, failure, Some source)] |> List.map Surface.Sources
+     let sourceModel, _ = Sources.init request
+     yield Surface.Sources sourceModel
+     let category = { Id = "same"; Label = "Same" }
+     let duplicate = { source with Categories = [category; category] }
+     let answers = [Ok source; Error(ReadFailure.Unreachable "offline"); Error(ReadFailure.InvalidAnswer NullPayload); Ok duplicate]
+     yield! answers |> List.map (fun answer -> Sources.update (RequestId.next request) (SourcesMessage.Loaded(request, answer)) sourceModel |> fst |> Surface.Sources)
      yield Surface.World; yield Surface.Kretzmann; yield Surface.NotFound]
 
 let private surfaceMessages request failure : SurfaceMessage list =
@@ -319,7 +325,7 @@ let private surfaceMessages request failure : SurfaceMessage list =
      yield SurfaceMessage.Concord ConcordMessage.Next
      yield SurfaceMessage.Sources SourcesMessage.Retry
      yield SurfaceMessage.Sources(SourcesMessage.Loaded(request, Ok source))
-     yield SurfaceMessage.Sources(SourcesMessage.Loaded(request, Error failure))]
+     yield SurfaceMessage.Sources(SourcesMessage.Loaded(request, Error(ReadFailure.Unreachable "offline")))]
 
 let private owner surface =
     match surface with

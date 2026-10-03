@@ -16,7 +16,7 @@ module View =
             main {
                 attr.``class`` "app-main"
                 cond model.Surface <| function
-                    | Surface.Sources state -> sources state dispatch
+                    | Surface.Sources model -> SourcesView.render (Sources.state model) (SurfaceMessage.Sources >> Page >> dispatch)
                     | Surface.Reader page -> reader page dispatch
                     | Surface.Concord page -> concord page dispatch
                     | Surface.World | Surface.Kretzmann | Surface.NotFound -> Node.Empty()
@@ -51,35 +51,6 @@ module View =
                     option { attr.value "kjv"; "KJV" }
                 }
                 a { attr.``class`` "attribution"; "data-testid" => "attribution"; attr.href "/sources"; "Credits" }
-            }
-        }
-
-    let private sources (state: LoadState<SourcesDocument>) dispatch : Node =
-        div {
-            attr.``class`` "sources-page"
-            "data-testid" => "sources-page"
-            div {
-                attr.``class`` "sources-column"
-                h1 { attr.``class`` "sources-title"; "Sources" }
-                p {
-                    attr.``class`` "sources-intro"
-                    "Bible Explorer stands on the work of translators, researchers, and scholars across many centuries. Every source below is honestly named: what it is, what we built from it, and its license."
-                }
-                cond state <| function
-                    | Empty | Loading _ -> p { attr.``class`` "sources-loading"; "Loading sources…" }
-                    | Failed _ -> failed (Page(SurfaceMessage.Sources SourcesMessage.Retry)) dispatch
-                    | Ready document ->
-                        let categories = document.Sources |> List.groupBy _.Category |> Map.ofList
-                        forEach document.Categories <| fun category ->
-                            section {
-                                attr.``class`` "sources-category"
-                                "data-testid" => ("sources-category-" + category.Id)
-                                h2 { attr.``class`` "sources-category-title"; category.Label }
-                                div {
-                                    attr.``class`` "sources-grid"
-                                    forEach (Map.tryFind category.Id categories |> Option.defaultValue []) sourceCard
-                                }
-                            }
             }
         }
 
@@ -391,25 +362,4 @@ module View =
                 on.click (fun _ -> dispatch message)
                 "Try again"
             }
-        }
-
-    let private sourceCard (source: SourceEntry) : Node =
-        article {
-            attr.``class`` "source-card"
-            "data-testid" => ("source-" + source.Id)
-            h3 { attr.``class`` "source-title"; source.Title }
-            p { attr.``class`` "source-what"; source.WhatItIs }
-            p { attr.``class`` "source-built"; span { attr.``class`` "source-label"; "What we built:" }; " " + source.WhatWeBuilt }
-            p { attr.``class`` "source-license"; span { attr.``class`` "source-label"; "License:" }; " " + source.License }
-            cond source.Link <| function
-                | None -> Node.Empty()
-                | Some link ->
-                    a {
-                        attr.``class`` "source-link"
-                        "data-testid" => ("source-link-" + source.Id)
-                        attr.href link
-                        attr.target "_blank"
-                        attr.rel "noopener noreferrer"
-                        "Visit source"
-                    }
         }

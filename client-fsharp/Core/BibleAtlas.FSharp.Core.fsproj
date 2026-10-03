@@ -4,11 +4,11 @@
     <Compile Include="$(GeneratedContract)" />
     <Compile Include="obj/Contract/Vocabulary.g.fs" />
     <Compile Include="Loading.fs" />
-    <Compile Include="WireFailure.fs" /><Compile Include="JsonAdapter.fs" /><Compile Include="Json.fs" /><Compile Include="WireDecoder.fs" /><Compile Include="AnchoredText.fs" />
+    <Compile Include="NonEmpty.fs" /><Compile Include="WireFailure.fs" /><Compile Include="ReadFailure.fs" /><Compile Include="JsonAdapter.fs" /><Compile Include="Json.fs" /><Compile Include="WireDecoder.fs" /><Compile Include="AnchoredText.fs" />
     <Compile Include="Exploration.fs" />
     <Compile Include="Presentation.fs" />
-    <Compile Include="Api.fs" /><Compile Include="Graph.fs" />
-    <Compile Include="Model.fs" />
+    <Compile Include="HttpAdapter.fs" /><Compile Include="Api.fs" /><Compile Include="Graph.fs" />
+    <Compile Include="SourcesPresentation.fs" /><Compile Include="Sources.fs" /><Compile Include="Model.fs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="FSharp.SystemTextJson" Version="1.4.36" />

@@ -134,3 +134,94 @@ reader and emitter now place their public entry first, then private helpers
 below their first caller; their recursion is actual schema/type recursion.
 Local/member ordering elsewhere remains to be demonstrated. The current vocabulary generator and other
 legacy F# modules have not been repainted.
+
+## Sources reference interfaces
+
+The next exemplar owns one page, including the response presentation. A pending
+request carries its ticket; a successful page holds a presentation prepared
+once when that ticket completes. Retry is an event, not a renderer decision.
+The private model can be created only by `init` and advanced by `update`.
+The public state is its complete read-only projection for rendering and laws.
+No empty page or previous-response slot is kept: this page has no refresh path
+from success, so those states cannot be reached by its events.
+
+```fsharp
+type HttpRejection =
+    { Status: System.Net.HttpStatusCode
+      Reason: string option
+      Body: Result<ErrorBody, WireFailure> }
+
+type ReadFailure =
+    | Unreachable of diagnostic: string
+    | Cancelled of diagnostic: string
+    | HttpRejected of HttpRejection
+    | InvalidAnswer of WireFailure
+
+type NonEmpty<'a> = private NonEmpty of head: 'a * tail: 'a list
+
+type SourceCardPresentation = { Entry: SourceEntry; Visit: string option }
+type SourceSectionPresentation =
+    { Category: SourceCategory; Cards: SourceCardPresentation list }
+type SourceSections =
+    { Document: SourcesDocument; Sections: SourceSectionPresentation list }
+type SourcesPresentation = private SourcesPresentation of SourceSections
+
+type SourcePresentationFailure =
+    | UnlistedCategories of NonEmpty<SourceEntry>
+    | RepeatedCategories of NonEmpty<SourceCategory>
+
+type SourcesState =
+    | Loading of RequestId
+    | Available of SourcesPresentation
+    | RetryableFailure of ReadFailure
+    | ReadRejected of ReadFailure
+    | PresentationRejected of SourcePresentationFailure
+
+type SourcesModel = private SourcesModel of SourcesState
+
+type SourcesMessage =
+    | Retry
+    | Loaded of RequestId * Result<SourcesDocument, ReadFailure>
+
+type SourcesEffect = Read of RequestId
+
+SourcesPresenter.present : SourcesDocument -> Result<SourcesPresentation, SourcePresentationFailure>
+SourcesPresentation.view : SourcesPresentation -> SourceSections
+Sources.init : RequestId -> SourcesModel * SourcesEffect list
+Sources.update : RequestId -> SourcesMessage -> SourcesModel -> SourcesModel * SourcesEffect list
+Sources.state : SourcesModel -> SourcesState
+
+Api.readContract : HttpClient -> CancellationToken -> Request<'a> -> Async<Result<'a, ReadFailure>>
+SourcesRuntime.command :
+    (Request<SourcesDocument> -> Async<Result<SourcesDocument, ReadFailure>>)
+    -> SourcesEffect -> Cmd<SourcesMessage>
+SourcesView.render : SourcesState -> (SourcesMessage -> unit) -> Node
+```
+
+Presentation preserves the whole served document. It either associates each
+source with its served category once, in category/source order, or returns a
+named failure containing the offending records. Duplicate category identifiers
+are refused before missing-category validation; neither duplication nor silent
+drop is a permitted presentation. A blank link has no Visit affordance, matching
+the C# presentation policy, while its original wire value stays in the document.
+No label, reference, date or source identity is inferred.
+
+A network/interruption failure and HTTP 5xx may retry. HTTP refusals outside
+5xx, decode faults and presentation faults may not. HTTP classification belongs
+to the read failure policy and is exercised across the status range. The view
+renders the stored state and does not group, decode, classify retry or present
+responses. Existing non-Sources callers retain their compatibility result until
+the parent migration applies this approved pattern everywhere.
+
+Sources application integration changes the existing surface case to `Surface.Sources of SourcesModel`. The application maps only `SourcesEffect.Read of RequestId` into its existing `Effect.ReadSources of RequestId`, interprets it through `SourcesRuntime.command`, and passes the read-only `Sources.state` projection to `SourcesView.render`. The old generic `LoadState<SourcesDocument>` path and its grouping/card renderers are removed. No other surface changes in this exemplar.
+
+## Current disposition
+
+Ops owner directives 570f5b9 and 7572dae supersede the earlier style-first order:
+the domain, data structures and algebras must be signed off first. The Sources
+checkpoint is preserved, not submitted as completed style approval. Its 30
+properties and 108 regression tests pass; the new FCS gate covers the named
+production exemplars and self-tests module/member order and forbidden syntax.
+Comprehensive lexical/local shadowing, arbitrary fake recursion and whole-client
+closure remain open. No additional view or exemplar code follows before the
+domain package.

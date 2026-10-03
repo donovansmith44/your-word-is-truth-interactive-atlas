@@ -1,24 +1,13 @@
 namespace BibleAtlas.FSharp
 
-open System
-open System.Net.Http
-open System.Threading
-open BibleAtlas.FSharp.Contract
-
 module Api =
-    let read (http: HttpClient) (cancellation: CancellationToken) (request: Request<'a>) =
-      task {
-        try
-            use! response = http.GetAsync(Request.uri request, cancellation)
-            let! body = response.Content.ReadAsStringAsync(cancellation)
-            if response.IsSuccessStatusCode then return Json.decode<'a> body
-            else
-                let reason =
-                    match Json.decode<ErrorBody> body with
-                    | Ok refusal -> refusal.Error.Message
-                    | Error _ -> response.ReasonPhrase
-                return Error(Transport $"{int response.StatusCode}: {reason}")
-        with
-        | :? HttpRequestException as error -> return Error(Transport error.Message)
-        | :? OperationCanceledException as error -> return Error(Transport error.Message)
-      } |> Async.AwaitTask
+    let readContract http cancellation request = HttpAdapter.read http cancellation request
+
+    let read http cancellation request =
+        async {
+            let! answer = HttpAdapter.read http cancellation request
+            return answer |> Result.mapError (fun failure ->
+                match failure with
+                | ReadFailure.InvalidAnswer failure -> Contract(WireFailure.render failure)
+                | ReadFailure.Unreachable _ | ReadFailure.Cancelled _ | ReadFailure.HttpRejected _ -> Transport(ReadFailure.describe failure))
+        }

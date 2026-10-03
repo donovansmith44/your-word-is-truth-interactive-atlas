@@ -14,7 +14,9 @@ module rec Runtime =
             let corpusName = JsonSerializer.Deserialize<string>(Json.encode corpus)
             Cmd.OfAsync.perform (Api.read http CancellationToken.None) (Reads.contents corpusName) (fun answer -> readingMessage corpus (ReadingMessage.ContentsLoaded(request, answer)))
         | ReadText(corpus, request, read) -> Cmd.OfAsync.perform (Api.read http CancellationToken.None) read (fun answer -> readingMessage corpus (ReadingMessage.TextLoaded(request, answer)))
-        | ReadSources request -> Cmd.OfAsync.perform (Api.read http CancellationToken.None) (Reads.sources()) (fun answer -> Page(SurfaceMessage.Sources(SourcesMessage.Loaded(request, answer))))
+        | ReadSources request ->
+            SourcesRuntime.command (Api.readContract http CancellationToken.None) (SourcesEffect.Read request)
+            |> Cmd.map (SurfaceMessage.Sources >> Page)
         | ReadOpening(request, position) ->
             Cmd.OfAsync.perform (Explore.beginAt (Graph.explorer http)) position (fun answer -> FocusLoaded(request, answer))
         | WalkFocus(request, trail, traversal) ->

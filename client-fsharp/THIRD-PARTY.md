@@ -2,7 +2,7 @@
 
 This client uses Bolero 0.25.65 and Bolero.Build 0.25.65 (Apache-2.0; Loïc Denuzière and contributors), Elmish 4.0.1 (Apache-2.0; Eugene Tolmachev and contributors), FSharp.SystemTextJson 1.4.36 (MIT; Loïc Denuzière and contributors), and FSharp.Core supplied by the .NET SDK (MIT; Microsoft and contributors).
 
-The build generator uses YamlDotNet 18.1.0 (MIT; Antoine Aubry and contributors). The test projects also use FsCheck 3.4.0 and FsCheck.Xunit 3.4.0 (BSD-3-Clause; Kurt Schelfthout and contributors), plus FSharp.Compiler.Service supplied by the .NET SDK (MIT; Microsoft and contributors). The latter remains SDK-bound rather than package-pinned; dependency review N6 is still open. Package nuspec license declarations were checked for Elmish and both FsCheck packages. The test projects use xUnit, bUnit and Playwright; these are build/test dependencies and are absent from the published client.
+The build generator uses YamlDotNet 18.1.0 (MIT; Antoine Aubry and contributors). The test projects also use FsCheck 3.4.0 and FsCheck.Xunit 3.4.0 (BSD-3-Clause; Kurt Schelfthout and contributors), plus FSharp.Compiler.Service 43.12.401 (MIT; Microsoft and contributors). FSharp.Compiler.Service is package-pinned in both test projects, independently of the SDK location; the source gate checks this declaration. Package nuspec license declarations were checked for Elmish and both FsCheck packages. The test projects use xUnit, bUnit and Playwright; these are build/test dependencies and are absent from the published client.
 
 The application links the existing client's CSS, fonts, JavaScript and Leaflet assets. Their attribution and the owner's OFL font exception are already recorded with the C# client. None is modified by this migration.
 

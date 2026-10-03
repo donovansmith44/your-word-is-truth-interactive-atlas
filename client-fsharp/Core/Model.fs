@@ -82,7 +82,7 @@ module ConcordPage =
 type Surface =
     | Reader of ReaderPage
     | Concord of ConcordPage
-    | Sources of LoadState<SourcesDocument>
+    | Sources of SourcesModel
     | World
     | Kretzmann
     | NotFound
@@ -98,9 +98,6 @@ type ReadingMessage =
 
 [<RequireQualifiedAccess>]
 type ConcordMessage = Reading of ReadingMessage | Next
-
-[<RequireQualifiedAccess>]
-type SourcesMessage = Retry | Loaded of RequestId * Result<SourcesDocument, Failure>
 
 [<RequireQualifiedAccess>]
 type SurfaceMessage =
@@ -186,7 +183,9 @@ module private Surfaces =
             Surface.Reader { Location = Some location; State = ReadingState.LoadingContents request }, [ReadContents(Corpus.Bible, request)]
         | Route.Concord reference ->
             Surface.Concord { Reference = reference; State = ReadingState.LoadingContents request }, [ReadContents(Corpus.Concord, request)]
-        | Route.Sources -> Surface.Sources(Loading(request, None)), [ReadSources request]
+        | Route.Sources ->
+            let model, effects = Sources.init request
+            Surface.Sources model, sourcesEffects effects
         | Route.World -> Surface.World, []
         | Route.Kretzmann -> Surface.Kretzmann, []
         | Route.NotFound -> Surface.NotFound, []
@@ -200,16 +199,12 @@ module private Surfaces =
             let state, effects = ConcordSurface.update page.Reference request message page.State
             Surface.Concord { page with State = state }, effects
         | SurfaceMessage.Sources message, Surface.Sources state ->
-            let state, effects = SourcesSurface.update request message state
-            Surface.Sources state, effects
+            let model, effects = Sources.update request message state
+            Surface.Sources model, sourcesEffects effects
         | _ -> surface, []
 
-module private SourcesSurface =
-    let update (request: RequestId) (message: SourcesMessage) (state: LoadState<SourcesDocument>) : LoadState<SourcesDocument> * Effect list =
-        match message, state with
-        | SourcesMessage.Retry, Failed _ -> LoadState.beginRead request state, [ReadSources request]
-        | SourcesMessage.Loaded(identity, answer), _ -> LoadState.complete identity answer state, []
-        | SourcesMessage.Retry, Empty | SourcesMessage.Retry, Loading _ | SourcesMessage.Retry, Ready _ -> state, []
+    let private sourcesEffects effects =
+        effects |> List.map (function SourcesEffect.Read request -> ReadSources request)
 
 module private ConcordSurface =
     let update (reference: string option) (request: RequestId) (message: ConcordMessage) (state: ReadingState) : ReadingState * Effect list =

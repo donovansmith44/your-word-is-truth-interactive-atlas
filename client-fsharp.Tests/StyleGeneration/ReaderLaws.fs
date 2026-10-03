@@ -70,9 +70,8 @@ let ``reader errors are reachable values with their exact document paths`` (choi
 [<Property>]
 let ``malformed YAML is returned at the library boundary`` (indent: byte) =
     let source = "components:\n" + String.replicate (1 + int indent % 8) " " + "schemas: [unterminated"
-    match ContractReader.read (ContractDocument.ofText source) with
-    | Error(InvalidYaml diagnostic) -> Assert.Contains("$", ContractError.render (InvalidYaml diagnostic)); Assert.NotEmpty(diagnostic.Message)
-    | other -> Assert.Fail($"expected InvalidYaml, received {other}")
+    let expected = Error(InvalidYaml { Line = 3; Column = 1; Message = "While parsing a flow sequence, did not find expected ',' or ']'." })
+    Assert.Equal(expected, ContractReader.read (ContractDocument.ofText source))
 
 [<Property>]
 let ``adding a generated nominal schema to the complete published document preserves the rest`` (identity: uint16) =

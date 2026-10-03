@@ -5,7 +5,7 @@
     <DefaultItemExcludes>$(DefaultItemExcludes);Core/**</DefaultItemExcludes>
     <SharedAssetRoot>$([System.IO.Path]::GetFullPath('$(MSBuildProjectDirectory)/../client/wwwroot/'))</SharedAssetRoot>
   </PropertyGroup>
-  <ItemGroup><Compile Include="View.fs" /><Compile Include="Runtime.fs" /><Compile Include="Main.fs" /><Compile Include="Program.fs" /></ItemGroup>
+  <ItemGroup><Compile Include="Styles/SourcesRuntime.fs" /><Compile Include="Styles/SourceCardView.fs" /><Compile Include="Styles/SourceSectionsView.fs" /><Compile Include="Styles/SourcesView.fs" /><Compile Include="View.fs" /><Compile Include="Runtime.fs" /><Compile Include="Main.fs" /><Compile Include="Program.fs" /></ItemGroup>
   <ItemGroup>
     <PackageReference Include="Bolero" Version="0.25.65" />
     <PackageReference Include="Bolero.Build" Version="0.25.65" />

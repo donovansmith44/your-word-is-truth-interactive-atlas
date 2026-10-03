@@ -2,6 +2,7 @@ module rec BibleAtlas.FSharp.Tests.ViewTests
 
 open Bunit
 open Xunit
+open FsCheck.Xunit
 open Microsoft.Extensions.DependencyInjection
 open BibleAtlas.FSharp
 open BibleAtlas.FSharp.Client
@@ -197,25 +198,26 @@ let ``an invalid text presentation retries by renewing the exploration`` () =
     (find view "[data-testid='popover-body'] [data-testid='could-not-load-retry']").Click()
     Assert.Equal<Message list>([Traverse Traversal.Renew], messages)
 
-[<Fact>]
-let ``the source view composes the complete served source under its category`` () =
-    let source = { Id = "test"; Category = "text"; Title = "Served source"; WhatItIs = "What it is"; WhatWeBuilt = "What we built"; License = "CC0"; LicensesRowKey = "test"; Link = Some "https://example.test/" }
+[<Property>]
+let ``the source view composes the complete served source under its category`` (suffix: uint16) =
+    let source = { Id = "test"; Category = "text"; Title = $"Served source {suffix}"; WhatItIs = "What it is"; WhatWeBuilt = "What we built"; License = "CC0"; LicensesRowKey = "test"; Link = Some "https://example.test/" }
     let model, _ = Model.init Route.Sources
-    let model = { model with Surface = Surface.Sources(Ready { Categories = [{ Id = "text"; Label = "Texts" }]; Sources = [source]; Provenances = None }) }
+    let document = { Categories = [{ Id = "text"; Label = "Texts" }]; Sources = [source]; Provenances = None }
+    let model, _ = Model.update (Page(SurfaceMessage.Sources(SourcesMessage.Loaded(model.Serial, Ok document)))) model
     use context = new BunitContext()
     let view = render context model (fun (_: Message) -> ())
-    let expected = """<article class="source-card" data-testid="source-test"><h3 class="source-title">Served source</h3><p class="source-what">What it is</p><p class="source-built"><span class="source-label">What we built:</span> What we built</p><p class="source-license"><span class="source-label">License:</span> CC0</p><a class="source-link" data-testid="source-link-test" href="https://example.test/" target="_blank" rel="noopener noreferrer">Visit source</a></article>"""
+    let expected = $"""<article class="source-card" data-testid="source-test"><h3 class="source-title">Served source {suffix}</h3><p class="source-what">What it is</p><p class="source-built"><span class="source-label">What we built:</span> What we built</p><p class="source-license"><span class="source-label">License:</span> CC0</p><a class="source-link" data-testid="source-link-test" href="https://example.test/" target="_blank" rel="noopener noreferrer">Visit source</a></article>"""
     Assert.Equal(expected, (find view "[data-testid='source-test']").OuterHtml)
 
-[<Fact>]
-let ``an explicit failure offers Retry and dispatches its message`` () =
+[<Property>]
+let ``an explicit source network failure offers Retry and dispatches its owned message`` (suffix: uint16) =
     let model, _ = Model.init Route.Sources
-    let model = { model with Surface = Surface.Sources(Failed(model.Serial, Transport "offline", None)) }
-    let mutable messages = []
+    let model, _ = Model.update (Page(SurfaceMessage.Sources(SourcesMessage.Loaded(model.Serial, Error(ReadFailure.Unreachable $"offline-{suffix}"))))) model
+    let delivered = System.Threading.Tasks.TaskCompletionSource<Message>()
     use context = new BunitContext()
-    let view = render context model (fun message -> messages <- message :: messages)
+    let view = render context model delivered.SetResult
     (find view "[data-testid='could-not-load-retry']").Click()
-    Assert.Equal<Message list>([Page(SurfaceMessage.Sources SourcesMessage.Retry)], messages)
+    Assert.Equal(Page(SurfaceMessage.Sources SourcesMessage.Retry), delivered.Task.GetAwaiter().GetResult())
 
 [<Fact>]
 let ``the shared header retains primary navigation translation and credits`` () =
@@ -225,11 +227,12 @@ let ``the shared header retains primary navigation translation and credits`` () 
     let expected = """<header class="app-header header-parchment"><a class="wordmark" href="/">Bible Explorer <span class="wordmark-glyph" aria-hidden="true">∴</span></a><nav class="app-nav" aria-label="Primary"><a class="nav-link" href="/" data-testid="nav-reader">Reader</a><a class="nav-link" href="/world" data-testid="nav-world">World</a><a class="nav-link" href="/kretzmann" data-testid="nav-kretzmann">Kretzmann</a><a class="nav-link" href="/concord" data-testid="nav-concord">Concord</a></nav><div class="header-tools"><label class="translation-label" for="translation-select">Translation</label><select id="translation-select" class="translation-select" data-testid="translation-select"><option value="kjv">KJV</option></select><a class="attribution" data-testid="attribution" href="/sources">Credits</a></div></header>"""
     Assert.Equal(expected, (find view "header").OuterHtml)
 
-[<Fact>]
-let ``the WebAssembly entry component runs the sources command and renders its response`` () =
+[<Property(MaxTest = 12)>]
+let ``the WebAssembly entry component runs the sources command and renders its response`` (suffix: uint16) =
     use context = new BunitContext()
     context.JSInterop.Mode <- JSRuntimeMode.Loose
-    let document = { Categories = [{ Id = "text"; Label = "Texts" }]; Sources = []; Provenances = None }
+    let label = $"Texts {suffix}"
+    let document = { Categories = [{ Id = "text"; Label = label }]; Sources = []; Provenances = None }
     use response = new System.Net.Http.HttpResponseMessage(System.Net.HttpStatusCode.OK, Content = new System.Net.Http.StringContent(Json.encode document))
     use handler = new TransportTests.Handler(response)
     use http = new System.Net.Http.HttpClient(handler, BaseAddress = System.Uri "http://example.test/")
@@ -238,7 +241,7 @@ let ``the WebAssembly entry component runs the sources command and renders its r
     let navigation = context.Services.GetRequiredService<Microsoft.AspNetCore.Components.NavigationManager>()
     navigation.NavigateTo("/sources")
     let view = context.Render<App>()
-    view.WaitForAssertion(fun () -> Assert.Equal("Texts", (find view ".sources-category-title").TextContent))
+    view.WaitForAssertion(fun () -> Assert.Equal(label, (find view ".sources-category-title").TextContent))
     navigation.NavigateTo("/not-found")
     view.WaitForAssertion(fun () -> Assert.Empty(RenderedComponentExtensions.FindAll<App>(view, ".sources-category-title")))
 
