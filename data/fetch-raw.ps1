@@ -215,6 +215,29 @@ foreach ($sub in $smalcaldSubArticles) {
   Fetch "https://bookofconcord.org/smalcald-articles/$sub/" "concord\smalcald-sub\$slug.html"
 }
 
+# FOCUS-3 (F-84): the 1921 Concordia Triglotta itself, as the Internet
+# Archive's OCR of its scan (item concordiatriglot00unse, public domain): the
+# reference every served Concord paragraph is admitted against
+# (server/atlas-etl/src/triglot.rs). The OCR text and its page index are
+# served gzipped and kept unpacked; the page numbers map scan leaves to the
+# printed pages a hand confirmation cites.
+$triglot = 'https://archive.org/download/concordiatriglot00unse/concordiatriglot00unse'
+foreach ($part in @('hocr_searchtext.txt', 'hocr_pageindex.json')) {
+  $out = "triglot\concordiatriglot00unse_$part"
+  $why = Reason $out
+  if ($why) {
+    Write-Output "fetch $triglot`_$part.gz ($why)"
+    $path = Join-Path $raw $out
+    New-Item -ItemType Directory -Force (Split-Path $path) | Out-Null
+    $zipped = Invoke-WebRequest -Uri "$triglot`_$part.gz" -UseBasicParsing
+    $source = [System.IO.Compression.GZipStream]::new([System.IO.MemoryStream]::new($zipped.Content), [System.IO.Compression.CompressionMode]::Decompress)
+    $sink = [System.IO.File]::Create($path)
+    $source.CopyTo($sink)
+    $sink.Dispose(); $source.Dispose()
+  }
+}
+Fetch "$triglot`_page_numbers.json" "triglot\concordiatriglot00unse_page_numbers.json"
+
 # Batch KRETZ-1: Kretzmann's Popular Commentary of the Bible (Paul E.
 # Kretzmann, Concordia Publishing House, 1921-1924) -- owner order
 # (2026-08-24, via the controller): "pull kretzmann commentary (public

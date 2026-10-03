@@ -232,6 +232,7 @@ mod tests {
                 },
             ],
             stats: ConcordStats::default(),
+            admissions: Vec::new(),
         }
     }
 

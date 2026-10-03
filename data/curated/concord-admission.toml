@@ -1,0 +1,116 @@
+# Positive admission of the served Book of Concord against the 1921
+# Concordia Triglotta (F-84). The reference is the Internet Archive's OCR of
+# its scan (data/raw/triglot, item concordiatriglot00unse, public domain),
+# pinned by sha256 in data/raw/MANIFEST.toml.
+#
+# A served paragraph or article title is Matched when at least
+# `threshold_percent` of its runs of `shingle_words` words occur in its
+# document's window of scan leaves (a text shorter than one run must occur
+# whole). The threshold sits at the lowest coverage among paragraphs checked
+# by hand as Triglot text and above every known non-Triglot text measured in
+# FOCUS-3 (ledger: .superpowers/sdd/2026-10-03-focus3/progress.md).
+# A paragraph the scan garbles is Confirmed by hand: a [[confirmed]] row names
+# it by document, article slug and its opening words, with the Triglot page.
+# A title curated in concord-titles.toml is our own wording (Editorial).
+# Anything neither matched, confirmed nor ours refuses the compile.
+
+shingle_words = 6
+threshold_percent = 40
+
+[[window]]
+document = "preface"
+first_leaf = 285
+last_leaf = 316
+
+[[window]]
+document = "ecumenical-creeds"
+first_leaf = 317
+last_leaf = 322
+
+[[window]]
+document = "augsburg-confession"
+first_leaf = 323
+last_leaf = 385
+
+[[window]]
+document = "defense"
+first_leaf = 382
+last_leaf = 740
+
+[[window]]
+document = "smalcald-articles"
+first_leaf = 741
+last_leaf = 789
+
+[[window]]
+document = "power-and-primacy"
+first_leaf = 789
+last_leaf = 816
+
+[[window]]
+document = "small-catechism"
+first_leaf = 817
+last_leaf = 851
+
+[[window]]
+document = "large-catechism"
+first_leaf = 852
+last_leaf = 1062
+
+[[window]]
+document = "epitome"
+first_leaf = 1063
+last_leaf = 1132
+
+[[window]]
+document = "solid-declaration"
+first_leaf = 1133
+last_leaf = 1395
+
+[[confirmed]]
+document = "augsburg-confession"
+slug = "/augsburg-confession/conclusion/"
+begins = "Ernest, Duke of Lueneberg."
+page = 95
+reason = "signature"
+triglot = "The signature 'Ernest, Duke of Lueneburg.' in the English column; the page spells it Lueneburg and the served text Lueneberg, so no run of words matches."
+
+[[confirmed]]
+document = "smalcald-articles"
+slug = "/smalcald-articles/signatories/"
+begins = "Wendal Faber, Pastor of Seeburg in Mansfeld."
+page = 503
+reason = "ocr-damage"
+triglot = "The scan reads 'es Faber, Pastor of Seeburg in Mans- / eld.' for the printed 'Wendal Faber, Pastor of Seeburg in Mansfeld.'"
+
+[[confirmed]]
+document = "power-and-primacy"
+slug = "/power-and-primacy/treatise-compiled-at-smalcald/"
+begins = "Then, how many abuses and what horrible idolatry"
+page = 519
+reason = "ocr-damage"
+triglot = "The scan reads 'idolatry the invocation of saint EUN s has pro-' across a damaged line for the printed 'Then, how many abuses and what horrible idolatry the invocation of saints has produced!' (Treatise 47)."
+
+[[confirmed]]
+document = "power-and-primacy"
+slug = "/power-and-primacy/signatories/"
+begins = "Simon Schneweis, Pastor of Crailsheim."
+page = 529
+reason = "ocr-damage"
+triglot = "The scan reads 'Simon Schnevveis, Pastor of Crailsheim.' for the printed 'Schneweis'."
+
+[[confirmed]]
+document = "augsburg-confession"
+slug = "/augsburg-confession/of-ecclesiastical-power/"
+begins = "salvation. Paul says, Col. 2:16-23"
+page = 89
+reason = "ocr-damage"
+triglot = "The scan reads 'Let mo man judge yow in meat, or in drink, or in respect of am holy-day, or of the mew moon' for the printed text of Augsburg Confession XXVIII 44."
+
+[[confirmed]]
+document = "solid-declaration"
+slug = "/solid-declaration/righteousness-of-faith/"
+begins = "2. That Christ is our righteousness according to His human nature alone."
+page = 937
+reason = "ocr-damage"
+triglot = "The scan breaks the line as 'accord- | ing' in Solid Declaration III 61, so its few runs of words do not match where the page prints them."

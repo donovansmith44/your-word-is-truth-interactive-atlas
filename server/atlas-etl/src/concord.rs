@@ -8,6 +8,8 @@ use std::path::Path;
 use anyhow::{Context, Result};
 use atlas_graph_types::text::{Piece, Rendering, TextPartRole};
 use ego_tree::NodeId;
+
+use crate::admission::{Admission, AdmissionStats, Admitted};
 use scraper::{ElementRef, Html, Node, Selector};
 
 /// One document's identity: its part number, its vendored filename stem, and its display title. The part
@@ -146,6 +148,7 @@ pub struct ConcordStats {
     pub excluded_units: usize,
     pub stripped_fragments: usize,
     pub corrected_roles: usize,
+    pub admitted: AdmissionStats,
     /// One line per disclosed structural anomaly -- synthetic numbering used, an article skipped, a source-side
     /// label collision remapped -- named by document and article, never silent.
     pub disclosures: Vec<String>,
@@ -155,6 +158,7 @@ pub struct ConcordStats {
 pub struct ConcordCorpus {
     pub documents: Vec<ConcordDocument>,
     pub stats: ConcordStats,
+    pub admissions: Vec<(Admitted, Admission)>,
 }
 
 impl ConcordCorpus {
@@ -198,7 +202,14 @@ pub fn read_all(root: &Path, curated_dir: &Path) -> Result<ConcordCorpus> {
     stats.corrected_roles = readings.correction.iter().map(|row| row.occurrences).sum();
     apply_title_overrides(&mut docs, &titles)?;
     stats.stripped_fragments = apply_strips(&mut docs, &exclusions.strip)?;
-    let corpus = ConcordCorpus { documents: docs, stats };
+    let policy = crate::admission::parse_admission_policy(&read_curated(curated_dir, "concord-admission.toml")?)?;
+    let raw = root.parent().context("data/raw/concord sits inside data/raw")?;
+    let reference = crate::triglot::TriglotReference::read(raw, policy.shingle_words)?;
+    let admissions = crate::admission::admit(&docs, &titles, &reference, &policy).map_err(|refusals| {
+        anyhow::anyhow!("{} Concord span(s) are not admitted as the 1921 Triglot's:\n{}", refusals.len(), refusals.iter().map(ToString::to_string).collect::<Vec<_>>().join("\n"))
+    })?;
+    stats.admitted = AdmissionStats::of(&admissions);
+    let corpus = ConcordCorpus { documents: docs, stats, admissions };
     no_excluded_material_is_served(&corpus, &exclusions)?;
     no_served_text_carries_a_non_triglot_marker(&corpus, &exclusions.markers)?;
     Ok(corpus)
@@ -600,6 +611,7 @@ pub enum NonTriglotKind {
     EditorialNote,
     SiteFurniture,
     MarkupResidue,
+    SiteWording,
 }
 
 #[derive(Debug, Clone, PartialEq, serde::Deserialize)]
@@ -951,7 +963,7 @@ mod tests {
     fn served(key: &'static str, slug: &str, paragraphs: &[(u16, &str)]) -> ConcordCorpus {
         let paragraphs = paragraphs.iter().map(|(n, t)| ConcordParagraph { paragraph: *n, source_label: n.to_string(), rendering: Rendering::whole(t.to_string()) }).collect();
         let article = ConcordArticle { article: 1, slug: slug.to_string(), title: "Title".to_string(), paragraphs };
-        ConcordCorpus { documents: vec![ConcordDocument { part: 2, key, title: key, articles: vec![article] }], stats: ConcordStats::default() }
+        ConcordCorpus { documents: vec![ConcordDocument { part: 2, key, title: key, articles: vec![article] }], stats: ConcordStats::default(), admissions: Vec::new() }
     }
 
     fn exclusions(input: &str) -> ConcordExclusions {

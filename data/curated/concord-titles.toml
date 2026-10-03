@@ -19,3 +19,293 @@ title = "V. Confession"
 document = "small-catechism"
 article = 7
 title = "VI. The Sacrament of the Altar"
+
+# FOCUS-3 (F-84): every other title the vendored pages give that the Triglot
+# does not print in those words is served as our own navigation title, so it
+# is admitted as Editorial. The words are the pages' labels, kept (two
+# tidied: a site note and a stray space removed).
+
+[[article]]
+document = "preface"
+article = 1
+title = "Preface to the Book of Concord"
+
+[[article]]
+document = "ecumenical-creeds"
+article = 3
+title = "The Athanasian Creed"
+
+[[article]]
+document = "augsburg-confession"
+article = 1
+title = "Preface to Emperor Charles V."
+
+[[article]]
+document = "defense"
+article = 14
+title = "Article XV. Of Human Traditions in the Church"
+
+[[article]]
+document = "defense"
+article = 20
+title = "Article XXI. Of the Invocation of Saints."
+
+[[article]]
+document = "defense"
+article = 22
+title = "Article XXIII. Of the Marriage of Priests."
+
+[[article]]
+document = "defense"
+article = 23
+title = "Article XXIV. Of the Mass."
+
+[[article]]
+document = "defense"
+article = 24
+title = "Article XXVII. Of Monastic Vows."
+
+[[article]]
+document = "defense"
+article = 25
+title = "Article XXVIII. Of Ecclesiastical Power."
+
+[[article]]
+document = "defense"
+article = 26
+title = "Philip Melanchthon Presents His Greetings to the Reader"
+
+[[article]]
+document = "smalcald-articles"
+article = 2
+title = "Article I - The Nature of God"
+
+[[article]]
+document = "smalcald-articles"
+article = 3
+title = "Article II - The Father"
+
+[[article]]
+document = "smalcald-articles"
+article = 4
+title = "Article III - The Son"
+
+[[article]]
+document = "smalcald-articles"
+article = 5
+title = "Article IV - The Work of Salvation"
+
+[[article]]
+document = "smalcald-articles"
+article = 6
+title = "Article I - First and Chief Article"
+
+[[article]]
+document = "smalcald-articles"
+article = 10
+title = "Article I - Of Sin."
+
+[[article]]
+document = "smalcald-articles"
+article = 11
+title = "Article II - Of the Law."
+
+[[article]]
+document = "smalcald-articles"
+article = 12
+title = "Article III - Of Repentance."
+
+[[article]]
+document = "smalcald-articles"
+article = 13
+title = "Article IV - Of the Gospel."
+
+[[article]]
+document = "smalcald-articles"
+article = 14
+title = "Article V - Of Baptism."
+
+[[article]]
+document = "smalcald-articles"
+article = 16
+title = "Article VII - Of the Keys."
+
+[[article]]
+document = "smalcald-articles"
+article = 17
+title = "Article VIII - Of Confession."
+
+[[article]]
+document = "smalcald-articles"
+article = 18
+title = "Article IX - Of Excommunication."
+
+[[article]]
+document = "smalcald-articles"
+article = 19
+title = "Article X - Of Ordination."
+
+[[article]]
+document = "smalcald-articles"
+article = 21
+title = "Article XII - Of the Church."
+
+[[article]]
+document = "smalcald-articles"
+article = 22
+title = "Article XIII - Of Good Works."
+
+[[article]]
+document = "smalcald-articles"
+article = 23
+title = "Article XIV - Of Monastic Vows."
+
+[[article]]
+document = "smalcald-articles"
+article = 24
+title = "Article XV - Of Human Tradition."
+
+[[article]]
+document = "smalcald-articles"
+article = 25
+title = "Signatures."
+
+[[article]]
+document = "power-and-primacy"
+article = 3
+title = "Doctors and Preachers"
+
+[[article]]
+document = "small-catechism"
+article = 1
+title = "Luther's Preface to the Small Catechism"
+
+[[article]]
+document = "small-catechism"
+article = 8
+title = "Daily Prayers"
+
+[[article]]
+document = "large-catechism"
+article = 1
+title = "The Large Catechism - Introduction"
+
+[[article]]
+document = "epitome"
+article = 1
+title = "Comprehensive Summary, Rule and Norm"
+
+[[article]]
+document = "epitome"
+article = 2
+title = "I. Original Sin."
+
+[[article]]
+document = "epitome"
+article = 3
+title = "II. Free Will."
+
+[[article]]
+document = "epitome"
+article = 5
+title = "IV. Good Works."
+
+[[article]]
+document = "epitome"
+article = 6
+title = "V. Law and Gospel."
+
+[[article]]
+document = "epitome"
+article = 8
+title = "VII. The Lord's Supper."
+
+[[article]]
+document = "epitome"
+article = 9
+title = "VIII. The Person of Christ."
+
+[[article]]
+document = "epitome"
+article = 10
+title = "IX. The Descent of Christ into Hell."
+
+[[article]]
+document = "epitome"
+article = 11
+title = "X. Church Rites."
+
+[[article]]
+document = "epitome"
+article = 12
+title = "XI. Election."
+
+[[article]]
+document = "epitome"
+article = 13
+title = "XII. Other Sects."
+
+[[article]]
+document = "solid-declaration"
+article = 2
+title = "Comprehensive Summary, Foundation, Rule and Norm"
+
+[[article]]
+document = "solid-declaration"
+article = 3
+title = "I. Original Sin"
+
+[[article]]
+document = "solid-declaration"
+article = 4
+title = "II. Free Will"
+
+[[article]]
+document = "solid-declaration"
+article = 5
+title = "III. The Righteousness of Faith"
+
+[[article]]
+document = "solid-declaration"
+article = 6
+title = "IV. Good Works"
+
+[[article]]
+document = "solid-declaration"
+article = 7
+title = "V. Law and Gospel"
+
+[[article]]
+document = "solid-declaration"
+article = 8
+title = "VI. The Third Use of the Law"
+
+[[article]]
+document = "solid-declaration"
+article = 9
+title = "VII. The Holy Supper"
+
+[[article]]
+document = "solid-declaration"
+article = 10
+title = "VIII. The Person of Christ"
+
+[[article]]
+document = "solid-declaration"
+article = 11
+title = "IX. Christ's Descent into Hell"
+
+[[article]]
+document = "solid-declaration"
+article = 12
+title = "X. Church Rites, Commonly Called Adiaphora"
+
+[[article]]
+document = "solid-declaration"
+article = 13
+title = "XI. Election"
+
+[[article]]
+document = "solid-declaration"
+article = 14
+title = "XII. Other Sects"

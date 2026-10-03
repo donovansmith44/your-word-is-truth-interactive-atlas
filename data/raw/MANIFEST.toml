@@ -1,5 +1,5 @@
 schema = 1
-root = "ca285021ab2a62274ca84741bd50629c"
+root = "2a38ff960027e7384c0ffb44e56484ff"
 
 [[dataset]]
 name = "brain-fuel-bible"
@@ -137979,6 +137979,25 @@ bytes = 783
 name = "theographic.zip"
 sha256 = "16b4def7d1bf491ac4fe9bbd9664f53061d916fe9d51c76ca484029c6f43a82e"
 bytes = 23970583
+
+[[dataset]]
+name = "triglot"
+hash = "8a37d5200f404dc5aa432071ec4b2391"
+
+[[dataset.file]]
+name = "concordiatriglot00unse_hocr_pageindex.json"
+sha256 = "65e420543aadfeaea7e458d405ad9e1854f907d9f35a3ed9ed56608fc750fd43"
+bytes = 64322
+
+[[dataset.file]]
+name = "concordiatriglot00unse_hocr_searchtext.txt"
+sha256 = "4e9699152d91562f80cbad72b240de63c50e5b0c8bd991cfe61fd967b2e0b551"
+bytes = 7462903
+
+[[dataset.file]]
+name = "concordiatriglot00unse_page_numbers.json"
+sha256 = "253f71caf5d22270c36aa2afdb0f5669212cfb0e57f816f6106fa345f5b0e60d"
+bytes = 268197
 
 [[dataset]]
 name = "xrefs"

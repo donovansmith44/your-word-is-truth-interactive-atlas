@@ -167,3 +167,12 @@ slug = "/defense/of-love-and-fulfilling-the-law/"
 text = "Shouldn’t this be V (IV II) – in Tappert and Kolb it’s just an extension of the IV, Justification. So if anything it should be numbered IV II."
 kind = "editorial-note"
 triglot = "An editor's query left in the page as an <h5> above Apology III (IV II) 1; 'Tappert and Kolb' occurs nowhere in the Triglot, whose Apology III opens 'Here the adversaries urge against us' (p. 157). Never served: the parser dropped it as a heading until FOCUS-3."
+
+[[strip]]
+part = 9
+article = 4
+paragraph = 12
+text = "NEGATIVE THESES: Rejection of the False Opposite Dogmas."
+with = "ANTITHESIS or NEGATIVA. Contrary Doctrine Rejected."
+kind = "site-wording"
+triglot = "The site's heading for Epitome III's rejected errors; the Triglot prints 'ANTITHESIS or NEGATIVA. Contrary Doctrine Rejected.' (p. 795)."

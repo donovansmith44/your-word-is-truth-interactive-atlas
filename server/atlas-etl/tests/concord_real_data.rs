@@ -1,5 +1,7 @@
+use atlas_etl::admission::{self, Admission, AdmissionStats, Admitted};
 use atlas_etl::concord;
-use atlas_graph_types::text::{Piece, TextPartRole};
+use atlas_etl::triglot::{TriglotReference, TriglotWord};
+use atlas_graph_types::text::{Piece, Rendering, TextPartRole};
 
 mod common;
 
@@ -261,4 +263,86 @@ fn the_apostles_creed_serves_its_three_triglot_paragraphs_and_no_note() {
     // Assert
     assert_eq!(creed.len(), 3);
     assert_eq!(creed[2], "I believe in the Holy Ghost; the holy catholic Church, the communion of saints; the forgiveness of sins; the resurrection of the body; and the life everlasting. Amen.");
+}
+
+#[test]
+fn every_served_concord_span_is_admitted_against_the_triglot() {
+    // Arrange
+    let root = raw_dir().join("concord");
+    // Act
+    let admitted = concord::read_all(&root, &curated_dir()).map(|c| c.stats.admitted);
+    // Assert
+    assert_eq!(admitted.map_err(|refusal| refusal.to_string()), Ok(AdmissionStats { matched: MATCHED_SPANS, confirmed: CONFIRMED_BY_HAND, editorial: OUR_TITLES }));
+}
+
+const MATCHED_SPANS: usize = 3864;
+const CONFIRMED_BY_HAND: usize = 6;
+const OUR_TITLES: usize = 61;
+
+#[test]
+fn a_paragraph_the_triglot_does_not_print_is_refused() {
+    // Arrange
+    let c = corpus();
+    let mut articles = c.documents.into_iter().find(|d| d.key == "augsburg-confession").unwrap();
+    articles.articles.truncate(1);
+    articles.articles[0].paragraphs = MODERN_PARAPHRASES.iter().zip(1..).map(|(text, paragraph)| concord::ConcordParagraph { paragraph, source_label: paragraph.to_string(), rendering: Rendering::whole(text.to_string()) }).collect();
+    let policy = admission::parse_admission_policy(&std::fs::read_to_string(curated_dir().join("concord-admission.toml")).unwrap()).unwrap();
+    let reference = TriglotReference::read(&raw_dir(), policy.shingle_words).unwrap();
+    // Act
+    let refused = admission::admit(&[articles], &[], &reference, &policy).unwrap_err();
+    // Assert
+    let refused_paragraphs: Vec<u16> = refused.iter().filter_map(|refusal| match refusal {
+        admission::AdmissionRefusal::Unmatched { admitted: Admitted::Paragraph { paragraph, .. }, .. } => Some(*paragraph),
+        _ => None,
+    }).collect();
+    assert_eq!(refused_paragraphs, (1..=MODERN_PARAPHRASES.len() as u16).collect::<Vec<_>>());
+}
+
+const MODERN_PARAPHRASES: [&str; 16] = [
+    "Our churches teach with one accord that people cannot be made right with God by their own efforts, merits, or deeds.",
+    "Rather, people are declared righteous freely because of Christ, through faith, when they trust that they are received into grace.",
+    "God counts this trust as righteousness before Him, as Paul explains in the third and fourth chapters of Romans.",
+    "We also teach that this faith must produce good works, because God has commanded them, not so that we may earn grace by them.",
+    "The church is the gathering of all believers in which the gospel is preached purely and the sacraments are given rightly.",
+    "For the true unity of the church it is enough to agree about the teaching of the gospel and the giving of the sacraments.",
+    "It is not necessary that human traditions, rites, or ceremonies set up by people be the same everywhere.",
+    "Concerning baptism our churches teach that it is necessary for salvation and that God offers His grace through it.",
+    "Children should be baptized, because through baptism they are brought to God and received into His favor.",
+    "Concerning the Lord's Supper we teach that the true body and blood of Christ are really present and are given to those who eat.",
+    "Concerning confession we teach that private absolution should be kept in the churches, though listing every sin is not needed.",
+    "Repentance has two parts: sorrow over sin that terrifies the conscience, and faith that trusts the promise of forgiveness.",
+    "Nobody should teach publicly in the church or administer the sacraments unless properly called to that office.",
+    "Church customs that can be kept without sin and that serve peace and good order in the church should be observed.",
+    "Christians may lawfully hold public office, serve as judges, impose just punishments, and take an oath when required.",
+    "At the end of the world Christ will return to judge, raise all the dead, and give eternal life to the faithful.",
+];
+
+#[test]
+fn an_articles_admitted_spans_follow_the_triglots_order() {
+    // Arrange
+    let c = corpus();
+    // Act
+    let mut out_of_order: Vec<(Admitted, Admitted)> = Vec::new();
+    let mut previous: Option<(Admitted, u8, u16, TriglotWord)> = None;
+    for (admitted, admission) in &c.admissions {
+        let (Admitted::Paragraph { part, article, .. }, Admission::Matched { start, .. }) = (admitted, admission) else { continue };
+        if let Some((before, before_part, before_article, before_start)) = previous {
+            if (before_part, before_article) == (*part, *article) && *start < before_start {
+                out_of_order.push((before, *admitted));
+            }
+        }
+        previous = Some((*admitted, *part, *article, *start));
+    }
+    // Assert
+    assert_eq!(out_of_order, Vec::new());
+}
+
+#[test]
+fn no_paragraph_text_is_admitted_as_our_own_words() {
+    // Arrange
+    let c = corpus();
+    // Act
+    let ours: Vec<&Admitted> = c.admissions.iter().filter(|(admitted, admission)| matches!(admitted, Admitted::Paragraph { .. }) && matches!(admission, Admission::Editorial { .. })).map(|(admitted, _)| admitted).collect();
+    // Assert
+    assert_eq!(ours, Vec::<&Admitted>::new());
 }

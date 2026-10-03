@@ -2,6 +2,7 @@
 //! module except `compile` is `&str`-in / data-out with no filesystem or network I/O, and the binary
 //! is the only place that writes.
 
+pub mod admission;
 pub mod brainfuel;
 pub mod catechism_map;
 pub mod compile;

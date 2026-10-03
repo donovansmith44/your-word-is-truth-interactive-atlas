@@ -481,6 +481,27 @@ disclosed structure resistance to the `ConcordRef` triple, per the batch
 brief; see `batch-corp2a-report.md` for the full per-document structure
 disclosures and paragraph-count tally.
 
+## `triglot/` (FOCUS-3, F-84 — the 1921 Concordia Triglotta's own text, as scanned)
+
+Three files from the Internet Archive item `concordiatriglot00unse` (the 1921
+St. Louis printing, public domain), fetched by `data/fetch-raw.ps1`:
+
+- `concordiatriglot00unse_hocr_searchtext.txt` — the OCR text of every scanned
+  leaf, German, Latin and English columns together, one block per line;
+  unpacked from the item's `_hocr_searchtext.txt.gz`.
+- `concordiatriglot00unse_hocr_pageindex.json` — one `[text start, text end,
+  hOCR start, hOCR end]` per scan leaf, in characters of the text above;
+  unpacked from `_hocr_pageindex.json.gz`. Leaf *n* is entry *n*.
+- `concordiatriglot00unse_page_numbers.json` — `pages[]` of `{leafNum,
+  pageNumber}`: the printed page on each leaf (the Book of Concord's own
+  pagination starts again at 1 after the Historical Introductions; leaves
+  without a printed number carry an empty string).
+
+The OCR joins words broken over a line with `- ` and garbles some lines
+(signatures, damaged print). `atlas-etl::triglot` reads it as lower-cased
+words with hyphens joined; `data/curated/concord-admission.toml` places each
+Concord document in a window of leaves.
+
 ## `kretzmann/{slug}/{chapter}.html` (Batch KRETZ-1 — Kretzmann's Popular Commentary, 1921-1924)
 
 1,189 chapter pages fetched from `kretzmanncommentary.org` (see
