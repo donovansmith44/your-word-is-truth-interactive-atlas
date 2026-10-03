@@ -1,0 +1,5 @@
+
+
+/home/donovan/mut/codex-CX-FSHARP-accounts-logs/forbidden-element-id.fsx(3,52): error FS0039: The type 'ElementId' is not defined in 'BibleAtlas.FSharp.Domain'. Maybe you want one of the following:
+   Element
+   EventId

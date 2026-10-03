@@ -1,0 +1,37 @@
+{
+  "base": "3bceb6c",
+  "lane": "lane/codex/CX-FSHARP-accounts",
+  "native_account_consumer_before": "FS0039: AccountRun not defined",
+  "native_account_consumer_after": "exit 0; both run alternatives, shared admission signature, projection, event resolution",
+  "shadow_consumers_before": "each exit 0; declarations constructible",
+  "shadow_consumers_after": {
+    "ElementId": "FS0039",
+    "UnitReference": "FS0039"
+  },
+  "historical_account_constructor_after": "FS1093; private union constructor",
+  "producer_position_consumer_after": "exit 0",
+  "core_build": {
+    "warnings": 0,
+    "errors": 0
+  },
+  "debug_wasm_build": {
+    "warnings": 0,
+    "errors": 0
+  },
+  "existing_regression": {
+    "passed": 142,
+    "failed": 0,
+    "skipped": 0
+  },
+  "new_behavioral_tests": 0,
+  "pending_operations": 69,
+  "sources_sha256": {
+    "client-fsharp/Core/Domain/History.fs": "bb3b4226b6b3f5d6a0cf95271d4b0e674bd005c060532205557440a636394b31",
+    "client-fsharp/Core/Domain/Position.fs": "f93eb8b4a795417ea77dd5ff8f8070e499a5c1984a1077762e3aa4821c4cf768",
+    "client-fsharp/Core/Domain/Graph.fs": "a506f00e4fc2953bdf3870cfecf51b9bc00192193f0589d594e6d35d50c45d79",
+    "client-fsharp/Core/Domain/Text.fs": "25eac9928673e9fc3716e5e717761f270c1b58687c4b08360e65fafce57d6a3f",
+    "client-fsharp/Core/BibleAtlas.FSharp.Core.fsproj": "666de6405298a417b807d4b04e11855f4680999cf6d61246cd2e9676490f0093",
+    "contracts/openapi.yaml": "f2c202d110832c0ee5edcf1e1fc312914581b42ab9da2e709755109059021844",
+    "contracts/atlas-graph-contract/fixtures/graph-vocabulary.json": "c0d55fb39d3f0d3f63c6bef928c74a3b11ba7906bbb6a516216a9dfb82a1b0d6"
+  }
+}

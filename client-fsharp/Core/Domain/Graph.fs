@@ -16,9 +16,6 @@ type Node<'nodeId, 'reference, 'partRole, 'level, 'mark> =
     | Container of Container<'nodeId, 'reference, 'level>
     | Passage of Passage<'nodeId, 'reference, 'mark>
 
-[<RequireQualifiedAccess>]
-type ElementId<'nodeId, 'edgeId> = Node of 'nodeId | Edge of 'edgeId
-
 type NodeEnds<'nodeId> = { Subject: 'nodeId; Object: 'nodeId }
 
 type JustificationEnds<'nodeId, 'edgeId> = { Subject: 'nodeId; Evidence: 'edgeId }

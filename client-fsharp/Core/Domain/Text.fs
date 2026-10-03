@@ -2,10 +2,6 @@ namespace BibleAtlas.FSharp.Domain
 
 open BibleAtlas.FSharp.Contract
 
-type UnitReference<'verseReference, 'concordReference> =
-    | Bible of 'verseReference
-    | Concord of 'concordReference
-
 type TextAnchor<'nodeId> =
     private { Start: int; End: int; Target: 'nodeId; Kind: EdgeKind }
 

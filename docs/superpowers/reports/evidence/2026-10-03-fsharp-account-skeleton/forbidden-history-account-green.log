@@ -1,0 +1,3 @@
+
+
+/home/donovan/mut/codex-CX-FSHARP-accounts-logs/forbidden-history-account.fsx(6,5): error FS1093: The union cases or fields of the type 'HistoricalAccount' are not accessible from this code location

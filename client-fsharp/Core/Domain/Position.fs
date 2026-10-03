@@ -1,12 +1,12 @@
 namespace BibleAtlas.FSharp.Domain
 
 [<RequireQualifiedAccess>]
-type Position<'nodeId, 'edgeId> = Element of ElementId<'nodeId, 'edgeId> | Years of YearSpan<'nodeId>
+type Position<'elementId, 'nodeId> = Element of 'elementId | Years of YearSpan<'nodeId>
 
 [<RequireQualifiedAccess>]
 type ResolvedValue<'nodeId, 'edgeId, 'reference, 'partRole, 'level, 'mark, 'provenance, 'timeEvidence, 'facet when 'facet: comparison> =
     | GraphElement of Element<'nodeId, 'edgeId, 'reference, 'partRole, 'level, 'mark, 'provenance>
-    | Event of EventContext<'nodeId, 'reference, 'mark, 'timeEvidence>
+    | Event of EventContext<'nodeId, 'reference, 'partRole, 'mark, 'timeEvidence>
     | Year of YearContext<'nodeId, 'facet>
     | Years of SpanContext<'nodeId, 'facet>
 
