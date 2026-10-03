@@ -12,9 +12,12 @@ public sealed class GraphExplorerTests
     private const string SourceId = "Source:ussher";
     private const string SourceLabel = "Ussher";
     private const string AbsentId = "Event:nowhere";
+    private const string CitedWords = "Thus saith the LORD, which maketh a way in the sea";
+    private const string MovedRoot = "moved";
 
     private static readonly NodeRef ExodusEvent = ServedGraph.Ref(NodeKind.Event, "Event:red_sea", "The Red Sea parted");
     private static readonly NodeRef Exodus14 = ServedGraph.Ref(NodeKind.TextUnit, "text-unit:EXO.14.21", "Exodus 14:21");
+    private static readonly NodeRef Cited = ServedGraph.Ref(NodeKind.TextUnit, "text-unit:ISA.43.16", "ISA.43.16");
     private static readonly EdgeRef AttestedIn = ServedGraph.EdgeRef(EdgeKind.AttestedIn, "Attests:00aa", "The Red Sea parted · Attested in · Exodus 14:21");
     private static readonly EdgeRef JustifiedEdge = ServedGraph.EdgeRef(EdgeKind.DatedBy, "DatedBy:00cc", "The Red Sea parted · Dated by · 1491 BC");
     private static readonly EdgeRef Justification = ServedGraph.EdgeRef(EdgeKind.JustifiedBy, "JustifiedBy:00dd", "The Red Sea parted · Dated by · 1491 BC · Justified by · Ussher");
@@ -107,7 +110,7 @@ public sealed class GraphExplorerTests
         var page = await justifier.Entries(EdgeKind.Justifies);
 
         // Assert
-        Assert.Equal(new Page<Entry>([new Entry(new Link(EdgeKind.Justifies, ServedGraph.AtEdge(JustifiedEdge)), new Link(EdgeKind.Justifies, ServedGraph.AtEdge(Justification)))], null, null), page);
+        Assert.Equal(new Page<Entry>([new Entry(new Link(EdgeKind.Justifies, ServedGraph.AtEdge(JustifiedEdge)), new Link(EdgeKind.Justifies, ServedGraph.AtEdge(Justification)), null)], null, null), page);
     }
 
     [Fact]
@@ -124,8 +127,60 @@ public sealed class GraphExplorerTests
 
         // Assert
         Assert.Equal(
-            new Page<Entry>([new Entry(new Link(EdgeKind.Attests, ServedGraph.At(ExodusEvent)), new Link(EdgeKind.Attests, ServedGraph.AtEdge(AttestedIn)))], null, null),
+            new Page<Entry>([new Entry(new Link(EdgeKind.Attests, ServedGraph.At(ExodusEvent)), new Link(EdgeKind.Attests, ServedGraph.AtEdge(AttestedIn)), null)], null, null),
             page);
+    }
+
+    [Fact]
+    public async Task An_entry_leading_to_a_text_unit_carries_its_served_words()
+    {
+        // Arrange
+        var words = ServedGraph.WordsOf(CitedWords);
+        var graph = new ServedGraph()
+            .Serving(ServedGraph.Card(NodeKind.TextUnit, Exodus14.Id, Exodus14.Label, new FrontierGroup(EdgeKind.Cites, 1)))
+            .Serving(ServedGraph.TextCard(Cited, words))
+            .Serving(Exodus14.Id, EdgeKind.Cites, null, ServedGraph.Page(EdgeKind.Cites, null, Cited));
+        var verse = await new GraphExplorer(graph).BeginAt(ServedGraph.At(Exodus14));
+
+        // Act
+        var page = await verse.Entries(EdgeKind.Cites);
+
+        // Assert
+        Assert.Same(words, Assert.Single(page.Items).Words);
+    }
+
+    [Fact]
+    public async Task A_text_unit_answered_without_its_words_is_a_contract_breach_naming_it()
+    {
+        // Arrange
+        var graph = new ServedGraph()
+            .Serving(ServedGraph.Card(NodeKind.TextUnit, Exodus14.Id, Exodus14.Label, new FrontierGroup(EdgeKind.Cites, 1)))
+            .Serving(Exodus14.Id, EdgeKind.Cites, null, ServedGraph.Page(EdgeKind.Cites, null, Cited))
+            .Serving(ServedGraph.Card(NodeKind.TextUnit, Cited.Id, Cited.Label));
+        var verse = await new GraphExplorer(graph).BeginAt(ServedGraph.At(Exodus14));
+
+        // Act
+        var breach = await Assert.ThrowsAsync<ContractBreach>(() => verse.Entries(EdgeKind.Cites));
+
+        // Assert
+        Assert.Equal($"the element read answered {Cited.Id}, a text unit an edge page served, without its words", breach.Message);
+    }
+
+    [Fact]
+    public async Task Words_answered_from_another_artifact_are_refused_as_the_artifact_moving()
+    {
+        // Arrange
+        var graph = new ServedGraph()
+            .Serving(ServedGraph.Card(NodeKind.TextUnit, Exodus14.Id, Exodus14.Label, new FrontierGroup(EdgeKind.Cites, 1)))
+            .Serving(Exodus14.Id, EdgeKind.Cites, null, ServedGraph.Page(EdgeKind.Cites, null, Cited));
+        var verse = await new GraphExplorer(graph).BeginAt(ServedGraph.At(Exodus14));
+        graph.ElementsAt(MovedRoot);
+
+        // Act
+        var moved = await Assert.ThrowsAsync<ArtifactMoved>(() => verse.Entries(EdgeKind.Cites));
+
+        // Assert
+        Assert.Equal((new ArtifactMoved(ServedGraph.Version, MovedRoot).Message, true), (moved.Message, verse.Moved));
     }
 
     [Fact]

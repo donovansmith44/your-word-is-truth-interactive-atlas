@@ -68,6 +68,22 @@ public sealed class PersonMentionsListTests : BunitContext
         Assert.Equal((WholeValue.Of(Verses(RootA, 0, Step)), 1), (WholeValue.Of(Shown(view)), renewals));
     }
 
+    [Fact]
+    public async Task Each_mention_shows_its_verses_served_words_under_it()
+    {
+        // Arrange
+        var mentions = await new RootedMentions(Mentions).Opened();
+
+        // Act
+        var view = Listed(mentions, () => { });
+
+        // Assert
+        Assert.Equal(
+            WholeValue.Of(mentions.Shown.Select(entry => (Positions.Of(entry.Neighbour.Target).Label, entry.Words!.Text)).ToList()),
+            WholeValue.Of(Verses(RootA, 0, Step).Select(row => row["person-mention-".Length..])
+                .Select(vref => (vref, view.Find($"[data-testid='person-words-{vref}-text']").TextContent)).ToList()));
+    }
+
     private IRenderedComponent<PersonMentionsList> Listed(PageWindow<Entry> mentions, Action moved) =>
         Render<PersonMentionsList>(p => p.Add(v => v.Mentions, mentions).Add(v => v.TotalCount, Mentions).Add(v => v.OnExplore, _ => { }).Add(v => v.OnMoved, moved));
 

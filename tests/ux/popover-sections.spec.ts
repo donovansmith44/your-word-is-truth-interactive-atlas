@@ -4,7 +4,7 @@ import { popoverSectionsHolding } from './lib/popover';
 import fc from 'fast-check';
 import { api } from './lib/api';
 import { loadToc, arbVerseRef } from './lib/canon';
-import { neighbourNode } from './lib/edges';
+import { elementNode, neighbourNode } from './lib/edges';
 
 // Batch R requirement 3 ("the popover becomes a content-first section
 // platform") + requirement 4 (expandable popover / in-context chapter
@@ -64,6 +64,21 @@ test('REGISTRY-1: a verse with real cross-references shows them inline, no butto
   await expect(section.getByTestId(/^popover-link-cites-/)).toHaveCount(Math.min(served(record, 'cites'), PAGE_SIZE));
   await expect(page.getByTestId(`popover-link-cites-${first.id}`)).toHaveText(first.label);
   await expect(page.getByTestId('popover-chip-xrefs')).toHaveCount(0);
+});
+
+test('VERSE-WORDS-1 (owner, 2026-10-02): a verse\'s Cites list shows each cited verse\'s served words under its link', async ({ page }) => {
+  // Arrange
+  const verseId = 'text-unit:GEN.1.1';
+  const cited = (await api.nodeEdges(verseId, 'cites')).entries.map(neighbourNode);
+  const records = (await api.elements(cited.map(unit => unit.id))).elements.map((element, n) => elementNode(element, cited[n].id) as any);
+
+  // Act
+  await page.goto('/read/GEN/1');
+  await openVerse(page, 1);
+
+  // Assert
+  const section = page.getByTestId('popover-section-cites');
+  await expect(section.locator('[data-testid^="popover-words-cites-"][data-testid$="-text"]')).toHaveText(records.map(record => record.text.text));
 });
 
 test('REGISTRY-1: a verse with zero cross-references shows no cites section at all (conditional presence)', async ({ page }) => {

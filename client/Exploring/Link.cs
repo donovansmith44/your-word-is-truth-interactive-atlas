@@ -10,4 +10,4 @@ public sealed record Link([property: JsonConverter(typeof(JsonStringEnumConverte
     public override int GetHashCode() => HashCode.Combine(Kind, PositionIdentity.Comparer.GetHashCode(Target));
 }
 
-public sealed record Entry(Link Neighbour, Link Edge);
+public sealed record Entry(Link Neighbour, Link Edge, UnitText? Words);
