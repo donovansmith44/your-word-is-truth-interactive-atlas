@@ -1,4 +1,4 @@
-module BibleAtlas.FSharp.Tests.GraphTests
+module rec BibleAtlas.FSharp.Tests.GraphTests
 
 open System
 open System.Net
@@ -7,24 +7,6 @@ open System.Threading.Tasks
 open Xunit
 open BibleAtlas.FSharp
 open BibleAtlas.FSharp.Contract
-
-let first = ExplorationTests.node "Person:first" "root"
-let second = ExplorationTests.node "Person:second" "root"
-
-let resolve pages positions =
-    let mutable answers = pages
-    let mutable requests = []
-    use handler = { new HttpMessageHandler() with
-        override _.SendAsync(request, _) =
-            requests <- requests @ [request.RequestUri.PathAndQuery]
-            match answers with
-            | page :: rest ->
-                answers <- rest
-                Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK, Content = new StringContent(Json.encode page)))
-            | [] -> Task.FromException<HttpResponseMessage>(InvalidOperationException "unexpected read") }
-    use http = new HttpClient(handler, BaseAddress = Uri "http://example.test/")
-    let actual = (Graph.explorer http).Resolve positions |> Async.RunSynchronously
-    actual, requests
 
 [<Fact>]
 let ``an ordered resolution reads the whole element page once`` () =
@@ -72,3 +54,21 @@ let ``a nonterminal empty page cannot keep a resolution reading forever`` () =
     let page = { Elements = []; Version = "root"; Next = Some 1; Previous = None }
     let actual, _ = resolve [page] [Resolved.position first]
     Assert.Equal(Error(Contract "the element read returned a nonterminal page with no positions"), actual)
+
+let resolve (pages: ElementPage list) (positions: PositionRef list) : Result<Resolved list, Failure> * string list =
+    let mutable answers = pages
+    let mutable requests = []
+    use handler = { new HttpMessageHandler() with
+        override _.SendAsync(request, _) =
+            requests <- requests @ [request.RequestUri.PathAndQuery]
+            match answers with
+            | page :: rest ->
+                answers <- rest
+                Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK, Content = new StringContent(Json.encode page)))
+            | [] -> Task.FromException<HttpResponseMessage>(InvalidOperationException "unexpected read") }
+    use http = new HttpClient(handler, BaseAddress = Uri "http://example.test/")
+    let actual = (Graph.explorer http).Resolve positions |> Async.RunSynchronously
+    actual, requests
+
+let first = ExplorationTests.node "Person:first" "root"
+let second = ExplorationTests.node "Person:second" "root"

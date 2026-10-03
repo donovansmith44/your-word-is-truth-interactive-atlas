@@ -1,11 +1,8 @@
-module BibleAtlas.FSharp.Tests.PresentationTests
+module rec BibleAtlas.FSharp.Tests.PresentationTests
 
 open Xunit
 open BibleAtlas.FSharp
 open BibleAtlas.FSharp.Contract
-
-let node = { Id = "TextUnit:served"; Kind = NodeKind.Person; Label = "Served label"; Provenance = "served-source"; EdgeSummary = []; Version = "root"; Book = None; Catechism = None; Description = None; Era = None; Event = None; Map = None; Person = None; Place = None; Polity = None; Text = None }
-let resolved record = Resolved.ofElement "root" (Element.Node { Node = record }) |> Result.toOption |> Option.get
 
 [<Fact>]
 let ``a node card composes exactly its served label and provenance`` () =
@@ -56,3 +53,6 @@ let ``a place card composes its name and date claims without a blurb`` () =
 let ``every presentation field has exactly its declared caption`` () =
     let actual = Microsoft.FSharp.Reflection.FSharpType.GetUnionCases(typeof<FieldName>) |> Array.map (fun case -> Microsoft.FSharp.Reflection.FSharpValue.MakeUnion(case, [||]) |> unbox<FieldName> |> Presenter.caption)
     Assert.Equal<string array>([|"Window"; "Canonical name"; "Established"; "Destroyed"; "Reign"; "Provenance"|], actual)
+let resolved (record: NodeRecord) : Resolved = Resolved.ofElement "root" (Element.Node { Node = record }) |> Result.toOption |> Option.get
+
+let node: NodeRecord = { Id = "TextUnit:served"; Kind = NodeKind.Person; Label = "Served label"; Provenance = "served-source"; EdgeSummary = []; Version = "root"; Book = None; Catechism = None; Description = None; Era = None; Event = None; Map = None; Person = None; Place = None; Polity = None; Text = None }

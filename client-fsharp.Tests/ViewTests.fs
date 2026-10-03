@@ -1,4 +1,4 @@
-module BibleAtlas.FSharp.Tests.ViewTests
+module rec BibleAtlas.FSharp.Tests.ViewTests
 
 open Bunit
 open Xunit
@@ -6,20 +6,6 @@ open Microsoft.Extensions.DependencyInjection
 open BibleAtlas.FSharp
 open BibleAtlas.FSharp.Client
 open BibleAtlas.FSharp.Contract
-
-let render (context: BunitContext) (model: Model) (dispatch: Message -> unit) =
-    context.Render<AppView>(Microsoft.AspNetCore.Components.RenderFragment(fun builder ->
-        builder.OpenComponent<AppView>(0)
-        builder.AddAttribute(1, "Model", model)
-        builder.AddAttribute(2, "Dispatch", dispatch)
-        builder.CloseComponent()))
-
-let find<'a when 'a :> Microsoft.AspNetCore.Components.IComponent> (view: IRenderedComponent<'a>) selector =
-    RenderedComponentExtensions.Find<'a>(view, selector)
-
-let readingNode = { Id = "TextUnit:served-verse"; Kind = NodeKind.TextUnit; Label = "Genesis 1:1" }
-let readingAnchor = { Start = 2; End = 4; Kind = EdgeKind.Mentions; Node = { Id = "Place:served-place"; Kind = NodeKind.Place; Label = "Served place" } }
-let readingUnit = { Ref = "GEN.1.1"; Node = readingNode; Heading = None; EdgeSummary = []; Body = { Text = "😀 ab cd"; Locus = ModelTests.firstChapter.Locus; Anchors = [readingAnchor]; WordsOfChrist = [{ Start = 2; End = 7 }] } }
 
 [<Fact>]
 let ``the reader renders the whole served chapter with anchored red letter text`` () =
@@ -55,7 +41,7 @@ let ``the reader shows a failed contents read with an explicit Retry`` () =
 [<Fact>]
 let ``the Concord view renders the entire served paragraph and citation`` () =
     let model, _ = Model.init (Route.Concord None)
-    let unit = { readingUnit with Ref = "BoC 1.1.1"; Body = { readingUnit.Body with Locus = TextRef.Concord { Part = 1; Article = 1; Paragraph = 1 }; WordsOfChrist = [] }; Node = { readingNode with Label = "BoC 1.1.1" }; EdgeSummary = [{ Kind = EdgeKind.Cites; Count = 1 }] }
+    let unit = { readingUnit with Ref = "BoC 1.1.1"; Body = { readingUnit.Body with Locus = TextRef.Concord { Part = 1; Article = 1; Paragraph = 1 }; WordsOfChrist = [] }; Node = { readingUnit.Node with Label = "BoC 1.1.1" }; EdgeSummary = [{ Kind = EdgeKind.Cites; Count = 1 }] }
     let model = ModelTests.withReading { Units = [unit]; Next = None; Version = "root" } model
     use context = new BunitContext()
     let view = render context model ignore
@@ -255,3 +241,15 @@ let ``the WebAssembly entry component runs the sources command and renders its r
     view.WaitForAssertion(fun () -> Assert.Equal("Texts", (find view ".sources-category-title").TextContent))
     navigation.NavigateTo("/not-found")
     view.WaitForAssertion(fun () -> Assert.Empty(RenderedComponentExtensions.FindAll<App>(view, ".sources-category-title")))
+
+let render (context: BunitContext) (model: Model) (dispatch: Message -> unit) : IRenderedComponent<AppView> =
+    context.Render<AppView>(Microsoft.AspNetCore.Components.RenderFragment(fun builder ->
+        builder.OpenComponent<AppView>(0)
+        builder.AddAttribute(1, "Model", model)
+        builder.AddAttribute(2, "Dispatch", dispatch)
+        builder.CloseComponent()))
+
+let find<'a when 'a :> Microsoft.AspNetCore.Components.IComponent> (view: IRenderedComponent<'a>) (selector: string) : AngleSharp.Dom.IElement =
+    RenderedComponentExtensions.Find<'a>(view, selector)
+let readingAnchor: Anchor = { Start = 2; End = 4; Kind = EdgeKind.Mentions; Node = { Id = "Place:served-place"; Kind = NodeKind.Place; Label = "Served place" } }
+let readingUnit: TextUnit = { Ref = "GEN.1.1"; Node = { Id = "TextUnit:served-verse"; Kind = NodeKind.TextUnit; Label = "Genesis 1:1" }; Heading = None; EdgeSummary = []; Body = { Text = "😀 ab cd"; Locus = ModelTests.firstChapter.Locus; Anchors = [readingAnchor]; WordsOfChrist = [{ Start = 2; End = 7 }] } }

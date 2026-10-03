@@ -1,10 +1,8 @@
-module BibleAtlas.FSharp.Tests.AnchoredTextTests
+module rec BibleAtlas.FSharp.Tests.AnchoredTextTests
 
 open Xunit
 open BibleAtlas.FSharp
 open BibleAtlas.FSharp.Contract
-
-let locus = TextRef.Bible { Book = BookId.JHN; Chapter = 3; Verse = 16 }
 
 [<Fact>]
 let ``scalar offsets compose Unicode anchors within one red letter run`` () =
@@ -25,3 +23,5 @@ let ``two anchors and a crossing red letter boundary retain every served piece``
     let unit = { Text = "abc def"; Locus = locus; Anchors = [first; second]; WordsOfChrist = [{ Start = 2; End = 5 }] }
     let expected = [[{ Text = "ab"; IsWordsOfChrist = false; Anchor = Some first }]; [{ Text = "c"; IsWordsOfChrist = true; Anchor = Some first }; { Text = " "; IsWordsOfChrist = true; Anchor = None }; { Text = "d"; IsWordsOfChrist = true; Anchor = Some second }]; [{ Text = "ef"; IsWordsOfChrist = false; Anchor = Some second }]]
     Assert.Equal<TextPiece list list>(expected, AnchoredText.runs unit)
+
+let locus = TextRef.Bible { Book = BookId.JHN; Chapter = 3; Verse = 16 }

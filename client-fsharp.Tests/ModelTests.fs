@@ -1,20 +1,9 @@
-module BibleAtlas.FSharp.Tests.ModelTests
+module rec BibleAtlas.FSharp.Tests.ModelTests
 
 open System
 open Xunit
 open BibleAtlas.FSharp
 open BibleAtlas.FSharp.Contract
-
-let firstChapter = { Id = "Container:bible-chapter-GEN-1"; Title = "1"; Kind = ContentsChildKind.Chapter; Ref = "GEN.1"; Locus = TextRef.Bible { Book = BookId.GEN; Chapter = 1; Verse = 1 }; Count = 31 }
-let contents = { Corpus = Corpus.Bible; Version = "root"; Roots = [{ Id = "Container:bible-book-GEN"; Title = "Genesis"; Kind = ContentsRootKind.Book; Group = Some Testament.OT; Ref = "GEN.1.1"; Locus = firstChapter.Locus; Children = [firstChapter] }] }
-
-let withReading window (model: Model) =
-    let read =
-        match model.Route with
-        | Route.Concord reference -> Reads.textWindow (reference |> Option.defaultValue "BoC 1.1.1") (Some 20) None None (Some Corpus.Concord)
-        | _ -> Reads.textWindow firstChapter.Ref None None (Some TextScope.Chapter) (Some Corpus.Bible)
-    let session = ReadSession.beginRead model.Serial read Empty |> ReadSession.complete model.Serial (Ok window)
-    { model with ReadingSession = ReadingState.Active session }
 
 [<Fact>]
 let ``reader startup requests the served contents before choosing its first reading`` () =
@@ -191,3 +180,14 @@ let ``ten thousand Concord turns retain exactly the last page`` () =
     let lastWindow = page pageCount
     let lastSession = ReadSession.beginRead expectedRequest lastRead Empty |> ReadSession.complete expectedRequest (Ok lastWindow)
     Assert.Equal({ model with Serial = expectedRequest; ReadingSession = ReadingState.Active lastSession }, actual)
+
+let withReading (window: TextWindow) (model: Model) : Model =
+    let read =
+        match model.Route with
+        | Route.Concord reference -> Reads.textWindow (reference |> Option.defaultValue "BoC 1.1.1") (Some 20) None None (Some Corpus.Concord)
+        | _ -> Reads.textWindow firstChapter.Ref None None (Some TextScope.Chapter) (Some Corpus.Bible)
+    let session = ReadSession.beginRead model.Serial read Empty |> ReadSession.complete model.Serial (Ok window)
+    { model with ReadingSession = ReadingState.Active session }
+let firstChapter: ContentsChild = { Id = "Container:bible-chapter-GEN-1"; Title = "1"; Kind = ContentsChildKind.Chapter; Ref = "GEN.1"; Locus = TextRef.Bible { Book = BookId.GEN; Chapter = 1; Verse = 1 }; Count = 31 }
+
+let contents: Contents = { Corpus = Corpus.Bible; Version = "root"; Roots = [{ Id = "Container:bible-book-GEN"; Title = "Genesis"; Kind = ContentsRootKind.Book; Group = Some Testament.OT; Ref = "GEN.1.1"; Locus = firstChapter.Locus; Children = [firstChapter] }] }

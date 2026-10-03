@@ -96,13 +96,11 @@ type Effect =
     | ReadOpening of RequestId * PositionRef
     | WalkFocus of RequestId * Trail * Traversal
 
-module Model =
-    let private concordPageSize = 20
-
-    let rec init route =
+module rec Model =
+    let init (route: Route) : Model * Effect list =
         loadView { Route = route; Serial = RequestId.initial; Contents = Map.empty; ReadingSession = ReadingState.Idle; Sources = Empty; Focus = FocusState.Closed }
 
-    and update message model =
+    let update (message: Message) (model: Model) : Model * Effect list =
         match message with
         | Navigate route -> loadView { model with Route = route; Serial = RequestId.next model.Serial; ReadingSession = ReadingState.Idle; Focus = FocusState.Closed }
         | ReadNext ->
@@ -159,7 +157,7 @@ module Model =
                 { model with Focus = match answer with Ok trail -> FocusState.Opened trail | Error failure -> FocusState.CouldNotWalk(trail, traversal, failure) }, []
             | FocusState.Closed | FocusState.Opening _ | FocusState.Opened _ | FocusState.Walking _ | FocusState.CouldNotOpen _ | FocusState.CouldNotWalk _ -> model, []
 
-    and private loadView model =
+    let private loadView (model: Model) : Model * Effect list =
         match model.Route with
         | Route.Sources ->
             match model.Sources with
@@ -169,7 +167,7 @@ module Model =
         | Route.Concord _ -> reading Corpus.Concord model
         | Route.World | Route.Kretzmann | Route.NotFound -> model, []
 
-    and private reading corpus model =
+    let private reading (corpus: Corpus) (model: Model) : Model * Effect list =
         let contents = Map.tryFind corpus model.Contents |> Option.defaultValue Empty
         match contents, model.Reading with
         | Empty, _ -> { model with Contents = Map.add corpus (Loading(model.Serial, None)) model.Contents }, [ReadContents(corpus, model.Serial)]
@@ -181,11 +179,11 @@ module Model =
             | None -> { model with ReadingSession = ReadingState.Unavailable(model.Serial, Contract "the requested reading has no opening in the served contents") }, []
         | Loading _, _ | Failed _, _ | Ready _, Loading _ | Ready _, Ready _ | Ready _, Failed _ -> model, []
 
-    and private beginReading request model =
+    let private beginReading (request: Request<TextWindow>) (model: Model) : Model * Effect list =
         let session = ReadSession.beginRead model.Serial request model.Reading
         { model with ReadingSession = ReadingState.Active session }, [ReadText(model.Serial, ReadSession.request session)]
 
-    and private opening route (contents: Contents) =
+    let private opening (route: Route) (contents: Contents) : (string * TextScope option) option =
         match route with
         | Route.Reader -> contents.Roots |> List.tryHead |> Option.bind (fun root -> root.Children |> List.tryHead) |> Option.map (fun child -> child.Ref, Some TextScope.Chapter)
         | Route.Read location ->
@@ -196,3 +194,5 @@ module Model =
         | Route.Concord(Some reference) -> Some(reference, None)
         | Route.Concord None -> contents.Roots |> List.tryHead |> Option.map (fun root -> root.Ref, None)
         | Route.World | Route.Kretzmann | Route.Sources | Route.NotFound -> None
+
+    let private concordPageSize = 20

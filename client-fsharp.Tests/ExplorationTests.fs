@@ -1,4 +1,4 @@
-module BibleAtlas.FSharp.Tests.ExplorationTests
+module rec BibleAtlas.FSharp.Tests.ExplorationTests
 
 open System.IO
 open System.Text.Json
@@ -6,17 +6,6 @@ open Microsoft.FSharp.Reflection
 open Xunit
 open BibleAtlas.FSharp
 open BibleAtlas.FSharp.Contract
-
-let node id root =
-    let record = { Id = id; Kind = NodeKind.Person; Label = id; Provenance = "test"; EdgeSummary = []; Version = root; Book = None; Catechism = None; Description = None; Era = None; Event = None; Map = None; Person = None; Place = None; Polity = None; Text = None }
-    match Resolved.ofElement root (Element.Node { Node = record }) with
-    | Ok node -> node
-    | Error failure -> failwithf "%A" failure
-
-let start = node "Person:start" "root"
-let trail = Trail.beginAt start
-let explorer = { Resolve = fun _ -> async { return Error(Contract "unexpected read") } }
-let run action = Explore.run explorer trail action |> Async.RunSynchronously
 
 [<Fact>]
 let ``exploration obeys the monad left identity`` () =
@@ -93,3 +82,13 @@ let ``every generated edge kind has a dual and duality is involutive`` () =
 let ``a node record cannot be stamped with a different element page root`` () =
     let served = Resolved.element start
     Assert.Equal(Error(ArtifactMoved("page-root", "root")), Resolved.ofElement "page-root" served)
+let run<'a> (action: Explore<'a>) : Result<'a * Trail, Failure> = Explore.run explorer trail action |> Async.RunSynchronously
+let explorer = { Resolve = fun _ -> async { return Error(Contract "unexpected read") } }
+let node (id: string) (root: string) : Resolved =
+    let record = { Id = id; Kind = NodeKind.Person; Label = id; Provenance = "test"; EdgeSummary = []; Version = root; Book = None; Catechism = None; Description = None; Era = None; Event = None; Map = None; Person = None; Place = None; Polity = None; Text = None }
+    match Resolved.ofElement root (Element.Node { Node = record }) with
+    | Ok node -> node
+    | Error failure -> failwithf "%A" failure
+
+let start = node "Person:start" "root"
+let trail = Trail.beginAt start

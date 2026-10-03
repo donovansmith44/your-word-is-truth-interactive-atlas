@@ -7,8 +7,8 @@ open Elmish
 open BibleAtlas.FSharp
 open BibleAtlas.FSharp.Contract
 
-module Runtime =
-    let rec command (http: HttpClient) effect =
+module rec Runtime =
+    let command (http: HttpClient) (effect: Effect) : Cmd<Message> =
         match effect with
         | ReadContents(corpus, request) ->
             let corpusName = JsonSerializer.Deserialize<string>(Json.encode corpus)
@@ -20,7 +20,7 @@ module Runtime =
         | WalkFocus(request, trail, traversal) ->
             Cmd.OfAsync.perform (walk http trail) traversal (fun answer -> FocusLoaded(request, answer))
 
-    and private walk http trail traversal = async {
+    let private walk (http: HttpClient) (trail: Trail) (traversal: Traversal) : Async<Result<Trail, Failure>> = async {
         let action =
             match traversal with
             | Traversal.Follow link -> Explore.follow link

@@ -4,7 +4,6 @@
     <Compile Include="$(GeneratedContract)" />
     <Compile Include="obj/Contract/Vocabulary.g.fs" />
     <Compile Include="Loading.fs" />
-    <Compile Include="Cache.fs" />
     <Compile Include="Json.fs" /><Compile Include="AnchoredText.fs" />
     <Compile Include="Exploration.fs" />
     <Compile Include="Presentation.fs" />

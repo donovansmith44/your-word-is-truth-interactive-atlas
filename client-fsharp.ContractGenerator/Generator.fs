@@ -6,15 +6,15 @@ open System.Text
 open System.Text.RegularExpressions
 open YamlDotNet.RepresentationModel
 
-module Generator =
-    let internal name (wire: string) =
-        let words = Regex.Split(wire, "[^A-Za-z0-9]+") |> Array.filter (String.IsNullOrEmpty >> not)
-        let joined = words |> Array.map (fun word -> string (Char.ToUpperInvariant word[0]) + word[1..]) |> String.concat ""
-        if joined.Length = 0 then invalidOp $"empty identifier: {wire}"
-        elif Char.IsDigit joined[0] then "N" + joined
-        else joined
+module rec Generator =
+    let generateFile document output =
+        generate (File.ReadAllText document)
+        |> Result.map (fun generated ->
+            let directory = Path.GetDirectoryName(Path.GetFullPath output)
+            Directory.CreateDirectory directory |> ignore
+            File.WriteAllText(output, generated))
 
-    let generate (document: string) =
+    let generate (document: string) : Result<string, string> =
         try
             let yaml = YamlStream()
             use reader = new StringReader(document)
@@ -100,6 +100,10 @@ module Generator =
                 match get "allOf" node with
                 | Some inherited -> values inherited |> List.filter (get "$ref" >> Option.isNone)
                 | None -> [node]
+            let isScalarIdentity node =
+                get "enum" node |> Option.isNone
+                && get "discriminator" node |> Option.isNone
+                && (get "type" node |> Option.exists (fun kind -> match kind with :? YamlScalarNode -> List.contains (scalar kind) ["string"; "integer"; "number"; "boolean"] | _ -> false))
             let output = StringBuilder("// Generated from contracts/openapi.yaml.\nnamespace BibleAtlas.FSharp.Contract\n\nopen System.Text.Json.Serialization\n\n")
             let mutable index = 0
             while index < definitions.Count do
@@ -113,6 +117,7 @@ module Generator =
                         let property = get "propertyName" tag |> Option.map scalar |> Option.defaultWith (fun () -> invalidOp $"{typeName}: a discriminator has no propertyName")
                         $"[<RequireQualifiedAccess; JsonFSharpConverter(UnionEncoding = (JsonUnionEncoding.InternalTag ||| JsonUnionEncoding.UnwrapRecordCases ||| JsonUnionEncoding.AllowUnorderedTag), UnionTagName = {quote property})>]"
                     | None, Some _ -> "[<RequireQualifiedAccess; JsonFSharpConverter(UnionEncoding = JsonUnionEncoding.UnwrapFieldlessTags)>]"
+                    | None, None when isScalarIdentity node -> $"[<Struct; JsonConverter(typeof<{typeName}JsonConverter>)>]"
                     | _ -> ""
                 if index = 0 then
                     if attributes <> "" then output.AppendLine(attributes) |> ignore
@@ -131,6 +136,7 @@ module Generator =
                 | _ ->
                     let properties = ownFields node |> List.collect (fun own -> get "properties" own |> Option.map (fun properties -> fields properties |> List.map (fun (wire, property) -> wire, property, own)) |> Option.defaultValue [])
                     match properties with
+                    | [] when attributes <> "" -> output.AppendLine($"    private | {typeName} of {shape typeName node}") |> ignore
                     | [] -> output.AppendLine($"    {shape typeName node}") |> ignore
                     | properties ->
                         output.AppendLine("    {") |> ignore
@@ -141,9 +147,12 @@ module Generator =
                             output.AppendLine($"        [<JsonPropertyName({quote wire})>] {name wire}: {optional}") |> ignore
                         output.AppendLine("    }") |> ignore
                 index <- index + 1
+            for typeName, node in definitions |> Seq.filter (snd >> isScalarIdentity) do
+                let primitive = shape typeName node
+                let nullMessage = quote (typeName + " cannot be null")
+                output.AppendLine($"and private {typeName}JsonConverter() =\n    inherit JsonConverter<{typeName}>()\n    override _.Read(reader: byref<System.Text.Json.Utf8JsonReader>, _, options) =\n        if reader.TokenType = System.Text.Json.JsonTokenType.Null then\n            raise (System.Text.Json.JsonException({nullMessage}))\n        {typeName}(System.Text.Json.JsonSerializer.Deserialize<{primitive}>(&reader, options))\n    override _.Write(writer, {typeName} value, options) =\n        System.Text.Json.JsonSerializer.Serialize<{primitive}>(writer, value, options)") |> ignore
             if not requests.IsEmpty then
-                output.AppendLine("\ntype Request<'a> = private Request of uri: string\n\nmodule Request =\n    let uri (Request uri) = uri\n\nmodule Reads =") |> ignore
-                output.AppendLine("    let private value item =\n        use document = System.Text.Json.JsonDocument.Parse(System.Text.Json.JsonSerializer.Serialize item)\n        match document.RootElement.ValueKind with\n        | System.Text.Json.JsonValueKind.String -> document.RootElement.GetString()\n        | System.Text.Json.JsonValueKind.Array -> document.RootElement.EnumerateArray() |> Seq.map (fun value -> value.GetString()) |> String.concat \",\"\n        | _ -> document.RootElement.GetRawText()\n\n    let private encode item = System.Uri.EscapeDataString(value item)") |> ignore
+                output.AppendLine("\ntype Request<'a> = private Request of uri: string\n\nmodule Request =\n    let uri (Request uri) = uri\n\nmodule rec Reads =") |> ignore
                 for operation, path, response, parameters in requests do
                     let operation = name operation
                     let functionName = string (Char.ToLowerInvariant operation[0]) + operation[1..]
@@ -163,12 +172,14 @@ module Generator =
                             if required then output.AppendLine($"                yield {key} + encode ``{wire}``") |> ignore
                             else output.AppendLine($"                match ``{wire}`` with Some item -> yield {key} + encode item | None -> ()") |> ignore
                     output.AppendLine("            ]\n        Request(path + (if query.IsEmpty then \"\" else \"?\" + String.concat \"&\" query))") |> ignore
+                output.AppendLine("\n    let private encode<'a> (item: 'a) : string = System.Uri.EscapeDataString(value item)\n\n    let private value<'a> (item: 'a) : string =\n        use document = System.Text.Json.JsonDocument.Parse(System.Text.Json.JsonSerializer.Serialize item)\n        match document.RootElement.ValueKind with\n        | System.Text.Json.JsonValueKind.String -> document.RootElement.GetString()\n        | System.Text.Json.JsonValueKind.Array -> document.RootElement.EnumerateArray() |> Seq.map (fun value -> value.GetString()) |> String.concat \",\"\n        | _ -> document.RootElement.GetRawText()") |> ignore
             Ok(output.ToString().Replace("\r\n", "\n"))
         with error -> Error error.Message
 
-    let generateFile document output =
-        generate (File.ReadAllText document)
-        |> Result.map (fun generated ->
-            let directory = Path.GetDirectoryName(Path.GetFullPath output)
-            Directory.CreateDirectory directory |> ignore
-            File.WriteAllText(output, generated))
+
+    let internal name (wire: string) =
+        let words = Regex.Split(wire, "[^A-Za-z0-9]+") |> Array.filter (String.IsNullOrEmpty >> not)
+        let joined = words |> Array.map (fun word -> string (Char.ToUpperInvariant word[0]) + word[1..]) |> String.concat ""
+        if joined.Length = 0 then invalidOp $"empty identifier: {wire}"
+        elif Char.IsDigit joined[0] then "N" + joined
+        else joined

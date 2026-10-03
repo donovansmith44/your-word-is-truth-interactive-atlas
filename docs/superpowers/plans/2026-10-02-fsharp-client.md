@@ -12,3 +12,7 @@ Base: `ace063d`. Item CX-FSHARP; worktree `~/w/CX-FSHARP`. Owner requires Bolero
 8. Push lane, set review with exact range, report concrete gate results and zero-pending parity evidence, and leave Claude a completion note on ops. Keep C# runnable until parity/rollout ruling.
 
 Each step records red-before-green evidence in the report. No completion claim for a scaffold, partial slice or unrunnable code. Standing FOCUS reviews take priority over migration implementation when Claude requests them.
+
+## Claude review refactor order, 2026-10-03
+
+Address C1 (nominal generated identities), C2 (closed surfaces and operation-specific retries), then I8/I4/I6/I7 (typed failures, valid anchors, enum spelling, typed parameter records), I2/I3/I5 (presentations and bounded trails), and C3/I1 (behavioral parity and closure) before expanding features. Convert example tests to properties alongside each step. The named scalar portion of C1 is now verified; unnamed identity schema work remains the separately proposed A-WIRE-IDENTITIES. The unused Cache was removed. The source-order law currently checks module helpers/test fixtures; finish public/local/member ordering before claiming every file complies. See the durable refactor checkpoint report for red test names and practical gate limits.

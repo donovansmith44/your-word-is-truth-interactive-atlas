@@ -1,12 +1,16 @@
-namespace BibleAtlas.FSharp.Client
+namespace rec BibleAtlas.FSharp.Client
 
 open Bolero
 open Bolero.Html
 open BibleAtlas.FSharp
 open BibleAtlas.FSharp.Contract
 
+type AppView() =
+    inherit ElmishComponent<Model, Message>()
+    override _.View model dispatch = View.app model dispatch
+
 module View =
-    let rec app (model: Model) (dispatch: Message -> unit) : Node =
+    let app (model: Model) (dispatch: Message -> unit) : Node =
         concat {
             headerView ()
             main {
@@ -20,7 +24,7 @@ module View =
             focus model.Focus dispatch
         }
 
-    and private headerView () : Node =
+    let private headerView () : Node =
         header {
             attr.``class`` "app-header header-parchment"
             a {
@@ -50,7 +54,7 @@ module View =
             }
         }
 
-    and private sources (state: LoadState<SourcesDocument>) dispatch : Node =
+    let private sources (state: LoadState<SourcesDocument>) dispatch : Node =
         div {
             attr.``class`` "sources-page"
             "data-testid" => "sources-page"
@@ -79,7 +83,7 @@ module View =
             }
         }
 
-    and private reader model dispatch : Node =
+    let private reader model dispatch : Node =
         div {
             attr.``class`` "reader-frame"
             "data-testid" => "reader-frame"
@@ -106,12 +110,12 @@ module View =
             }
         }
 
-    and private readingState corpus model =
+    let private readingState corpus model =
         match model.Reading, Map.tryFind corpus model.Contents with
         | Empty, Some(Failed(request, failure, _)) -> Failed(request, failure, None)
         | state, _ -> state
 
-    and private readerTitle model (window: TextWindow) : Node =
+    let private readerTitle model (window: TextWindow) : Node =
         match window.Units |> List.tryHead with
         | Some unit ->
             match unit.Body.Locus with
@@ -132,7 +136,7 @@ module View =
             | TextRef.Concord _ -> Node.Empty()
         | None -> Node.Empty()
 
-    and private verse (unit: TextUnit) number dispatch : Node =
+    let private verse (unit: TextUnit) number dispatch : Node =
         div {
             attr.``class`` "verse-line explorable"
             "data-testid" => $"verse-line-{number}"
@@ -163,7 +167,7 @@ module View =
             }
         }
 
-    and private concord model dispatch : Node =
+    let private concord model dispatch : Node =
         div {
             attr.``class`` "concord-page"
             "data-testid" => "concord-page"
@@ -219,7 +223,7 @@ module View =
             }
         }
 
-    and private anchoredText body decorate : Node =
+    let private anchoredText body decorate : Node =
         concat {
             forEach (AnchoredText.runs body) <| function
                 | [] -> Node.Empty()
@@ -230,7 +234,7 @@ module View =
                         | false -> pieces
         }
 
-    and private textPiece className testId piece (anchor: Anchor) dispatch : Node =
+    let private textPiece className testId piece (anchor: Anchor) dispatch : Node =
         span {
             attr.``class`` className
             "data-testid" => testId
@@ -244,7 +248,7 @@ module View =
             piece.Text
         }
 
-    and private unitHeading (heading: UnitHeading) dispatch : Node =
+    let private unitHeading (heading: UnitHeading) dispatch : Node =
         h2 {
             attr.``class`` ("pericope-heading" + (if heading.IsContinuation then " pericope-heading-continuation" else "") + (if heading.Kind = EventKind.General then " explorable-quiet" else " explorable"))
             "data-testid" => ("pericope-heading-" + heading.Event.Id)
@@ -263,14 +267,14 @@ module View =
             heading.Event.Label
         }
 
-    and private openNode node dispatch = dispatch (OpenPosition(PositionRef.Node { Node = node }))
+    let private openNode node dispatch = dispatch (OpenPosition(PositionRef.Node { Node = node }))
 
-    and private activate (event: Microsoft.AspNetCore.Components.Web.KeyboardEventArgs) node dispatch =
+    let private activate (event: Microsoft.AspNetCore.Components.Web.KeyboardEventArgs) node dispatch =
         match event.Key with
         | "Enter" | " " -> openNode node dispatch
         | _ -> ()
 
-    and private focus state dispatch : Node =
+    let private focus state dispatch : Node =
         cond state <| function
             | FocusState.Closed -> Node.Empty()
             | FocusState.Opening(_, position) -> popover position None (p { attr.``class`` "popover-meta"; "Loading…" }) dispatch
@@ -279,7 +283,7 @@ module View =
             | FocusState.CouldNotOpen(position, _) -> popover position None (failed RetryFocus dispatch) dispatch
             | FocusState.CouldNotWalk(trail, _, _) -> popover (Resolved.position (Trail.current trail)) (Some trail) (failed RetryFocus dispatch) dispatch
 
-    and private popover position trail body dispatch : Node =
+    let private popover position trail body dispatch : Node =
         let title =
             match position with
             | PositionRef.Node node -> node.Node.Label
@@ -328,7 +332,7 @@ module View =
             }
         }
 
-    and private presentation element dispatch : Node =
+    let private presentation element dispatch : Node =
         cond (Presenter.popover element) <| function
             | Error _ -> failed (Traverse Traversal.Renew) dispatch
             | Ok(PopoverPresentation.Card card) ->
@@ -360,7 +364,7 @@ module View =
                     presentationFields text.Fields
                 }
 
-    and private presentationFields fields : Node =
+    let private presentationFields fields : Node =
         dl {
             attr.``class`` "focus-fields"
             forEach fields <| fun field ->
@@ -373,7 +377,7 @@ module View =
                 }
         }
 
-    and private failed message dispatch : Node =
+    let private failed message dispatch : Node =
         concat {
             p { attr.``class`` "popover-meta"; "data-testid" => "could-not-load"; "Couldn't load this — check your connection and try again." }
             button {
@@ -385,7 +389,7 @@ module View =
             }
         }
 
-    and private sourceCard (source: SourceEntry) : Node =
+    let private sourceCard (source: SourceEntry) : Node =
         article {
             attr.``class`` "source-card"
             "data-testid" => ("source-" + source.Id)
@@ -405,7 +409,3 @@ module View =
                         "Visit source"
                     }
         }
-
-type AppView() =
-    inherit ElmishComponent<Model, Message>()
-    override _.View model dispatch = View.app model dispatch

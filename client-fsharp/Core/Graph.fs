@@ -4,19 +4,13 @@ open System.Net.Http
 open System.Threading
 open BibleAtlas.FSharp.Contract
 
-module Graph =
-    type private Reading =
-        { Cursor: int option
-          Root: string option
-          Remaining: PositionRef list
-          Reverse: Resolved list }
-
-    let rec explorer (http: HttpClient) =
+module rec Graph =
+    let explorer (http: HttpClient) : Explorer =
         { Resolve = fun positions ->
             if List.isEmpty positions then async { return Ok [] }
             else read http positions { Cursor = None; Root = None; Remaining = positions; Reverse = [] } }
 
-    and private read http positions reading = async {
+    let private read (http: HttpClient) (positions: PositionRef list) (reading: Reading) : Async<Result<Resolved list, Failure>> = async {
         let! answer = Api.read http CancellationToken.None (Reads.elements (List.map Positions.id positions) reading.Cursor)
         match answer with
         | Error failure -> return Error failure
@@ -35,7 +29,7 @@ module Graph =
                     | Some cursor -> return! read http positions { Cursor = Some cursor; Root = Some page.Version; Remaining = remaining; Reverse = gathered }
     }
 
-    and private append root elements remaining gathered =
+    let private append (root: string) (elements: Element list) (remaining: PositionRef list) (gathered: Resolved list) : Result<PositionRef list * Resolved list, Failure> =
         match elements, remaining with
         | [], _ -> Ok(remaining, gathered)
         | _ :: _, [] -> Error(Contract "the element read returned more elements than requested positions")
@@ -46,3 +40,9 @@ module Graph =
                     let actual = Positions.id (Resolved.position resolved)
                     let wanted = Positions.id position
                     Error(Contract $"the element read returned {actual} for {wanted}"))
+
+    type private Reading =
+        { Cursor: int option
+          Root: string option
+          Remaining: PositionRef list
+          Reverse: Resolved list }

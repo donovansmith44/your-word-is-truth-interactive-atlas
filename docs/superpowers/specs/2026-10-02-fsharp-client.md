@@ -27,13 +27,6 @@ module LoadState =
     val beginRead: RequestId -> LoadState<'a> -> LoadState<'a>
     val complete: RequestId -> Result<'a, Failure> -> LoadState<'a> -> LoadState<'a>
 
-type Cache<'key, 'value when 'key: comparison> = private Cache of capacity: int * entries: Map<'key, 'value> * recent: 'key list
-module Cache =
-    val empty: int -> Cache<'key, 'value>
-    val find: 'key -> Cache<'key, 'value> -> 'value option * Cache<'key, 'value>
-    val put: 'key -> 'value -> Cache<'key, 'value> -> Cache<'key, 'value>
-    val count: Cache<'key, 'value> -> int
-
 type Link = { Kind: EdgeKind; Target: PositionRef }
 type Resolved = private NodeResolved of root: string * node: NodeRecord | EdgeResolved of root: string * edge: EdgeRecord
 module Resolved =
@@ -85,7 +78,7 @@ module Generator =
 
 Exploration is StateT Trail over Async/Result: the trail is append-only, breadcrumbs cancel a step followed by its dual back to its source, and Back records a retracing step. Resolve is one batched read. Begin/resume refuse wrong cardinality, missing elements and mixed roots. The monad laws compare whole values and trails; no identity equality shortcut hides a root mismatch. Edge duality comes from the existing generated vocabulary fixture, not a transcribed list.
 
-Cache and page state are bounded; no cursor history grows with the journey. Failures remain retryable. Text rendering slices only served Unicode scalar spans and preserves served labels, kinds and words-of-Christ spans. Client interaction derivations stay on the client; domain derivations stay with the existing compiler/server.
+Page state is bounded; no cursor history grows with the journey. Failures remain retryable. Text rendering slices only served Unicode scalar spans and preserves served labels, kinds and words-of-Christ spans. Client interaction derivations stay on the client; domain derivations stay with the existing compiler/server.
 
 ## Contract-generated catalog
 
@@ -124,7 +117,7 @@ Cache and page state are bounded; no cursor history grows with the journey. Fail
 | `ElementPage` | object |
 | `Era` | object |
 | `EraDetail` | object |
-| `EraId` | string |
+| `EraId` | private scalar union |
 | `ErrorBody` | object |
 | `ErrorCode` | closed union |
 | `ErrorInner` | object |
@@ -146,7 +139,7 @@ Cache and page state are bounded; no cursor history grows with the journey. Fail
 | `Narrative` | object |
 | `NarrativeAdjacentEvent` | object |
 | `NarrativeEventPositions` | object |
-| `NarrativeId` | string |
+| `NarrativeId` | private scalar union |
 | `NarrativePosition` | object |
 | `NodeElement` | record payload |
 | `NodeKind` | closed union |
@@ -163,7 +156,7 @@ Cache and page state are bounded; no cursor history grows with the journey. Fail
 | `Polity` | object |
 | `PolityDelta` | object |
 | `PolityDetail` | object |
-| `PolityId` | string |
+| `PolityId` | private scalar union |
 | `PositionRef` | tagged union |
 | `ProvenanceEntry` | object |
 | `QuietPlace` | object |
@@ -194,7 +187,7 @@ Cache and page state are bounded; no cursor history grows with the journey. Fail
 | `Year` | object |
 | `YearSpan` | object |
 
-String id schemas remain wire aliases where the contract declares them open; enum schemas become qualified DUs. Optional/nullable properties become option, arrays become immutable lists, tagged inheritance becomes a DU over immutable payload records. JSON encodings retain every published property/discriminator/case spelling. An unsupported shape is a generator error, never JsonElement or obj as a fallback. A new schema/enum case is generated automatically; match warnings become build errors.
+Each named scalar schema becomes a distinct single-case struct union with a private constructor. Its generated JSON converter refuses null and a mismatched primitive kind, preserves the original wire spelling, and is honored at the one Json decoding door. The currently published identities are EraId, NarrativeId and PolityId. Unnamed wire identities, roots, cursors and references still require the separately proposed A-WIRE-IDENTITIES contract work; no contract edit is made here. Enum schemas become qualified DUs. Optional/nullable properties become option, arrays become immutable lists, tagged inheritance becomes a DU over immutable payload records. JSON encodings retain every published property/discriminator/case spelling. An unsupported shape is a generator error, never JsonElement or obj as a fallback. A new schema/enum case is generated automatically; match warnings become build errors.
 
 ## Parity and rollout
 
@@ -362,3 +355,7 @@ module Presenter =
     val popover: Resolved -> Result<PopoverPresentation, Failure>
     val caption: FieldName -> string
 ```
+
+## Refactor verification
+
+FsCheck.Xunit 3.4.0 supplies generated laws. Generator tests vary schema identities, wire enum names, requiredness and nullability; contract-shape laws vary complete record payloads and enumerate every published record field and named scalar identity. The SDK FSharp.Compiler.Service parses authored/generated sources for a source-order law and checks that synthetic ascending helper/fixture examples are refused. This checkpoint covers module helpers and test fixtures; local bindings, public dependency ordering and the remaining example tests still require migration. The unused Cache abstraction has no application caller and is removed.

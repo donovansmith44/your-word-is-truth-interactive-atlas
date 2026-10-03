@@ -12,10 +12,10 @@ type TextPresentation = { Unit: UnitText; Fields: PresentationField list }
 [<RequireQualifiedAccess>]
 type PopoverPresentation = Card of CardPresentation | Text of TextPresentation
 
-module Presenter =
-    let rec popover element = Resolved.fold node edge element
+module rec Presenter =
+    let popover (element: Resolved) : Result<PopoverPresentation, Failure> = Resolved.fold node edge element
 
-    and caption name =
+    let caption (name: FieldName) : string =
         match name with
         | FieldName.Window -> "Window"
         | FieldName.CanonicalName -> "Canonical name"
@@ -24,7 +24,7 @@ module Presenter =
         | FieldName.Reign -> "Reign"
         | FieldName.Provenance -> "Provenance"
 
-    and private node (record: NodeRecord) =
+    let private node (record: NodeRecord) : Result<PopoverPresentation, Failure> =
         let provenance = [{ Name = FieldName.Provenance; Value = record.Provenance }]
         match record.Kind with
         | NodeKind.TextUnit ->
@@ -44,8 +44,8 @@ module Presenter =
                 |> List.choose id
             Ok(PopoverPresentation.Card { Title = record.Label; Fields = fields @ provenance })
 
-    and private edge (record: EdgeRecord) =
+    let private edge (record: EdgeRecord) : Result<PopoverPresentation, Failure> =
         let fields = field FieldName.Provenance record.Provenance |> Option.toList
         Ok(PopoverPresentation.Card { Title = record.Label; Fields = fields })
 
-    and private field name value = value |> Option.map (fun value -> { Name = name; Value = value })
+    let private field (name: FieldName) (value: string option) : PresentationField option = value |> Option.map (fun value -> { Name = name; Value = value })

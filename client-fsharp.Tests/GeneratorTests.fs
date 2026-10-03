@@ -1,31 +1,50 @@
-module BibleAtlas.FSharp.Tests.GeneratorTests
+module rec BibleAtlas.FSharp.Tests.GeneratorTests
 
 open Xunit
+open FsCheck.Xunit
 open System.IO
 open BibleAtlas.FSharp.ContractGenerator
 
-let document schemas = "openapi: 3.1.0\ncomponents:\n  schemas:\n" + schemas
-
-[<Fact>]
-let ``a schema generates immutable fields with their exact wire names and optionality`` () =
-    let source = document "    Entry:\n      type: object\n      required: [display_name]\n      properties:\n        display_name: {type: string}\n        count: {type: [integer, 'null']}\n"
-    let expected = "// Generated from contracts/openapi.yaml.\nnamespace BibleAtlas.FSharp.Contract\n\nopen System.Text.Json.Serialization\n\ntype Entry =\n    {\n        [<JsonPropertyName(\"display_name\")>] DisplayName: string\n        [<JsonPropertyName(\"count\")>] Count: int option\n    }\n"
+[<Property>]
+let ``a schema generates immutable fields with their exact wire names and optionality`` (suffix: uint16) required nullable =
+    let identity = $"Entry{suffix}"
+    let fields = if required then "[display_name, count]" else "[display_name]"
+    let kind = if nullable then "[integer, 'null']" else "integer"
+    let count = if nullable || not required then "int option" else "int"
+    let source = document $"    {identity}:\n      type: object\n      required: {fields}\n      properties:\n        display_name: {{type: string}}\n        count: {{type: {kind}}}\n"
+    let expected = $"// Generated from contracts/openapi.yaml.\nnamespace BibleAtlas.FSharp.Contract\n\nopen System.Text.Json.Serialization\n\ntype {identity} =\n    {{\n        [<JsonPropertyName(\"display_name\")>] DisplayName: string\n        [<JsonPropertyName(\"count\")>] Count: {count}\n    }}\n"
     Assert.Equal(Ok expected, Generator.generate source)
 
-[<Fact>]
+[<Property(MaxTest = 1)>]
 let ``every schema in the current published contract generates without an untyped fallback`` () =
     let source = File.ReadAllText(Path.Combine(__SOURCE_DIRECTORY__, "../contracts/openapi.yaml"))
     match Generator.generate source with
     | Ok generated -> Assert.DoesNotContain("JsonElement", generated); Assert.DoesNotContain(": obj", generated)
     | Error error -> Assert.Fail(error)
 
-[<Fact>]
-let ``an unsupported wire shape is refused rather than replaced with an untyped value`` () =
-    let source = document "    Opaque:\n      type: object\n      properties:\n        data: {}\n"
-    Assert.Equal(Error "Opaque.data: unsupported schema {  }", Generator.generate source)
+[<Property>]
+let ``an unsupported wire shape is refused rather than replaced with an untyped value`` (suffix: uint16) =
+    let source = document $"    Opaque{suffix}:\n      type: object\n      properties:\n        data: {{}}\n"
+    Assert.Equal(Error $"Opaque{suffix}.data: unsupported schema {{  }}", Generator.generate source)
 
-[<Fact>]
-let ``closed vocabulary spells each case from its wire enum`` () =
-    let source = document "    Kind:\n      type: string\n      enum: [cited-by, contains]\n"
-    let expected = "// Generated from contracts/openapi.yaml.\nnamespace BibleAtlas.FSharp.Contract\n\nopen System.Text.Json.Serialization\n\n[<RequireQualifiedAccess; JsonFSharpConverter(UnionEncoding = JsonUnionEncoding.UnwrapFieldlessTags)>]\ntype Kind =\n    | [<JsonName(\"cited-by\")>] CitedBy\n    | [<JsonName(\"contains\")>] Contains\n"
+[<Property>]
+let ``closed vocabulary spells each case from its wire enum`` (suffix: uint16) =
+    let source = document $"    Kind:\n      type: string\n      enum: [cited-by-{suffix}, contains]\n"
+    let expected = $"// Generated from contracts/openapi.yaml.\nnamespace BibleAtlas.FSharp.Contract\n\nopen System.Text.Json.Serialization\n\n[<RequireQualifiedAccess; JsonFSharpConverter(UnionEncoding = JsonUnionEncoding.UnwrapFieldlessTags)>]\ntype Kind =\n    | [<JsonName(\"cited-by-{suffix}\")>] CitedBy{suffix}\n    | [<JsonName(\"contains\")>] Contains\n"
     Assert.Equal(Ok expected, Generator.generate source)
+
+[<Property>]
+let ``named scalar schemas generate distinct immutable identities`` (suffix: uint16) (kind: byte) =
+    let identity = $"Identity{suffix}"
+    let schema, primitive =
+        match kind % 5uy with
+        | 0uy -> "type: string", "string"
+        | 1uy -> "type: integer", "int"
+        | 2uy -> "type: integer\n      format: int64", "int64"
+        | 3uy -> "type: number", "float"
+        | _ -> "type: boolean", "bool"
+    let source = document $"    {identity}:\n      {schema}\n"
+    let expected = $"// Generated from contracts/openapi.yaml.\nnamespace BibleAtlas.FSharp.Contract\n\nopen System.Text.Json.Serialization\n\n[<Struct; JsonConverter(typeof<{identity}JsonConverter>)>]\ntype {identity} =\n    private | {identity} of {primitive}\nand private {identity}JsonConverter() =\n    inherit JsonConverter<{identity}>()\n    override _.Read(reader: byref<System.Text.Json.Utf8JsonReader>, _, options) =\n        if reader.TokenType = System.Text.Json.JsonTokenType.Null then\n            raise (System.Text.Json.JsonException(\"{identity} cannot be null\"))\n        {identity}(System.Text.Json.JsonSerializer.Deserialize<{primitive}>(&reader, options))\n    override _.Write(writer, {identity} value, options) =\n        System.Text.Json.JsonSerializer.Serialize<{primitive}>(writer, value, options)\n"
+    Assert.Equal(Ok expected, Generator.generate source)
+
+let document schemas = "openapi: 3.1.0\ncomponents:\n  schemas:\n" + schemas
