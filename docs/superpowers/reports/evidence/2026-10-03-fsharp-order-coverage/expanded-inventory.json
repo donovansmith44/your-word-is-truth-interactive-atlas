@@ -1,0 +1,701 @@
+[
+  {
+    "File": "/home/donovan/w/CX-FSHARP-order/client-fsharp/View.fs",
+    "Findings": [],
+    "Sha256": "6925E2C9780B0BDB75C4C9E7E34F6D43217E9D954F6A48072886A97EE9E16E8D"
+  },
+  {
+    "File": "/home/donovan/w/CX-FSHARP-order/client-fsharp/Program.fs",
+    "Findings": [],
+    "Sha256": "0FBA343A965D6E2E9B2957F2E7855A2AD3E1B76AD120B295EB541ACF9886A4E5"
+  },
+  {
+    "File": "/home/donovan/w/CX-FSHARP-order/client-fsharp/Main.fs",
+    "Findings": [
+      "/home/donovan/w/CX-FSHARP-order/client-fsharp/Main.fs: commands appears before init"
+    ],
+    "Sha256": "09B358E2A84FF373AAAA232F7901E3BC04070581E5A048E5EEC736F34613D140"
+  },
+  {
+    "File": "/home/donovan/w/CX-FSHARP-order/client-fsharp/Runtime.fs",
+    "Findings": [],
+    "Sha256": "7491AFA744F4A568EB37F121961E58CAF77A6B418767E1F035F7B6469D5D1E09"
+  },
+  {
+    "File": "/home/donovan/w/CX-FSHARP-order/client-fsharp/Core/Model.fs",
+    "Findings": [],
+    "Sha256": "1AC9B4E018081B351315017A6C21AAECDAEC81DD6ACEADBB390090354A65BFCA"
+  },
+  {
+    "File": "/home/donovan/w/CX-FSHARP-order/client-fsharp/Core/Graph.fs",
+    "Findings": [],
+    "Sha256": "195C6D257A85FA3FCC1C0BD1586605EF9D3F8A335B64163EC4279D0F4E7264E7"
+  },
+  {
+    "File": "/home/donovan/w/CX-FSHARP-order/client-fsharp/Core/Exploration.fs",
+    "Findings": [
+      "/home/donovan/w/CX-FSHARP-order/client-fsharp/Core/Exploration.fs: bind appears before map",
+      "/home/donovan/w/CX-FSHARP-order/client-fsharp/Core/Exploration.fs: current appears before onOneRoot",
+      "/home/donovan/w/CX-FSHARP-order/client-fsharp/Core/Exploration.fs: onOneRoot appears before resume",
+      "/home/donovan/w/CX-FSHARP-order/client-fsharp/Core/Exploration.fs: position appears before sameIdentity",
+      "/home/donovan/w/CX-FSHARP-order/client-fsharp/Core/Exploration.fs: result appears before map",
+      "/home/donovan/w/CX-FSHARP-order/client-fsharp/Core/Exploration.fs: run appears before follow",
+      "/home/donovan/w/CX-FSHARP-order/client-fsharp/Core/Exploration.fs: walked appears before onOneRoot"
+    ],
+    "Sha256": "B3E743F080E24FA50171607421737E73195675474A6288DC9CFD1841195A672E"
+  },
+  {
+    "File": "/home/donovan/w/CX-FSHARP-order/client-fsharp/Core/Api.fs",
+    "Findings": [],
+    "Sha256": "1F4C9BF6DE585C30AA92A0FDE2021634FD78B583A0B9DC87793DB3CEF110146E"
+  },
+  {
+    "File": "/home/donovan/w/CX-FSHARP-order/client-fsharp/Core/Presentation.fs",
+    "Findings": [],
+    "Sha256": "94B5086ACAEAB8449C0CB14076AB9A3B2CF18653B756A8C9CFEDB1E08A7DF62D"
+  },
+  {
+    "File": "/home/donovan/w/CX-FSHARP-order/client-fsharp/Core/Json.fs",
+    "Findings": [],
+    "Sha256": "D8E0CFA2CE8B66DEBD5B6E82B5D81B8D4C29061E7A77E87740D564188F4A393C"
+  },
+  {
+    "File": "/home/donovan/w/CX-FSHARP-order/client-fsharp/Core/AnchoredText.fs",
+    "Findings": [
+      "/home/donovan/w/CX-FSHARP-order/client-fsharp/Core/AnchoredText.fs: utf16 appears before red"
+    ],
+    "Sha256": "6B5016B697A32F88F9C4ADE856B27F4A7A9EE42046558861E82E86AAF662FE09"
+  },
+  {
+    "File": "/home/donovan/w/CX-FSHARP-order/client-fsharp/Core/Loading.fs",
+    "Findings": [
+      "/home/donovan/w/CX-FSHARP-order/client-fsharp/Core/Loading.fs: beginRead appears before retry"
+    ],
+    "Sha256": "6B5B864251CC1889EAA010A948D4581F0631C470C741D738900BCF538EA2DBAD"
+  },
+  {
+    "File": "/home/donovan/w/CX-FSHARP-order/client-fsharp/Core/Paging/PageCache.fs",
+    "Findings": [],
+    "Sha256": "1A465EC4974CE67413F4CA7AC8D9F6FA7DA40FAFFAEA02B5B6CE61DFFA881AFA"
+  },
+  {
+    "File": "/home/donovan/w/CX-FSHARP-order/client-fsharp/Core/Paging/ReadingWindow.fs",
+    "Findings": [],
+    "Sha256": "45862CB82B732961929B37E6558AA2AA3BD60808882264C0382035D0650C01BA"
+  },
+  {
+    "File": "/home/donovan/w/CX-FSHARP-order/client-fsharp/Core/Paging/NeighbourWindow.fs",
+    "Findings": [],
+    "Sha256": "1880EF5CA7F749F6DBF399D85ED30EA382B02138A6097420F502A5B6C71B2516"
+  },
+  {
+    "File": "/home/donovan/w/CX-FSHARP-order/client-fsharp/Core/Domain/Rooted.fs",
+    "Findings": [
+      "/home/donovan/w/CX-FSHARP-order/client-fsharp/Core/Domain/Rooted.fs: admit appears before map2"
+    ],
+    "Sha256": "9E65C8C3338491D826C5D53F587CD321B12D58DF50093478BBA462D03BC39BD5"
+  },
+  {
+    "File": "/home/donovan/w/CX-FSHARP-order/client-fsharp/Core/Domain/Graph.fs",
+    "Findings": [],
+    "Sha256": "A506F00E4FC2953BDF3870CFECF51B9BC00192193F0589D594E6D35D50C45D79"
+  },
+  {
+    "File": "/home/donovan/w/CX-FSHARP-order/client-fsharp/Core/Domain/NonEmpty.fs",
+    "Findings": [],
+    "Sha256": "ED1DE82B5A824B81A786C20B30E998584AE15B757DD8BC9057379EA15A73D732"
+  },
+  {
+    "File": "/home/donovan/w/CX-FSHARP-order/client-fsharp/Core/Domain/Time.fs",
+    "Findings": [],
+    "Sha256": "ADD1120573A809350BFDAF6D32E50D08D69A1C735269B0A7240456CF15F52CF9"
+  },
+  {
+    "File": "/home/donovan/w/CX-FSHARP-order/client-fsharp/Core/Domain/Position.fs",
+    "Findings": [],
+    "Sha256": "F93EB8B4A795417EA77DD5FF8F8070E499A5C1984A1077762E3AA4821C4CF768"
+  },
+  {
+    "File": "/home/donovan/w/CX-FSHARP-order/client-fsharp/Core/Domain/Text.fs",
+    "Findings": [],
+    "Sha256": "25EAC9928673E9FC3716E5E717761F270C1B58687C4B08360E65FAFCE57D6A3F"
+  },
+  {
+    "File": "/home/donovan/w/CX-FSHARP-order/client-fsharp/Core/Domain/Skeleton.fs",
+    "Findings": [],
+    "Sha256": "ADAEA94853CEDB02D294B5D1B29A96C292CCA5A5BB5A438817A48F88EB1475EE"
+  },
+  {
+    "File": "/home/donovan/w/CX-FSHARP-order/client-fsharp/Core/Domain/History.fs",
+    "Findings": [],
+    "Sha256": "BB3B4226B6B3F5D6A0CF95271D4B0E674BD005C060532205557440A636394B31"
+  },
+  {
+    "File": "/home/donovan/w/CX-FSHARP-order/client-fsharp/Core/Domain/YearReading.fs",
+    "Findings": [],
+    "Sha256": "D814D806F3A38CBFFA3260681DD5A1470C5559BFD34803C785CDD27C4E25C876"
+  },
+  {
+    "File": "/home/donovan/w/CX-FSHARP-order/client-fsharp/Core/Domain/Positive.fs",
+    "Findings": [],
+    "Sha256": "92598DD43D4874222A88E2EB5606051C75E205A68E7B2A58F6C400C3057F90B4"
+  },
+  {
+    "File": "/home/donovan/w/CX-FSHARP-order/client-fsharp/Core/Domain/Containers.fs",
+    "Findings": [],
+    "Sha256": "7911BB6F545956F8D5EA3DD727BFC52AA79AD1517CEC51DCA51B645C2CEC0D6C"
+  },
+  {
+    "File": "/home/donovan/w/CX-FSHARP-order/client-fsharp/Core/Exploration/Focus.fs",
+    "Findings": [],
+    "Sha256": "E26598256C9ED40A32F137BCF384735C514E988C4D9454D0DACB15B9530E6FAC"
+  },
+  {
+    "File": "/home/donovan/w/CX-FSHARP-order/client-fsharp/Core/Exploration/Trail.fs",
+    "Findings": [],
+    "Sha256": "0F60644CE0733EE75728D737EE1431A43A8190B28BC2465A12AE14254A417524"
+  },
+  {
+    "File": "/home/donovan/w/CX-FSHARP-order/client-fsharp/Core/Admission/HttpUrl.fs",
+    "Findings": [],
+    "Sha256": "00D79355A053D4117AF3619F1930E4AD5CC9C3905010AF07DDBE102A7B276CDD"
+  },
+  {
+    "File": "/home/donovan/w/CX-FSHARP-order/client-fsharp/Core/Admission/DocumentPosition.fs",
+    "Findings": [],
+    "Sha256": "BE62E48894F957597B1DB212F7943D5A10FB2898333E209871A8A3A65B4F0174"
+  },
+  {
+    "File": "/home/donovan/w/CX-FSHARP-order/client-fsharp/Core/Admission/TextSpans.fs",
+    "Findings": [],
+    "Sha256": "54462D2D911AA3C4E8ED43828945423DB3983C7C31A0AB8D4B422B992722F124"
+  },
+  {
+    "File": "/home/donovan/w/CX-FSHARP-order/client-fsharp/Core/Admission/ArrayIndex.fs",
+    "Findings": [],
+    "Sha256": "B870FAB9F33C74ABEFF5B74D31FC89E684EAEAC672AE91AAF0DFEDCA9180412F"
+  },
+  {
+    "File": "/home/donovan/w/CX-FSHARP-order/client-fsharp/Core/Admission/Scalars.fs",
+    "Findings": [],
+    "Sha256": "819F9300863864D3C0A727E80B084329777266C36CF97F679431A11F0AB94EB0"
+  },
+  {
+    "File": "/home/donovan/w/CX-FSHARP-order/client-fsharp/Core/Admission/WireFailure.fs",
+    "Findings": [],
+    "Sha256": "25843A5DB96F773E18171796A3B99DA68786FB55A97F7901EA803CC17DE4B895"
+  },
+  {
+    "File": "/home/donovan/w/CX-FSHARP-order/client-fsharp/Core/Admission/Paths.fs",
+    "Findings": [],
+    "Sha256": "84444247602078DE3FB3C54F78E1A61416FCB8677DE1ACA96846A9F59B2EB723"
+  },
+  {
+    "File": "/home/donovan/w/CX-FSHARP-order/client-fsharp/Core/Admission/ReadFailure.fs",
+    "Findings": [],
+    "Sha256": "A4EA42B63508BB4EB90C714EDF38ED7360E0706B17F90BE4AF8B2371D4ACF387"
+  },
+  {
+    "File": "/home/donovan/w/CX-FSHARP-order/client-fsharp/Core/Admission/Coordinates.fs",
+    "Findings": [],
+    "Sha256": "7B7FDD16F3D413119C73D164586B25CDDE9C412FFC152AF5D450CC2689C22393"
+  },
+  {
+    "File": "/home/donovan/w/CX-FSHARP-order/client-fsharp.Tests/RuntimeTests.fs",
+    "Findings": [],
+    "Sha256": "5F2650D97EE0A4EC2431B0D6BEADD2859D92ED4B16E64827649A2C7AC07F7AC6"
+  },
+  {
+    "File": "/home/donovan/w/CX-FSHARP-order/client-fsharp.Tests/StateTests.fs",
+    "Findings": [],
+    "Sha256": "D3F823728344D19F51D61C49EDB7CF9A5BBDDEB095ED281AFF66C48FF2452204"
+  },
+  {
+    "File": "/home/donovan/w/CX-FSHARP-order/client-fsharp.Tests/ContractShapeTests.fs",
+    "Findings": [],
+    "Sha256": "40EFB44975DE712BBD1D07361DB1BF00CD9738DE3E8DEE8AA91DA6566289B19E"
+  },
+  {
+    "File": "/home/donovan/w/CX-FSHARP-order/client-fsharp.Tests/TransportTests.fs",
+    "Findings": [],
+    "Sha256": "1070054220909799337EA69233B559D1C95472A3E91FCE9C8CE1A5F8EE12D58E"
+  },
+  {
+    "File": "/home/donovan/w/CX-FSHARP-order/client-fsharp.Tests/GraphTests.fs",
+    "Findings": [],
+    "Sha256": "BF68D4FD7D143D8588D5149BCC1930146F14BA54E4498EAE3915763673D92E00"
+  },
+  {
+    "File": "/home/donovan/w/CX-FSHARP-order/client-fsharp.Tests/SourceOrderTests.fs",
+    "Findings": [],
+    "Sha256": "AFA879549A1BDE7E048F8C0FCFFF02C0EE681F5B30A66B6A613EFC962EADC307"
+  },
+  {
+    "File": "/home/donovan/w/CX-FSHARP-order/client-fsharp.Tests/ModelTests.fs",
+    "Findings": [
+      "/home/donovan/w/CX-FSHARP-order/client-fsharp.Tests/ModelTests.fs: firstChapter appears before contents"
+    ],
+    "Sha256": "C177464F18AEC3E2B3D92654882F6C34C68A4D637E5F5E3B6002E4860915D7EB"
+  },
+  {
+    "File": "/home/donovan/w/CX-FSHARP-order/client-fsharp.Tests/ViewTests.fs",
+    "Findings": [],
+    "Sha256": "341040111D52A20D67B25E5F5781BAD88489E8AF6C913280A2249701977C289E"
+  },
+  {
+    "File": "/home/donovan/w/CX-FSHARP-order/client-fsharp.Tests/AnchoredTextTests.fs",
+    "Findings": [],
+    "Sha256": "521FBAF8D2D108F7299506EA8414647BCD0330E4F6ACF3A2E411122F65AECAE7"
+  },
+  {
+    "File": "/home/donovan/w/CX-FSHARP-order/client-fsharp.Tests/ExplorationTests.fs",
+    "Findings": [
+      "/home/donovan/w/CX-FSHARP-order/client-fsharp.Tests/ExplorationTests.fs: node appears before start"
+    ],
+    "Sha256": "91666B9FA78210A03ED8ED36CEFA8C9D29216968B532CA4F4C558FF042606F73"
+  },
+  {
+    "File": "/home/donovan/w/CX-FSHARP-order/client-fsharp.Tests/GeneratorTests.fs",
+    "Findings": [],
+    "Sha256": "3E42F11D42DD5C28D40D6D41F37264FDE302A2024E7437098EACB95CC2E52869"
+  },
+  {
+    "File": "/home/donovan/w/CX-FSHARP-order/client-fsharp.Tests/PresentationTests.fs",
+    "Findings": [
+      "/home/donovan/w/CX-FSHARP-order/client-fsharp.Tests/PresentationTests.fs: claim appears before place"
+    ],
+    "Sha256": "5CE42998C7DDECF9D1E9FF8874DE14BFE0F661C820918973F0843D53EDFA8594"
+  },
+  {
+    "File": "/home/donovan/w/CX-FSHARP-order/client-fsharp.Tests/ContractTests.fs",
+    "Findings": [],
+    "Sha256": "5DAA4DFFB85ECB0A1781F70D9EFFD086F8F91B7A7129B6F4E3637636CC19354F"
+  },
+  {
+    "File": "/home/donovan/w/CX-FSHARP-order/client-fsharp.Tests/Domain/ArrayIndexLaws.fs",
+    "Findings": [],
+    "Sha256": "8EF95A518A2C9627D0802936B8496F2506E260CF089AA48D0F8ACCA4B9215C23"
+  },
+  {
+    "File": "/home/donovan/w/CX-FSHARP-order/client-fsharp.Tests/Domain/HttpUrlLaws.fs",
+    "Findings": [],
+    "Sha256": "5C7F5FA8B840DA812E74206835A920D237CDAF9A24121586563EE2A87125005F"
+  },
+  {
+    "File": "/home/donovan/w/CX-FSHARP-order/client-fsharp.Tests/Domain/PositiveLaws.fs",
+    "Findings": [],
+    "Sha256": "4318732E50439135A86BDFAD47DF1B609B5ACFD2757A85314FF2D2D0285A5CD0"
+  },
+  {
+    "File": "/home/donovan/w/CX-FSHARP-order/client-fsharp.Tests/Domain/CoordinatesLaws.fs",
+    "Findings": [],
+    "Sha256": "15F81A8AC50C961BC49ACB2D55504F0C722CC31FCC21817733AA8C81B49490B0"
+  },
+  {
+    "File": "/home/donovan/w/CX-FSHARP-order/client-fsharp.Tests/Domain/NonEmptyLaws.fs",
+    "Findings": [],
+    "Sha256": "70563D867A52857588E808EBD56242623E334D877014327F54F82A94E0877AC4"
+  },
+  {
+    "File": "/home/donovan/w/CX-FSHARP-order/client-fsharp.Tests/Domain/PageCacheLaws.fs",
+    "Findings": [],
+    "Sha256": "BA1AD06DF2E83076FCCEA06E89CE6B8B4B9E524D278A14E4B9B661B7E7CAAAA5"
+  },
+  {
+    "File": "/home/donovan/w/CX-FSHARP-order/client-fsharp.Tests/Domain/AdmissionSurfaceLaws.fs",
+    "Findings": [],
+    "Sha256": "908583FDB1B9D2559F1983E4F91F5928F3B502DD03AF02687AD1FA6E9EDF4FBE"
+  },
+  {
+    "File": "/home/donovan/w/CX-FSHARP-order/client-fsharp.Tests/Domain/DocumentPositionLaws.fs",
+    "Findings": [],
+    "Sha256": "37BC134A4B3E765906F3D480225BE56F7D628E1ED8830BE86FF1DCCE5D125754"
+  },
+  {
+    "File": "/home/donovan/w/CX-FSHARP-order/client-fsharp.Tests/Domain/RootedLaws.fs",
+    "Findings": [],
+    "Sha256": "C48734DD857783295E3898D2A5DA359A6936D722D55AEF528BDD38912B3C8A6B"
+  },
+  {
+    "File": "/home/donovan/w/CX-FSHARP-order/client-fsharp.ContractGenerator/Generator.fs",
+    "Findings": [
+      "/home/donovan/w/CX-FSHARP-order/client-fsharp.ContractGenerator/Generator.fs: fields appears before schemas",
+      "/home/donovan/w/CX-FSHARP-order/client-fsharp.ContractGenerator/Generator.fs: get appears before schemas",
+      "/home/donovan/w/CX-FSHARP-order/client-fsharp.ContractGenerator/Generator.fs: isScalarIdentity appears before attributes",
+      "/home/donovan/w/CX-FSHARP-order/client-fsharp.ContractGenerator/Generator.fs: ownFields appears before properties",
+      "/home/donovan/w/CX-FSHARP-order/client-fsharp.ContractGenerator/Generator.fs: quote appears before attributes",
+      "/home/donovan/w/CX-FSHARP-order/client-fsharp.ContractGenerator/Generator.fs: scalar appears before fields",
+      "/home/donovan/w/CX-FSHARP-order/client-fsharp.ContractGenerator/Generator.fs: shape appears before requests",
+      "/home/donovan/w/CX-FSHARP-order/client-fsharp.ContractGenerator/Generator.fs: values appears before ownFields"
+    ],
+    "Sha256": "24474122F5180C70671B0346A162EC0B0EBC96F7487174F928A00A76D01EA56B"
+  },
+  {
+    "File": "/home/donovan/w/CX-FSHARP-order/client-fsharp.ContractGenerator/Program.fs",
+    "Findings": [],
+    "Sha256": "A20EB23C2D48AD346B583B02732EAED451B4BEB4663ADC9B62406CB0ACBEB986"
+  },
+  {
+    "File": "/home/donovan/w/CX-FSHARP-order/client-fsharp.ContractGenerator/Vocabulary.fs",
+    "Findings": [],
+    "Sha256": "951B9F66F31FDBC0935F2A7294B3CD254C0A3913138B69C3075F0C20960491FC"
+  },
+  {
+    "File": "/home/donovan/w/CX-FSHARP/client-fsharp/View.fs",
+    "Findings": [],
+    "Sha256": "B242DAC2352D9D4C5C238C3B0F0C753681CAF2CF77D2895870AA02667839384A"
+  },
+  {
+    "File": "/home/donovan/w/CX-FSHARP/client-fsharp/Program.fs",
+    "Findings": [],
+    "Sha256": "0FBA343A965D6E2E9B2957F2E7855A2AD3E1B76AD120B295EB541ACF9886A4E5"
+  },
+  {
+    "File": "/home/donovan/w/CX-FSHARP/client-fsharp/Main.fs",
+    "Findings": [
+      "/home/donovan/w/CX-FSHARP/client-fsharp/Main.fs: commands appears before init"
+    ],
+    "Sha256": "09B358E2A84FF373AAAA232F7901E3BC04070581E5A048E5EEC736F34613D140"
+  },
+  {
+    "File": "/home/donovan/w/CX-FSHARP/client-fsharp/Runtime.fs",
+    "Findings": [],
+    "Sha256": "0556BF5FDF34C2BBF87F77F42DAD9ACD0D71271EF916C4987DA6C1C4BE372700"
+  },
+  {
+    "File": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Model.fs",
+    "Findings": [],
+    "Sha256": "1AC9B4E018081B351315017A6C21AAECDAEC81DD6ACEADBB390090354A65BFCA"
+  },
+  {
+    "File": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Api.fs",
+    "Findings": [],
+    "Sha256": "1F4C9BF6DE585C30AA92A0FDE2021634FD78B583A0B9DC87793DB3CEF110146E"
+  },
+  {
+    "File": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Presentation.fs",
+    "Findings": [],
+    "Sha256": "8595742D1C7715A44900B04A70A413A671EF55B1579061D1E79C6204479940EE"
+  },
+  {
+    "File": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Loading.fs",
+    "Findings": [
+      "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Loading.fs: beginRead appears before retry"
+    ],
+    "Sha256": "3C95FE6E655EFBF91B66D3D996CE7DFF1D1274CD68807C6C2F2E4F2D9B82F02A"
+  },
+  {
+    "File": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Paging/PageCache.fs",
+    "Findings": [],
+    "Sha256": "1A465EC4974CE67413F4CA7AC8D9F6FA7DA40FAFFAEA02B5B6CE61DFFA881AFA"
+  },
+  {
+    "File": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Paging/ReadingWindow.fs",
+    "Findings": [],
+    "Sha256": "976DADD229DC5D740CEB6DEEC75B9923108AC03CAB91F2A360626A332BCC2C09"
+  },
+  {
+    "File": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Paging/NeighbourWindow.fs",
+    "Findings": [],
+    "Sha256": "1880EF5CA7F749F6DBF399D85ED30EA382B02138A6097420F502A5B6C71B2516"
+  },
+  {
+    "File": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/Rooted.fs",
+    "Findings": [
+      "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/Rooted.fs: admit appears before map2"
+    ],
+    "Sha256": "9E65C8C3338491D826C5D53F587CD321B12D58DF50093478BBA462D03BC39BD5"
+  },
+  {
+    "File": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/Graph.fs",
+    "Findings": [],
+    "Sha256": "A05A30C8BA1689D8636D2CD25CB3BE14494A852CD1353417E20DF28BC8DFC583"
+  },
+  {
+    "File": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/NonEmpty.fs",
+    "Findings": [],
+    "Sha256": "ED1DE82B5A824B81A786C20B30E998584AE15B757DD8BC9057379EA15A73D732"
+  },
+  {
+    "File": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/Time.fs",
+    "Findings": [],
+    "Sha256": "ADD1120573A809350BFDAF6D32E50D08D69A1C735269B0A7240456CF15F52CF9"
+  },
+  {
+    "File": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/Position.fs",
+    "Findings": [
+      "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/Position.fs: position appears before sameIdentity"
+    ],
+    "Sha256": "0DF4E8ABCDE7CFBBAC679367DF6BDF14B28D1FDE54874DF8E299E4FF48474FE5"
+  },
+  {
+    "File": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/Text.fs",
+    "Findings": [],
+    "Sha256": "36F5EC7D543E4FE1F1231A13B1F119BE918A978756AE7F97FCC3069E56541BB3"
+  },
+  {
+    "File": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/Skeleton.fs",
+    "Findings": [],
+    "Sha256": "ADAEA94853CEDB02D294B5D1B29A96C292CCA5A5BB5A438817A48F88EB1475EE"
+  },
+  {
+    "File": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/History.fs",
+    "Findings": [],
+    "Sha256": "6B212A9A66469BA54D596442A6B69B391C839DFE021A4E492A6A44404B69256D"
+  },
+  {
+    "File": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/YearReading.fs",
+    "Findings": [],
+    "Sha256": "D814D806F3A38CBFFA3260681DD5A1470C5559BFD34803C785CDD27C4E25C876"
+  },
+  {
+    "File": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/Positive.fs",
+    "Findings": [],
+    "Sha256": "92598DD43D4874222A88E2EB5606051C75E205A68E7B2A58F6C400C3057F90B4"
+  },
+  {
+    "File": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/Containers.fs",
+    "Findings": [],
+    "Sha256": "167021BBE5B32898FA6357363AA54A0C8D4C1605F1751F939ADC545A66B4CCA4"
+  },
+  {
+    "File": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Exploration/Explore.fs",
+    "Findings": [
+      "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Exploration/Explore.fs: bind appears before map",
+      "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Exploration/Explore.fs: result appears before map",
+      "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Exploration/Explore.fs: run appears before follow",
+      "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Exploration/Explore.fs: walk appears before here"
+    ],
+    "Sha256": "530EE0B34592E5505633AC04308EE903B5F28F31C4FBB1954BD957A8BF2ED940"
+  },
+  {
+    "File": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Exploration/Focus.fs",
+    "Findings": [],
+    "Sha256": "66F6890FACC49BFFC56019019FE1C08EB7D377FF08A1E6582BB70BF912BC2420"
+  },
+  {
+    "File": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Exploration/Trail.fs",
+    "Findings": [
+      "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Exploration/Trail.fs: beginAt appears before resume",
+      "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Exploration/Trail.fs: current appears before onOneRoot",
+      "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Exploration/Trail.fs: follow appears before resume",
+      "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Exploration/Trail.fs: onOneRoot appears before resume",
+      "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Exploration/Trail.fs: walked appears before onOneRoot"
+    ],
+    "Sha256": "ED4663D763DBCCE558775B53BE209871FF6695415E42EF7E06E19BF6F1430C97"
+  },
+  {
+    "File": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Admission/GraphRead.fs",
+    "Findings": [],
+    "Sha256": "6C69CA63280DF220013CD8A251BC83F980349BBF2D19D514112D429374C9EEE9"
+  },
+  {
+    "File": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Admission/HttpUrl.fs",
+    "Findings": [],
+    "Sha256": "00D79355A053D4117AF3619F1930E4AD5CC9C3905010AF07DDBE102A7B276CDD"
+  },
+  {
+    "File": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Admission/DocumentPosition.fs",
+    "Findings": [],
+    "Sha256": "BE62E48894F957597B1DB212F7943D5A10FB2898333E209871A8A3A65B4F0174"
+  },
+  {
+    "File": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Admission/TextSpans.fs",
+    "Findings": [
+      "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Admission/TextSpans.fs: utf16 appears before red"
+    ],
+    "Sha256": "3B2AC93DFB4E73DF91F218A22CB33F7FA2D9CD4EAF4618F728D27BBABA9BA8BA"
+  },
+  {
+    "File": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Admission/ArrayIndex.fs",
+    "Findings": [],
+    "Sha256": "B870FAB9F33C74ABEFF5B74D31FC89E684EAEAC672AE91AAF0DFEDCA9180412F"
+  },
+  {
+    "File": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Admission/Scalars.fs",
+    "Findings": [],
+    "Sha256": "819F9300863864D3C0A727E80B084329777266C36CF97F679431A11F0AB94EB0"
+  },
+  {
+    "File": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Admission/Json.fs",
+    "Findings": [],
+    "Sha256": "D8E0CFA2CE8B66DEBD5B6E82B5D81B8D4C29061E7A77E87740D564188F4A393C"
+  },
+  {
+    "File": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Admission/Failure.fs",
+    "Findings": [],
+    "Sha256": "7211A9A8F05A5516DFEE8ACFC66BF0A9E458E4E39DB58F958C3CB15BEFE3E580"
+  },
+  {
+    "File": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Admission/WireFailure.fs",
+    "Findings": [],
+    "Sha256": "25843A5DB96F773E18171796A3B99DA68786FB55A97F7901EA803CC17DE4B895"
+  },
+  {
+    "File": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Admission/Paths.fs",
+    "Findings": [],
+    "Sha256": "84444247602078DE3FB3C54F78E1A61416FCB8677DE1ACA96846A9F59B2EB723"
+  },
+  {
+    "File": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Admission/ReadFailure.fs",
+    "Findings": [],
+    "Sha256": "A4EA42B63508BB4EB90C714EDF38ED7360E0706B17F90BE4AF8B2371D4ACF387"
+  },
+  {
+    "File": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Admission/Coordinates.fs",
+    "Findings": [],
+    "Sha256": "7B7FDD16F3D413119C73D164586B25CDDE9C412FFC152AF5D450CC2689C22393"
+  },
+  {
+    "File": "/home/donovan/w/CX-FSHARP/client-fsharp.Tests/RuntimeTests.fs",
+    "Findings": [],
+    "Sha256": "AB0CD498ABDDC4DD06FACDEA488DE85E2D29E36A8AB6ED1C78ACC2AB43238DA4"
+  },
+  {
+    "File": "/home/donovan/w/CX-FSHARP/client-fsharp.Tests/StateTests.fs",
+    "Findings": [],
+    "Sha256": "D3F823728344D19F51D61C49EDB7CF9A5BBDDEB095ED281AFF66C48FF2452204"
+  },
+  {
+    "File": "/home/donovan/w/CX-FSHARP/client-fsharp.Tests/ContractShapeTests.fs",
+    "Findings": [],
+    "Sha256": "40EFB44975DE712BBD1D07361DB1BF00CD9738DE3E8DEE8AA91DA6566289B19E"
+  },
+  {
+    "File": "/home/donovan/w/CX-FSHARP/client-fsharp.Tests/TransportTests.fs",
+    "Findings": [],
+    "Sha256": "1070054220909799337EA69233B559D1C95472A3E91FCE9C8CE1A5F8EE12D58E"
+  },
+  {
+    "File": "/home/donovan/w/CX-FSHARP/client-fsharp.Tests/GraphTests.fs",
+    "Findings": [],
+    "Sha256": "326E66369068A1DF5583184233AA29AA58BC1177EE92593BCFE5F25226634BFE"
+  },
+  {
+    "File": "/home/donovan/w/CX-FSHARP/client-fsharp.Tests/ExploreLaws.fs",
+    "Findings": [],
+    "Sha256": "48CD467C3EC668FED20968C1B422D342392C183B852B26E966DE7EE84BCD9230"
+  },
+  {
+    "File": "/home/donovan/w/CX-FSHARP/client-fsharp.Tests/SourceOrderTests.fs",
+    "Findings": [
+      "/home/donovan/w/CX-FSHARP/client-fsharp.Tests/SourceOrderTests.fs: identifiers appears before children"
+    ],
+    "Sha256": "B9F3D2E4E3C87AC0DA1097036BCF9BD0C85B7110C4BF1106973CCDA115EB6FE4"
+  },
+  {
+    "File": "/home/donovan/w/CX-FSHARP/client-fsharp.Tests/ModelTests.fs",
+    "Findings": [
+      "/home/donovan/w/CX-FSHARP/client-fsharp.Tests/ModelTests.fs: firstChapter appears before contents"
+    ],
+    "Sha256": "ED95C38A880A522A78B1597D4BA3DBADCA83AE249EF82A482BB5637FE7F44B16"
+  },
+  {
+    "File": "/home/donovan/w/CX-FSHARP/client-fsharp.Tests/ViewTests.fs",
+    "Findings": [],
+    "Sha256": "91D7BBD6A299DD89841CEFF57458738F0DF2A55DC2D53C152AEEF335EE3528D1"
+  },
+  {
+    "File": "/home/donovan/w/CX-FSHARP/client-fsharp.Tests/AnchoredTextTests.fs",
+    "Findings": [],
+    "Sha256": "0CE9D8549BAB68889045247CED34341E3400CF6A5E540119EA0343A2B599A63E"
+  },
+  {
+    "File": "/home/donovan/w/CX-FSHARP/client-fsharp.Tests/ExplorationTests.fs",
+    "Findings": [
+      "/home/donovan/w/CX-FSHARP/client-fsharp.Tests/ExplorationTests.fs: node appears before start"
+    ],
+    "Sha256": "C48583497809C5FF6E599E1B1B403905A635C53D6429526EC5FC0E2D94063C4F"
+  },
+  {
+    "File": "/home/donovan/w/CX-FSHARP/client-fsharp.Tests/GeneratorTests.fs",
+    "Findings": [],
+    "Sha256": "3E42F11D42DD5C28D40D6D41F37264FDE302A2024E7437098EACB95CC2E52869"
+  },
+  {
+    "File": "/home/donovan/w/CX-FSHARP/client-fsharp.Tests/PresentationTests.fs",
+    "Findings": [
+      "/home/donovan/w/CX-FSHARP/client-fsharp.Tests/PresentationTests.fs: claim appears before place"
+    ],
+    "Sha256": "0EF67711F3EA29AAAE254814935AA97E02826358376DC9F1DBC467E22BE79574"
+  },
+  {
+    "File": "/home/donovan/w/CX-FSHARP/client-fsharp.Tests/ContractTests.fs",
+    "Findings": [],
+    "Sha256": "5DAA4DFFB85ECB0A1781F70D9EFFD086F8F91B7A7129B6F4E3637636CC19354F"
+  },
+  {
+    "File": "/home/donovan/w/CX-FSHARP/client-fsharp.Tests/Domain/ArrayIndexLaws.fs",
+    "Findings": [],
+    "Sha256": "8EF95A518A2C9627D0802936B8496F2506E260CF089AA48D0F8ACCA4B9215C23"
+  },
+  {
+    "File": "/home/donovan/w/CX-FSHARP/client-fsharp.Tests/Domain/HttpUrlLaws.fs",
+    "Findings": [],
+    "Sha256": "5C7F5FA8B840DA812E74206835A920D237CDAF9A24121586563EE2A87125005F"
+  },
+  {
+    "File": "/home/donovan/w/CX-FSHARP/client-fsharp.Tests/Domain/DeclarationLaws.fs",
+    "Findings": [],
+    "Sha256": "08E27E41B80290F0031109B7CFF98363F9BF6DAF53C5C68632C982D75FA9EA97"
+  },
+  {
+    "File": "/home/donovan/w/CX-FSHARP/client-fsharp.Tests/Domain/PositiveLaws.fs",
+    "Findings": [],
+    "Sha256": "4318732E50439135A86BDFAD47DF1B609B5ACFD2757A85314FF2D2D0285A5CD0"
+  },
+  {
+    "File": "/home/donovan/w/CX-FSHARP/client-fsharp.Tests/Domain/CoordinatesLaws.fs",
+    "Findings": [],
+    "Sha256": "15F81A8AC50C961BC49ACB2D55504F0C722CC31FCC21817733AA8C81B49490B0"
+  },
+  {
+    "File": "/home/donovan/w/CX-FSHARP/client-fsharp.Tests/Domain/NonEmptyLaws.fs",
+    "Findings": [],
+    "Sha256": "70563D867A52857588E808EBD56242623E334D877014327F54F82A94E0877AC4"
+  },
+  {
+    "File": "/home/donovan/w/CX-FSHARP/client-fsharp.Tests/Domain/PageCacheLaws.fs",
+    "Findings": [],
+    "Sha256": "BA1AD06DF2E83076FCCEA06E89CE6B8B4B9E524D278A14E4B9B661B7E7CAAAA5"
+  },
+  {
+    "File": "/home/donovan/w/CX-FSHARP/client-fsharp.Tests/Domain/AdmissionSurfaceLaws.fs",
+    "Findings": [],
+    "Sha256": "908583FDB1B9D2559F1983E4F91F5928F3B502DD03AF02687AD1FA6E9EDF4FBE"
+  },
+  {
+    "File": "/home/donovan/w/CX-FSHARP/client-fsharp.Tests/Domain/DocumentPositionLaws.fs",
+    "Findings": [],
+    "Sha256": "37BC134A4B3E765906F3D480225BE56F7D628E1ED8830BE86FF1DCCE5D125754"
+  },
+  {
+    "File": "/home/donovan/w/CX-FSHARP/client-fsharp.Tests/Domain/RootedLaws.fs",
+    "Findings": [],
+    "Sha256": "C48734DD857783295E3898D2A5DA359A6936D722D55AEF528BDD38912B3C8A6B"
+  },
+  {
+    "File": "/home/donovan/w/CX-FSHARP/client-fsharp.ContractGenerator/Generator.fs",
+    "Findings": [
+      "/home/donovan/w/CX-FSHARP/client-fsharp.ContractGenerator/Generator.fs: fields appears before schemas",
+      "/home/donovan/w/CX-FSHARP/client-fsharp.ContractGenerator/Generator.fs: get appears before schemas",
+      "/home/donovan/w/CX-FSHARP/client-fsharp.ContractGenerator/Generator.fs: isScalarIdentity appears before attributes",
+      "/home/donovan/w/CX-FSHARP/client-fsharp.ContractGenerator/Generator.fs: ownFields appears before properties",
+      "/home/donovan/w/CX-FSHARP/client-fsharp.ContractGenerator/Generator.fs: quote appears before attributes",
+      "/home/donovan/w/CX-FSHARP/client-fsharp.ContractGenerator/Generator.fs: scalar appears before fields",
+      "/home/donovan/w/CX-FSHARP/client-fsharp.ContractGenerator/Generator.fs: shape appears before requests",
+      "/home/donovan/w/CX-FSHARP/client-fsharp.ContractGenerator/Generator.fs: values appears before ownFields"
+    ],
+    "Sha256": "24474122F5180C70671B0346A162EC0B0EBC96F7487174F928A00A76D01EA56B"
+  },
+  {
+    "File": "/home/donovan/w/CX-FSHARP/client-fsharp.ContractGenerator/Program.fs",
+    "Findings": [],
+    "Sha256": "A20EB23C2D48AD346B583B02732EAED451B4BEB4663ADC9B62406CB0ACBEB986"
+  },
+  {
+    "File": "/home/donovan/w/CX-FSHARP/client-fsharp.ContractGenerator/Vocabulary.fs",
+    "Findings": [],
+    "Sha256": "951B9F66F31FDBC0935F2A7294B3CD254C0A3913138B69C3075F0C20960491FC"
+  }
+]

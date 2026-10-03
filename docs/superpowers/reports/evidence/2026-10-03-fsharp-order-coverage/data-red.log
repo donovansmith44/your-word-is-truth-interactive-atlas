@@ -1,0 +1,60 @@
+  Determining projects to restore...
+  All projects are up-to-date for restore.
+  OrderCoverage -> /home/donovan/mut/codex-CX-FSHARP-order-probe/bin/Debug/net10.0/OrderCoverage.dll
+Test run for /home/donovan/mut/codex-CX-FSHARP-order-probe/bin/Debug/net10.0/OrderCoverage.dll (.NETCoreApp,Version=v10.0)
+A total of 1 test files matched the specified pattern.
+[xUnit.net 00:00:00.43]     BibleAtlas.FSharp.Tests.SourceOrderTests.the order gate permits local inputs before computations that consume them [FAIL]
+[xUnit.net 00:00:00.44]     BibleAtlas.FSharp.Tests.SourceOrderTests.the order gate permits module data before an operation that reads it [FAIL]
+  Failed BibleAtlas.FSharp.Tests.SourceOrderTests.the order gate permits local inputs before computations that consume them [257 ms]
+  Error Message:
+   FsCheck.Xunit.PropertyFailedException :
+Falsifiable, after 1 test (0 shrinks) (9111227698711410945,18390665572144868163).
+Last step was invoked with size of 2 and seed of (12488536675801194943,17290061198141588719):
+Original:
+0us
+
+---- Assert.Equal() Failure: Collections differ
+Expected: []
+Actual:   ["example.fs: input0 appears before answer"]
+  Stack Trace:
+
+----- Inner Stack Trace -----
+   at BibleAtlas.FSharp.Tests.SourceOrderTests.the order gate permits local inputs before computations that consume them(UInt16 suffix) in /home/donovan/w/CX-FSHARP-order/client-fsharp.Tests/SourceOrderTests.fs:line 93
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeDirectByRefWithFewArgs(Object obj, Span`1 copyOfArgs, BindingFlags invokeAttr)
+--- End of stack trace from previous location ---
+   at FsCheck.Runner.invokeAndThrowInner@592-1.Invoke(Object[] o) in C:\Users\kurts\Projects\FsCheck\src\FsCheck\Runner.fs:line 595
+   at <StartupCode$FSharp-Core>.$Reflect.Invoke@1230.Invoke(T1 inp) in /__w/1/s/src/fsharp/src/FSharp.Core/reflect.fs:line 1230
+   at System.Lazy`1.ViaFactory(LazyThreadSafetyMode mode)
+   at System.Lazy`1.ExecutionAndPublication(LazyHelper executionAndPublication, Boolean useDefaultConstructor)
+   at System.Lazy`1.CreateValue()
+   at FsCheck.Testable.Prop.safeForce[a](Lazy`1 body) in C:\Users\kurts\Projects\FsCheck\src\FsCheck\Testable.fs:line 164
+  Failed BibleAtlas.FSharp.Tests.SourceOrderTests.the order gate permits module data before an operation that reads it [7 ms]
+  Error Message:
+   FsCheck.Xunit.PropertyFailedException :
+Falsifiable, after 1 test (1 shrink) (7048944465541476033,8517624028980301991).
+Last step was invoked with size of 2 and seed of (7166547998755553615,5450304316667307415):
+Original:
+2us
+Shrunk:
+0us
+
+---- Assert.Equal() Failure: Collections differ
+Expected: []
+Actual:   ["example.fs: input0 appears before intent"]
+  Stack Trace:
+
+----- Inner Stack Trace -----
+   at BibleAtlas.FSharp.Tests.SourceOrderTests.the order gate permits module data before an operation that reads it(UInt16 suffix) in /home/donovan/w/CX-FSHARP-order/client-fsharp.Tests/SourceOrderTests.fs:line 99
+   at InvokeStub_SourceOrderTests.the order gate permits module data before an operation that reads it(Object, Span`1)
+   at System.Reflection.MethodBaseInvoker.InvokeWithOneArg(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
+--- End of stack trace from previous location ---
+   at FsCheck.Runner.invokeAndThrowInner@592-1.Invoke(Object[] o) in C:\Users\kurts\Projects\FsCheck\src\FsCheck\Runner.fs:line 595
+   at <StartupCode$FSharp-Core>.$Reflect.Invoke@1230.Invoke(T1 inp) in /__w/1/s/src/fsharp/src/FSharp.Core/reflect.fs:line 1230
+   at System.Lazy`1.ViaFactory(LazyThreadSafetyMode mode)
+   at System.Lazy`1.ExecutionAndPublication(LazyHelper executionAndPublication, Boolean useDefaultConstructor)
+   at System.Lazy`1.CreateValue()
+   at FsCheck.Testable.Prop.safeForce[a](Lazy`1 body) in C:\Users\kurts\Projects\FsCheck\src\FsCheck\Testable.fs:line 164
+Results File: /home/donovan/mut/codex-CX-FSHARP-order-logs/order-data-red.trx
+
+Failed!  - Failed:     2, Passed:     0, Skipped:     0, Total:     2, Duration: 317 ms - OrderCoverage.dll (net10.0)

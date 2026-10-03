@@ -1,0 +1,8 @@
+  Determining projects to restore...
+  Restored /home/donovan/w/CX-FSHARP-order/docs/superpowers/reports/evidence/2026-10-03-fsharp-order-coverage/OrderCoverage.fsproj (in 603 ms).
+  OrderCoverage -> /home/donovan/w/CX-FSHARP-order/docs/superpowers/reports/evidence/2026-10-03-fsharp-order-coverage/bin/Debug/net10.0/OrderCoverage.dll
+Test run for /home/donovan/w/CX-FSHARP-order/docs/superpowers/reports/evidence/2026-10-03-fsharp-order-coverage/bin/Debug/net10.0/OrderCoverage.dll (.NETCoreApp,Version=v10.0)
+A total of 1 test files matched the specified pattern.
+Results File: /home/donovan/mut/codex-CX-FSHARP-order-logs/portable.trx
+
+Passed!  - Failed:     0, Passed:    11, Skipped:     0, Total:    11, Duration: 1 s - OrderCoverage.dll (net10.0)

@@ -1,0 +1,135 @@
+  Determining projects to restore...
+  Restored /home/donovan/mut/codex-CX-FSHARP-order-probe/OrderCoverage.fsproj (in 229 ms).
+  OrderCoverage -> /home/donovan/mut/codex-CX-FSHARP-order-probe/bin/Debug/net10.0/OrderCoverage.dll
+Test run for /home/donovan/mut/codex-CX-FSHARP-order-probe/bin/Debug/net10.0/OrderCoverage.dll (.NETCoreApp,Version=v10.0)
+A total of 1 test files matched the specified pattern.
+[xUnit.net 00:00:00.55]     BibleAtlas.FSharp.Tests.SourceOrderTests.the order gate distinguishes a shadowing parameter from the outer helper [FAIL]
+[xUnit.net 00:00:00.56]     BibleAtlas.FSharp.Tests.SourceOrderTests.the order gate checks type member helpers below their first member caller [FAIL]
+[xUnit.net 00:00:00.58]     BibleAtlas.FSharp.Tests.SourceOrderTests.the order gate checks every exported helper regardless of its visibility [FAIL]
+[xUnit.net 00:00:00.65]     BibleAtlas.FSharp.Tests.SourceOrderTests.the order gate checks helpers reached through a qualified module reference [FAIL]
+[xUnit.net 00:00:00.65]     BibleAtlas.FSharp.Tests.SourceOrderTests.the order gate checks local helper chains within their binding scope [FAIL]
+  Failed BibleAtlas.FSharp.Tests.SourceOrderTests.the order gate distinguishes a shadowing parameter from the outer helper [8 ms]
+  Error Message:
+   FsCheck.Xunit.PropertyFailedException :
+Falsifiable, after 1 test (0 shrinks) (16046060951487632009,1503177396973944097).
+Last step was invoked with size of 2 and seed of (12623183321361989575,9023770812060117045):
+Original:
+0us
+
+---- Assert.Equal() Failure: Collections differ
+Expected: []
+Actual:   ["example.fs: detail0 appears before intent"]
+  Stack Trace:
+
+----- Inner Stack Trace -----
+   at BibleAtlas.FSharp.Tests.SourceOrderTests.the order gate distinguishes a shadowing parameter from the outer helper(UInt16 suffix) in /home/donovan/w/CX-FSHARP-order/client-fsharp.Tests/SourceOrderTests.fs:line 78
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeDirectByRefWithFewArgs(Object obj, Span`1 copyOfArgs, BindingFlags invokeAttr)
+--- End of stack trace from previous location ---
+   at FsCheck.Runner.invokeAndThrowInner@592-1.Invoke(Object[] o) in C:\Users\kurts\Projects\FsCheck\src\FsCheck\Runner.fs:line 595
+   at <StartupCode$FSharp-Core>.$Reflect.Invoke@1230.Invoke(T1 inp) in /__w/1/s/src/fsharp/src/FSharp.Core/reflect.fs:line 1230
+   at System.Lazy`1.ViaFactory(LazyThreadSafetyMode mode)
+   at System.Lazy`1.ExecutionAndPublication(LazyHelper executionAndPublication, Boolean useDefaultConstructor)
+   at System.Lazy`1.CreateValue()
+   at FsCheck.Testable.Prop.safeForce[a](Lazy`1 body) in C:\Users\kurts\Projects\FsCheck\src\FsCheck\Testable.fs:line 164
+  Failed BibleAtlas.FSharp.Tests.SourceOrderTests.the order gate checks type member helpers below their first member caller [10 ms]
+  Error Message:
+   FsCheck.Xunit.PropertyFailedException :
+Falsifiable, after 1 test (1 shrink) (11026005777729032060,3435509883921757089).
+Last step was invoked with size of 2 and seed of (15432003320273280970,1860432654361038769):
+Original:
+2us
+Shrunk:
+0us
+
+---- Assert.Equal() Failure: Values differ
+Expected: Tuple ([···], [···])
+Actual:   Tuple ([···], [···])
+  Stack Trace:
+
+----- Inner Stack Trace -----
+   at BibleAtlas.FSharp.Tests.SourceOrderTests.the order gate checks type member helpers below their first member caller(UInt16 suffix) in /home/donovan/w/CX-FSHARP-order/client-fsharp.Tests/SourceOrderTests.fs:line 64
+   at InvokeStub_SourceOrderTests.the order gate checks type member helpers below their first member caller(Object, Span`1)
+   at System.Reflection.MethodBaseInvoker.InvokeWithOneArg(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
+--- End of stack trace from previous location ---
+   at FsCheck.Runner.invokeAndThrowInner@592-1.Invoke(Object[] o) in C:\Users\kurts\Projects\FsCheck\src\FsCheck\Runner.fs:line 595
+   at <StartupCode$FSharp-Core>.$Reflect.Invoke@1230.Invoke(T1 inp) in /__w/1/s/src/fsharp/src/FSharp.Core/reflect.fs:line 1230
+   at System.Lazy`1.ViaFactory(LazyThreadSafetyMode mode)
+   at System.Lazy`1.ExecutionAndPublication(LazyHelper executionAndPublication, Boolean useDefaultConstructor)
+   at System.Lazy`1.CreateValue()
+   at FsCheck.Testable.Prop.safeForce[a](Lazy`1 body) in C:\Users\kurts\Projects\FsCheck\src\FsCheck\Testable.fs:line 164
+  Failed BibleAtlas.FSharp.Tests.SourceOrderTests.the order gate checks every exported helper regardless of its visibility [17 ms]
+  Error Message:
+   FsCheck.Xunit.PropertyFailedException :
+Falsifiable, after 1 test (0 shrinks) (10046296321096121088,12957637505103545649).
+Last step was invoked with size of 2 and seed of (18175891656586801113,15531276527020354101):
+Original:
+(0us, true)
+
+---- Assert.Equal() Failure: Values differ
+Expected: Tuple ([···], [···])
+Actual:   Tuple ([···], [···])
+  Stack Trace:
+
+----- Inner Stack Trace -----
+   at BibleAtlas.FSharp.Tests.SourceOrderTests.the order gate checks every exported helper regardless of its visibility(UInt16 suffix, Boolean internalVisibility) in /home/donovan/w/CX-FSHARP-order/client-fsharp.Tests/SourceOrderTests.fs:line 48
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeDirectByRefWithFewArgs(Object obj, Span`1 copyOfArgs, BindingFlags invokeAttr)
+--- End of stack trace from previous location ---
+   at FsCheck.Runner.invokeAndThrowInner@592-1.Invoke(Object[] o) in C:\Users\kurts\Projects\FsCheck\src\FsCheck\Runner.fs:line 595
+   at <StartupCode$FSharp-Core>.$Reflect.Invoke@1230.Invoke(T1 inp) in /__w/1/s/src/fsharp/src/FSharp.Core/reflect.fs:line 1230
+   at System.Lazy`1.ViaFactory(LazyThreadSafetyMode mode)
+   at System.Lazy`1.ExecutionAndPublication(LazyHelper executionAndPublication, Boolean useDefaultConstructor)
+   at System.Lazy`1.CreateValue()
+   at FsCheck.Testable.Prop.safeForce[a](Lazy`1 body) in C:\Users\kurts\Projects\FsCheck\src\FsCheck\Testable.fs:line 164
+  Failed BibleAtlas.FSharp.Tests.SourceOrderTests.the order gate checks helpers reached through a qualified module reference [< 1 ms]
+  Error Message:
+   FsCheck.Xunit.PropertyFailedException :
+Falsifiable, after 1 test (0 shrinks) (14688838913102559345,8076411743582548257).
+Last step was invoked with size of 2 and seed of (7556754454392475126,16531684203088555813):
+Original:
+0us
+
+---- Assert.Equal() Failure: Values differ
+Expected: Tuple ([···], [···])
+Actual:   Tuple ([···], [···])
+  Stack Trace:
+
+----- Inner Stack Trace -----
+   at BibleAtlas.FSharp.Tests.SourceOrderTests.the order gate checks helpers reached through a qualified module reference(UInt16 suffix) in /home/donovan/w/CX-FSHARP-order/client-fsharp.Tests/SourceOrderTests.fs:line 56
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeDirectByRefWithFewArgs(Object obj, Span`1 copyOfArgs, BindingFlags invokeAttr)
+--- End of stack trace from previous location ---
+   at FsCheck.Runner.invokeAndThrowInner@592-1.Invoke(Object[] o) in C:\Users\kurts\Projects\FsCheck\src\FsCheck\Runner.fs:line 595
+   at <StartupCode$FSharp-Core>.$Reflect.Invoke@1230.Invoke(T1 inp) in /__w/1/s/src/fsharp/src/FSharp.Core/reflect.fs:line 1230
+   at System.Lazy`1.ViaFactory(LazyThreadSafetyMode mode)
+   at System.Lazy`1.ExecutionAndPublication(LazyHelper executionAndPublication, Boolean useDefaultConstructor)
+   at System.Lazy`1.CreateValue()
+   at FsCheck.Testable.Prop.safeForce[a](Lazy`1 body) in C:\Users\kurts\Projects\FsCheck\src\FsCheck\Testable.fs:line 164
+  Failed BibleAtlas.FSharp.Tests.SourceOrderTests.the order gate checks local helper chains within their binding scope [1 ms]
+  Error Message:
+   FsCheck.Xunit.PropertyFailedException :
+Falsifiable, after 1 test (0 shrinks) (10627325636067263766,3511270671559127701).
+Last step was invoked with size of 2 and seed of (9186019470045829776,8423910975972267869):
+Original:
+0us
+
+---- Assert.Equal() Failure: Values differ
+Expected: Tuple ([···], [···])
+Actual:   Tuple ([···], [···])
+  Stack Trace:
+
+----- Inner Stack Trace -----
+   at BibleAtlas.FSharp.Tests.SourceOrderTests.the order gate checks local helper chains within their binding scope(UInt16 suffix) in /home/donovan/w/CX-FSHARP-order/client-fsharp.Tests/SourceOrderTests.fs:line 72
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeDirectByRefWithFewArgs(Object obj, Span`1 copyOfArgs, BindingFlags invokeAttr)
+--- End of stack trace from previous location ---
+   at FsCheck.Runner.invokeAndThrowInner@592-1.Invoke(Object[] o) in C:\Users\kurts\Projects\FsCheck\src\FsCheck\Runner.fs:line 595
+   at <StartupCode$FSharp-Core>.$Reflect.Invoke@1230.Invoke(T1 inp) in /__w/1/s/src/fsharp/src/FSharp.Core/reflect.fs:line 1230
+   at System.Lazy`1.ViaFactory(LazyThreadSafetyMode mode)
+   at System.Lazy`1.ExecutionAndPublication(LazyHelper executionAndPublication, Boolean useDefaultConstructor)
+   at System.Lazy`1.CreateValue()
+   at FsCheck.Testable.Prop.safeForce[a](Lazy`1 body) in C:\Users\kurts\Projects\FsCheck\src\FsCheck\Testable.fs:line 164
+Results File: /home/donovan/mut/codex-CX-FSHARP-order-logs/order-coverage-red.trx
+
+Failed!  - Failed:     5, Passed:     3, Skipped:     0, Total:     8, Duration: 608 ms - OrderCoverage.dll (net10.0)

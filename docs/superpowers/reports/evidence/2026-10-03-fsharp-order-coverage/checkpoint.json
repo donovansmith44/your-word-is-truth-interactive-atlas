@@ -1,0 +1,43 @@
+{
+  "base": "ffb1757",
+  "parent_read_only_snapshot": "88f0d26",
+  "scope": "structural/source inventory, not full build/browser/runtime parity",
+  "initial_red": {
+    "failed": 5,
+    "passed": 3,
+    "skipped": 0
+  },
+  "data_policy_red": {
+    "failed": 2,
+    "passed": 0,
+    "skipped": 0
+  },
+  "scoped_green": {
+    "order_properties": 10,
+    "external_snapshot_properties": 1,
+    "failed": 0,
+    "skipped": 0
+  },
+  "remaining_gate": "whole-file order not green; qualified/member/local syntax matching is not complete compiler symbol resolution",
+  "source_sha256": "afa879549a1bde7e048f8c0fcfff02c0ee681f5b30a66b6a613efc962eadc307",
+  "portable_reproduction": {
+    "passed": 11,
+    "failed": 0,
+    "skipped": 0,
+    "log": "portable.log"
+  },
+  "inventory": [
+    {
+      "snapshot": "ffb1757 with expanded gate",
+      "authored_files": 62,
+      "syntax_diagnostics": 22,
+      "affected_files": 9
+    },
+    {
+      "snapshot": "88f0d26 read only",
+      "authored_files": 64,
+      "syntax_diagnostics": 26,
+      "affected_files": 12
+    }
+  ]
+}

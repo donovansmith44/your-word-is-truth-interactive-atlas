@@ -1,0 +1,12 @@
+[
+  {
+    "File": "/home/donovan/w/CX-FSHARP-order/client-fsharp/Core/Domain/Rooted.fs",
+    "Findings": [],
+    "Sha256": "9E65C8C3338491D826C5D53F587CD321B12D58DF50093478BBA462D03BC39BD5"
+  },
+  {
+    "File": "/home/donovan/w/CX-FSHARP/client-fsharp/Core/Domain/Rooted.fs",
+    "Findings": [],
+    "Sha256": "9E65C8C3338491D826C5D53F587CD321B12D58DF50093478BBA462D03BC39BD5"
+  }
+]
