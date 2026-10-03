@@ -1,5 +1,7 @@
 # F# domain sign-off proposal
 
+**Not ready for sign-off:** Claude pre-review 4f6eb12 requires revision; owner ops 0057d41 requires declarations in their actual compiling modules. [Revision obligations](../reports/2026-10-02-fsharp-client-domain-revision.md). The original proposal below remains a superseded checkpoint until the real-module revision replaces it.
+
 Proposal only: no DTOs, effects, UI or implementation. Owner rulings on ops
 `2e2be49`, `570f5b9`, `7572dae`; costume audit `a78559f` remains open.
 [Full laws, admission boundaries and library survey](../reports/2026-10-02-fsharp-client-domain.md).
