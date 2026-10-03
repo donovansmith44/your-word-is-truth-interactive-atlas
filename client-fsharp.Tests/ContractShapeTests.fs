@@ -7,7 +7,7 @@ open Microsoft.FSharp.Reflection
 open Xunit
 open FsCheck
 open FsCheck.Xunit
-open YamlDotNet.RepresentationModel
+open BibleAtlas.FSharp.ContractGenerator
 open BibleAtlas.FSharp
 open BibleAtlas.FSharp.Contract
 
@@ -44,18 +44,30 @@ let ``every generated required field rejects omission and null at the one JSON d
                 Assert.Equal<bool list>([true; true], actual)
 
 [<Property>]
-let ``every published scalar identity has its own private constructor and preserves its wire value`` (NonNull text: NonNull<string>) =
-    let body = Json.encode text
-    for name in scalarIdentities do
-        let shape = typeof<NodeRecord>.Assembly.GetType($"BibleAtlas.FSharp.Contract.{name}", true)
-        let case = FSharpType.GetUnionCases(shape, true) |> Array.exactlyOne
-        let constructor = FSharpValue.PreComputeUnionConstructorInfo(case, true)
-        let actual =
-            decode shape body
-            |> Result.map (fun value -> shape.IsValueType, case.Name, case.GetFields() |> Array.map _.PropertyType |> Array.toList, constructor.IsPublic, Json.encode value)
-        Assert.Equal(Ok(true, name, [typeof<string>], false, body), actual)
-        let invalid = ["null"; "{}"; "[]"; "true"; "42"] |> List.map (decode shape >> Result.isError)
-        Assert.Equal<bool list>([true; true; true; true; true], invalid)
+let ``every published scalar identity has its own private constructor and preserves its wire value`` (NonNull text: NonNull<string>) (number: int) =
+    match scalarIdentities with
+    | Error error -> Assert.Fail(ContractError.render error)
+    | Ok identities ->
+        Assert.NotEmpty(identities)
+        for name, primitive in identities do
+            let primitiveType =
+                match primitive with
+                | Text -> typeof<string>
+                | Int32 -> typeof<int>
+                | Int64 -> typeof<int64>
+                | Number -> typeof<float>
+                | Boolean -> typeof<bool>
+            let body = Json.encode (sample text number primitiveType)
+            let shape = typeof<NodeRecord>.Assembly.GetType($"BibleAtlas.FSharp.Contract.{name}", true)
+            let case = FSharpType.GetUnionCases(shape, true) |> Array.exactlyOne
+            let constructor = FSharpValue.PreComputeUnionConstructorInfo(case, true)
+            let actual =
+                decode shape body
+                |> Result.map (fun value -> shape.IsValueType, case.Name, case.GetFields() |> Array.map _.PropertyType |> Array.toList, constructor.IsPublic, Json.encode value)
+            Assert.Equal(Ok(false, name, [primitiveType], false, body), actual)
+            let wrongKind = if primitive = Text then "42" else "\"wrong-kind\""
+            let invalid = ["null"; "{}"; "[]"; wrongKind] |> List.map (decode shape >> Result.isError)
+            Assert.Equal<bool list>([true; true; true; true], invalid)
 
 let rec sample (text: string) (number: int) (shape: Type) : obj =
     if shape = typeof<string> then box text
@@ -87,17 +99,11 @@ let wireName (field: Reflection.PropertyInfo) : string = field.GetCustomAttribut
 
 let records = typeof<NodeRecord>.Assembly.GetTypes() |> Array.filter (fun shape -> shape.Namespace = typeof<NodeRecord>.Namespace && FSharpType.IsRecord shape) |> Array.sortBy _.Name
 
-let scalarIdentities: string list =
-    let yaml = YamlStream()
-    use reader = new IO.StringReader(IO.File.ReadAllText(IO.Path.Combine(__SOURCE_DIRECTORY__, "../contracts/openapi.yaml")))
-    yaml.Load reader
-    let root = yaml.Documents[0].RootNode :?> YamlMappingNode
-    let components = root.Children[YamlScalarNode "components"] :?> YamlMappingNode
-    let schemas = components.Children[YamlScalarNode "schemas"] :?> YamlMappingNode
-    schemas.Children
-    |> Seq.choose (fun entry ->
-        let schema = entry.Value :?> YamlMappingNode
-        match schema.Children.TryGetValue(YamlScalarNode "type"), schema.Children.ContainsKey(YamlScalarNode "enum") with
-        | (true, (:? YamlScalarNode as kind)), false when kind.Value = "string" -> Some((entry.Key :?> YamlScalarNode).Value)
-        | _ -> None)
-    |> Seq.toList
+let scalarIdentities: Result<(string * Primitive) list, ContractError> =
+    IO.File.ReadAllText(IO.Path.Combine(__SOURCE_DIRECTORY__, "../contracts/openapi.yaml"))
+    |> ContractDocument.ofText
+    |> ContractReader.read
+    |> Result.map (fun model -> model.Schemas |> List.choose (fun schema ->
+        match schema.Definition with
+        | Identity primitive -> Some(SchemaName.text schema.Name, primitive)
+        | Alias _ | Record _ | Enumeration _ | Tagged _ -> None))

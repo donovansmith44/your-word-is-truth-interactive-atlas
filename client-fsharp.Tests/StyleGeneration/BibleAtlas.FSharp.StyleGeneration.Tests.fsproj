@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><TargetFramework>net10.0</TargetFramework><IsTestProject>true</IsTestProject><IsPackable>false</IsPackable><TreatWarningsAsErrors>true</TreatWarningsAsErrors></PropertyGroup>
+  <ItemGroup><Compile Include="obj/Contract/IdentityFixture.g.fs" /><Compile Include="ReaderLaws.fs" /><Compile Include="WireLaws.fs" /><Compile Include="IdentityLaws.fs" /></ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
+    <PackageReference Include="xunit" Version="2.9.3" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="3.1.4" />
+    <PackageReference Include="FsCheck.Xunit" Version="3.4.0" />
+    <ProjectReference Include="../../client-fsharp.ContractGenerator/BibleAtlas.FSharp.ContractGenerator.fsproj" />
+    <ProjectReference Include="../../client-fsharp/Core/BibleAtlas.FSharp.Core.fsproj" />
+  </ItemGroup>
+  <Target Name="GenerateIdentityFixture" BeforeTargets="CoreCompile" Inputs="$(MSBuildProjectDirectory)/IdentityFixture.yaml;$(MSBuildProjectDirectory)/../../client-fsharp.ContractGenerator/bin/$(Configuration)/net10.0/BibleAtlas.FSharp.ContractGenerator.dll" Outputs="$(MSBuildProjectDirectory)/obj/Contract/IdentityFixture.g.fs">
+    <Exec Command="dotnet &quot;$(MSBuildProjectDirectory)/../../client-fsharp.ContractGenerator/bin/$(Configuration)/net10.0/BibleAtlas.FSharp.ContractGenerator.dll&quot; &quot;$(MSBuildProjectDirectory)/IdentityFixture.yaml&quot; &quot;$(MSBuildProjectDirectory)/obj/Contract/IdentityFixture.g.fs&quot;" />
+  </Target>
+</Project>

@@ -1,0 +1,7 @@
+components:
+  schemas:
+    FixtureText: {type: string}
+    FixtureInt: {type: integer}
+    FixtureLong: {type: integer, format: int64}
+    FixtureNumber: {type: number}
+    FixtureBoolean: {type: boolean}

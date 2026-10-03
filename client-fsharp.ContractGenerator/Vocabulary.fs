@@ -22,7 +22,13 @@ module Vocabulary =
                 Error "the graph vocabulary repeats an edge kind"
             else
                 let output = StringBuilder("// Generated from contracts/atlas-graph-contract/fixtures/graph-vocabulary.json.\nnamespace BibleAtlas.FSharp.Contract\n\nmodule EdgeKinds =\n    let dual kind =\n        match kind with\n")
-                for kind, dual in cases do
-                    output.AppendLine($"        | EdgeKind.{Generator.name kind} -> EdgeKind.{Generator.name dual}") |> ignore
-                Ok(output.ToString().Replace("\r\n", "\n"))
+                let lines =
+                    cases |> List.fold (fun result (kind, dual) ->
+                        result |> Result.bind (fun lines ->
+                            SchemaName.create DocumentPath.root kind |> Result.bind (fun kind ->
+                                SchemaName.create DocumentPath.root dual |> Result.map (fun dual ->
+                                    $"        | EdgeKind.{SchemaName.text kind} -> EdgeKind.{SchemaName.text dual}" :: lines)))) (Ok [])
+                lines |> Result.map (fun lines ->
+                    lines |> List.rev |> List.iter (fun line -> output.AppendLine(line) |> ignore)
+                    output.ToString().Replace("\r\n", "\n")) |> Result.mapError ContractError.render
         with error -> Error error.Message
