@@ -1,6 +1,6 @@
 # Easton doctrinal review — CX-R2 working inventory
 
-**Status: in progress.** The artifact mapping and broad source screening are complete; this is not yet the finished “every doctrinal entry” review required by the brief. Forty passages below have specific review notes; 61 complete source fragments also have explicit contextual dispositions in the coverage ledger. The remaining candidate inventory is mechanically selected and still needs contextual review; unselected entries are not certified doctrinally neutral. No entry has been approved, suppressed or rewritten. Donovan and the Pastor make the rulings.
+**Status: in progress.** The artifact mapping and broad source screening are complete; this is not yet the finished “every doctrinal entry” review required by the brief. 48 passages below have specific review notes; 94 complete source fragments also have explicit contextual dispositions in the coverage ledger. The remaining candidate inventory is mechanically selected and still needs contextual review; unselected entries are not certified doctrinally neutral. No entry has been approved, suppressed or rewritten. Donovan and the Pastor make the rulings.
 
 ## Scope and provenance
 
@@ -48,6 +48,66 @@ To believe that “Jesus is the Christ” is to believe that he is the Anointed,
 
 Review how the entry describes saving faith and Christ’s offices against AC III–V; do not infer a disagreement merely from the three-office vocabulary. No specific contradiction is identified in this excerpt. [Confessional comparison](https://bookofconcord.org/augsburg-confession/).
 
+### David — degree 929
+
+Source `recjfmQi1zQEWPmfp` · family `d-p61.10` · served text: `Person:david_994` (929).
+
+```text
+“The greatness of David was felt when he was gone. He had lived in harmony with both the priesthood and the prophets; a sure sign that the spirit of his government had been throughly loyal to the higher aims of the theocracy. The nation had not been oppressed by him, but had been left in the free enjoyment of its ancient liberties. As far as his power went he had striven to act justly to all ([2 Sam. 8:15](/2sam#2Sam.8.15)). His weak indulgence to his sons, and his own great sin besides, had been bitterly atoned, and were forgotten at his death in the remembrance of his long-tried worth. He had reigned thirty-three years in Jerusalem and seven and a half at Hebron ([2 Sam. 5:5](/2sam#2Sam.5.5)). Israel at his accession had reached the lowest point of national depression; its new-born unity rudely dissolved; its territory assailed by the Philistines. But he had left it an imperial power, with dominions like those of Egypt or Assyria. The sceptre of Solomon was already, before his father’s death, owned from the Mediterranean to the Euphrates, and from the Orontes to the Red Sea.”, Geikie’s Hours etc., iii.
+```
+
+Review what “bitterly atoned” means here. The earlier account distinguishes David’s repentance and spiritual recovery; this closing quotation concerns his sufferings and remembered reputation. Compare AC XII and distinguish temporal chastisement/consequences from satisfaction for sin or the ground of forgiveness. Do not infer from the word alone that Easton teaches David earned divine pardon. [Confessional comparison](https://bookofconcord.org/augsburg-confession/of-repentance/).
+
+### Moses — degree 792
+
+Source `recoLBM9tfRWWXFMb` · family `m-p458.3` · served text: `Person:moses_2108` (792).
+
+```text
+In the New Testament he is referred to as the representative of the law and as a type of Christ ([John 1:17](/john#John.1.17); [2 Cor. 3:13-18](/2cor#2Cor.3.13); [Heb. 3:5](/heb#Heb.3.5), [6](/heb#Heb.3.6)). Moses is the only character in the Old Testament to whom Christ likens himself ([John 5:46](/john#John.5.46); comp. [Deut. 18:15](/deut#Deut.18.15), [18](/deut#Deut.18.18), [19](/deut#Deut.18.19); [Acts 7:37](/acts#Acts.7.37)). In [Heb. 3:1-19](/heb#Heb.3.1) this likeness to Moses is set forth in various particulars.
+```
+
+Flag the exclusive claim that Christ likens himself to Moses alone: compare Matthew 12:40, where Jesus explicitly compares the Son of man with Jonah, alongside the supplied Deuteronomy 18/John 5/Hebrews 3 passages. This is a Scripture-faithfulness/typology review point, not evidence of a distinctively Presbyterian doctrine. The Pastor determines the disposition. Matthew 12:40 checked in the KJV on 2026-10-03: [Matthew 12:40, KJV](https://www.biblegateway.com/passage/?search=Matthew%2012%3A40&version=KJV). [Confessional comparison](https://bookofconcord.org/solid-declaration/rule-and-norm/).
+
+### Jordan 3 — degree 594
+
+Source `recYKg2P749Siw5wQ` · family `j-p433.2` · served text: `Place:jordan` (594).
+
+```text
+“In the whole valley of the Jordan from the Lake Huleh to the Sea of Galilee there is not a single settled inhabitant. Along the whole eastern bank of the river and the lakes, from the base of Hermon to the ravine of Hieromax, a region of great fertility, 30 miles long by 7 or 8 wide, there are only some three inhabited villages. The western bank is almost as desolate. Ruins are numerous enough. Every mile or two is an old site of town or village, now well nigh hid beneath a dense jungle of thorns and thistles. The words of Scripture here recur to us with peculiar force: ‘I will make your cities waste, and bring your sanctuaries unto desolation...And I will bring the land into desolation: and your enemies which dwell therein shall be astonished at it...And your land shall be desolate, and your cities waste. Then shall the land enjoy her sabbaths, as long as it lieth desolate’ ([Lev. 26:31-34](/lev#Lev.26.31)).”, Dr. Porter’s Handbook.
+```
+
+Review the application of Leviticus 26’s covenant judgment to the nineteenth-century desolation described by Porter. Compare the passage in its original context and FC SD V’s distinction of law and gospel; the geographical observation alone does not prove a particular divine judgment. This is an interpretive application flag, not a finding that law/prophecy or temporal judgment is incompatible with Lutheran teaching. [Confessional comparison](https://bookofconcord.org/solid-declaration/law-and-gospel/).
+
+### Olives, Mount of — degree 397
+
+Source `recC7fSBLLGFQGC8R` · family `o-p49.3` · served text: `Place:mount-of-olives` (397).
+
+```text
+It is frequently mentioned in the New Testament ([Matt. 21:1](/matt#Matt.21.1); [26:30](/matt#Matt.26.30), etc.). It now bears the name of Jebel et-Tur, i.e., “Mount of the Summit;” also sometimes called Jebel ez-Zeitun, i.e., “Mount of Olives.” It is about 200 feet above the level of the city. The road from Jerusalem to Bethany runs as of old over this mount. It was on this mount that Jesus stood when he wept over Jerusalem. “No name in Scripture,” says Dr. Porter, “calls up associations at once so sacred and so pleasing as that of Olivet. The ‘mount’ is so intimately connected with the private, the devotional life of the Saviour, that we read of it and look at it with feelings of deepest interest and affection. Here he often sat with his disciples, telling them of wondrous events yet to come, of the destruction of the Holy City; of the sufferings, the persecution, and the final triumph of his followers ([Matt. 24](/matt#Matt.24)). Here he gave them the beautiful parables of the ten virgins and the five talents (25); here he was wont to retire on each evening for meditation, and prayer, and rest of body, when weary and harassed by the labours and trials of the day ([Luke 21:37](/luke#Luke.21.37)); and here he came on the night of his betrayal to utter that wonderful prayer, ‘O my Father, if it be possible, let this cup pass from me: nevertheless not as I will, but as thou wilt’ ([Matt. 26:39](/matt#Matt.26.39)). And when the cup of God’s wrath had been drunk, and death and the grave conquered, he led his disciples out again over Olivet as far as to Bethany, and after a parting blessing ascended to heaven ([Luke 24:50](/luke#Luke.24.50), [51](/luke#Luke.24.51); [Acts 1:12](/acts#Acts.1.12)).”
+```
+
+This paragraph directly describes Christ’s suffering, victory over death and ascension. Compare AC III; no specific Lutheran contradiction is identified in it. Historical/devotional associations with a site do not make the site itself a means of forgiveness. [Confessional comparison](https://bookofconcord.org/augsburg-confession/son-of-god/).
+
+### Aaron — degree 340
+
+Source `recQNbmhvjXqt0wHQ` · family `a-p1.11` · served text: `Person:aaron_1` (340).
+
+```text
+He was the first anointed priest. His descendants, “the house of Aaron,” constituted the priesthood in general. In the time of David they were very numerous ([1 Chr. 12:27](/1chr#1Chr.12.27)). The other branches of the tribe of Levi held subordinate positions in connection with the sacred office. Aaron was a type of Christ in his official character as the high priest. His priesthood was a “shadow of heavenly things,” and was intended to lead the people of Israel to look forward to the time when “another priest” would arise “after the order of Melchizedek” ([Heb. 6:20](/heb#Heb.6.20)).
+```
+
+The entry expressly teaches priestly typology and fulfillment in Christ. Compare AC III and Hebrews 6–10; no specific Lutheran conflict is identified in this paragraph. Preserve the distinction between Aaron’s provisional office and Christ’s completed saving work. [Confessional comparison](https://bookofconcord.org/augsburg-confession/son-of-god/).
+
+### Abraham — degree 299
+
+Source `reccw8Hfkcr6mcO45` · family `a-p97.4` · served text: `Person:abraham_58` (299).
+
+```text
+Abram now, with a large household of probably a thousand souls, entered on a migratory life, and dwelt in tents. Passing along the valley of the Jabbok, in the land of Canaan, he formed his first encampment at Sichem ([Gen. 12:6](/gen#Gen.12.6)), in the vale or oak-grove of Moreh, between Ebal on the north and Gerizim on the south. Here he received the great promise, “I will make of thee a great nation,” etc. ([Gen. 12:2](/gen#Gen.12.2), [3](/gen#Gen.12.3), [7](/gen#Gen.12.7)). This promise comprehended not only temporal but also spiritual blessings. It implied that he was the chosen ancestor of the great Deliverer whose coming had been long ago predicted ([Gen. 3:15](/gen#Gen.3.15)). Soon after this, for some reason not mentioned, he removed his tent to the mountain district between Bethel, then called Luz, and Ai, towns about two miles apart, where he built an altar to “Jehovah.” He again moved into the southern tract of Palestine, called by the Hebrews the Negeb; and was at length, on account of a famine, compelled to go down into Egypt. This took place in the time of the Hyksos, a Semitic race which now held the Egyptians in bondage. Here occurred that case of deception on the part of Abram which exposed him to the rebuke of Pharaoh ([Gen. 12:18](/gen#Gen.12.18)). Sarai was restored to him; and Pharaoh loaded him with presents, recommending him to withdraw from the country. He returned to Canaan richer than when he left it, “in cattle, in silver, and in gold” ([Gen. 12:8](/gen#Gen.12.8); [13:2](/gen#Gen.13.2). Comp. [Ps. 105:13](/ps#Ps.105.13), [14](/ps#Ps.105.14)). The whole party then moved northward, and returned to their previous station near Bethel. Here disputes arose between Lot’s shepherds and those of Abram about water and pasturage. Abram generously gave Lot his choice of the pasture-ground. (Comp. [1 Cor. 6:7](/1cor#1Cor.6.7).) He chose the well-watered plain in which Sodom was situated, and removed thither; and thus the uncle and nephew were separated. Immediately after this Abram was cheered by a repetition of the promises already made to him, and then removed to the plain or “oak-grove” of Mamre, which is in Hebron. He finally settled here, pitching his tent under a famous oak or terebinth tree, called “the oak of Mamre” ([Gen. 13:18](/gen#Gen.13.18)). This was his third resting-place in the land.
+```
+
+The entry explicitly relates the patriarchal promise to spiritual blessings and the promised Deliverer. Compare AC III/IV; no specific conflict is identified here. Its covenant/circumcision and tested-faith narrative should remain distinct from claiming that Abraham’s obedience merited the promise. [Confessional comparison](https://bookofconcord.org/augsburg-confession/son-of-god/).
+
 ### Holy Ghost — degree 260
 
 Source `rec3jVXWxvLXHF7X3` · family `h-p400.13` · served text: `Person:holy_spirit_7400` (260).
@@ -57,6 +117,26 @@ The third Person of the adorable Trinity.
 ```
 
 The served description directly teaches the Trinity. Check its complete personal/divine-attribute argument against AC I and III. No specific conflict is identified in the quoted opening. [Confessional comparison](https://bookofconcord.org/augsburg-confession/of-god/).
+
+### Tiberias — degree 221
+
+Source `recqLvYFsLt3UIq9A` · family `t-p170.2` · served text: `Place:tiberias` (221).
+
+```text
+In 1837 about one-half of the inhabitants perished by an earthquake. The population of the city is now about six thousand, nearly the one-half being Jews. “We do not read that our Lord ever entered this city. The reason of this is probably to be found in the fact that it was practically a heathen city, though standing upon Jewish soil. Herod, its founder, had brought together the arts of Greece, the idolatry of Rome, and the gross lewdness of Asia. There were in it a theatre for the performance of comedies, a forum, a stadium, a palace roofed with gold in imitation of those in Italy, statues of the Roman gods, and busts of the deified emperors. He who was not sent but to the lost sheep of the house of Israel might well hold himself aloof from such scenes as these” (Manning’s Those Holy Fields).
+```
+
+Review the conjectured reason for Christ not entering this city: the source itself says “probably.” Distinguish the historical scope of his earthly mission from excluding Gentiles from his saving work and gospel; compare AC III and Matthew 15/28. Do not present the conjecture about city avoidance as a recorded saying or an established doctrinal disagreement. [Confessional comparison](https://bookofconcord.org/augsburg-confession/son-of-god/).
+
+### Joshua — degree 195
+
+Source `recirbfCkBPtHP891` · family `j-p458.3` · served text: `Person:joshua_1727` (195), `Person:joshua_1728` (2), `Person:joshua_1729` (1).
+
+```text
+Joshua has been regarded as a type of Christ ([Heb. 4:8](/heb#Heb.4.8)) in the following particulars: (1) In the name common to both; (2) Joshua brings the people into the possession of the Promised Land, as Jesus brings his people to the heavenly Canaan; and (3) as Joshua succeeded Moses, so the Gospel succeeds the Law.
+```
+
+Review the claim that the Gospel succeeds the Law within this typology. Distinguish historical succession/fulfillment from abolishing the continuing distinction and proclamation of law and gospel; FC SD V is the comparison point. The wording does not by itself establish that the entry abolishes the Law. [Confessional comparison](https://bookofconcord.org/solid-declaration/law-and-gospel/).
 
 ### John the Baptist — degree 93
 
@@ -428,12 +508,37 @@ Perfect sanctification is not attainable in this life ([1 Kings 8:46](/1kgs#1Kgs
 
 The entry explicitly rejects perfection in this life. Preserve that qualification when reviewing its opening language about carrying regeneration to perfection; compare AC XII. No perfectionist contradiction is identified in this paragraph. [Confessional comparison](https://bookofconcord.org/augsburg-confession/of-repentance/).
 
-## Contextual coverage ledger — 2026-10-01
+## Contextual coverage ledger — continued 2026-10-03
 
-These 61 complete fragments were read in context, including numbered siblings and the Effectual call cross-reference. A disposition of no specific conflict is a review observation, not pastoral approval. The remaining rows still require examination. Confessional comparison links were checked against the published texts on 2026-10-01.
+These 94 complete fragments were read in context, including numbered siblings and the Effectual call cross-reference. A disposition of no specific conflict is a review observation, not pastoral approval. The remaining rows still require examination. Confessional comparison links were checked against the published texts on 2026-10-01; the new FC SD V, rule/norm and AC III links, and Matthew 12:40, were checked on 2026-10-03.
 
 | Source | Heading | Contextual disposition |
 |---|---|---|
+| `recFoDoSDqAKkMCtw` | Jerusalem | Complete city-history/site entry read. Religious buildings, pilgrimage and destruction are historical context; no specific Christian doctrinal conflict identified. This is not certification of its geographical/dating claims. |
+| `recaI03cdUrqCbVQE` | Egypt | Complete entry read. Pantheism, animal worship, resurrection and the Osiris/Isis/Horus group are described as Egyptian religion, not taught as Christianity; no specific Christian doctrinal conflict identified. Historical, chronological and racial wording is outside this doctrinal disposition. |
+| `recPxmjv7HmVeGVSD` | Jacob | Complete patriarchal narrative read, including the promised Seed, covenant, prayer and providential chastisement. No specific Lutheran conflict identified; descriptions of historical polygamy/deception do not prescribe them. |
+| `recjfmQi1zQEWPmfp` | David | Complete biography read; added qualified review of “bitterly atoned,” retaining its earlier repentance/recovery context. National kingship/election is not automatically election to salvation. |
+| `recoLBM9tfRWWXFMb` | Moses | Complete biography read; added Scripture-faithfulness flag on exclusive Christ/Moses likeness. Law/Christ typology remains distinct from a denial of the gospel in the Old Testament. |
+| `recYKg2P749Siw5wQ` | Jordan 3 | Complete family fragment read with opening and 1–2/4–6; added the Leviticus judgment application for review rather than treating it as bare geography. |
+| `recC7fSBLLGFQGC8R` | Olives, Mount of | Complete entry read; added saving-work paragraph for review. Traditional summit/site identifications and devotional descriptions are not doctrinal grounds. |
+| `rec83U8zSuj1t0LQE` | Galilee | Complete entry read. Geography, Gospel-event inventory and the Sanhedrin’s reported contempt are historical context; no specific Christian doctrinal conflict identified. |
+| `rec2ViW34gK303O6F` | Bethsaida 2 | Complete numbered fragment read. Miracle-setting/location description; no doctrinal assertion about sacramental reception or salvation. |
+| `recS8MqXkkRIE1rnA` | Golgotha | Complete entry read. Crucifixion setting and disputed site identification, with no further account of the atonement; no specific doctrinal conflict identified. |
+| `recQNbmhvjXqt0wHQ` | Aaron | Complete biography read; added high-priest/Christ typology paragraph. Recorded sins, forgiveness and priestly appointment are kept distinct from imposing Aaronic polity on the Christian ministry. |
+| `recherNi3exKJw4wQ` | Gethsemane | Complete entry read. Christ’s agony is recalled in a garden/site discussion; no doctrinal claim about either nature or will beyond that recollection identified. |
+| `recszpyGuOXaIj3JD` | Capernaum | Complete entry read. Recorded unbelief/judgment and a quotation from John 6 occur in a geographical/synagogue discussion; no oral-reception or sacramental-denial thesis stated here. |
+| `reccw8Hfkcr6mcO45` | Abraham | Complete biography read; added the promised-Deliverer paragraph. Covenant, circumcision and tested faith are narrative context, with no explicit faith/works condition for justification asserted. |
+| `recTj9stfSW84FZ9q` | Judah | Complete patriarchal fragment read. Praise, family conduct and blessing are historical narrative; no specific Christian doctrinal conflict identified. |
+| `recIblkI6GS90sPa8` | Nazareth | Complete entry read. Incarnation/virgin-birth recollection and a discussion of unbelief/site/name theories; no specific Lutheran conflict identified. This does not certify its site/name conjectures. |
+| `rec1eO6QbgYOpxsNO` | Gadara | Complete entry read. Demon-healing narrative in a site discussion; no specific Christian doctrinal conflict identified. Traveller-description language is not approved by this limited doctrinal disposition. |
+| `recqLvYFsLt3UIq9A` | Tiberias | Complete entry read; added qualified review of the conjectured restriction of Christ’s city visits. Rabbinical/Masoretic history is contextual, not an asserted new source of Christian doctrine. |
+| `recaosOHQl3jhhelR` | Caesara Philippi | Complete entry read. Pagan sanctuary/imperial worship and Gospel-ministry geography are historical context; no Christian adoption of that worship asserted. |
+| `recirbfCkBPtHP891` | Joshua | Complete entry read; added law/gospel succession typology for review. Circumcision/Passover and conquest references remain historical observances, not imposed Christian rites. |
+| `recW4NnksZcT0wGRF` | Esau | Complete entry read. Birthright/covenant blessing and national conflict, without asserting unconditional damnation or a general decree of reprobation. |
+| `recZxZ4LLDtezvPJT` | Zion | Complete entry read. Geographical and church/heavenly-city senses of the name; no specific Christian doctrinal conflict identified. |
+| `rec7FCSm1R9DdPP1K` | Emmaus | Complete entry read. Resurrection-day meeting in a disputed-site discussion; no specific Christian doctrinal conflict identified. |
+| `rec78MHu2L6oVYLIx` | Isaac 1 | Complete numbered fragment read. Covenant promise and cited New Testament contrasts are narrative/typological context, without a general decree of reprobation asserted. |
+| `recEVTygvYxkRHTCJ` | Bethsaida 1 | Complete family fragment read with opening and fragment 2; apostles/ministry and site description, no specific doctrinal conflict identified. |
 | `recWR53AYL0ujtLo0` | Adoption | General lexical definition, not yet spiritual adoption. |
 | `recWNh1YAMoCt2AoM` | Adoption 1 | Historical family adoption examples; no doctrinal conflict identified. |
 | `rec9c52uOcndVtnwO` | Adoption 2 | National adoption citations; do not equate this with individual election to salvation. |
@@ -445,6 +550,7 @@ These 61 complete fragments were read in context, including numbered siblings an
 | `recd4jkCMKpeHouiB` | Baptism of Christ | Christological; added qualified substitution/office note. |
 | `rectZZHERX5H3EIto` | Baptism, Christian | Complete entry reread, including mode and infant-membership argument; existing sacramental-symbolism note retained. |
 | `recoet7kzsK8KZ6q7` | Baptism, John’s | Doctrinal/exegetical; added faith/rebaptism question. |
+| `recDDez3mBBSsonOn` | Bethsaida | Complete family opening read with fragments 1–2; name etymology only, no doctrinal claim. |
 | `recG0BvuVUyiHBdge` | Bishop | Added note avoiding an unwarranted Presbyterian-versus-Lutheran inference. |
 | `recZ2WiMrsL0tCKo2` | Call 1 | Calling on the Lord/prayer sense; no specific conflict identified. |
 | `recZNJjnKaw2pGCdq` | Call 2 | Added internal effectual-call/outward-Word question. |
@@ -475,6 +581,13 @@ These 61 complete fragments were read in context, including numbered siblings an
 | `recyfs4VfwvE1gACx` | Grace 7 | Future-glory sense; no specific conflict identified. |
 | `recg0CBYukCLBhKXi` | Grace, means of | Doctrinal; added prayer/means distinction question. |
 | `recIdEtc1nCEEsgoL` | Grace, means of 1 | Doctrinal usage; added parent-context note. |
+| `reco4rtmn0kykl3vj` | Isaac | Complete family opening read with fragment 1; geographical/national sense of the name, no personal predestination claim. |
+| `rectzeVDTWlR4migx` | Jordan | Complete family opening read with fragments 1–6. River etymology/source geography; no specific doctrinal claim in this fragment. |
+| `recn7LP0BQecYCnwS` | Jordan 1 | Complete family fragment read with opening and 2–6. Spring/source geography only; no specific doctrinal claim in this fragment. |
+| `reccPlR5WBvvewj1C` | Jordan 2 | Complete family fragment read with opening, 1 and 3–6. Spring/source geography only; no specific doctrinal claim in this fragment. |
+| `recr8of29PLFMyWy0` | Jordan 4 | Complete family fragment read with opening and 1–3/5–6. Tributary geography only; no specific doctrinal claim in this fragment. |
+| `recxipXViqnzLhlyd` | Jordan 5 | Complete family fragment read with opening and 1–4/6. Miraculous crossings and John’s historical baptismal ministry; no assertion about the Christian sacrament’s gift or mode. |
+| `recEzHsl2g9QURALH` | Jordan 6 | Complete family fragment read with opening and 1–5. Christ’s baptism recalled in one verse citation; no specific Lutheran conflict identified. |
 | `recEyTAdgltFmScJh` | Justification | Complete forensic/imputed/instrumental account read; existing note preserves its express denial of faith’s merit. |
 | `recnhRxODiGy5JEWs` | Lord’s day | Historical Sunday usage; does not by itself impose a permanent day-law. |
 | `rec1IHbeuH4UJSiEU` | Lord’s Supper | Names, institution citations and introduction to numbered purposes; no separate conflict beyond family notes. |
@@ -496,7 +609,7 @@ These 61 complete fragments were read in context, including numbered siblings an
 | `recA066oodY2jUv2A` | Sabbath day’s journey | Reports Jewish travel-distance tradition; does not impose it on Christians. |
 | `recUo8Q9gX8NkWytZ` | Sanctification | Added no-perfection-in-this-life qualification. |
 
-Coverage: 69 distinct source rows have a specific note or contextual disposition; 1,980 screened candidates remain without either. The 4,313 nonempty unselected rows still require the separate semantic sweep.
+Coverage: 102 distinct source rows have a specific note or contextual disposition; 1,954 screened candidates remain without either. Of the original 4,313 nonempty unselected rows, 4,304 remain without a contextual disposition and still require the separate semantic sweep.
 
 ## Broad screening inventory — contextual review pending
 
@@ -2569,9 +2682,11 @@ The following table is a worklist, not 2,047 findings of doctrinal error. Every 
 | `recl49s5PnsE7og6n` / `z-p160.2` / Zilthai | 0; no matching description | D8 | 0: <code>&#10;Shadow (i.e., protection) of Jehovah. </code> |
 | `recjn64eHRHf4dwrq` / `z-p167.2` / Zin | 0; no matching description | D9 | 125: …<code>ead of the Wady Guraiyeh ([Num. 13:21](/num#Num.13.21)). To be distinguished from the wilderness of Sin (q.v.).</code> |
 
+Exposure is pinned to the item’s 678a0d2 artifact, not the live app. A-NOBLURB subsequently removed place blurbs on trunk at a7d9930; these source dispositions do not propose restoring them or claim those place descriptions are currently displayed.
+
 ## Continuation and validation
 
-Next: continue from the contextual coverage ledger; review the remaining screened candidates without a note or disposition, classify historical-only hits, and sweep the 4,313 nonempty unselected rows for doctrinal claims that the screen misses. Preserve numbered-family context. Then add passage-specific questions where warranted and set CX-R2 to review. No owner input is needed to continue this analysis.
+Next: continue from the contextual coverage ledger; review the remaining screened candidates without a note or disposition, classify historical-only hits, and sweep the remaining nonempty unselected rows for doctrinal claims that the screen misses. Preserve numbered-family context. Then add passage-specific questions where warranted and set CX-R2 to review. No owner input is needed to continue this analysis.
 
 Checks: all five compressed artifact hashes match the base manifest; 4,454 entity nodes inventoried; 3,170 carry descriptions; 3,169 have a source-text equivalent. Candidate IDs are unique, all excerpts are literal substrings, and prominence order is descending. No Rust build, lock, application-code change, data refresh or artifact rebuild was needed.
 
