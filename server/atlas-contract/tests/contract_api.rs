@@ -20,7 +20,7 @@ async fn the_contract_declares_only_the_schema_versions_it_was_built_with() {
     let app = app();
     let expected = serde_json::json!({
         "manifest_schema": 1,
-        "section_schema_version": 26,
+        "section_schema_version": 27,
     });
     // Act
     let answered = get_json(&app, "/api/contract").await;

@@ -431,7 +431,7 @@ async fn person_record_and_mentioned_in_adjacency_are_served_by_the_generic_endp
     assert_eq!(body["id"], "Person:aaron_1");
     assert_eq!(body["kind"], "Person");
     assert_eq!(body["label"], "Aaron");
-    assert_eq!(body["provenance"], "theographic-people");
+    assert_eq!(body["provenance"], serde_json::json!({"id": "theographic-people", "title": "Theographic Bible Metadata"}));
     let summary: Vec<serde_json::Value> = body["edge_summary"].as_array().unwrap().clone();
     let mentioned_in = summary.iter().find(|e| e["kind"] == "mentioned-in").expect("aaron_1 must carry a real mentioned-in frontier");
     assert_eq!(mentioned_in["count"], 331, "Aaron's 331 resolved verse links: one edge per verse, however many times the verse names him");
@@ -1039,7 +1039,7 @@ async fn chapter_container_record_and_adjacencies_are_served_by_the_generic_endp
     assert_eq!(body["id"], "Container:bible-chapter-JHN-3");
     assert_eq!(body["kind"], "Container");
     assert_eq!(body["label"], "John 3", "the reader's own display name (canon::BOOKS name + chapter)");
-    assert_eq!(body["provenance"], "kjv");
+    assert_eq!(body["provenance"], serde_json::json!({"id": "kjv", "title": "The King James Version"}));
     let summary = body["edge_summary"].as_array().unwrap();
     let contains = summary.iter().find(|e| e["kind"] == "contains").expect("a chapter's Members frontier");
     assert_eq!(contains["count"], 36, "John 3 has 36 verses");
@@ -1086,7 +1086,7 @@ async fn a_verses_record_carries_its_texts_provenance() {
     let (st, body, _h) = get(&app, "/api/node/text-unit:GEN.1.1").await;
     assert_eq!(st, StatusCode::OK);
 
-    assert_eq!(body["provenance"], "kjv", "a verse's text is the King James Version's, and must say so");
+    assert_eq!(body["provenance"], serde_json::json!({"id": "kjv", "title": "The King James Version"}), "a verse's text is the King James Version's, and must say so");
 }
 
 #[tokio::test]
@@ -1095,21 +1095,21 @@ async fn event_detail_carries_its_own_provenance_and_its_sections_own_sources() 
 
     let (st, body, _h) = get(&app, "/api/event/theo-249").await;
     assert_eq!(st, StatusCode::OK);
-    assert_eq!(body["provenance"], "theographic");
+    assert_eq!(body["provenance"], serde_json::json!({"id": "theographic", "title": "Theographic Bible Metadata"}));
     assert!(body.get("witnesses_provenance").is_none(), "an event with no accounts must not carry an accounts attribution");
     assert_eq!(
         body["mentions_provenance"].as_array().expect("a mention-only event must attribute its mentions"),
-        &vec![serde_json::json!("attestation-corrections")],
+        &vec![serde_json::json!({"id": "attestation-corrections", "title": "Our Own Curated Work"})],
         "the retyped mentions are ATTEST-1's own hand-authored corrections, and must report as such"
     );
 
     let (st, body, _h) = get(&app, "/api/event/mat_leper_healed").await;
     assert_eq!(st, StatusCode::OK);
-    assert_eq!(body["provenance"], "curated", "a hand-authored event must never report as Theographic");
+    assert_eq!(body["provenance"], serde_json::json!({"id": "curated", "title": "Our Own Curated Work"}), "a hand-authored event must never report as Theographic");
 
     let analogues = body["analogues"].as_array().expect("analogues array");
     assert_eq!(analogues.len(), 1);
-    assert_eq!(analogues[0]["provenance"], "attestation-corrections");
+    assert_eq!(analogues[0]["provenance"], serde_json::json!({"id": "attestation-corrections", "title": "Our Own Curated Work"}));
 }
 
 #[tokio::test]
@@ -1119,8 +1119,9 @@ async fn no_provenance_field_the_wire_serves_is_ever_blank() {
     let mut checked = 0usize;
     let mut populated = 0usize;
     let mut check = |label: &str, v: &serde_json::Value, require_non_empty: bool| {
-        if let Some(s) = v.as_str() {
-            assert!(!s.trim().is_empty(), "{label} rode the wire as a BLANK provenance -- the silent blank requirement 3 forbids");
+        if v.is_object() {
+            assert!(!v["id"].as_str().unwrap_or("").trim().is_empty(), "{label} rode the wire as a BLANK provenance -- the silent blank requirement 3 forbids");
+            assert!(!v["title"].as_str().unwrap_or("").trim().is_empty(), "{label} rode the wire with no source title");
             checked += 1;
         }
         if let Some(a) = v.as_array() {
@@ -1133,8 +1134,9 @@ async fn no_provenance_field_the_wire_serves_is_ever_blank() {
                 populated += 1;
             }
             for x in a {
-                let s = x.as_str().unwrap_or_else(|| panic!("{label} must be a list of strings"));
-                assert!(!s.trim().is_empty(), "{label} carries a BLANK provenance id in its list");
+                assert!(x.is_object(), "{label} must be a list of provenances");
+                assert!(!x["id"].as_str().unwrap_or("").trim().is_empty(), "{label} carries a BLANK provenance id in its list");
+                assert!(!x["title"].as_str().unwrap_or("").trim().is_empty(), "{label} carries a provenance with no source title in its list");
                 checked += 1;
             }
         }
@@ -1185,7 +1187,7 @@ async fn the_bare_array_endpoints_attribute_their_rows_so_a_passage_gets_a_quest
     for x in xrefs {
         assert_eq!(
             x["provenance"].as_array().expect("every cross-reference row carries its own attribution"),
-            &vec![serde_json::json!("openbible.info-cross-references")],
+            &vec![serde_json::json!({"id": "openbible.info-cross-references", "title": "OpenBible.info Cross-References"})],
             "the owner's own headline source, now on a PASSAGE's rows too"
         );
     }
@@ -1196,7 +1198,7 @@ async fn the_bare_array_endpoints_attribute_their_rows_so_a_passage_gets_a_quest
 }
 
 #[tokio::test]
-async fn every_provenance_id_the_wire_serves_resolves_to_a_registry_source() {
+async fn every_provenance_the_wire_serves_names_a_registry_source_and_carries_its_title() {
     let registry: atlas_core::sources::SourcesDocument = {
         let path = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data/compiled/sources.json");
         serde_json::from_str(&std::fs::read_to_string(&path).expect("sources.json must exist")).expect("sources.json must parse")
@@ -1208,14 +1210,11 @@ async fn every_provenance_id_the_wire_serves_resolves_to_a_registry_source() {
     let (_st, xrefs, _h) = get(&app, "/api/xrefs/EXO.20.3-4").await;
     let (_st, catechism, _h) = get(&app, "/api/catechism/MAT.28.19-20").await;
 
-    let mut served: Vec<String> = Vec::new();
+    let mut served: Vec<(String, String)> = Vec::new();
     let mut push = |v: &serde_json::Value| {
-        if let Some(s) = v.as_str() {
-            served.push(s.to_string());
-        }
-        if let Some(a) = v.as_array() {
-            served.extend(a.iter().filter_map(|x| x.as_str().map(str::to_string)));
-        }
+        let titled = |x: &serde_json::Value| Some((x["id"].as_str()?.to_string(), x["title"].as_str()?.to_string()));
+        served.extend(titled(v));
+        served.extend(v.as_array().into_iter().flatten().filter_map(titled));
     };
     push(&verse["provenance"]);
     push(&event["provenance"]);
@@ -1232,15 +1231,13 @@ async fn every_provenance_id_the_wire_serves_resolves_to_a_registry_source() {
     }
 
     assert!(served.len() > 4, "the wire must actually be carrying provenance for this test to mean anything (got {served:?})");
-    for id in &served {
+    for (id, title) in &served {
         let kind = atlas_core::sources::split_provenance_id(id).0;
         let row = registry.provenances.iter().find(|p| p.id == kind);
         let row = row.unwrap_or_else(|| panic!("wire provenance id '{id}' resolves to no registry row"));
-        assert!(
-            registry.sources.iter().any(|s| s.id == row.source),
-            "wire provenance id '{id}' names source '{}', which does not exist",
-            row.source
-        );
+        let source = registry.sources.iter().find(|s| s.id == row.source);
+        let source = source.unwrap_or_else(|| panic!("wire provenance id '{id}' names source '{}', which does not exist", row.source));
+        assert_eq!(title, &source.title, "wire provenance id '{id}' must carry the title of the source it names");
     }
 }
 
@@ -1458,7 +1455,7 @@ async fn the_record_for_genesis_1_names_its_kind_and_its_three_adjacency_groups(
             "id": GENESIS_1,
             "kind": "Container",
             "label": "Genesis 1",
-            "provenance": "kjv",
+            "provenance": { "id": "kjv", "title": "The King James Version" },
             "edge_summary": [
                 { "kind": "contains", "count": VERSES_IN_GENESIS_1 },
                 { "kind": "member-of", "count": 1 },
@@ -1586,7 +1583,7 @@ async fn the_map_for_the_first_era_shows_its_events_places_and_polities_and_is_f
             "id": FIRST_ERA_MAP,
             "kind": "Map",
             "label": FIRST_ERA_NAME,
-            "provenance": "curated-eras",
+            "provenance": { "id": "curated-eras", "title": "Our Own Curated Work" },
             "edge_summary": [
                 { "kind": "follows-in", "count": THE_NEXT_MAP },
                 { "kind": "shows", "count": shows },
@@ -1643,7 +1640,7 @@ async fn each_corpus_has_one_root_that_contains_its_top_level_containers() {
             "id": BIBLE_ROOT,
             "kind": "Container",
             "label": "The Holy Bible",
-            "provenance": "kjv",
+            "provenance": { "id": "kjv", "title": "The King James Version" },
             "edge_summary": [ { "kind": "contains", "count": BOOKS_IN_THE_BIBLE } ],
             "version": bible_version,
         })
@@ -1654,7 +1651,7 @@ async fn each_corpus_has_one_root_that_contains_its_top_level_containers() {
             "id": CONCORD_ROOT,
             "kind": "Container",
             "label": "The Book of Concord",
-            "provenance": "concord",
+            "provenance": { "id": "concord", "title": "The Book of Concord" },
             "edge_summary": [ { "kind": "contains", "count": DOCUMENTS_IN_THE_CONCORD } ],
             "version": concord_version,
         })
@@ -2404,9 +2401,10 @@ fn edge_summary_of(at: &atlas_graph_types::id::Position) -> serde_json::Value {
     )
 }
 
-fn provenance_of(edge: &str) -> String {
+fn provenance_of(edge: &str) -> serde_json::Value {
     use atlas_graph_types::store::GraphQuery;
-    served_snapshot().row_provenance(&atlas_graph_types::edge::EdgeId(edge.to_string())).expect("a row records the edge").provenance
+    let id = served_snapshot().row_provenance(&atlas_graph_types::edge::EdgeId(edge.to_string())).expect("a row records the edge").provenance;
+    serde_json::to_value(atlas_contract::provenance::titled(&id, &real_atlas().0).expect("every row provenance is titled")).unwrap()
 }
 
 fn node_position(record: &serde_json::Value) -> serde_json::Value {

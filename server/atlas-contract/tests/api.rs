@@ -11,7 +11,7 @@ use axum::http::{Request, StatusCode};
 use http_body_util::BodyExt;
 use tower::ServiceExt;
 
-use common::titled_fixture::titled_demo_fixture;
+use common::titled_fixture::{titled, titled_demo_fixture};
 
 fn graph_fixture_for(data: &AtlasData) -> Arc<atlas_graph::GraphService> {
     let xrefs_tsv = xrefs_tsv_from(data);
@@ -229,7 +229,7 @@ async fn event_endpoint_omits_when_for_general_kind_passages() {
             ..Default::default()
         },
     ];
-    let data = AtlasData::new(Canon { books: vec![] }, vec![], events, vec![], vec![], vec![], verses, HashMap::new()).finish();
+    let data = titled(AtlasData::new(Canon { books: vec![] }, vec![], events, vec![], vec![], vec![], verses, HashMap::new()).finish());
     let graph = graph_fixture_for(&data);
     let app = atlas_contract::app::build(Arc::new(data), graph, None);
 
@@ -320,7 +320,7 @@ async fn event_endpoint_carries_acts_section_when_present() {
         },
         Event { id: "a2".into(), label: "No Acts provenance".into(), when: TimeRange::new(30, 30).unwrap(), places: vec![], verses: vec![], ..Default::default() },
     ];
-    let data = AtlasData::new(Canon { books: vec![] }, vec![], events, vec![], vec![], vec![], HashMap::new(), HashMap::new()).finish();
+    let data = titled(AtlasData::new(Canon { books: vec![] }, vec![], events, vec![], vec![], vec![], HashMap::new(), HashMap::new()).finish());
     let graph = graph_fixture_for(&data);
     let app = atlas_contract::app::build(Arc::new(data), graph, None);
 
@@ -348,7 +348,7 @@ async fn event_endpoint_carries_kjv_superscription_when_present() {
         },
         Event { id: "k2".into(), label: "No KJV-superscription provenance".into(), when: TimeRange::undated(), places: vec![], verses: vec![], kind: atlas_core::data::EventKind::General, ..Default::default() },
     ];
-    let data = AtlasData::new(Canon { books: vec![] }, vec![], events, vec![], vec![], vec![], HashMap::new(), HashMap::new()).finish();
+    let data = titled(AtlasData::new(Canon { books: vec![] }, vec![], events, vec![], vec![], vec![], HashMap::new(), HashMap::new()).finish());
     let graph = graph_fixture_for(&data);
     let app = atlas_contract::app::build(Arc::new(data), graph, None);
 
@@ -390,7 +390,7 @@ async fn event_endpoint_general_kind_with_multiple_witnesses_shows_parallel_acco
         ],
         ..Default::default()
     }];
-    let data = AtlasData::new(Canon { books: vec![] }, vec![], events, vec![], vec![], vec![], verses, HashMap::new()).finish();
+    let data = titled(AtlasData::new(Canon { books: vec![] }, vec![], events, vec![], vec![], vec![], verses, HashMap::new()).finish());
     let graph = graph_fixture_for(&data);
     let app = atlas_contract::app::build(Arc::new(data), graph, None);
 
@@ -621,7 +621,7 @@ async fn a_place_that_shares_a_catechism_items_id_carries_no_catechism_prose() {
                 "id": "Place:demo-item-1",
                 "kind": "Place",
                 "label": "Demo Item",
-                "provenance": "curated-places",
+                "provenance": { "id": "curated-places", "title": "Our Own Curated Work" },
                 "edge_summary": [{ "kind": "mentioned-in", "count": 1 }],
                 "version": record["version"],
                 "place": { "lat": 31.5, "lon": 35.5, "display_name": "Demo Item" },
