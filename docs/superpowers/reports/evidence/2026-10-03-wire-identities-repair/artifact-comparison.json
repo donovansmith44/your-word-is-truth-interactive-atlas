@@ -1,0 +1,34 @@
+{
+  "reviewed": "dcbc1ea",
+  "previous": "3fee0dc",
+  "base": "7247d81",
+  "changed_repair_paths": [
+    "client.ContractGenerator/IdentityTypes.cs",
+    "client.ContractTests/BibleAtlas.Client.ContractTests.csproj",
+    "client.Tests/AtlasClientTests.cs",
+    "client.Tests/BibleAtlas.Client.Tests.csproj",
+    "client.Tests/ChapterTextTests.cs",
+    "client.Tests/Contract/IdentityTypesTests.cs",
+    "client.Tests/Geography/AtlasMapSourceTests.cs",
+    "client.Tests/ReferenceParsingLawTests.cs",
+    "client/AtlasClient.cs",
+    "client/Components/MiniReaderExpand.razor",
+    "client/Exploring/Contract/LegacyNodeIds.cs",
+    "client/Geography/AtlasMapSource.cs",
+    "client/GraphExplorableClient.cs",
+    "client/Legacy/ChapterNode.cs",
+    "client/Legacy/PassageBlock.cs",
+    "client/Legacy/PopoverSectionProviders.cs",
+    "client/Pages/Kretzmann.razor",
+    "client/Pages/Reader.razor"
+  ],
+  "repair_producer_schema_artifact_identical": true,
+  "changed_since_base": [
+    "contracts/atlas-query-contract/CHANGELOG.md",
+    "contracts/atlas-query-contract/VERSION",
+    "contracts/atlas-query-contract/aqc.schema.json",
+    "contracts/openapi.yaml"
+  ],
+  "compiled_file_count": 7,
+  "contract_file_count": 124
+}

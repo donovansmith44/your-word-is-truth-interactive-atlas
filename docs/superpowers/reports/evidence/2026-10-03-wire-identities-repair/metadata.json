@@ -1,0 +1,44 @@
+{
+  "reviewed": "dcbc1ea",
+  "range": "7247d81..dcbc1ea",
+  "repair_range": "3fee0dc..dcbc1ea",
+  "verdict": "APPROVED scoped A-WIRE-IDENTITIES",
+  "independent_tests": {
+    "client": 740,
+    "contracts": 88,
+    "failed": 0,
+    "skipped": 0
+  },
+  "complete_compiler_refusals": {
+    "ATLASWIRE": 20,
+    "CS1503": 4,
+    "unexpected": 0
+  },
+  "positive_consumer": {
+    "compiled": true,
+    "executed_delegates": 0,
+    "http_requests": 0,
+    "nominal_signatures": 4,
+    "identity_fences": 20
+  },
+  "not_rerun": [
+    "Cargo workspace",
+    "timing",
+    "Playwright",
+    "mutation",
+    "AOT"
+  ],
+  "sha256": {
+    "artifact-comparison.json": "5c76b99e182eb25a1ae52e63675e8cae8a9c40afd0dc6244c12ee2c75e5bb97f",
+    "client-tests.log": "b42b0c7c50c65bd220c2a4323225b37c59aa71063a6648721bb9ecf1134abbc1",
+    "complete-refusals.cs": "5833106826f51615be674f44f56c0380e3de159524c839e4817067b41a6fd371",
+    "complete-refusals.csproj": "b3de7f5aec55df07ec925ad2fa19e0d2f39d319aecd99ad418bd656f31c5543c",
+    "complete-refusals.json": "e91f5ed761e463b9e7abb5b58fb16cb031a73900bd1444d40c08bc8da62cccfa",
+    "complete-refusals.log": "fb87ec09c7c6fb4c6d8780c0005abc2f3925f28ce5889371520703f181c0062a",
+    "contract-tests.log": "6d43752b48e9f6cb8293a56436e26400654f961782617a4e2931f47895d0cc9d",
+    "nominal-consumer.cs": "2be56035d7d113605ceb0b5439cb426d10e2eb14f932030423d349f481c9d92d",
+    "nominal-consumer.csproj": "4f00db55c563d1663e5d4063f62fdbd2ec12c54f33727e1b177a544be4fb27e2",
+    "nominal-consumer.log": "bdb81d980cf341d7c15169ccfaf8b473b010e754761897b7f20f1511dae2b510",
+    "prior-reproduction-refused.log": "6ca8b3c891350bd8e51b21b0c66e533a3b05251b356192a74fabeb208b10b77e"
+  }
+}

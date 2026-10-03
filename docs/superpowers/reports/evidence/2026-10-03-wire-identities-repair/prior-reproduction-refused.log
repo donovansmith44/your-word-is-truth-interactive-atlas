@@ -1,0 +1,25 @@
+  Determining projects to restore...
+  Restored /home/donovan/mut/codex-WIREID-probe/Probe.csproj (in 48 ms).
+/home/donovan/mut/codex-WIREID-probe/Program.cs(10,49): error ATLASWIRE: 'BibleAtlas.Client.Contract.ArtifactRoot.Value' is for evaluation purposes only and is subject to change or removal in future updates. Suppress this diagnostic to proceed. [/home/donovan/mut/codex-WIREID-probe/Probe.csproj]
+/home/donovan/mut/codex-WIREID-probe/Program.cs(10,41): error CS1501: No overload for method 'Chapter' takes 2 arguments [/home/donovan/mut/codex-WIREID-probe/Probe.csproj]
+/home/donovan/mut/codex-WIREID-probe/Program.cs(11,82): error ATLASWIRE: 'BibleAtlas.Client.Contract.ArtifactRoot.Value' is for evaluation purposes only and is subject to change or removal in future updates. Suppress this diagnostic to proceed. [/home/donovan/mut/codex-WIREID-probe/Probe.csproj]
+/home/donovan/mut/codex-WIREID-probe/Program.cs(11,70): error CS1501: No overload for method 'ChapterText' takes 2 arguments [/home/donovan/mut/codex-WIREID-probe/Probe.csproj]
+/home/donovan/mut/codex-WIREID-probe/Program.cs(12,70): error ATLASWIRE: 'BibleAtlas.Client.Contract.ArtifactRoot.Value' is for evaluation purposes only and is subject to change or removal in future updates. Suppress this diagnostic to proceed. [/home/donovan/mut/codex-WIREID-probe/Probe.csproj]
+/home/donovan/mut/codex-WIREID-probe/Program.cs(12,53): error CS1501: No overload for method 'KretzmannChapter' takes 2 arguments [/home/donovan/mut/codex-WIREID-probe/Probe.csproj]
+/home/donovan/mut/codex-WIREID-probe/Program.cs(13,52): error ATLASWIRE: 'BibleAtlas.Client.Contract.ArtifactRoot.Value' is for evaluation purposes only and is subject to change or removal in future updates. Suppress this diagnostic to proceed. [/home/donovan/mut/codex-WIREID-probe/Probe.csproj]
+/home/donovan/mut/codex-WIREID-probe/Program.cs(13,52): error CS1503: Argument 1: cannot convert from 'string' to 'BibleAtlas.Client.Contract.BibleReference' [/home/donovan/mut/codex-WIREID-probe/Probe.csproj]
+
+Build FAILED.
+
+/home/donovan/mut/codex-WIREID-probe/Program.cs(10,49): error ATLASWIRE: 'BibleAtlas.Client.Contract.ArtifactRoot.Value' is for evaluation purposes only and is subject to change or removal in future updates. Suppress this diagnostic to proceed. [/home/donovan/mut/codex-WIREID-probe/Probe.csproj]
+/home/donovan/mut/codex-WIREID-probe/Program.cs(10,41): error CS1501: No overload for method 'Chapter' takes 2 arguments [/home/donovan/mut/codex-WIREID-probe/Probe.csproj]
+/home/donovan/mut/codex-WIREID-probe/Program.cs(11,82): error ATLASWIRE: 'BibleAtlas.Client.Contract.ArtifactRoot.Value' is for evaluation purposes only and is subject to change or removal in future updates. Suppress this diagnostic to proceed. [/home/donovan/mut/codex-WIREID-probe/Probe.csproj]
+/home/donovan/mut/codex-WIREID-probe/Program.cs(11,70): error CS1501: No overload for method 'ChapterText' takes 2 arguments [/home/donovan/mut/codex-WIREID-probe/Probe.csproj]
+/home/donovan/mut/codex-WIREID-probe/Program.cs(12,70): error ATLASWIRE: 'BibleAtlas.Client.Contract.ArtifactRoot.Value' is for evaluation purposes only and is subject to change or removal in future updates. Suppress this diagnostic to proceed. [/home/donovan/mut/codex-WIREID-probe/Probe.csproj]
+/home/donovan/mut/codex-WIREID-probe/Program.cs(12,53): error CS1501: No overload for method 'KretzmannChapter' takes 2 arguments [/home/donovan/mut/codex-WIREID-probe/Probe.csproj]
+/home/donovan/mut/codex-WIREID-probe/Program.cs(13,52): error ATLASWIRE: 'BibleAtlas.Client.Contract.ArtifactRoot.Value' is for evaluation purposes only and is subject to change or removal in future updates. Suppress this diagnostic to proceed. [/home/donovan/mut/codex-WIREID-probe/Probe.csproj]
+/home/donovan/mut/codex-WIREID-probe/Program.cs(13,52): error CS1503: Argument 1: cannot convert from 'string' to 'BibleAtlas.Client.Contract.BibleReference' [/home/donovan/mut/codex-WIREID-probe/Probe.csproj]
+    0 Warning(s)
+    8 Error(s)
+
+Time Elapsed 00:00:01.76

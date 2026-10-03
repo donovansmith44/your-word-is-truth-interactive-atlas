@@ -1,0 +1,17 @@
+  Determining projects to restore...
+  Restored /home/donovan/w/A-WIRE-IDENTITIES-review/client/Exploring/BibleAtlas.Client.Exploring.csproj (in 72 ms).
+  Restored /home/donovan/w/A-WIRE-IDENTITIES-review/client.ContractGenerator/BibleAtlas.Client.ContractGenerator.csproj (in 183 ms).
+  Restored /home/donovan/w/A-WIRE-IDENTITIES-review/client/BibleAtlas.Client.csproj (in 233 ms).
+  Restored /home/donovan/w/A-WIRE-IDENTITIES-review/client.Tests/BibleAtlas.Client.Tests.csproj (in 256 ms).
+  BibleAtlas.Client.ContractGenerator -> /home/donovan/w/A-WIRE-IDENTITIES-review/client.ContractGenerator/bin/Debug/net10.0/BibleAtlas.Client.ContractGenerator.dll
+  BibleAtlas.Client.Exploring -> /home/donovan/w/A-WIRE-IDENTITIES-review/client/Exploring/bin/Debug/net10.0/BibleAtlas.Client.Exploring.dll
+  BibleAtlas.Client -> /home/donovan/w/A-WIRE-IDENTITIES-review/client/bin/Debug/net10.0/BibleAtlas.Client.dll
+  BibleAtlas.Client (Blazor output) -> /home/donovan/w/A-WIRE-IDENTITIES-review/client/bin/Debug/net10.0/wwwroot
+/home/donovan/w/A-WIRE-IDENTITIES-review/client.Tests/State/ViewRegistryConformanceTests.cs(137,131): warning xUnit1031: Test methods should not use blocking task operations, as they can cause deadlocks. Use an async test method and await instead. (https://xunit.net/xunit.analyzers/rules/xUnit1031) [/home/donovan/w/A-WIRE-IDENTITIES-review/client.Tests/BibleAtlas.Client.Tests.csproj]
+/home/donovan/w/A-WIRE-IDENTITIES-review/client.Tests/State/ViewRegistryConformanceTests.cs(141,129): warning xUnit1031: Test methods should not use blocking task operations, as they can cause deadlocks. Use an async test method and await instead. (https://xunit.net/xunit.analyzers/rules/xUnit1031) [/home/donovan/w/A-WIRE-IDENTITIES-review/client.Tests/BibleAtlas.Client.Tests.csproj]
+  BibleAtlas.Client.Tests -> /home/donovan/w/A-WIRE-IDENTITIES-review/client.Tests/bin/Debug/net10.0/BibleAtlas.Client.Tests.dll
+Test run for /home/donovan/w/A-WIRE-IDENTITIES-review/client.Tests/bin/Debug/net10.0/BibleAtlas.Client.Tests.dll (.NETCoreApp,Version=v10.0)
+A total of 1 test files matched the specified pattern.
+Results File: /home/donovan/mut/codex-A-WIRE-IDENTITIES-rereview-logs/client.trx
+
+Passed!  - Failed:     0, Passed:   740, Skipped:     0, Total:   740, Duration: 6 s - BibleAtlas.Client.Tests.dll (net10.0)

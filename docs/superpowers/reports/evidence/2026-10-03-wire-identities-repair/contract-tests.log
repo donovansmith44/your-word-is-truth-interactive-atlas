@@ -1,0 +1,13 @@
+  Determining projects to restore...
+  Restored /home/donovan/w/A-WIRE-IDENTITIES-review/client.ContractTests/BibleAtlas.Client.ContractTests.csproj (in 205 ms).
+  3 of 4 projects are up-to-date for restore.
+  BibleAtlas.Client.ContractGenerator -> /home/donovan/w/A-WIRE-IDENTITIES-review/client.ContractGenerator/bin/Debug/net10.0/BibleAtlas.Client.ContractGenerator.dll
+  BibleAtlas.Client.Exploring -> /home/donovan/w/A-WIRE-IDENTITIES-review/client/Exploring/bin/Debug/net10.0/BibleAtlas.Client.Exploring.dll
+  BibleAtlas.Client -> /home/donovan/w/A-WIRE-IDENTITIES-review/client/bin/Debug/net10.0/BibleAtlas.Client.dll
+  BibleAtlas.Client (Blazor output) -> /home/donovan/w/A-WIRE-IDENTITIES-review/client/bin/Debug/net10.0/wwwroot
+  BibleAtlas.Client.ContractTests -> /home/donovan/w/A-WIRE-IDENTITIES-review/client.ContractTests/bin/Debug/net10.0/BibleAtlas.Client.ContractTests.dll
+Test run for /home/donovan/w/A-WIRE-IDENTITIES-review/client.ContractTests/bin/Debug/net10.0/BibleAtlas.Client.ContractTests.dll (.NETCoreApp,Version=v10.0)
+A total of 1 test files matched the specified pattern.
+Results File: /home/donovan/mut/codex-A-WIRE-IDENTITIES-rereview-logs/contracts.trx
+
+Passed!  - Failed:     0, Passed:    88, Skipped:     0, Total:    88, Duration: 261 ms - BibleAtlas.Client.ContractTests.dll (net10.0)
