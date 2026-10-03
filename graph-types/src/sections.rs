@@ -568,13 +568,13 @@ mod laws {
             [
                 concat!(
                     "cross_refs\t",
-                    r#"{"family":"cross_refs","row":{"from":{"at":{"Bible":{"book":0,"chapter":1,"verse":1}},"span":null},"provenance":"p","target_display":"GEN.1.1","to":{"at":{"Bible":{"book":0,"chapter":1,"verse":1}},"span":null},"to_last":null,"votes":0}}"#,
+                    r#"{"family":"cross_refs","ord":0,"row":{"from":{"at":{"Bible":{"book":0,"chapter":1,"verse":1}},"span":null},"provenance":"p","target_display":"GEN.1.1","to":{"at":{"Bible":{"book":0,"chapter":1,"verse":1}},"span":null},"to_last":null,"votes":0}}"#,
                     "\n"
                 )
                 .to_string(),
                 concat!(
                     "cross_refs\t",
-                    r#"{"family":"cross_refs","row":{"from":{"at":{"Concord":{"article":2,"paragraph":3,"part":7}},"span":null},"provenance":"p","target_display":"GEN.1.1","to":{"at":{"Bible":{"book":0,"chapter":1,"verse":1}},"span":null},"to_last":null,"votes":0}}"#,
+                    r#"{"family":"cross_refs","ord":1,"row":{"from":{"at":{"Concord":{"article":2,"paragraph":3,"part":7}},"span":null},"provenance":"p","target_display":"GEN.1.1","to":{"at":{"Bible":{"book":0,"chapter":1,"verse":1}},"span":null},"to_last":null,"votes":0}}"#,
                     "\n"
                 )
                 .to_string(),
