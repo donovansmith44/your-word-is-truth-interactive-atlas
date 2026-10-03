@@ -1,0 +1,3 @@
+32 generated coordinated id/ord reassignments: production logical_dump_of_db succeeds byte-identically; logical hash unchanged; edge-index provenance join becomes empty.
+96 generated single-row changes across label, edge_index and edge_count all change the production logical hash.
+Actual copied 8b23906 Core: LocatedAt id/ord 954 -> 986; logical hash 4e9c3ce4bc28ee4dbfe72cc7949cc1f0; before whole provenance links [("26210174EAC8024A8961DA7EF193A30A", 954, "curated"), ("26210174EAC8024A8961DA7EF193A30A", 954, "curated")]; after []
