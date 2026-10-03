@@ -121,3 +121,15 @@ PROVENANCE and RULE1 already have approvals/landings. WIREID remains changes
 requested at 3fee0dc under F-WI-6; the fetched head has no submitted correction.
 No previous approval was inferred for a new head and no already-approved gate
 was rerun merely because an old Status line remains in the queue.
+
+
+Independent survey addendum: consumed the interactive session's docs-only
+[exact-package analyzer survey](2026-10-03-fsharp-unused-survey.md) from ab5d7a6.
+It independently selects the same FCS engine and records additional analyzer
+catalogues and pinned licence/source evidence. Its stronger closure obligations
+remain explicit: this checkpoint's unreferenced-symbol checker does **not** yet
+prove real-screen/model reachability through dead chains/cycles, complete
+phantom-type-parameter handling, or precise framework override dispatch. Do not
+call its eight fixed semantic probes the complete generated gate suite. Extend
+those probes over names/project placement and whole diagnostic inventories, and
+close those remaining categories before the zero-dead-code claim.
