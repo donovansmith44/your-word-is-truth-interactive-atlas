@@ -61,6 +61,7 @@ Take the lock first, following `.superpowers/LOCKS.md`. The locks are:
 - **Scripts:** never edit a script while an instance of it is running.
 
 ## Code
+- **Use tools that exist; do not hand-roll** (owner, 2026-10-03: "we use tools that exist rather than handrolling wherever possible"). Before writing a parser, decoder, codec, serializer, validator, file or format handling, a combinator set or any other general-purpose machinery, search for maintained, permissively licensed libraries and tools that already do it. Record the survey in the spec or plan: the candidates, their licences, maintenance, fit, the choice and why. Hand-rolling needs a written reason that every candidate was rejected. A library's errors map into our closed domain types at one door per library. Existing hand-rolled machinery is replaced wherever a surveyed library fits.
 - **No comments in application code** (PRINCIPLES 9, owner 2026-09-30): not `//`, `///`, `//!` or `<!-- -->`, and no "why" exemption. Tests carry only `// Arrange`, `// Act`, `// Assert`. A description the published contract needs is a `#[schema(description = "…")]` attribute. Every review greps the diff for added comment lines.
 - **Licensing** (owner 2026-09-29): ingest nothing that isn't public domain, CC0, or attribution-only permissive (CC BY 4.0, MIT, BSD, Apache-2.0). ShareAlike/copyleft (CC BY-SA, ODbL, GPL), NonCommercial, NoDerivatives and unlicensed sources are out. Cite the license; record attribution in `LICENSES.md`.
 
