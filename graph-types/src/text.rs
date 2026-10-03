@@ -246,4 +246,63 @@ impl TextLocus {
 
 /// One node per skeleton position: every layer's rendering rides as payload, and the
 /// canonical layer is required.
-pub type LayerMap = BTreeMap<TranslationId, String>;
+pub type LayerMap = BTreeMap<TranslationId, Rendering>;
+
+crate::vocabulary! {
+    TextPartRole {
+        Heading => "heading",
+        Text => "text",
+        Bracket => "bracket",
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct TextPart {
+    pub role: TextPartRole,
+    pub start: usize,
+    pub end: usize,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct Piece {
+    pub role: TextPartRole,
+    pub text: String,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct Rendering {
+    text: String,
+    parts: Vec<TextPart>,
+}
+
+impl Rendering {
+    pub fn whole(text: String) -> Rendering {
+        Rendering::compose(&[Piece { role: TextPartRole::Text, text }])
+    }
+
+    pub fn compose(pieces: &[Piece]) -> Rendering {
+        let mut rendering = Rendering { text: String::new(), parts: Vec::new() };
+        for piece in pieces.iter().filter(|piece| !piece.text.is_empty()) {
+            let start = rendering.text.len();
+            rendering.text.push_str(&piece.text);
+            let end = rendering.text.len();
+            match rendering.parts.last_mut() {
+                Some(last) if last.role == piece.role => last.end = end,
+                _ => rendering.parts.push(TextPart { role: piece.role, start, end }),
+            }
+        }
+        rendering
+    }
+
+    pub fn text(&self) -> &str {
+        &self.text
+    }
+
+    pub fn parts(&self) -> &[TextPart] {
+        &self.parts
+    }
+
+    pub fn pieces(&self) -> Vec<Piece> {
+        self.parts.iter().map(|part| Piece { role: part.role, text: self.text[part.start..part.end].to_string() }).collect()
+    }
+}

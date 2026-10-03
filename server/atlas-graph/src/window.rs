@@ -5,7 +5,7 @@
 use atlas_graph_types::id::AnyNodeId;
 use atlas_graph_types::node::{Node, NodePayload};
 use atlas_graph_types::store::GraphQuery;
-use atlas_graph_types::text::TranslationId;
+use atlas_graph_types::text::{Rendering, TranslationId};
 
 use crate::kjv_adapter::KJV_TRANSLATION;
 
@@ -50,7 +50,7 @@ pub fn render_layer(query: &dyn GraphQuery, id: &AnyNodeId, translation: &str) -
 
 pub fn text_in<'a>(node: &'a Node, translation: &str) -> Option<&'a str> {
     match &node.payload {
-        NodePayload::TextUnit { renderings, .. } => renderings.get(&TranslationId(translation.to_string())).map(String::as_str),
+        NodePayload::TextUnit { renderings, .. } => renderings.get(&TranslationId(translation.to_string())).map(Rendering::text),
         _ => None,
     }
 }

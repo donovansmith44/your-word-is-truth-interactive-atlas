@@ -12,7 +12,7 @@ use atlas_graph_types::graph::ReadingSpine;
 use atlas_graph_types::id::{AnyNodeId, CatechismItemId, ContainerNodeId, NodeKind};
 use atlas_graph_types::ingest::ProvenanceId;
 use atlas_graph_types::node::{Node, NodePayload};
-use atlas_graph_types::text::{ConcordRef, ConcordTag, Corpus, Locus, LocusSet, TextLocus, TranslationId};
+use atlas_graph_types::text::{ConcordRef, ConcordTag, Corpus, Locus, LocusSet, Rendering, TextLocus, TranslationId};
 
 use crate::corpus_root;
 use crate::pipeline::BuildCtx;
@@ -67,7 +67,7 @@ pub fn decode_text_unit(id: &AnyNodeId) -> Option<(u8, u16, u16)> {
 pub fn paragraph_node(unit: ConcordRef, text: &str) -> Node {
     let id = text_unit_id(unit.part, unit.article, unit.paragraph);
     let mut renderings = atlas_graph_types::text::LayerMap::new();
-    renderings.insert(TranslationId(CONCORD_TRANSLATION.to_string()), text.to_string());
+    renderings.insert(TranslationId(CONCORD_TRANSLATION.to_string()), Rendering::whole(text.to_string()));
     Node { id, payload: NodePayload::TextUnit { corpus: CONCORD_CORPUS, renderings }, provenance: PROVENANCE.to_string() }
 }
 
@@ -298,7 +298,7 @@ mod tests {
         match &node.payload {
             NodePayload::TextUnit { corpus, renderings } => {
                 assert_eq!(*corpus, CONCORD_CORPUS);
-                assert_eq!(renderings.get(&TranslationId(CONCORD_TRANSLATION.to_string())).map(String::as_str), Some("This faith God imputes for righteousness in His sight."));
+                assert_eq!(renderings.get(&TranslationId(CONCORD_TRANSLATION.to_string())).map(Rendering::text), Some("This faith God imputes for righteousness in His sight."));
             }
             other => panic!("expected TextUnit, got {other:?}"),
         }

@@ -100,7 +100,7 @@ mod tests {
     use atlas_graph_types::ingest::ProvenanceId;
     use atlas_graph_types::node::{Node, NodePayload};
     use atlas_graph_types::store::{GraphPublisher, GraphStore, MemStore};
-    use atlas_graph_types::text::{LayerMap, TranslationId};
+    use atlas_graph_types::text::{LayerMap, Rendering, TranslationId};
 
     fn snapshot_with_a_textless_verse() -> impl GraphQuery {
         let id = atlas_graph::kjv_adapter::verse_node_id(0, 1, 1);
@@ -136,7 +136,7 @@ mod tests {
     fn render_verse_line_succeeds_on_a_real_rendering() {
         let id = atlas_graph::kjv_adapter::verse_node_id(0, 1, 1);
         let mut renderings = LayerMap::new();
-        renderings.insert(TranslationId(atlas_graph::kjv_adapter::KJV_TRANSLATION.to_string()), "In the beginning...".to_string());
+        renderings.insert(TranslationId(atlas_graph::kjv_adapter::KJV_TRANSLATION.to_string()), Rendering::whole("In the beginning...".to_string()));
         let node = Node { id: id.clone(), payload: NodePayload::TextUnit { corpus: "bible", renderings }, provenance: ProvenanceId::from("test-fixture") };
         let mut g = Graph::default();
         g.nodes.insert(id.clone(), node);

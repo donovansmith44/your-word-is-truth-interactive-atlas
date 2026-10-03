@@ -2,6 +2,8 @@
 
 pub mod id;
 pub mod text;
+pub mod passage;
+pub mod container;
 pub mod node;
 pub mod edge;
 pub mod chrono;

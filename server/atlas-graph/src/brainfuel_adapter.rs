@@ -4,7 +4,7 @@
 
 use atlas_graph_types::id::TranslationNodeId;
 use atlas_graph_types::node::{Node, NodePayload};
-use atlas_graph_types::text::TranslationId;
+use atlas_graph_types::text::{Rendering, TranslationId};
 
 use crate::pipeline::BuildCtx;
 
@@ -56,7 +56,7 @@ pub fn normalize(ctx: &mut BuildCtx) -> BrainFuelAdapterStats {
             continue;
         };
         for (translation, text) in &row.renderings {
-            renderings.insert(TranslationId((*translation).to_string()), text.clone());
+            renderings.insert(TranslationId((*translation).to_string()), Rendering::whole(text.clone()));
             stats.renderings_merged += 1;
         }
     }
@@ -118,9 +118,9 @@ mod tests {
         let id = crate::kjv_adapter::verse_node_id(0, 1, 1);
         let node = ctx.graph.node(&id).expect("the verse node must still exist");
         let NodePayload::TextUnit { renderings, .. } = &node.payload else { panic!("not a TextUnit") };
-        assert_eq!(renderings.get(&TranslationId("latin_vulgate".to_string())).map(String::as_str), Some("In principio..."));
-        assert_eq!(renderings.get(&TranslationId("hebrew_masoretic".to_string())).map(String::as_str), Some("בְּרֵאשִׁית"));
-        assert_eq!(renderings.get(&TranslationId("kjv".to_string())).map(String::as_str), Some("In the beginning God created the heaven and the earth."), "the canonical KJV layer must be untouched");
+        assert_eq!(renderings.get(&TranslationId("latin_vulgate".to_string())).map(Rendering::text), Some("In principio..."));
+        assert_eq!(renderings.get(&TranslationId("hebrew_masoretic".to_string())).map(Rendering::text), Some("בְּרֵאשִׁית"));
+        assert_eq!(renderings.get(&TranslationId("kjv".to_string())).map(Rendering::text), Some("In the beginning God created the heaven and the earth."), "the canonical KJV layer must be untouched");
         assert!(node.provenance == "kjv", "merging renderings must not overwrite the node's own KJV provenance");
     }
 

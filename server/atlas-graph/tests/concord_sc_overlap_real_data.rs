@@ -55,7 +55,7 @@ fn the_first_commandment_catechism_item_reaches_its_concord_home_over_real_data(
     match &node.payload {
         atlas_graph_types::node::NodePayload::TextUnit { renderings, .. } => {
             let text = renderings.get(&atlas_graph_types::text::TranslationId("bente-dau".to_string())).unwrap();
-            assert_eq!(text, "Thou shalt have no other gods. What does this mean? \u{2013}Answer: We should fear, love, and trust in God above all things.");
+            assert_eq!(text.text(), "Thou shalt have no other gods. What does this mean? \u{2013}Answer: We should fear, love, and trust in God above all things.");
         }
         other => panic!("expected TextUnit, got {other:?}"),
     }

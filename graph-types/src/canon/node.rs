@@ -9,7 +9,7 @@ use crate::id::SourceId;
 use crate::node::{
     EventWitnessPayload, Node, NodePayload, PolityDeltaPayload, PolityEraPayload,
 };
-use crate::text::{BibleTag, ConcordTag, Corpus, LayerMap, TranslationId};
+use crate::text::{BibleTag, ConcordTag, Corpus, LayerMap, Piece, Rendering, TextPartRole, TranslationId};
 
 use super::ids::{any_node_id_str, parse_any_node_id};
 use super::{
@@ -64,6 +64,7 @@ const DELTA_KEYS: &[&str] = &["event", "ref_note", "verses"];
 const POLITY_ERA_KEYS: &[&str] =
     &["fall", "from_year", "name", "ref_note", "rings", "to_year", "transition"];
 const TIME_POINT_KEYS: &[&str] = &["day", "month", "year"];
+const PIECE_KEYS: &[&str] = &["role", "text"];
 
 impl Canon for Node {
     fn to_value(&self) -> Value {
@@ -406,7 +407,7 @@ fn corpus_from_value(
 /// A `LayerMap` is an OPEN map -- its keys are translation ids, not a fixed schema -- so the
 /// closed-member check deliberately does not apply here. Same for a witness's translations.
 fn layer_map_to_value(map: &LayerMap) -> Value {
-    Value::Obj(map.iter().map(|(k, v)| (k.0.clone(), Value::Str(v.clone()))).collect())
+    Value::Obj(map.iter().map(|(k, v)| (k.0.clone(), rendering_to_value(v))).collect())
 }
 
 fn layer_map_from_value(
@@ -416,8 +417,47 @@ fn layer_map_from_value(
     let (members, p) = field_obj(m, path, "renderings")?;
     members
         .iter()
-        .map(|(k, v)| Ok((TranslationId(k.clone()), expect_str(v, &join(&p, k))?)))
+        .map(|(k, v)| Ok((TranslationId(k.clone()), rendering_from_value(v, &join(&p, k))?)))
         .collect()
+}
+
+fn rendering_to_value(rendering: &Rendering) -> Value {
+    if *rendering == Rendering::whole(rendering.text().to_string()) {
+        return Value::Str(rendering.text().to_string());
+    }
+    Value::Arr(
+        rendering
+            .pieces()
+            .iter()
+            .map(|piece| obj(vec![("role", str_value(piece.role.name())), ("text", str_value(&piece.text))]))
+            .collect(),
+    )
+}
+
+fn rendering_from_value(v: &Value, path: &str) -> Result<Rendering, CanonError> {
+    let Value::Arr(spelled) = v else {
+        return Ok(Rendering::whole(expect_str(v, path)?));
+    };
+    let pieces = spelled
+        .iter()
+        .enumerate()
+        .map(|(i, piece)| piece_from_value(piece, &join(path, &i.to_string())))
+        .collect::<Result<Vec<Piece>, CanonError>>()?;
+    let rendering = Rendering::compose(&pieces);
+    if rendering.pieces() != pieces || rendering == Rendering::whole(rendering.text().to_string()) {
+        return Err(CanonError::new(path, "a rendering's pieces are not in their one normal form"));
+    }
+    Ok(rendering)
+}
+
+fn piece_from_value(v: &Value, path: &str) -> Result<Piece, CanonError> {
+    let m = expect_obj(v, path)?;
+    expect_exact_keys(m, path, PIECE_KEYS)?;
+    let role = field_str(m, path, "role")?;
+    Ok(Piece {
+        role: TextPartRole::named(&role).ok_or_else(|| CanonError::new(join(path, "role"), format!("unknown text part role {role:?}")))?,
+        text: field_str(m, path, "text")?,
+    })
 }
 
 fn time_point_to_value(t: &TimePoint) -> Value {

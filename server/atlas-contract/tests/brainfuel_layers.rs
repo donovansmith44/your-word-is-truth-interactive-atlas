@@ -50,7 +50,7 @@ async fn get_json(app: axum::Router, uri: &str) -> (StatusCode, serde_json::Valu
 fn renderings_of(snap: &impl GraphQuery, id: &atlas_graph_types::id::AnyNodeId) -> HashMap<String, String> {
     let node = snap.node(id).expect("node must exist");
     match node.payload {
-        NodePayload::TextUnit { renderings, .. } => renderings.into_iter().map(|(TranslationId(k), v)| (k, v)).collect(),
+        NodePayload::TextUnit { renderings, .. } => renderings.into_iter().map(|(TranslationId(k), v)| (k, v.text().to_string())).collect(),
         other => panic!("expected TextUnit, got {other:?}"),
     }
 }

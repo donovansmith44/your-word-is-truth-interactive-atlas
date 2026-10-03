@@ -75,7 +75,7 @@ fn every_dependency_is_optional_so_the_default_build_takes_none() {
 }
 
 #[test]
-fn dev_dependencies_hold_only_serde_json_for_tests() {
+fn dev_dependencies_hold_only_serde_json_and_proptest_for_tests() {
     // Arrange
     let toml = std::fs::read_to_string(manifest_path()).expect("graph-types/Cargo.toml");
     // Act
@@ -83,8 +83,8 @@ fn dev_dependencies_hold_only_serde_json_for_tests() {
     // Assert
     assert_eq!(
         entries,
-        vec!["serde_json = \"1\"".to_string()],
-        "[dev-dependencies] must hold exactly serde_json -- test-only, never reaches a consumer"
+        vec!["serde_json = \"1\"".to_string(), "proptest = \"1\"".to_string()],
+        "[dev-dependencies] must hold exactly serde_json and proptest -- test-only, never reaches a consumer"
     );
 }
 

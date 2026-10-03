@@ -7,7 +7,7 @@ use atlas_graph_types::id::{AnyNodeId, NodeKind, SourceId};
 use atlas_graph_types::node::{
     EventWitnessPayload, Node, NodePayload, PolityDeltaPayload, PolityEraPayload,
 };
-use atlas_graph_types::text::TranslationId;
+use atlas_graph_types::text::{Rendering, TranslationId};
 use std::collections::BTreeMap;
 
 mod common;
@@ -333,9 +333,9 @@ fn round_trip(n: &Node) {
 
 #[test]
 fn every_payload_variant_round_trips() {
-    let mut renderings: BTreeMap<TranslationId, String> = BTreeMap::new();
-    renderings.insert(TranslationId("kjv".into()), "In the beginning God created".into());
-    renderings.insert(TranslationId("asv".into()), "In the beginning God created\u{a0}".into());
+    let mut renderings: BTreeMap<TranslationId, Rendering> = BTreeMap::new();
+    renderings.insert(TranslationId("kjv".into()), Rendering::whole("In the beginning God created".into()));
+    renderings.insert(TranslationId("asv".into()), Rendering::whole("In the beginning God created\u{a0}".into()));
 
     let mut translations: BTreeMap<String, Vec<String>> = BTreeMap::new();
     translations.insert("kjv".into(), vec!["JHN.3.16".into(), "JHN.3.17".into()]);

@@ -7,7 +7,7 @@ use std::collections::BTreeSet;
 use atlas_graph_types::graph::Graph;
 use atlas_graph_types::id::NodeKind;
 use atlas_graph_types::node::NodePayload;
-use atlas_graph_types::text::TranslationId;
+use atlas_graph_types::text::{Rendering, TranslationId};
 
 use crate::kjv_adapter::{self, KJV_TRANSLATION};
 
@@ -142,7 +142,7 @@ pub fn check_kjv_fidelity(source_kjv_json: &str, built: &Graph, brainfuel: Optio
             _ => None,
         }
         .ok_or_else(|| FidelityViolation(format!("TextUnit {} carries no KJV rendering", kjv_adapter::dot_ref(v.book_index, v.chapter, v.verse))))?;
-        if rendering != &v.text {
+        if *rendering != Rendering::whole(v.text.clone()) {
             return Err(FidelityViolation(format!(
                 "TextUnit {} rendering does not match its source text byte-for-byte",
                 kjv_adapter::dot_ref(v.book_index, v.chapter, v.verse)
@@ -184,7 +184,7 @@ pub fn check_kjv_fidelity(source_kjv_json: &str, built: &Graph, brainfuel: Optio
         .iter()
         .map(|id| match &built.nodes[id].payload {
             NodePayload::TextUnit { renderings, .. } => {
-                renderings.get(&TranslationId(KJV_TRANSLATION.to_string())).map(String::as_str).unwrap_or_default()
+                renderings.get(&TranslationId(KJV_TRANSLATION.to_string())).map(Rendering::text).unwrap_or_default()
             }
             _ => "",
         })
@@ -230,7 +230,7 @@ mod tests {
         let (mut graph, ..) = build_graph_from_sources(GOOD_KJV, NO_XREFS, &crate::event_world::empty_atlas()).unwrap();
         let concord_id = atlas_graph_types::id::AnyNodeId { kind: NodeKind::TextUnit, raw: "concord/7.2.1".to_string() };
         let mut renderings = atlas_graph_types::text::LayerMap::new();
-        renderings.insert(TranslationId("bente-dau".to_string()), "We should fear, love, and trust in God above all things.".to_string());
+        renderings.insert(TranslationId("bente-dau".to_string()), Rendering::whole("We should fear, love, and trust in God above all things.".to_string()));
         graph.nodes.insert(
             concord_id.clone(),
             atlas_graph_types::node::Node { id: concord_id, payload: NodePayload::TextUnit { corpus: "concord", renderings }, provenance: "concord".to_string() },
@@ -266,8 +266,8 @@ mod tests {
         let id = kjv_adapter::verse_node_id(0, 1, 1);
         if let Some(node) = graph.nodes.get_mut(&id) {
             if let NodePayload::TextUnit { renderings, .. } = &mut node.payload {
-                let text = renderings.get_mut(&TranslationId(KJV_TRANSLATION.to_string())).unwrap();
-                text.replace_range(0..1, "X");
+                let rendering = renderings.get_mut(&TranslationId(KJV_TRANSLATION.to_string())).unwrap();
+                *rendering = Rendering::whole(format!("X{}", &rendering.text()[1..]));
             }
         }
         let result = check_kjv_fidelity(GOOD_KJV, &graph, None);

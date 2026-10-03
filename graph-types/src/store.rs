@@ -490,7 +490,7 @@ mod laws {
 
     fn unit(raw: &str, text: &str) -> Node {
         let mut renderings = crate::text::LayerMap::new();
-        renderings.insert(crate::text::TranslationId("kjv".into()), text.into());
+        renderings.insert(crate::text::TranslationId("kjv".into()), crate::text::Rendering::whole(text.into()));
         Node {
             id: AnyNodeId { kind: NodeKind::TextUnit, raw: raw.into() },
             payload: NodePayload::TextUnit { corpus: "bible", renderings },

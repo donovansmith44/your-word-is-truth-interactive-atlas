@@ -415,7 +415,7 @@ mod laws {
 
     fn unit(raw: &str, corpus: &'static str) -> Node {
         let mut renderings = crate::text::LayerMap::new();
-        renderings.insert(crate::text::TranslationId("kjv".into()), "x".into());
+        renderings.insert(crate::text::TranslationId("kjv".into()), crate::text::Rendering::whole("x".into()));
         Node { id: AnyNodeId { kind: NodeKind::TextUnit, raw: raw.into() }, payload: NodePayload::TextUnit { corpus, renderings }, provenance: "p".into() }
     }
     fn dump(g: &Graph, section: Section) -> String {

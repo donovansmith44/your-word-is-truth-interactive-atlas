@@ -7,7 +7,7 @@ use std::collections::HashMap;
 use atlas_core::data::Canon;
 use atlas_graph_types::id::{AnyNodeId, NodeKind};
 use atlas_graph_types::node::{Node, NodePayload};
-use atlas_graph_types::text::{BibleTag, Corpus, LayerMap, TranslationId};
+use atlas_graph_types::text::{BibleTag, Corpus, LayerMap, Rendering, TranslationId};
 
 pub const BIBLE_CORPUS: &str = BibleTag::ID;
 /// The one translation layer compiled here; must stay equal to
@@ -101,7 +101,7 @@ pub fn kjv_text(node: &Node) -> Option<&str> {
 
 pub fn verse_node(v: &KjvVerse) -> Node {
     let mut renderings: LayerMap = LayerMap::new();
-    renderings.insert(TranslationId(KJV_TRANSLATION.to_string()), v.text.clone());
+    renderings.insert(TranslationId(KJV_TRANSLATION.to_string()), Rendering::whole(v.text.clone()));
     Node {
         id: verse_node_id(v.book_index, v.chapter, v.verse),
         payload: NodePayload::TextUnit { corpus: BIBLE_CORPUS, renderings },

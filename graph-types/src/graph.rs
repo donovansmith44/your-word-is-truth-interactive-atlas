@@ -659,7 +659,7 @@ mod tests {
                 crate::id::AnyNodeId { kind: NodeKind::TextUnit, raw: raw.clone() },
                 Node {
                     id: crate::id::AnyNodeId { kind: NodeKind::TextUnit, raw },
-                    payload: NodePayload::TextUnit { corpus: "concord", renderings: [(TranslationId("bente-dau".into()), "text".into())].into_iter().collect() },
+                    payload: NodePayload::TextUnit { corpus: "concord", renderings: [(TranslationId("bente-dau".into()), crate::text::Rendering::whole("text".into()))].into_iter().collect() },
                     provenance: "test".into(),
                 },
             );
@@ -756,7 +756,7 @@ mod tests {
             verse_id.clone(),
             Node {
                 id: verse_id.clone(),
-                payload: NodePayload::TextUnit { corpus: "bible", renderings: [(TranslationId("kjv".into()), "text".into())].into_iter().collect() },
+                payload: NodePayload::TextUnit { corpus: "bible", renderings: [(TranslationId("kjv".into()), crate::text::Rendering::whole("text".into()))].into_iter().collect() },
                 provenance: "test".into(),
             },
         );
@@ -793,7 +793,7 @@ mod tests {
             verse_id.clone(),
             Node {
                 id: verse_id.clone(),
-                payload: NodePayload::TextUnit { corpus: "bible", renderings: [(TranslationId("kjv".into()), "Follow me".into())].into_iter().collect() },
+                payload: NodePayload::TextUnit { corpus: "bible", renderings: [(TranslationId("kjv".into()), crate::text::Rendering::whole("Follow me".into()))].into_iter().collect() },
                 provenance: "test".into(),
             },
         );
@@ -850,7 +850,7 @@ mod tests {
         let verse_id = crate::id::AnyNodeId { kind: NodeKind::TextUnit, raw: "bible/41.1.27".into() };
         g.nodes.insert(
             verse_id.clone(),
-            Node { id: verse_id.clone(), payload: NodePayload::TextUnit { corpus: "bible", renderings: [(TranslationId("kjv".into()), "To a virgin espoused to a man".into())].into_iter().collect() }, provenance: "test".into() },
+            Node { id: verse_id.clone(), payload: NodePayload::TextUnit { corpus: "bible", renderings: [(TranslationId("kjv".into()), crate::text::Rendering::whole("To a virgin espoused to a man".into()))].into_iter().collect() }, provenance: "test".into() },
         );
         let espousal = EventId::new("theo-249");
         g.nodes.insert(

@@ -468,7 +468,7 @@ fn specimen_graph() -> atlas_graph_types::graph::Graph {
     };
     let unit = |corpus: &'static str, layer: &str, txt: &str| NodePayload::TextUnit {
         corpus,
-        renderings: [(TranslationId(layer.into()), txt.to_string())].into_iter().collect(),
+        renderings: [(TranslationId(layer.into()), atlas_graph_types::text::Rendering::whole(txt.to_string()))].into_iter().collect(),
     };
     for n in [
         node(NodeKind::TextUnit, "bible/1.1.1", unit("bible", "kjv", "In the beginning")),
