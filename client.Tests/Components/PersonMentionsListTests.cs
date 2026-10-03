@@ -1,5 +1,4 @@
 using BibleAtlas.Client.Components;
-using BibleAtlas.Client.Contract;
 using BibleAtlas.Client.Exploring;
 using Bunit;
 
@@ -13,7 +12,6 @@ public sealed class PersonMentionsListTests : BunitContext
     private const string RootB = "root-b";
 
     private static readonly int Step = Affordances.PageSize;
-    private static readonly Provenance Kjv = new(id: "kjv", title: "The King James Version");
 
     [Fact]
     public async Task Revealing_mentions_slides_a_bounded_window_and_fewer_slides_it_back()
@@ -84,19 +82,6 @@ public sealed class PersonMentionsListTests : BunitContext
             WholeValue.Of(mentions.Shown.Select(entry => (Positions.Of(entry.Neighbour.Target).Label, entry.Words!.Text)).ToList()),
             WholeValue.Of(Verses(RootA, 0, Step).Select(row => row["person-mention-".Length..])
                 .Select(vref => (vref, view.Find($"[data-testid='person-words-{vref}-text']").TextContent)).ToList()));
-    }
-
-    [Fact]
-    public async Task A_persons_mentions_name_their_source_by_its_served_title()
-    {
-        // Arrange
-        var mentions = await new RootedMentions(Mentions).Opened();
-
-        // Act
-        var view = Render<PersonMentionsList>(p => p.Add(v => v.Provenance, Kjv).Add(v => v.Mentions, mentions).Add(v => v.TotalCount, Mentions).Add(v => v.OnExplore, _ => { }).Add(v => v.OnMoved, () => { }));
-
-        // Assert
-        Assert.Equal("Source: The King James Version", view.Find("[data-testid='popover-person-provenance']").TextContent);
     }
 
     private IRenderedComponent<PersonMentionsList> Listed(PageWindow<Entry> mentions, Action moved) =>

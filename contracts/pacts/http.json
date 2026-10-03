@@ -3847,7 +3847,7 @@
             "verse": 31
           }
         ],
-        "version": "bd57a3adfafdb4733a62033799be043f"
+        "version": "fa95e31a4c84a41ac12339853cefc795"
       },
       "status": 200
     },
@@ -5141,7 +5141,7 @@
           "id": "curated",
           "title": "Our Own Curated Work"
         },
-        "version": "bd57a3adfafdb4733a62033799be043f"
+        "version": "fa95e31a4c84a41ac12339853cefc795"
       },
       "status": 200
     },
@@ -5174,7 +5174,7 @@
           "id": "curated-places",
           "title": "Our Own Curated Work"
         },
-        "version": "bd57a3adfafdb4733a62033799be043f"
+        "version": "fa95e31a4c84a41ac12339853cefc795"
       },
       "status": 200
     },
@@ -5215,7 +5215,7 @@
         "kind": "site-of",
         "next": null,
         "previous": null,
-        "version": "bd57a3adfafdb4733a62033799be043f"
+        "version": "fa95e31a4c84a41ac12339853cefc795"
       },
       "status": 200
     },

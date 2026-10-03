@@ -23,7 +23,7 @@ public sealed class ExplorerPopoverTests : BunitContext
             <div class="popover-section" data-testid="popover-section-card">
                 <p class="focus-title" data-testid="popover-card-title">The Exodus</p>
                 <dl class="focus-fields">
-                    <div class="focus-field" data-testid="popover-field-Provenance"><dt>Provenance</dt><dd>The King James Version</dd></div>
+                    <div class="focus-field" data-testid="popover-field-Provenance"><dt>Provenance</dt><dd>kjv</dd></div>
                 </dl>
             </div>
             <span class="focus-entry"><button type="button" class="focus-arrow explorable" data-testid="popover-next">The Wilderness ›</button><button type="button" class="focus-entry-edge explorable-quiet" data-testid="popover-entry-edge-follows-in-e:Narrative:wilderness" aria-label="e The Wilderness" title="e The Wilderness">&#8942;</button></span>
@@ -76,7 +76,7 @@ public sealed class ExplorerPopoverTests : BunitContext
         Hosting(new ServedGraph().Serving(new NodeRecord(
             book: null, catechism: null, description: prose, edgeSummary: [], @event: null,
             id: "CommentaryItem:kretzmann/0.1.0", kind: NodeKind.CommentaryItem, label: "The Creation of Chaos and Light",
-            person: null, place: null, era: null, map: null, polity: null, provenance: ServedGraph.Provenance, text: null, version: "v")));
+            person: null, place: null, era: null, map: null, polity: null, provenance: ServedGraph.ServedProvenance, text: null, version: "v")));
 
         // Act
         var popover = Render<ExplorerPopover>(p => p.Add(v => v.Opening, new PopoverOpening.Legacy(new CommentaryItemNode("kretzmann/0.1.0", "The Creation of Chaos and Light"))));

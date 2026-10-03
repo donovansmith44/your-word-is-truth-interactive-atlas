@@ -1656,22 +1656,7 @@ fn only_the_first_page_has_no_previous_and_every_other_previous_reads_the_page_b
 #[test]
 fn every_cell_of_every_table_a_section_file_holds_but_meta_is_under_its_logical_hash() {
     // Arrange
-    let mut g = every_end_held(specimen_graph());
-    let atlas = atlas_core::data::AtlasData::default();
-    let geography = atlas_graph::geography::Geography::compile(&g, &atlas);
-    atlas_graph::labels::compile(&mut g, &atlas_graph::labels::ReaderNames::of(&geography, &atlas));
-    atlas_graph::references::compile(&mut g);
-    let no_chronology = atlas_graph::event_world::ChronologyDerivation {
-        order: Vec::new(),
-        placements: std::collections::HashMap::new(),
-        resolved: std::collections::HashMap::new(),
-        source_meta: std::collections::HashMap::new(),
-    };
-    let extras = Extras::graph_derived(&g, &no_chronology, &std::collections::HashMap::new()).unwrap();
-    extras.attach(&mut g);
-    let dir = std::env::temp_dir().join(format!("f39-every-cell-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&dir);
-    let (_, written) = write_sections(&g, &extras, "test", &layout_under(&dir)).unwrap();
+    let (dir, written) = written_specimen("f39-every-cell");
 
     // Act
     let mut unhashed: Vec<String> = Vec::new();
@@ -1703,6 +1688,80 @@ fn every_cell_of_every_table_a_section_file_holds_but_meta_is_under_its_logical_
 
     // Assert
     assert_eq!((unhashed, unreached), (Vec::<String>::new(), Vec::<String>::new()));
+}
+
+#[test]
+fn a_row_moved_to_another_address_with_everything_that_points_at_it_moves_its_sections_logical_hash() {
+    // Arrange
+    let (dir, written) = written_specimen("f85-moved-row");
+
+    // Act
+    let mut unhashed: Vec<String> = Vec::new();
+    let mut moved_families = 0usize;
+    for w in &written {
+        let probe = dir.join(format!("moved-{}.sqlite", w.section.name()));
+        std::fs::copy(&w.path, &probe).unwrap();
+        let conn = rusqlite::Connection::open(&probe).unwrap();
+        for family in row_tables_of(w.section) {
+            let table = family.name();
+            let Some(from) = conn.query_row(&format!("SELECT max(id) FROM {table}"), [], |r| r.get::<_, Option<i64>>(0)).unwrap() else { continue };
+            let to = from + MOVED_ROW_OFFSET;
+            conn.execute_batch("BEGIN").unwrap();
+            conn.execute(&format!("UPDATE {table} SET id = ?1, ord = ?1 WHERE id = ?2"), [to, from]).unwrap();
+            for (child, reference) in children_of(&conn, table) {
+                conn.execute(&format!("UPDATE {child} SET {reference} = ?1 WHERE {reference} = ?2"), [to, from]).unwrap();
+            }
+            let moved = logical_dump_of_db(&conn, w.section).map_or(true, |dump| logical_hash(&dump) != w.logical);
+            conn.execute_batch("ROLLBACK").unwrap();
+            moved_families += 1;
+            if !moved {
+                unhashed.push(format!("{}.{table}", w.section.name()));
+            }
+        }
+    }
+
+    // Assert
+    assert_eq!((unhashed, moved_families > 0), (Vec::<String>::new(), true));
+}
+
+const MOVED_ROW_OFFSET: i64 = 1_000_003;
+
+fn children_of(conn: &rusqlite::Connection, table: &str) -> Vec<(String, String)> {
+    let children: Vec<String> = conn
+        .prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name LIKE ?1 ORDER BY name")
+        .unwrap()
+        .query_map([format!("{table}_%")], |r| r.get(0))
+        .unwrap()
+        .map(Result::unwrap)
+        .filter(|child: &String| child.strip_prefix(table).is_some_and(|rest| rest.starts_with('_')))
+        .collect();
+    children
+        .into_iter()
+        .map(|child| {
+            let reference: String = conn.query_row(&format!("SELECT name FROM pragma_table_info('{child}') WHERE cid = 0"), [], |r| r.get(0)).unwrap();
+            (child, reference)
+        })
+        .collect()
+}
+
+fn written_specimen(tag: &str) -> (std::path::PathBuf, Vec<atlas_graph::sqlite::writer::WrittenSection>) {
+    let mut g = every_end_held(specimen_graph());
+    let atlas = atlas_core::data::AtlasData::default();
+    let geography = atlas_graph::geography::Geography::compile(&g, &atlas);
+    atlas_graph::labels::compile(&mut g, &atlas_graph::labels::ReaderNames::of(&geography, &atlas));
+    atlas_graph::references::compile(&mut g);
+    let no_chronology = atlas_graph::event_world::ChronologyDerivation {
+        order: Vec::new(),
+        placements: std::collections::HashMap::new(),
+        resolved: std::collections::HashMap::new(),
+        source_meta: std::collections::HashMap::new(),
+    };
+    let extras = Extras::graph_derived(&g, &no_chronology, &std::collections::HashMap::new()).unwrap();
+    extras.attach(&mut g);
+    let dir = std::env::temp_dir().join(format!("{tag}-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&dir);
+    let (_, written) = write_sections(&g, &extras, "test", &layout_under(&dir)).unwrap();
+    (dir, written)
 }
 
 fn cells_of(conn: &rusqlite::Connection) -> Vec<(String, String, Vec<String>)> {

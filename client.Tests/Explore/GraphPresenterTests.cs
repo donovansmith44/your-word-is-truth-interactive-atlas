@@ -41,7 +41,7 @@ public sealed class GraphPresenterTests
         var presented = await Task.WhenAll(Enum.GetValues<Surface>().Select(surface => Presenter.Present(new PresentationRequest(edge, surface))));
 
         // Assert
-        Assert.Equal(new Presentation?[] { null, null, new Presentation.Card(AttestedIn.Label, [new Presentation.Field("Provenance", ServedGraph.ProvenanceTitle)]) }, presented);
+        Assert.Equal(new Presentation?[] { null, null, new Presentation.Card(AttestedIn.Label, [new Presentation.Field("Provenance", ServedGraph.Provenance)]) }, presented);
     }
 
     [Fact]
@@ -68,7 +68,7 @@ public sealed class GraphPresenterTests
         var presentation = await Presenter.Present(new PresentationRequest(moses, Surface.Popover));
 
         // Assert
-        Assert.Equal(new Presentation.Card(MosesLabel, [new Presentation.Field("Provenance", ServedGraph.ProvenanceTitle)]), presentation);
+        Assert.Equal(new Presentation.Card(MosesLabel, [new Presentation.Field("Provenance", ServedGraph.Provenance)]), presentation);
     }
 
     [Fact]
@@ -82,7 +82,7 @@ public sealed class GraphPresenterTests
         var presentation = await Presenter.Present(new PresentationRequest(genesis1, Surface.Reader));
 
         // Assert
-        Assert.Equal(new Presentation.Card(Genesis1Label, [new Presentation.Field("Provenance", ServedGraph.ProvenanceTitle)]), presentation);
+        Assert.Equal(new Presentation.Card(Genesis1Label, [new Presentation.Field("Provenance", ServedGraph.Provenance)]), presentation);
     }
 
     [Fact]
@@ -109,7 +109,7 @@ public sealed class GraphPresenterTests
         var presented = await Presenter.Present(new PresentationRequest(verse, Surface.Popover));
 
         // Assert
-        Assert.Equal(new Presentation.Text(John316Text, [new Presentation.Field(ProvenanceField, ServedGraph.ProvenanceTitle)]), presented);
+        Assert.Equal(new Presentation.Text(John316Text, [new Presentation.Field(ProvenanceField, ServedGraph.Provenance)]), presented);
     }
 
     [Fact]
@@ -122,7 +122,7 @@ public sealed class GraphPresenterTests
         var presented = await Presenter.Present(new PresentationRequest(paragraph, Surface.Popover));
 
         // Assert
-        Assert.Equal(new Presentation.Text(AugsburgIvText, [new Presentation.Field(ProvenanceField, ServedGraph.ProvenanceTitle)]), presented);
+        Assert.Equal(new Presentation.Text(AugsburgIvText, [new Presentation.Field(ProvenanceField, ServedGraph.Provenance)]), presented);
     }
 
     [Fact]

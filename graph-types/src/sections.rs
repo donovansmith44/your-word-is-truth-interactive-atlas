@@ -3,7 +3,7 @@
 //! names, which are therefore decided per row and never by family alone.
 
 use crate::canon::ids::any_node_id_str;
-use crate::canon::{encode_row_in_family, obj, serialize, str_value, Canon, RowFamily, Value, DOMAIN_PREFIX};
+use crate::canon::{obj, serialize, str_value, Canon, RowFamily, Value, DOMAIN_PREFIX};
 use crate::edge::{CanonSuccession, Contains, CrossRef, EdgeId};
 use crate::graph::Graph;
 use crate::id::ContentHash;
@@ -272,6 +272,10 @@ pub fn logical_table_order(section: Section) -> Vec<&'static str> {
     v
 }
 
+pub fn row_line_body(family: RowFamily, ord: i64, row: Value) -> Vec<u8> {
+    serialize(&obj(vec![("family", str_value(family.name())), ("ord", Value::Int(ord)), ("row", row)]))
+}
+
 /// The `reading_spine` line body: `{"corpus":…,"node_id":…,"ord":N}`.
 pub fn spine_line_body(corpus: &str, ord: i64, node_id: &str) -> Vec<u8> {
     serialize(&obj(vec![("corpus", str_value(corpus)), ("node_id", str_value(node_id)), ("ord", Value::Int(ord))]))
@@ -297,43 +301,46 @@ pub fn logical_dump_section(g: &Graph, index: &SectionIndex<'_>) -> Result<Vec<u
     }
     macro_rules! rows {
         ($family:expr, $rows:expr) => {
-            for row in $rows {
-                line(&mut out, $family.name(), &encode_row_in_family($family, row.to_value()));
+            rows!($family, $rows, |_| true)
+        };
+        ($family:expr, $rows:expr, $held:expr) => {
+            for (ord, row) in $rows.iter().enumerate().filter(|(_, r)| $held(*r)) {
+                line(&mut out, $family.name(), &row_line_body($family, ord as i64, row.to_value()));
             }
         };
     }
     for f in row_tables_of(section) {
         let f = *f;
         match f {
-            RowFamily::ContainsBible => rows!(f, g.contains_bible.iter().filter(|r| section_of_contains_bible(r) == section)),
-            RowFamily::CanonSuccession => rows!(f, g.canon_succession.iter().filter(|r| section_of_canon_succession(r) == section)),
-            RowFamily::ContainsConcord => rows!(f, g.contains_concord.iter()),
-            RowFamily::Attests => rows!(f, g.attests.iter()),
-            RowFamily::Succession => rows!(f, g.succession.iter()),
-            RowFamily::DatedBy => rows!(f, g.dated_by.iter()),
-            RowFamily::LocatedAt => rows!(f, g.located_at.iter()),
-            RowFamily::Fulfills => rows!(f, g.fulfills.iter()),
-            RowFamily::Typology => rows!(f, g.typology.iter()),
-            RowFamily::NamedAfter => rows!(f, g.named_after.iter()),
-            RowFamily::Catechism => rows!(f, g.catechism.iter()),
-            RowFamily::CommentsOn => rows!(f, g.comments_on.iter()),
-            RowFamily::SpokenBy => rows!(f, g.spoken_by.iter()),
-            RowFamily::SpokenAt => rows!(f, g.spoken_at.iter()),
-            RowFamily::Mentions => rows!(f, g.mentions.iter()),
-            RowFamily::CrossRefs => rows!(f, g.cross_refs.iter().filter(|r| section_of_cross_ref(r) == section)),
-            RowFamily::Quotes => rows!(f, g.quotes.iter()),
-            RowFamily::Confesses => rows!(f, g.confesses.iter()),
-            RowFamily::CorrespondsBible => rows!(f, g.corresponds_bible.iter()),
-            RowFamily::TemporalAdjacency => rows!(f, g.temporal_adjacency.iter()),
-            RowFamily::Analogue => rows!(f, g.analogue.iter()),
-            RowFamily::Occurs => rows!(f, g.occurs.iter()),
-            RowFamily::ParentOf => rows!(f, g.parent_of.iter()),
-            RowFamily::Spouses => rows!(f, g.spouses.iter()),
-            RowFamily::Participates => rows!(f, g.participates.iter()),
-            RowFamily::Authored => rows!(f, g.authored.iter()),
-            RowFamily::Shown => rows!(f, g.shown.iter()),
-            RowFamily::MapSuccession => rows!(f, g.map_succession.iter()),
-            RowFamily::Brethren => rows!(f, g.brethren.iter()),
+            RowFamily::ContainsBible => rows!(f, g.contains_bible, |r| section_of_contains_bible(r) == section),
+            RowFamily::CanonSuccession => rows!(f, g.canon_succession, |r| section_of_canon_succession(r) == section),
+            RowFamily::ContainsConcord => rows!(f, g.contains_concord),
+            RowFamily::Attests => rows!(f, g.attests),
+            RowFamily::Succession => rows!(f, g.succession),
+            RowFamily::DatedBy => rows!(f, g.dated_by),
+            RowFamily::LocatedAt => rows!(f, g.located_at),
+            RowFamily::Fulfills => rows!(f, g.fulfills),
+            RowFamily::Typology => rows!(f, g.typology),
+            RowFamily::NamedAfter => rows!(f, g.named_after),
+            RowFamily::Catechism => rows!(f, g.catechism),
+            RowFamily::CommentsOn => rows!(f, g.comments_on),
+            RowFamily::SpokenBy => rows!(f, g.spoken_by),
+            RowFamily::SpokenAt => rows!(f, g.spoken_at),
+            RowFamily::Mentions => rows!(f, g.mentions),
+            RowFamily::CrossRefs => rows!(f, g.cross_refs, |r| section_of_cross_ref(r) == section),
+            RowFamily::Quotes => rows!(f, g.quotes),
+            RowFamily::Confesses => rows!(f, g.confesses),
+            RowFamily::CorrespondsBible => rows!(f, g.corresponds_bible),
+            RowFamily::TemporalAdjacency => rows!(f, g.temporal_adjacency),
+            RowFamily::Analogue => rows!(f, g.analogue),
+            RowFamily::Occurs => rows!(f, g.occurs),
+            RowFamily::ParentOf => rows!(f, g.parent_of),
+            RowFamily::Spouses => rows!(f, g.spouses),
+            RowFamily::Participates => rows!(f, g.participates),
+            RowFamily::Authored => rows!(f, g.authored),
+            RowFamily::Shown => rows!(f, g.shown),
+            RowFamily::MapSuccession => rows!(f, g.map_succession),
+            RowFamily::Brethren => rows!(f, g.brethren),
         }
     }
     if let Some(corpus) = spine_corpus(section) {
@@ -562,13 +569,13 @@ mod laws {
             [
                 concat!(
                     "cross_refs\t",
-                    r#"{"family":"cross_refs","row":{"from":{"at":{"Bible":{"book":0,"chapter":1,"verse":1}},"span":null},"provenance":"p","target_display":"GEN.1.1","to":{"at":{"Bible":{"book":0,"chapter":1,"verse":1}},"span":null},"to_last":null,"votes":0}}"#,
+                    r#"{"family":"cross_refs","ord":0,"row":{"from":{"at":{"Bible":{"book":0,"chapter":1,"verse":1}},"span":null},"provenance":"p","target_display":"GEN.1.1","to":{"at":{"Bible":{"book":0,"chapter":1,"verse":1}},"span":null},"to_last":null,"votes":0}}"#,
                     "\n"
                 )
                 .to_string(),
                 concat!(
                     "cross_refs\t",
-                    r#"{"family":"cross_refs","row":{"from":{"at":{"Concord":{"article":2,"paragraph":3,"part":7}},"span":null},"provenance":"p","target_display":"GEN.1.1","to":{"at":{"Bible":{"book":0,"chapter":1,"verse":1}},"span":null},"to_last":null,"votes":0}}"#,
+                    r#"{"family":"cross_refs","ord":1,"row":{"from":{"at":{"Concord":{"article":2,"paragraph":3,"part":7}},"span":null},"provenance":"p","target_display":"GEN.1.1","to":{"at":{"Bible":{"book":0,"chapter":1,"verse":1}},"span":null},"to_last":null,"votes":0}}"#,
                     "\n"
                 )
                 .to_string(),

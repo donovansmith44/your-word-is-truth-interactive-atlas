@@ -54,7 +54,7 @@ test('PROV-1 (owner order 2, the headline case): a verse\'s cross reference, ste
 
   // Assert
   await expect(page.getByTestId('popover-card-title')).toHaveText(edge.label);
-  await expect(page.getByTestId('popover-field-Provenance').locator('dd')).toHaveText(edge.provenance!.title);
+  await expect(page.getByTestId('popover-field-Provenance').locator('dd')).toHaveText(edge.provenance!.id);
 });
 
 test('PROV-1 (a THIRD source): a verse\'s text names the King James Version as its source', async ({ page }) => {
@@ -66,7 +66,7 @@ test('PROV-1 (a THIRD source): a verse\'s text names the King James Version as i
   await openVersePopover(page, 'JHN.3.16');
 
   // Assert
-  await expect(page.getByTestId('popover-field-Provenance').locator('dd')).toHaveText(record.provenance.title);
+  await expect(page.getByTestId('popover-field-Provenance').locator('dd')).toHaveText(record.provenance.id);
 });
 
 test('PROV-1 (owner order 1, an IMPORTED event): the "?" on a Theographic-sourced event says Theographic', async ({ page }) => {

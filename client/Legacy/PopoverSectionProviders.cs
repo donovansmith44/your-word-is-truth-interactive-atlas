@@ -987,7 +987,7 @@ public sealed class PersonCardAndMentionsSection : IPopoverSectionProvider
             builder.AddContent(seq++, $"MENTIONED IN SCRIPTURE ({total})");
             builder.CloseElement();
             builder.OpenComponent<Components.PersonMentionsList>(seq++);
-            builder.AddAttribute(seq++, nameof(Components.PersonMentionsList.Provenance), card.Provenance);
+            builder.AddAttribute(seq++, nameof(Components.PersonMentionsList.Provenance), card.Provenance.Id);
             builder.AddAttribute(seq++, nameof(Components.PersonMentionsList.Mentions), mentions);
             builder.AddAttribute(seq++, nameof(Components.PersonMentionsList.TotalCount), total);
             builder.AddAttribute(seq++, nameof(Components.PersonMentionsList.ShowHeading), false);
