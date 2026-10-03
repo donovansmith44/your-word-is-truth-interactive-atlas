@@ -84,11 +84,11 @@ pub struct CrossRef {
     pub target: String,
     pub votes: i32,
     pub preview: String,
-    pub provenance: Vec<String>,
+    pub provenance: Vec<super::Provenance>,
 }
 
 impl CrossRef {
-    pub(crate) fn attributed(xref: AggregatedXref, provenance: &[String]) -> Self {
+    pub(crate) fn attributed(xref: AggregatedXref, provenance: &[super::Provenance]) -> Self {
         CrossRef { target: xref.target, votes: xref.votes, preview: xref.preview, provenance: provenance.to_vec() }
     }
 }

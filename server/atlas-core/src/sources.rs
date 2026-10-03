@@ -1,3 +1,5 @@
+use std::collections::BTreeMap;
+
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, utoipa::ToSchema)]
@@ -42,6 +44,37 @@ pub struct ProvenanceEntry {
 
 pub use atlas_graph_types::ingest::Confidence;
 
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct ProvenanceTitles(BTreeMap<String, String>);
+
+impl ProvenanceTitles {
+    pub fn title_of(&self, provenance: &str) -> Option<&str> {
+        self.0.get(split_provenance_id(provenance).0).map(String::as_str)
+    }
+
+    pub fn rows(&self) -> impl Iterator<Item = (&str, &str)> {
+        self.0.iter().map(|(id, title)| (id.as_str(), title.as_str()))
+    }
+}
+
+impl FromIterator<(String, String)> for ProvenanceTitles {
+    fn from_iter<I: IntoIterator<Item = (String, String)>>(rows: I) -> Self {
+        ProvenanceTitles(rows.into_iter().collect())
+    }
+}
+
+impl SourcesDocument {
+    pub fn provenance_titles(&self) -> Result<ProvenanceTitles, String> {
+        self.provenances
+            .iter()
+            .map(|p| match self.sources.iter().find(|s| s.id == p.source) {
+                Some(source) => Ok((p.id.clone(), source.title.clone())),
+                None => Err(format!("provenance {} names the source {}, which the registry does not list", p.id, p.source)),
+            })
+            .collect()
+    }
+}
+
 pub fn split_provenance_id(id: &str) -> (&str, Option<&str>) {
     match id.split_once('/') {
         Some((kind, locator)) => (kind, Some(locator)),
@@ -57,6 +90,50 @@ mod tests {
     fn a_bare_provenance_id_is_all_kind_and_no_locator() {
         assert_eq!(split_provenance_id("theographic"), ("theographic", None));
         assert_eq!(split_provenance_id("openbible.info-cross-references"), ("openbible.info-cross-references", None));
+    }
+
+    #[test]
+    fn a_provenance_is_titled_by_the_source_it_names_whatever_locator_it_carries() {
+        // Arrange
+        let registry = SourcesDocument {
+            categories: vec![],
+            sources: vec![SourceEntry {
+                id: "kretzmann-commentary".into(),
+                category: "lutheran-texts".into(),
+                title: "Kretzmann's Popular Commentary".into(),
+                what_it_is: String::new(),
+                what_we_built: String::new(),
+                license: "Public domain".into(),
+                link: None,
+                licenses_row_key: "Kretzmann".into(),
+            }],
+            provenances: vec![ProvenanceEntry { id: "kretzmann".into(), source: "kretzmann-commentary".into(), confidence: Confidence::Imported, locator: None }],
+        };
+
+        // Act
+        let titles = registry.provenance_titles().unwrap();
+
+        // Assert
+        assert_eq!(
+            [titles.title_of("kretzmann"), titles.title_of("kretzmann/jeremiah/1"), titles.title_of("kjv")],
+            [Some("Kretzmann's Popular Commentary"), Some("Kretzmann's Popular Commentary"), None]
+        );
+    }
+
+    #[test]
+    fn a_provenance_naming_no_listed_source_has_no_title_and_is_refused() {
+        // Arrange
+        let registry = SourcesDocument {
+            categories: vec![],
+            sources: vec![],
+            provenances: vec![ProvenanceEntry { id: "kjv".into(), source: "kjv-text".into(), confidence: Confidence::CanonicalText, locator: None }],
+        };
+
+        // Act
+        let titles = registry.provenance_titles();
+
+        // Assert
+        assert_eq!(titles, Err("provenance kjv names the source kjv-text, which the registry does not list".to_string()));
     }
 
     #[test]

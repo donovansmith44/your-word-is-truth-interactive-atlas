@@ -307,6 +307,10 @@ pub fn compile(raw_dir: &Path, curated_dir: &Path) -> Result<CompileOutput> {
 
     data.chronology_anchors = chronology_anchors;
     data.book_narration_windows = book_narration_windows;
+    data.provenance_titles = crate::sources::parse_sources(&read(&curated_dir.join("sources.toml"))?)?
+        .provenance_titles()
+        .map_err(anyhow::Error::msg)
+        .context("titling each provenance by the source it names (data/curated/sources.toml)")?;
     validate::run_chronology_anchors(&data.chronology_anchors, &data.events)
         .context("data/compiled/* was NOT written; fix data/curated/chronology-anchors.toml (a bad event_id, or an era_boundary row with no bound event_id)")?;
     validate::run_chronology_anchor_equality(&data.chronology_anchors, &data.events).context(

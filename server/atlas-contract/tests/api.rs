@@ -39,11 +39,11 @@ fn xrefs_tsv_from(data: &AtlasData) -> String {
 }
 
 fn graph_fixture() -> Arc<atlas_graph::GraphService> {
-    graph_fixture_for(&demo_fixture())
+    graph_fixture_for(&titled_demo_fixture())
 }
 
 fn app() -> axum::Router {
-    let data = demo_fixture();
+    let data = titled_demo_fixture();
     let graph = graph_fixture_for(&data);
     atlas_contract::app::build(Arc::new(data), graph, None)
 }
@@ -254,7 +254,7 @@ async fn event_endpoint_omits_when_for_general_kind_passages() {
 
 #[tokio::test]
 async fn general_kind_event_places_never_resolve_a_spurious_period_name() {
-    let mut data = demo_fixture();
+    let mut data = titled_demo_fixture();
     data.events.push(Event {
         id: "g-hebron".into(),
         label: "A general-kind passage mentioning Hebron".into(),
@@ -282,7 +282,7 @@ async fn general_kind_event_places_never_resolve_a_spurious_period_name() {
 }
 
 async fn data_hebron_period_name_still_resolves_for_a_real_event_kind_window() {
-    let mut data = demo_fixture();
+    let mut data = titled_demo_fixture();
     data.events.push(Event {
         id: "e-hebron-period".into(),
         label: "A real event-kind passage, dated inside Kirjath-arba's range".into(),
@@ -557,7 +557,7 @@ const YEAR_ZERO: i32 = 0;
 #[tokio::test]
 async fn a_person_whose_record_holds_a_year_zero_is_refused_as_this_atlases_own_defect() {
     // Arrange
-    let mut data = demo_fixture();
+    let mut data = titled_demo_fixture();
     data.people.push(Person { id: "nobody_0".into(), name: "Nobody".into(), birth_year: Some(YEAR_ZERO), verse_links: vec!["GEN.1.1".into()], ..Default::default() });
     let data: AtlasData = data.finish();
     let graph = graph_fixture_for(&data);
@@ -576,7 +576,7 @@ async fn a_person_whose_record_holds_a_year_zero_is_refused_as_this_atlases_own_
 #[tokio::test]
 async fn a_book_whose_record_dates_its_writing_at_one_end_only_is_refused_as_this_atlases_own_defect() {
     // Arrange
-    let mut data = demo_fixture();
+    let mut data = titled_demo_fixture();
     let joshua = data.books_meta.iter_mut().find(|meta| meta.book == "JOS").expect("the demo atlas records Joshua");
     joshua.write_to = None;
     let data: AtlasData = data.finish();
@@ -599,7 +599,7 @@ async fn a_book_whose_record_dates_its_writing_at_one_end_only_is_refused_as_thi
 #[tokio::test]
 async fn a_place_that_shares_a_catechism_items_id_carries_no_catechism_prose() {
     // Arrange
-    let mut data = demo_fixture();
+    let mut data = titled_demo_fixture();
     data.places.push(Place { id: "demo-item-1".into(), name: "Demo Item".into(), lat: 31.5, lon: 35.5, verse_links: vec!["JOS.1.1".into()] });
     let data: AtlasData = data.finish();
     let graph = graph_fixture_for(&data);
@@ -629,7 +629,7 @@ async fn a_place_that_shares_a_catechism_items_id_carries_no_catechism_prose() {
 #[tokio::test]
 async fn a_place_a_chapter_names_carries_the_node_it_opens_on() {
     // Arrange
-    let mut data = demo_fixture();
+    let mut data = titled_demo_fixture();
     data.places.push(Place { id: "kadesh".into(), name: "Kadesh".into(), lat: 30.6, lon: 34.4, verse_links: vec!["JOS.1.1".into()] });
     let data: AtlasData = data.finish();
     let graph = graph_fixture_for(&data);
@@ -669,7 +669,7 @@ async fn a_place_an_event_names_carries_the_node_it_opens_on() {
 #[tokio::test]
 async fn an_event_record_carries_every_section_and_note_its_event_records() {
     // Arrange
-    let mut data = demo_fixture();
+    let mut data = titled_demo_fixture();
     data.events.push(Event {
         id: "e-sections".into(),
         label: "A demo event cited by every outline".into(),
@@ -712,7 +712,7 @@ fn square_ring() -> Vec<(f64, f64)> {
 }
 
 fn app_with_test_polities() -> axum::Router {
-    let mut data = demo_fixture();
+    let mut data = titled_demo_fixture();
     data.polities = vec![
         Polity {
             id: "egypt".into(),
@@ -847,7 +847,7 @@ async fn polities_intersection_ordering_and_color_key_stability() {
 
 #[tokio::test]
 async fn polities_transition_and_fall_conditional_presence_on_the_wire() {
-    let mut data = demo_fixture();
+    let mut data = titled_demo_fixture();
     data.polities = vec![Polity {
         id: "delta-test".into(),
         color_key: 0,
@@ -929,7 +929,7 @@ async fn static_dir_serves_files_api_still_wins_and_falls_back_to_index_for_spa_
     std::fs::write(dir.join("index.html"), "<html>shell</html>").unwrap();
     std::fs::write(dir.join("app.css"), "body{color:red}").unwrap();
 
-    let app = atlas_contract::app::build(Arc::new(demo_fixture()), graph_fixture(), Some(dir.clone()));
+    let app = atlas_contract::app::build(Arc::new(titled_demo_fixture()), graph_fixture(), Some(dir.clone()));
 
     let response = app
         .clone()
@@ -977,4 +977,11 @@ async fn static_dir_serves_files_api_still_wins_and_falls_back_to_index_for_spa_
     }
 
     std::fs::remove_dir_all(&dir).ok();
+}
+
+fn titled_demo_fixture() -> AtlasData {
+    let registry = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data/curated/sources.toml");
+    let mut data = demo_fixture();
+    data.provenance_titles = atlas_etl::sources::parse_sources(&std::fs::read_to_string(registry).unwrap()).unwrap().provenance_titles().unwrap();
+    data
 }

@@ -151,7 +151,7 @@ pub async fn event(State(data): State<Arc<AtlasData>>, State(graph): State<Arc<G
                     .analogue_provenance(&e.id, &other.id)
                     .filter(|p| !p.trim().is_empty())
                     .ok_or_else(|| ApiError::internal(&format!("analogue row {} <-> {} has no provenance to attribute it to", e.id, other.id)))?;
-                Ok(wire::EventAnalogue { id: other.id.clone(), title: other.label.clone(), provenance })
+                Ok(wire::EventAnalogue { id: other.id.clone(), title: other.label.clone(), provenance: crate::provenance::titled(&provenance, &data)? })
             }),
             Position::Edge(_) => None,
         })
@@ -171,13 +171,16 @@ pub async fn event(State(data): State<Arc<AtlasData>>, State(graph): State<Arc<G
         ref_note: e.ref_note.clone(),
         mentioned_in,
         analogues,
-        provenance: snap
-            .node(&atlas_graph::event_world::event_node_id(&e.id))
-            .map(|n| n.provenance)
-            .filter(|p| !p.trim().is_empty())
-            .ok_or_else(|| ApiError::internal(&format!("event {} has no node to attribute it to", e.id)))?,
-        witnesses_provenance: graph.attests_provenance(&e.id),
-        mentions_provenance: graph.event_mentions_provenance(&e.id),
+        provenance: crate::provenance::titled(
+            &snap
+                .node(&atlas_graph::event_world::event_node_id(&e.id))
+                .map(|n| n.provenance)
+                .filter(|p| !p.trim().is_empty())
+                .ok_or_else(|| ApiError::internal(&format!("event {} has no node to attribute it to", e.id)))?,
+            &data,
+        )?,
+        witnesses_provenance: crate::provenance::all_titled(&graph.attests_provenance(&e.id), &data)?,
+        mentions_provenance: crate::provenance::all_titled(&graph.event_mentions_provenance(&e.id), &data)?,
     }))
 }
 

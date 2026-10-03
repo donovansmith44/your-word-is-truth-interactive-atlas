@@ -24,7 +24,7 @@ pub async fn catechism_for_span(
     State(graph): State<Arc<GraphService>>,
     Reference(VerseSpan(span)): Reference<VerseSpan>,
 ) -> Result<Json<Vec<wire::CatechismRef>>, ApiError> {
-    let provenance = graph.provenance.by_family(atlas_graph::provenance::family::CATECHISM);
+    let provenance = crate::provenance::all_titled(&graph.provenance.by_family(atlas_graph::provenance::family::CATECHISM), &data)?;
     let out = data.catechism_items_for_span(&span).into_iter().map(|c| wire::CatechismRef::attributed(c, &provenance)).collect();
     Ok(Json(out))
 }

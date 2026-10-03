@@ -5,7 +5,8 @@ namespace BibleAtlas.Client.Tests;
 
 internal sealed class ServedGraph : IExplorableClient
 {
-    public const string Provenance = "kjv";
+    public const string ProvenanceTitle = "The King James Version";
+    public static readonly Provenance Provenance = new(id: "kjv", title: ProvenanceTitle);
     public const string Version = "v";
     public const string EdgeId = "e";
 

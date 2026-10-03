@@ -11,6 +11,14 @@ pub use atlas_core::wire::NodeRef;
 use super::union::{case_of, tagged_by, Case};
 use super::TextSpan;
 
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, utoipa::ToSchema)]
+#[serde(deny_unknown_fields)]
+#[schema(description = "Where a record comes from: the provenance id it carries and the title of the source that id names.")]
+pub struct Provenance {
+    pub id: String,
+    pub title: String,
+}
+
 #[derive(Debug, Serialize, utoipa::ToSchema)]
 #[serde(deny_unknown_fields)]
 #[schema(description = "One node of the graph at a glance: what it is, what to call it, where it came from, and what it connects to. `version` stamps the data set it was read from.")]
@@ -18,7 +26,7 @@ pub struct NodeRecord {
     pub id: String,
     pub kind: NodeKind,
     pub label: String,
-    pub provenance: String,
+    pub provenance: Provenance,
     pub edge_summary: Vec<EdgeSummaryEntry>,
     pub version: String,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -192,7 +200,7 @@ pub struct EdgeRecord {
     pub subject: PositionRef,
     pub object: PositionRef,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub provenance: Option<String>,
+    pub provenance: Option<Provenance>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub votes: Option<u32>,
     #[serde(skip_serializing_if = "Option::is_none")]

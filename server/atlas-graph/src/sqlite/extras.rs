@@ -105,7 +105,7 @@ pub static TOKEN: TableSpec = TableSpec {
     pk: &["book", "chapter", "verse", "layer", "ord"],
 };
 
-static CORE_SPECS: [&TableSpec; 27] = [
+static CORE_SPECS: [&TableSpec; 28] = [
     &PLACE,
     &ERA,
     &POLITY_ERA,
@@ -133,6 +133,7 @@ static CORE_SPECS: [&TableSpec; 27] = [
     &super::sidecars::SOURCE_CATEGORY,
     &super::sidecars::SOURCE_ENTRY,
     &super::sidecars::PROVENANCE_ENTRY,
+    &super::sidecars::PROVENANCE_TITLE,
 ];
 static KJV_SPECS: [&TableSpec; 3] = [&VERSE, &RED_LETTER_SPAN, &KJV_TOKEN];
 static CONCORD_SPECS: [&TableSpec; 2] = [&CONCORD_UNIT, &CONCORD_TOKEN];

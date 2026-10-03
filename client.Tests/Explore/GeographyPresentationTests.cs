@@ -155,7 +155,7 @@ public sealed class GeographyPresentationTests
 
         // Assert
         Assert.Equal(
-            new Presentation.Card(BethelLabel, [new Presentation.Field(CanonicalNameField, BethelCanonical), new Presentation.Field(ProvenanceField, ServedGraph.Provenance)]),
+            new Presentation.Card(BethelLabel, [new Presentation.Field(CanonicalNameField, BethelCanonical), new Presentation.Field(ProvenanceField, ServedGraph.ProvenanceTitle)]),
             presented);
     }
 
@@ -180,7 +180,7 @@ public sealed class GeographyPresentationTests
                     new Presentation.Field(CanonicalNameField, BethelCanonical),
                     new Presentation.Field(EstablishedField, BethelEstablished.Label),
                     new Presentation.Field(DestroyedField, destroyed.Label),
-                    new Presentation.Field(ProvenanceField, ServedGraph.Provenance),
+                    new Presentation.Field(ProvenanceField, ServedGraph.ProvenanceTitle),
                 ]),
             presented);
     }
@@ -196,7 +196,7 @@ public sealed class GeographyPresentationTests
 
         // Assert
         Assert.Equal(
-            new Presentation.Card(PhilistiaLabel, [new Presentation.Field(ReignField, PhilistiaReign.Label), new Presentation.Field(ProvenanceField, ServedGraph.Provenance)]),
+            new Presentation.Card(PhilistiaLabel, [new Presentation.Field(ReignField, PhilistiaReign.Label), new Presentation.Field(ProvenanceField, ServedGraph.ProvenanceTitle)]),
             presented);
     }
 
@@ -211,7 +211,7 @@ public sealed class GeographyPresentationTests
 
         // Assert
         Assert.Equal(
-            new Presentation.Card(ConquestLabel, [new Presentation.Field(WindowField, ConquestWindow.Label), new Presentation.Field(ProvenanceField, ServedGraph.Provenance)]),
+            new Presentation.Card(ConquestLabel, [new Presentation.Field(WindowField, ConquestWindow.Label), new Presentation.Field(ProvenanceField, ServedGraph.ProvenanceTitle)]),
             presented);
     }
 
@@ -226,7 +226,7 @@ public sealed class GeographyPresentationTests
 
         // Assert
         Assert.Equal(
-            new Presentation.Card(KingdomLabel, [new Presentation.Field(WindowField, KingdomWindow.Label), new Presentation.Field(ProvenanceField, ServedGraph.Provenance)]),
+            new Presentation.Card(KingdomLabel, [new Presentation.Field(WindowField, KingdomWindow.Label), new Presentation.Field(ProvenanceField, ServedGraph.ProvenanceTitle)]),
             presented);
     }
 
