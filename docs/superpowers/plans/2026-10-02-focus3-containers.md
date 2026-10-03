@@ -11,7 +11,7 @@
 
 **Tech Stack:** Rust (axum, utoipa, `atlas-contract`, `atlas-graph`, `atlas-etl`, `graph-types`); .NET 10 Blazor WebAssembly (`BibleAtlas.Client`, `BibleAtlas.Client.Exploring`); xUnit + bUnit; Playwright; Stryker.NET; cargo-mutants via `scripts/mutants-parallel.sh`.
 
-**Spec:** `docs/superpowers/specs/2026-09-26-focus-exploration-design.md` §3.3 (`Sequence`), §5 (FOCUS-3 row and the 2026-09-20 acceptance paragraph), §6 (test ids), §9 (deletions), §11 R11–R13, §10 R8, §12 R15–R20. **Principles:** 4, 9, 12, 14b, 21–23, 24–24b, 25, 26, 26a, 27–27g (rule 27 is on `worktree-bible-atlas-m1`'s `docs/PRINCIPLES.md`, not yet on `F1-int`; Task 0 notes it). **Queue:** A-F3; closes PAGE-BOUNDARY-BUG-1 and the rest of the 2026-09-20 list; the FOCUS-3 sites of F-13, F-63 (PassageList's "all"), F-65 (passage-side `CanonRef` sites), F-66 (`ConcordToc`, `ChapterText` in the core); FOCUS-2's FINDINGS "`TextUnit.ref` restates the node" and "the range routes parse references per request".
+**Spec:** `docs/superpowers/specs/2026-09-26-focus-exploration-design.md` §3.3 (`Sequence`), §5 (FOCUS-3 row and the 2026-09-20 acceptance paragraph), §6 (test ids), §9 (deletions), §11 R11–R13, §10 R8, §12 R15–R20. **Principles:** 4, 9, 12, 14b, 21–23, 24–24b, 25, 26, 26a, 27–27g (rule 27 is on `worktree-bible-atlas-m1`'s `docs/PRINCIPLES.md`, not yet on `F1-int`; Task 0 notes it). **Queue:** A-F3; Amendment A (end of this plan) closes F-78 and the served half of F-79; closes PAGE-BOUNDARY-BUG-1 and the rest of the 2026-09-20 list; the FOCUS-3 sites of F-13, F-63 (PassageList's "all"), F-65 (passage-side `CanonRef` sites), F-66 (`ConcordToc`, `ChapterText` in the core); FOCUS-2's FINDINGS "`TextUnit.ref` restates the node" and "the range routes parse references per request".
 
 **Base:** `origin/lane/claude/F1-int` at `eea9023` (FOCUS-1 + FOCUS-6 + fix waves through ATTEST-1). Assume F-74's semantics (`previous` is null only on the first page; `lane/claude/FIX6`). Every gate takes `--base eea9023` (PRINCIPLES 22). When F1-int lands, rebase onto the landed head and write the new base into the ledger (`.superpowers/sdd/2026-10-02-focus3/progress.md`).
 
@@ -87,7 +87,8 @@ FOCUS-2's plan (`origin/lane/claude/F2-plan`, 994b6ca) touches most files this b
 | Section | Held by | Why |
 |---|---|---|
 | `contract`: `export_contract`, AQC/AGC, `client.ContractGenerator` | Task 2 (regen #1), then Task 9 (regen #2); each only after FOCUS-2's regen in flight has released | one generated document |
-| `contract`: rebuilding `data/compiled` | Task 3 (rebuild #1), then Task 4 (rebuild #2); each after FOCUS-2's T1A/T2 rebuilds | one artifact |
+| `contract`: rebuilding `data/compiled` | Task 3 (rebuild #1, carrying Task 3a's parser, Amendment A), then Task 4 (rebuild #2); each after FOCUS-2's T1A/T2 rebuilds | one artifact |
+| `contract`: regenerating for `UnitText.parts` | Task 3a, in the same hold as rebuild #1 (Amendment A) | one generated document |
 | `contract`: re-blessing pacts and fixtures | right after each rebuild or regen above | moves the version root |
 | `heavy`: `cargo test --workspace`, full Playwright | Tasks 2, 3, 4, 9, 10 | memory |
 | `heavy` with "mutation" | Task 10 only, inside the owner's window | once per batch |
@@ -645,13 +646,13 @@ Primary is the lane's critical-path work; the companion is unlike work paired be
 | 0 | owner: OPEN 1–13; Task 0 | FOCUS-2 wave 0 (its Task 5) | — | — |
 | 1 | Task 1 (C#: ToC, `ReadingAddress`, route law) | FOCUS-2 Task 1 (Rust) | — (F2 holds `contract`) | route-law pair entries (listed) |
 | 2 | Task 2 (Rust: text page; regen #1 after F2's) | FOCUS-2 Task 3 (C#) | `contract` regen, re-bless; `heavy` | `GeneratedUsageTests`: `TextPage` |
-| 3 | Task 3 (Rust/data: citations; rebuild #1 after F2's) | Task 5 written against `ServedGraph` (lands after F2 T3) | `contract` rebuild; `heavy` | as wave 2 |
+| 3 | Task 3a (Rust/data: the parser keeps every source text node; Amendment A), then Task 3 (Rust/data: citations); one regen and rebuild #1 after F2's | Task 5 written against `ServedGraph` (lands after F2 T3) | `contract` rebuild; `heavy` | as wave 2 |
 | 4 | Task 5 lands; Task 6 (C#: Bible reader) after F2 T4 | Task 4 (Rust: passages; rebuild #2) | `contract` rebuild #2; `heavy` | Playwright: Task 6 Step 4's set |
 | 5 | Task 7 (C#: Concord) | Task 9's server half written, not regenerated | — | + Task 7's set |
 | 6 | Task 8 (C#: deletions) | Task 9 (Rust: regen #2 after F2 T6) | `contract` regen #2; `heavy` | + Task 8's set |
 | 7 | Task 10 (specs, gates, close) | FOCUS-4 may start its shared-file tasks after Task 8 lands | `heavy`; mutation in the owner's window; `land` after review | carried reds and named F-55 flakes only |
 
-**Critical path:** OPEN answers → F2 T1B → Task 2 → (F2 T3) Task 5 → (F2 T4) Task 6 → Task 7 → Task 8 → Task 9 → Task 10. Tasks 1, 3 and 4 ride beside it.
+**Critical path:** OPEN answers → F2 T1B → Task 2 → (F2 T3) Task 5 → (F2 T4) Task 6 → Task 7 → Task 8 → Task 9 → Task 10. Tasks 1, 3a, 3 and 4 ride beside it.
 
 ## FINDINGS this plan expects to raise (for the queue; the owner decides)
 
@@ -738,3 +739,383 @@ Primary is the lane's critical-path work; the companion is unlike work paired be
 - **The `contains` index supports a keyset start at an ordinal** (as the neighbour read does). Fallback: add the index the read needs, with its law.
 - **`cites` rows' `to_last` ranges stay inside one corpus.** Fallback: Task 4 stops and reports.
 - **FOCUS-2's T4 leaves `Reader.razor`'s opening lines as the plan expects.** Fallback: re-anchor this plan's Task 6 against F2-int before starting it.
+
+---
+
+## Amendment A (F-78): the Concord parser keeps every source text node
+
+Added 2026-10-02. It adds **Task 3a** and two owner questions (OPEN A1, A2). Nothing above changes except the critical-section and wave rows that name Task 3a. The measurements below were read from `data/raw/concord` and the served artifact at root `69fefc39…`, without modifying either.
+
+### A.1 What is lost today
+
+The parser (`server/atlas-etl/src/concord.rs`) turns an article body into strings by excision. A text node that no excision rule keeps is gone, with no disclosure. Four mechanisms drop text:
+
+| Mechanism | Where | What it drops |
+|---|---|---|
+| M1. `strip_complete_headings` excises every complete `<hN>…</hN>` | `clean_paragraph_text` | Every heading with its words. Because a group's gaps are concatenated **before** excision, an `<h4>` that wraps a marker becomes "complete" across two gaps, and its body text is excised too. So 7.3.1–3 lose "I believe in God the Father Almighty, Maker of heaven and earth." and the other two articles of the Creed. |
+| M2. `strip_standalone_strong_paragraphs` | `clean_paragraph_text` | `<p><strong>` … `</strong></p>`, whose close is searched past the paragraph it opened. 7.6.4 loses everything from the servant's confession ("I, a poor sinner, confess myself…") through the master's ("…short measure."), including "A master or mistress may say thus:". The eight Daily Prayers (7.8) lose their prayers. |
+| M3. Text before an article's first marker is in no gap | `group_and_number_paragraphs` | Luther's salutation to the Small Catechism ("Martin Luther, to All Faithful…", "Grace, Mercy, and Peace…"); the "As the head of the family…" subtitles; Apology XXIV's opening "At the outset we must again make the preliminary statement that we"; the Treatise's subscription preamble; Smalcald III XIII's subtitle. |
+| M4. The marker-less fallback reads `<p>` only | `split_on_paragraph_tags` | Headings in the Ecumenical Creeds ("Written against the Arians."). |
+
+**Measured on the real source:**
+- The ten pages and 23 Smalcald sub-pages hold 137 `<h4>` nodes.
+- **88 `<h4>` nodes and one `<h5>`** in served articles have words that land in no served unit:
+
+  | Document | `<h4>` dropped |
+  |---|---|
+  | Small Catechism | 25 |
+  | Epitome | 37 |
+  | Large Catechism | 13 |
+  | Preface | 6 |
+  | Smalcald Articles | 3 |
+  | Solid Declaration | 2 |
+  | Augsburg Confession | 1 |
+  | Ecumenical Creeds | 1 |
+- **28 `<p>` runs** are dropped by M2 and M3: 23 in the Small Catechism, 2 in the Treatise and 1 in the Apology.
+- In all, about **1,700 words** of source text reach no reader.
+- The 48 `<h4>` nodes that survive are the ones whose marker sits inside them with no second marker following (e.g. "Thou shalt have no other gods."). They survive by accident, as plain text.
+
+**Classified against the Triglot scan** (archive.org `concordiatriglot00unse`, public domain):
+
+| Class | Nodes | Examples | Must it be served? |
+|---|---|---|---|
+| **Body text: Luther's or the Confessions' own words** | about 30 | the three Creed articles (7.3.1–3); the absolution dialogue ("Proceed!", "God be merciful to thee…", "Dost thou believe that my forgiveness is God's forgiveness?", "As thou believest, so be it done unto thee… Depart in peace.") and both confessions in 7.6.4; the eight Daily Prayers (7.8); the salutation of Luther's preface; Smalcald III's opening ("Concerning the following articles we may treat with learned and reasonable men…"); Apology XXIV's opening clause; the Treatise's subscription preamble | **Yes.** It is the 1921 text, and it is missing. |
+| **Titles and subtitles the Triglot prints** | about 85 | the commandment, petition and Creed-article titles; "Secondly." / "Thirdly." / "Fourthly." in Baptism; the five "As the head of the family…" subtitles; the 37 Epitome section heads (STATUS CONTROVERSIAE, AFFIRMATIVE THESES, NEGATIVE THESES, the Anabaptist error lists); the 13 Large Catechism heads; "ARTICLES IN WHICH ARE REVIEWED THE ABUSES…" (AC) | **Yes, as headings.** They are the Triglot's own words, and the reader needs them to find its place. |
+| **Not the Triglot (F-79)** | 7 headings plus runs | five modern headings in the Preface ("The Naumburg Conference Failed", "The Torgau Conference of 1576"…); the Apology `<h5>` "Shouldn't this be V (IV II) – in Tappert and Kolb…"; the Christian Questions' bracket note | **No.** They are excluded by name (A.2), never served. |
+
+**F-79, which this amendment must meet** (the full report is the controller's `f79.md`): the served corpus already carries non-Triglot text:
+- **7.10.0–7.10.20** ("Christian Questions with Their Answers", 21 units) is a modern translation. The same vendored page carries the notice "© 1986 Concordia Publishing House. All rights reserved"; the Triglot prints no such text.
+- **bookofconcord.org's own notes:** 7.6.4's closing footnote "* These questions may not have been composed by Luther himself…", 2.1.4, and 4.5.212's "The following, through paragraph 213, are left out of the Readers Edition."
+- **Site furniture:** 2.1.5 ("Biblical references … can be found here ."), and 4.17.70 and 4.17.106. The last two are phantom units: a link "(see [AP IV 1](http://bocl.org?AP+IV+1) and [AP IV 106](…))" whose rendered spans the parser takes as markers 1 and 106.
+
+A parser that keeps every node would start serving the other non-Triglot nodes, so the closure must name what it leaves out.
+
+### A.2 The closure (rules 24, 24a, 24b)
+
+- **Category:** "the parser decides what text exists by excising strings". The failed abstraction is the **source text node**: today it has no type, so dropping one is invisible.
+- **Side:** the tool layer (rule 26a). The ETL alone reads the source's shape.
+- **Sites, all migrated:** M1–M4 above, and `is_skipped_article`. The latter is a domain list in code (rule 26), and it moves to data.
+
+**Closure:**
+1. **One door reads an article body.** A private `source_nodes(body)` is the only function in `concord.rs` that turns an article body into text. It yields every text node in source order with its block (heading, bold-only paragraph, paragraph) and the marker it follows, if any. `strip_complete_headings`, `strip_standalone_strong_paragraphs`, `split_on_paragraph_tags` and `clean_paragraph_text` are deleted. `strip_tags` and `decode_entities` become private helpers of `source_nodes`. No string excision remains in which to write an offender.
+2. **Every node is assigned by one total function, and it never mints or splits a unit:**
+   - a node belongs to the group of the nearest marker at or before it;
+   - nodes before an article's first marker lead its first unit;
+   - in a marker-less article, each paragraph block starts a unit, and a heading leads the next unit (the last unit, if none follows).
+3. **A unit's text is composed from its pieces, and its parts are a partition by type.** `ConcordParagraph.text` is deleted. The compiler composes the rendering from the pieces through `Parts::compose`, so text and parts cannot disagree (rule 6). `Parts` has a private field and two constructors, so a non-partition cannot be built.
+4. **What is not served is named in data, with a reason from a closed enum.** `data/curated/concord-source.toml` lists each exclusion (a whole article, or one exact run of source text that must occur exactly once in its article) and each role correction (OPEN A1). An entry that names nothing fails the read. Excluded text is counted in `ConcordStats.excluded`, never dropped silently. A marker group whose every node is excluded mints no unit.
+
+**Real-data law, written first and red on the current parser.** It goes in `server/atlas-etl/tests/concord_real_data.rs`:
+
+```rust
+#[test]
+fn every_source_text_node_lands_in_exactly_one_served_unit_or_one_named_exclusion()
+```
+
+- **Oracle, per article of all ten pages and the 23 Smalcald sub-pages:** the article body's words, with every tag stripped by the test's naive `<[^>]*>` rule and the marker labels removed, in source order.
+- **Compared against:** the words of that article's units' pieces, interleaved with its exclusions, also in source order.
+- **Assertion:** the list of missing or extra runs equals `vec![]`, as a whole-body assertion. Order makes it "exactly one": a duplicated node is an extra run.
+- **The oracle is deliberately not the parser's code.** An independent oracle is the point of the law, so this repetition is not a D.R.Y. finding (14b).
+- **Red at the base:** the 117 nodes and runs above, about 1,700 words, in seven documents. The ledger records the list.
+
+Further laws and unit tests, each red first:
+- `concord_real_data.rs`:
+  - `every_curated_exclusion_and_role_names_exactly_one_source_node`;
+  - `the_creeds_first_article_keeps_i_believe_in_god_the_father_almighty`: 7.3.1's pieces, whole, against the Triglot wording;
+  - `the_confession_form_keeps_both_confessions_and_the_absolution`: 7.6.4, whole.
+- `concord.rs` unit tests over fixtures:
+  - `a_heading_that_wraps_a_marker_keeps_its_words_in_that_markers_unit` (the Creed's `1b`);
+  - `a_bold_paragraph_never_reaches_past_its_own_paragraph` (7.6.4's shape);
+  - `text_before_the_first_marker_leads_the_first_unit`;
+  - `a_heading_in_an_unmarked_article_leads_the_next_unit_and_mints_none`;
+  - `an_excluded_run_is_counted_and_never_served`;
+  - `a_marker_group_of_only_excluded_text_mints_no_unit`.
+- `graph-types` canon vectors: `a_rendering_with_one_whole_text_part_encodes_as_its_text_alone` (A.4).
+
+**Guarantee:** every character of an article body is served in exactly one unit or excluded under a named, counted reason. There is no third path. The law walks every article of every page.
+
+### A.3 Signatures (for sign-off, rule 12)
+
+Graph types (`graph-types/src/text.rs`), with the names and offsets of the catechism model spec §3.2:
+
+```rust
+pub enum TextPartRole {
+    Heading,
+    Text,
+}
+
+pub struct TextPart {
+    pub role: TextPartRole,
+    pub start: u32,
+    pub end: u32,
+}
+
+pub struct Parts(Vec<TextPart>);
+
+impl Parts {
+    pub fn whole(text: &str) -> Parts;
+    pub fn compose(pieces: &[(TextPartRole, &str)]) -> (String, Parts);
+    pub fn iter(&self) -> impl Iterator<Item = &TextPart>;
+}
+
+pub struct Rendering {
+    pub text: String,
+    pub parts: Parts,
+}
+
+pub type LayerMap = BTreeMap<TranslationId, Rendering>;
+```
+
+- **Offsets** are characters, half-open, the convention of `WordsOfChristSpan`.
+- **`compose`** joins pieces with one space and merges adjacent pieces of one role into one part.
+- **Every reader of `renderings` reads `.text`.** That is about 20 files at `eea9023`, and `cargo build` enumerates them.
+- **A Bible verse is `Parts::whole`.** On disk, and in the canonical encoding that content-addresses a node, a rendering whose parts are one whole `Text` part encodes as its text alone. So no Bible node's pid changes, and the KJV section does not grow.
+
+ETL (`server/atlas-etl/src/concord.rs`; `read_all`'s signature is unchanged):
+
+```rust
+pub struct ConcordParagraph {
+    pub paragraph: u16,
+    pub source_label: String,
+    pub pieces: Vec<SourcePiece>,
+}
+
+pub struct SourcePiece {
+    pub role: TextPartRole,
+    pub text: String,
+}
+
+pub struct ConcordExclusion {
+    pub document: String,
+    pub article: String,
+    pub scope: ExclusionScope,
+    pub reason: ExclusionReason,
+}
+
+pub enum ExclusionScope {
+    WholeArticle,
+    Run(String),
+}
+
+pub enum ExclusionReason {
+    SiteFurniture,
+    EditorialNote,
+    NotPublicDomain,
+}
+
+pub struct ConcordRoleCorrection {
+    pub document: String,
+    pub article: String,
+    pub text: String,
+    pub role: TextPartRole,
+}
+
+pub struct ExcludedText {
+    pub document: &'static str,
+    pub article: String,
+    pub reason: ExclusionReason,
+    pub words: usize,
+}
+
+pub fn parse_concord_source(input: &str) -> Result<(Vec<ConcordExclusion>, Vec<ConcordRoleCorrection>)>;
+
+struct SourceNode {
+    block: SourceBlock,
+    marker: Option<usize>,
+    text: String,
+}
+
+enum SourceBlock {
+    Heading,
+    BoldParagraph,
+    Paragraph,
+}
+
+fn source_nodes(body: &str) -> Vec<SourceNode>;
+```
+
+- **`ConcordStats`:** `skipped_articles: usize` becomes `excluded: Vec<ExcludedText>`.
+- **The default role is the markup's:**
+  - a node in a `Heading` or `BoldParagraph` block that carries no marker is `Heading`;
+  - every other node is `Text`.
+- **A `ConcordRoleCorrection` overrides it** where the source's markup disagrees with the Triglot's typesetting (OPEN A1).
+- **Pieces stay at source-node granularity, one piece per text node, and the ETL never merges them.** So the catechism batch can re-role a node without re-parsing (A.7).
+
+Data (`data/curated/concord-source.toml`, CC0, provenance: the vendored pages checked against the 1921 Triglot scan):
+
+```toml
+[[exclude]]
+document = "small-catechism"
+article = "/small-catechism/prefaratory-notes/"
+reason = "site-furniture"
+
+[[exclude]]
+document = "small-catechism"
+article = "/small-catechism/how-christians-confess/"
+run = "* These questions may not have been composed by Luther himself but reflect his teachings and were included in editions of the Small Catechism during his lifetime."
+reason = "editorial-note"
+
+[[role]]
+document = "small-catechism"
+article = "/small-catechism/how-christians-confess/"
+text = "God be merciful to thee and strengthen thy faith! Amen."
+role = "text"
+```
+
+The compiler (`server/atlas-graph/src/concord_adapter.rs`):
+
+```rust
+pub fn paragraph_node(unit: ConcordRef, pieces: &[SourcePiece]) -> Node;
+```
+
+Wire (`server/atlas-contract/src/wire/graph.rs`, on FOCUS-2's `UnitText`):
+
+```rust
+pub struct UnitText {
+    pub locus: TextRef,
+    pub text: String,
+    pub parts: Vec<TextPart>,
+    pub words_of_christ: Vec<WordsOfChristSpan>,
+    pub anchors: Vec<Anchor>,
+}
+
+pub struct TextPart {
+    pub role: TextPartRole,
+    pub start: usize,
+    pub end: usize,
+}
+
+pub enum TextPartRole {
+    Heading,
+    Text,
+}
+```
+
+- **One builder fills `parts`:** FOCUS-2's `unit_text` reads `Rendering.parts` and computes nothing.
+- **A `Heading` part is not `TextUnit.heading` (`UnitHeading`), and this is not a D.R.Y. finding.** A Heading part is the source's own printed words inside the unit. A `UnitHeading` is a link to an event node whose label heads a verse. They are different facts.
+
+Client:
+- FOCUS-2's `UnitTextView` renders a unit by its served parts: a `Heading` part as its own line, `unit-part-heading`, and a `Text` part as body.
+- It reads the role and never the words (rule 25).
+- This lands in Task 7, after FOCUS-2's T3. Until then, `GeneratedUsageTests` stays red for `TextPart`, as it does for `TextPage`.
+
+### A.4 Schema, contract and re-bless
+
+| Item | Change | Why |
+|---|---|---|
+| `SECTION_SCHEMA_VERSION` | 22 → 23 | the TextUnit payload's rendering becomes `Rendering`; moves the version root |
+| `graph-types` | major | a public field's type changes (`LayerMap`) |
+| AQC | minor | `UnitText.parts`, `TextPart` and `TextPartRole` are added; if `scripts/contract-semver-gate.sh` classes a new required response field as major, it is major, and the gate decides |
+| AGC | minor | the feature `concord/parts.feature`: "a Small Catechism Creed paragraph holds its article's words as a Text part, after its title as a Heading part" |
+| `data/compiled` | rebuilt in Task 3's rebuild #1 | one `contract` hold covers the regen, the rebuild and one re-bless |
+
+The re-bless:
+- **Pacts and fixtures** that quote Concord text whose words grew: 7.1, 7.2, 7.3, 7.6.4, 7.8, the Large Catechism, the Epitome and the Solid Declaration heads, AC XXI, Ap XXIV, Smalcald III, and the Treatise.
+- **AGC pins of Concord `cites` edges.** `citations::cite_scripture` re-scans the longer text, so a citation after an inserted piece gets a new token span and edge id. New text may add citations; the ledger records the count before and after.
+- **No geography moves.** If a golden map fixture moves, stop for the owner.
+
+`LICENSES.md`: the Concord row names its exclusions (OPEN A2).
+
+### A.5 Paragraph numbering against the Triglot
+
+- **Kept text never changes a number.** Pieces join existing marker groups (A.2, point 2), so every `(part, article, paragraph)` at the base survives with the same number. The only moves come from exclusions:
+
+| Exclusion | Effect |
+|---|---|
+| Ap XVIII's link residue (OPEN A2) | Removes the phantom markers 1 and 106. Source labels 70–76 are served today as 4.17.107–113, because the parser remapped them after the phantom 106. After the exclusion they are served at their own labels, 4.17.70–76, which is a correction toward the Triglot. The phantom units 4.17.70 (old) and 4.17.106 disappear. The seven old ids stop resolving; the close report lists them, and FOCUS-9's `LegacySaves` owns id migration. |
+| 2.1.4 and 2.1.5 | The last two units of the Apostles' Creed article go; no other number moves. |
+| 7.10, the Christian Questions (OPEN A2) | The article goes, with its 21 units. The Small Catechism keeps nine articles and 70 paragraphs; it is the last article, so nothing renumbers. `concord_real_data.rs`'s counts and `SMALL_CATECHISM_TITLES_AS_SERVED` move with it. |
+
+- **Task 3 Step 2's spot-check** runs after Task 3a. It adds three named checks to its three per document:
+  - Ap XVIII 70 ("Nor, indeed, do we deny liberty to the human will");
+  - SC II 1, which must now hold "I believe in God the Father Almighty…";
+  - SC V, the whole form against the scan's section V.
+
+### A.6 Task 3a and its place in the waves
+
+**Task 3a: the Concord parser keeps every source text node** (Rust and data; OPEN A1, A2).
+
+- **Starts after:** FOCUS-2's T1B lands (`UnitText`, `unit_text`).
+- **Order:** before Task 3, in wave 3, because both edit `concord.rs`, and Task 3's numbering check must see the corrected numbers.
+- **Paired with:** C#, Task 5 (rule 23).
+- **Backend change, flagged:** tool layer and compiler, plus one wire field filled by FOCUS-2's builder. Rule 27 puts it in the compiler because which words a paragraph holds, and their roles, depend on the source alone.
+
+**Files:**
+- Modify:
+  - `server/atlas-etl/src/concord.rs`;
+  - `server/atlas-etl/src/curated.rs` (reads `concord-source.toml` beside `concord-titles.toml`);
+  - `graph-types/src/{text,node}.rs` and the canonical encoding (`graph-types/src/canon/node.rs`);
+  - every `renderings` reader;
+  - `server/atlas-graph/src/concord_adapter.rs`;
+  - `server/atlas-contract/src/{wire/graph,graph}.rs`;
+  - `contracts/*`, AGC;
+  - `LICENSES.md`;
+  - `data/compiled`, pacts.
+- Create:
+  - `data/curated/concord-source.toml`;
+  - `contracts/atlas-graph-contract/concord/parts.feature`.
+- Test:
+  - `server/atlas-etl/tests/concord_real_data.rs`;
+  - `concord.rs` unit tests;
+  - `graph-types/tests/canon_vectors.rs`;
+  - `server/atlas-contract/tests/graph_api.rs`, with `a_creed_paragraph_is_served_with_its_title_as_a_heading_part_and_its_article_as_text`, whole `UnitText`, read from the artifact.
+
+**Steps:**
+1. Write the failing tests (A.2). Run `cargo test -p atlas-etl --test concord_real_data every_source_text_node` → red. Record the missing runs in the ledger, by article.
+2. Implement A.2 and A.3. Delete the four excision functions and `is_skipped_article`. The comments on lines this task rewrites go with them (rule 9); no other comment is touched.
+3. Under the `contract` lock, in one hold with Task 3's rebuild #1 and after FOCUS-2's regen has released:
+   - regen;
+   - AQC and AGC bumps;
+   - rebuild;
+   - one re-bless;
+   - `client.ContractGenerator`.
+
+   Then release.
+4. Under the `heavy` lock: `cargo test --workspace`, graph-types, `bash scripts/contract-gate.sh --base eea9023` → green, except `GeneratedUsageTests` for `TextPart`.
+5. **Commit:** `concord: every source text node is served in exactly one paragraph or excluded by name; the Creed's articles, the absolution and the daily prayers are read again; a paragraph's parts are typed Heading or Text (F-78; F-79's served text excluded)`.
+
+**Task 7 additions:**
+- `UnitTextView` renders parts by role.
+- Playwright `BOC-PARTS-1`: the Creed's first article shows "I believe in God the Father Almighty, Maker of heaven and earth.", and Confession shows "As thou believest, so be it done unto thee.", both read from the served text.
+
+**Rule-24 table addition:**
+
+| Category | Closure | Guarantee |
+|---|---|---|
+| The parser decides what text exists by excising strings (F-78) | one `source_nodes` door; a total assignment; `Parts` as a typed partition; exclusions by name in data | `every_source_text_node_lands_in_exactly_one_served_unit_or_one_named_exclusion` over every article of every page |
+
+### A.7 Compatibility with the catechism model spec (CAT, draft)
+
+The amendment matches the spec's model and precludes none of its parts:
+
+| Point | How Amendment A meets the spec |
+|---|---|
+| **Names and offsets** | `TextPart`, `TextPartRole`, and character offsets as in §3.2. Amendment A ships `Heading` and `Text`. CAT-1 adds `Question`, `Answer` and `Bracket` by splitting `Text` parts, which keeps the partition. A variant added to the enum breaks every match until it is handled, which is the point of total matches. |
+| **Where parts live** | CAT §3.2 put `parts` on `TextUnit`, which predates FOCUS-2's T1B. They belong on `UnitText`, beside `words_of_christ`. The spec should follow. |
+| **CAT's partition law** | `every_text_unit_is_partitioned_into_parts` holds by type (`Parts`). CAT keeps it as a deserialization test. |
+| **CAT's red law** | `every_small_catechism_chief_part_paragraph_has_text_and_answer` needs `Answer`, so it stays CAT-1's. This amendment's red test is the Text-part half, 7.3.1. |
+| **Luther's questions** | Luther's questions ("What does this mean?" in `<em>`, "–Answer:") stay inside `Text` pieces at node granularity. CAT-1 re-roles them from the same `source_nodes` blocks (it may add an `Emphasis` block) or from `concord-source.toml` corrections, with no second parser. |
+| **Brackets** | The Triglot's brackets lie inside text nodes. CAT-1 splits them at `[`…`]`, inside the tool layer. |
+| **Not closed here** | §2.1 item 3's markup residue (`**`, `_…_`, a stray `*` reference mark, spaces before `:` and `?`) is character-level inside nodes. It is a separate category, F-CAT-d, and stays open. |
+| **CAT's §2.6 counts** | The spec's "91 Small Catechism paragraphs" becomes 70 under OPEN A2. |
+
+**Found while writing this amendment:** Task 3 says "Create `server/atlas-graph/src/citations.rs`", but that file exists at `eea9023`. It holds the Concord Scripture-citation scanner (`cite_scripture`, `scan`). Task 3's Triglotta citation module needs another name, `server/atlas-graph/src/triglotta.rs`, and its `cite` must not shadow the scanner. This is corrected here; Task 3's text otherwise stands.
+
+### A.8 Owner questions
+
+- **OPEN A1 (Task 3a). How should a kept text node be roled?** The source's markup and the Triglot's typesetting disagree in about 16 places:
+  - "The First/Second/Third Article." carries a paragraph marker, so markup says body text, but it is a title;
+  - the three absolution lines and the eight Daily Prayers are typeset in heading or bold-only blocks, so markup says heading, but they are prayer and dialogue;
+  - the master's confession and Smalcald III's opening are the same.
+
+  (a) Role each node by its markup, with about 16 curated corrections in `data/curated/concord-source.toml`, each checked against the Triglot scan. (b) Serve every kept node as `Text` now, and leave roles to the catechism batch.
+
+  **Recommend (a).** Under (b) the reader shows titles as body text and runs headings into prose. CAT-1 needs the same roles anyway.
+- **OPEN A2 (Task 3a). Should the non-Triglot text be excluded now?** The closure law makes every source node either served or excluded by name. Exclude in this rebuild:
+  - the Small Catechism's "Christian Questions with Their Answers" (7.10, 21 units), a © 1986 Concordia Publishing House translation that the Triglot does not contain;
+  - bookofconcord.org's own notes: 7.6.4's footnote, 2.1.4, 4.5.212's "Readers Edition" line, the Preface's modern headings, and the Apology `<h5>`;
+  - the site furniture: 2.1.5, Apology XVIII's link residue, and the two skipped articles.
+
+  Correct `LICENSES.md` to say so.
+
+  **Recommend yes.** They fail the licensing rule, or are not the 1921 text. Apology XVIII's paragraphs 70–76 return to their own numbers.
