@@ -7,6 +7,7 @@ use std::path::Path;
 
 use anyhow::{Context, Result};
 use atlas_graph_types::text::{Piece, Rendering, TextPartRole};
+use ego_tree::NodeId;
 use scraper::{ElementRef, Html, Node, Selector};
 
 /// One document's identity: its part number, its vendored filename stem, and its display title. The part
@@ -170,10 +171,10 @@ impl ConcordCorpus {
 pub fn read_all(root: &Path, curated_dir: &Path) -> Result<ConcordCorpus> {
     let titles = crate::curated::parse_concord_titles(&read_curated(curated_dir, "concord-titles.toml")?)?;
     let exclusions = parse_concord_exclusions(&read_curated(curated_dir, "concord-exclusions.toml")?)?;
-    let roles = parse_concord_roles(&read_curated(curated_dir, "concord-roles.toml")?)?;
+    let readings = parse_concord_readings(&read_curated(curated_dir, "concord-roles.toml")?)?;
     let mut docs = Vec::with_capacity(DOCUMENTS.len());
     let mut stats = ConcordStats::default();
-    let mut curation = Curation::new(&exclusions, &roles);
+    let mut curation = Curation::new(&exclusions, &readings);
     for spec in DOCUMENTS {
         let path = root.join(format!("{}.html", spec.key));
         let html = std::fs::read_to_string(&path).with_context(|| format!("reading {}", path.display()))?;
@@ -194,7 +195,7 @@ pub fn read_all(root: &Path, curated_dir: &Path) -> Result<ConcordCorpus> {
     curation.every_source_word_is_served_or_excluded()?;
     curation.every_entry_matched_once()?;
     stats.excluded_units = curation.unit_hits.iter().sum();
-    stats.corrected_roles = roles.iter().map(|row| row.occurrences).sum();
+    stats.corrected_roles = readings.correction.iter().map(|row| row.occurrences).sum();
     apply_title_overrides(&mut docs, &titles)?;
     stats.stripped_fragments = apply_strips(&mut docs, &exclusions.strip)?;
     let corpus = ConcordCorpus { documents: docs, stats };
@@ -326,8 +327,9 @@ impl SourceNode {
 }
 
 fn paragraphs_of(body: &[ElementRef], article: &mut ArticleCuration) -> (Vec<ConcordParagraph>, Vec<String>) {
-    let nodes = source_nodes(body);
-    article.agrees("page to source nodes", &source_characters(body), &characters(nodes.iter().map(|node| node.text.as_str())));
+    let text_markers = article.text_markers(body);
+    let nodes = source_nodes(body, &text_markers);
+    article.agrees("page to source nodes", &source_characters(body, &text_markers), &characters(nodes.iter().map(|node| node.text.as_str())));
     let mut kept_nodes: Vec<(SourceNode, TextPartRole)> = Vec::with_capacity(nodes.len());
     for node in nodes {
         if !article.drops_run(&node) {
@@ -347,8 +349,8 @@ fn characters<'t>(texts: impl Iterator<Item = &'t str>) -> String {
     texts.flat_map(str::chars).filter(|c| !c.is_whitespace()).collect()
 }
 
-fn source_nodes(body: &[ElementRef]) -> Vec<SourceNode> {
-    let mut walk = NodeWalk { nodes: Vec::new(), open: None };
+fn source_nodes(body: &[ElementRef], text_markers: &[NodeId]) -> Vec<SourceNode> {
+    let mut walk = NodeWalk { nodes: Vec::new(), open: None, text_markers };
     for element in body {
         walk.block(*element);
     }
@@ -356,9 +358,10 @@ fn source_nodes(body: &[ElementRef]) -> Vec<SourceNode> {
     walk.nodes
 }
 
-struct NodeWalk {
+struct NodeWalk<'m> {
     nodes: Vec<SourceNode>,
     open: Option<OpenNode>,
+    text_markers: &'m [NodeId],
 }
 
 struct OpenNode {
@@ -368,7 +371,7 @@ struct OpenNode {
     outside_strong: bool,
 }
 
-impl NodeWalk {
+impl NodeWalk<'_> {
     fn block(&mut self, element: ElementRef) {
         self.flush();
         self.children(element, block_of(element.value().name()).unwrap_or(SourceBlock::Paragraph), false);
@@ -381,7 +384,7 @@ impl NodeWalk {
                 Node::Text(text) => self.text(text, block, strong),
                 Node::Element(value) => {
                     let child = ElementRef::wrap(child).expect("an element node wraps as an element");
-                    if let Some(id) = marker_id(value) {
+                    if let Some(id) = marker_id(value).filter(|_| !self.text_markers.contains(&child.id())) {
                         self.flush();
                         self.open = Some(OpenNode { block, marker: Some(SourceMarker { id: id.to_string(), label: words_of(&child) }), text: String::new(), outside_strong: false });
                     } else if block_of(value.name()).is_some() {
@@ -433,10 +436,10 @@ fn marker_id(element: &scraper::node::Element) -> Option<&str> {
 
 const MARKER_SUFFIX: &str = "-acontent";
 
-fn source_characters(body: &[ElementRef]) -> String {
+fn source_characters(body: &[ElementRef], text_markers: &[NodeId]) -> String {
     body.iter()
         .flat_map(|element| element.descendants())
-        .filter(|node| !node.ancestors().any(|ancestor| ancestor.value().as_element().and_then(marker_id).is_some()))
+        .filter(|node| !node.ancestors().any(|ancestor| ancestor.value().as_element().and_then(marker_id).is_some() && !text_markers.contains(&ancestor.id())))
         .filter_map(|node| node.value().as_text().map(|text| text.to_string()))
         .flat_map(|text| text.chars().filter(|c| !c.is_whitespace()).collect::<Vec<char>>())
         .collect()
@@ -672,41 +675,55 @@ pub struct RoleCorrection {
     pub triglot: String,
 }
 
-#[derive(serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, serde::Deserialize)]
 #[serde(deny_unknown_fields)]
-struct ConcordRolesFile {
-    correction: Vec<RoleCorrection>,
+pub struct TextMarker {
+    pub document: String,
+    pub slug: String,
+    pub marker: String,
+    pub occurrence: usize,
+    pub triglot_page: u16,
+    pub triglot: String,
+}
+
+#[derive(Debug, Clone, Default, PartialEq, serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ConcordReadings {
+    pub correction: Vec<RoleCorrection>,
+    #[serde(default)]
+    pub text_marker: Vec<TextMarker>,
 }
 
 fn one_occurrence() -> usize {
     1
 }
 
-pub fn parse_concord_roles(input: &str) -> Result<Vec<RoleCorrection>> {
-    let file: ConcordRolesFile = toml::from_str(input).context("concord-roles.toml: invalid TOML or does not match the [[correction]] schema")?;
-    Ok(file.correction)
+pub fn parse_concord_readings(input: &str) -> Result<ConcordReadings> {
+    toml::from_str(input).context("concord-roles.toml: invalid TOML or does not match the [[correction]]/[[text_marker]] schema")
 }
 
 struct Curation<'a> {
     exclusions: &'a ConcordExclusions,
-    roles: &'a [RoleCorrection],
+    readings: &'a ConcordReadings,
     article_hits: Vec<usize>,
     unit_hits: Vec<usize>,
     run_hits: Vec<usize>,
     role_hits: Vec<usize>,
+    text_marker_hits: Vec<usize>,
     idle_roles: Vec<String>,
     gaps: Vec<String>,
 }
 
 impl<'a> Curation<'a> {
-    fn new(exclusions: &'a ConcordExclusions, roles: &'a [RoleCorrection]) -> Self {
+    fn new(exclusions: &'a ConcordExclusions, readings: &'a ConcordReadings) -> Self {
         Curation {
             exclusions,
-            roles,
+            readings,
             article_hits: vec![0; exclusions.article.len()],
             unit_hits: vec![0; exclusions.unit.len()],
             run_hits: vec![0; exclusions.run.len()],
-            role_hits: vec![0; roles.len()],
+            role_hits: vec![0; readings.correction.len()],
+            text_marker_hits: vec![0; readings.text_marker.len()],
             idle_roles: Vec::new(),
             gaps: Vec::new(),
         }
@@ -734,8 +751,9 @@ impl<'a> Curation<'a> {
         let articles = self.exclusions.article.iter().zip(&self.article_hits).filter(|(_, n)| **n != 1).map(|(x, n)| format!("concord-exclusions.toml: [[article]] {}{} matched {n} time(s)", x.document, x.slug));
         let units = self.exclusions.unit.iter().zip(&self.unit_hits).filter(|(_, n)| **n != 1).map(|(x, n)| format!("concord-exclusions.toml: [[unit]] {}{} {:?} matched {n} time(s)", x.document, x.slug, x.text));
         let runs = self.exclusions.run.iter().zip(&self.run_hits).filter(|(_, n)| **n != 1).map(|(x, n)| format!("concord-exclusions.toml: [[run]] {}{} {:?} matched {n} time(s)", x.document, x.slug, x.text));
-        let roles = self.roles.iter().zip(&self.role_hits).filter(|(x, n)| **n != x.occurrences).map(|(x, n)| format!("concord-roles.toml: [[correction]] {}{} {:?} matched {n} time(s), not {}", x.document, x.slug, x.text, x.occurrences));
-        let unmatched: Vec<String> = articles.chain(units).chain(runs).chain(roles).chain(self.idle_roles.iter().cloned()).collect();
+        let text_markers = self.readings.text_marker.iter().zip(&self.text_marker_hits).filter(|(_, n)| **n != 1).map(|(x, n)| format!("concord-roles.toml: [[text_marker]] {}{} {:?} matched {n} time(s)", x.document, x.slug, x.marker));
+        let roles = self.readings.correction.iter().zip(&self.role_hits).filter(|(x, n)| **n != x.occurrences).map(|(x, n)| format!("concord-roles.toml: [[correction]] {}{} {:?} matched {n} time(s), not {}", x.document, x.slug, x.text, x.occurrences));
+        let unmatched: Vec<String> = articles.chain(units).chain(runs).chain(roles).chain(text_markers).chain(self.idle_roles.iter().cloned()).collect();
         if unmatched.is_empty() {
             Ok(())
         } else {
@@ -753,15 +771,27 @@ struct ArticleCuration<'c, 'a> {
 impl ArticleCuration<'_, '_> {
     fn role_of(&mut self, node: &SourceNode) -> TextPartRole {
         let markup = node.markup_role();
-        let Some(i) = self.curation.roles.iter().position(|x| x.document == self.document && x.slug == self.slug && x.text == node.text) else {
+        let Some(i) = self.curation.readings.correction.iter().position(|x| x.document == self.document && x.slug == self.slug && x.text == node.text) else {
             return markup;
         };
         self.curation.role_hits[i] += 1;
-        let corrected = self.curation.roles[i].role;
+        let corrected = self.curation.readings.correction[i].role;
         if corrected == markup {
             self.curation.idle_roles.push(format!("concord-roles.toml: [[correction]] {}{} {:?} names the role its markup already gives", self.document, self.slug, node.text));
         }
         corrected
+    }
+
+    fn text_markers(&mut self, body: &[ElementRef]) -> Vec<NodeId> {
+        let mut listed = Vec::new();
+        for (i, row) in self.curation.readings.text_marker.iter().enumerate().filter(|(_, row)| row.document == self.document && row.slug == self.slug) {
+            let named: Vec<ElementRef> = body.iter().flat_map(|element| element.descendent_elements()).filter(|element| marker_id(element.value()) == Some(row.marker.as_str())).collect();
+            if let Some(marker) = named.get(row.occurrence.saturating_sub(1)) {
+                self.curation.text_marker_hits[i] += 1;
+                listed.push(marker.id());
+            }
+        }
+        listed
     }
 
     fn drops_run(&mut self, node: &SourceNode) -> bool {
@@ -1082,7 +1112,8 @@ triglot = "absent"
     fn an_exclusion_entry_that_matches_nothing_is_refused_naming_it() {
         // Arrange
         let ex = exclusions(ONE_OF_EACH);
-        let mut curation = Curation::new(&ex, &[]);
+        let nothing_read = ConcordReadings::default();
+        let mut curation = Curation::new(&ex, &nothing_read);
         curation.drops_article("ecumenical-creeds", "/ecumenical-creeds/questions/");
         // Act
         let refused = curation.every_entry_matched_once().unwrap_err().to_string();
@@ -1243,7 +1274,8 @@ triglot = "absent"
         // Arrange
         let none = ConcordExclusions::default();
         let corrections = [prayer_correction(TextPartRole::Heading)];
-        let mut curation = Curation::new(&none, &corrections);
+        let corrected = readings(&corrections);
+        let mut curation = Curation::new(&none, &corrected);
         let page = Html::parse_fragment(DAILY_PRAYER);
         paragraphs_of(&[page.root_element()], &mut curation.article(FIXTURE_DOCUMENT, FIXTURE_SLUG));
         // Act
@@ -1257,7 +1289,8 @@ triglot = "absent"
         // Arrange
         let none = ConcordExclusions::default();
         let corrections = [prayer_correction(TextPartRole::Text)];
-        let curation = Curation::new(&none, &corrections);
+        let corrected = readings(&corrections);
+        let curation = Curation::new(&none, &corrected);
         // Act
         let refused = curation.every_entry_matched_once().unwrap_err().to_string();
         // Assert
@@ -1268,7 +1301,8 @@ triglot = "absent"
     fn an_article_whose_paragraphs_lose_source_text_is_refused_naming_it() {
         // Arrange
         let none = ConcordExclusions::default();
-        let mut curation = Curation::new(&none, &[]);
+        let nothing_read = ConcordReadings::default();
+        let mut curation = Curation::new(&none, &nothing_read);
         curation.article("defense", "/defense/x/").agrees("source nodes to paragraphs", "Ofthemass.Thefirst", "Thefirst");
         // Act
         let refused = curation.every_source_word_is_served_or_excluded().unwrap_err().to_string();
@@ -1386,7 +1420,7 @@ in His sight. Rom. 3 and 4.</p>"#;
         let spec = ConcordDocSpec { part: 1, key: "preface", title: "Preface to the Book of Concord" };
         let none = ConcordExclusions::default();
         // Act
-        let (doc, _, _) = parse_document(html, &spec, &mut Curation::new(&none, &[])).unwrap();
+        let (doc, _, _) = parse_document(html, &spec, &mut Curation::new(&none, &ConcordReadings::default())).unwrap();
         // Assert
         let read: Vec<(u16, String, Vec<(u16, Vec<Piece>)>)> = doc.articles.iter().map(|a| (a.article, a.title.clone(), numbered(&a.paragraphs))).collect();
         assert_eq!(read, vec![(1, "Preface to the Book of Concord".to_string(), vec![(1, vec![text("To the Readers.")])])]);
@@ -1404,7 +1438,7 @@ in His sight. Rom. 3 and 4.</p>"#;
         let spec = ConcordDocSpec { part: 7, key: "small-catechism", title: "The Small Catechism" };
         let skips = exclusions("markers = []\n[[article]]\ndocument = \"small-catechism\"\nslug = \"/small-catechism/prefaratory-notes/\"\nkind = \"site-furniture\"\ntriglot = \"absent\"\n");
         // Act
-        let (doc, disclosures, skipped) = parse_document(html, &spec, &mut Curation::new(&skips, &[])).unwrap();
+        let (doc, disclosures, skipped) = parse_document(html, &spec, &mut Curation::new(&skips, &ConcordReadings::default())).unwrap();
         // Assert
         let read: Vec<(u16, String)> = doc.articles.iter().map(|a| (a.article, a.slug.clone())).collect();
         assert_eq!((skipped, read), (1, vec![(1, "/small-catechism/ten-commandments/".to_string())]));
@@ -1426,11 +1460,16 @@ in His sight. Rom. 3 and 4.</p>"#;
     const FIXTURE_SLUG: &str = "/defense/x/";
 
     fn read_article(fixture: &str, curated: &ConcordExclusions, roles: &[RoleCorrection]) -> (Vec<ConcordParagraph>, Vec<String>) {
-        let mut curation = Curation::new(curated, roles);
+        let corrected = readings(roles);
+        let mut curation = Curation::new(curated, &corrected);
         let page = Html::parse_fragment(fixture);
         let (paragraphs, anomalies) = paragraphs_of(&[page.root_element()], &mut curation.article(FIXTURE_DOCUMENT, FIXTURE_SLUG));
         curation.every_source_word_is_served_or_excluded().unwrap();
         (paragraphs, anomalies)
+    }
+
+    fn readings(corrections: &[RoleCorrection]) -> ConcordReadings {
+        ConcordReadings { correction: corrections.to_vec(), text_marker: Vec::new() }
     }
 
     fn numbered(paragraphs: &[ConcordParagraph]) -> Vec<(u16, Vec<Piece>)> {

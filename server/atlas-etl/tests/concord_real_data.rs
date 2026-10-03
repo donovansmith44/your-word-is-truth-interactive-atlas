@@ -25,8 +25,8 @@ fn ten_documents_parse_clean_with_the_expected_per_document_paragraph_counts() {
         (6, "power-and-primacy", 3, 114),
         (7, "small-catechism", 9, 70),
         (8, "large-catechism", 7, 748),
-        (9, "epitome", 13, 265),
-        (10, "solid-declaration", 14, 734),
+        (9, "epitome", 13, 264),
+        (10, "solid-declaration", 14, 733),
     ];
     assert_eq!(counts, expected, "per-document (part, key, article_count, paragraph_count)");
 
@@ -141,7 +141,7 @@ fn every_source_text_node_lands_in_exactly_one_served_unit_or_one_named_exclusio
     assert_eq!(read.map_err(|refusal| refusal.to_string()), Ok((SERVED_PARAGRAPHS, EXCLUDED_UNITS)));
 }
 
-const SERVED_PARAGRAPHS: usize = 3802;
+const SERVED_PARAGRAPHS: usize = 3800;
 const EXCLUDED_UNITS: usize = 4;
 
 #[test]

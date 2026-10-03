@@ -168,3 +168,23 @@ text = "OF BAPTISM."
 role = "heading"
 triglot_page = 579
 triglot = "The Short Preface's heading over the words of institution of Baptism."
+# A [[text_marker]] names a paragraph-marker span (by its id, less the
+# "-acontent" suffix) whose label is really words of the page: the site
+# encoded a Scripture verse number as a marker. Its label is read as text, so
+# it neither opens a paragraph nor leaves the verse number out.
+
+[[text_marker]]
+document = "epitome"
+slug = "/epitome/the-lords-supper/"
+marker = "ep-vii-0028"
+occurrence = 1
+triglot_page = 813
+triglot = "The verse of 'strengthening of their weak faith [Matt. 9, 12; 11, 5. 28].' (Epitome VII 19); the page has no paragraph 28 there."
+
+[[text_marker]]
+document = "solid-declaration"
+slug = "/solid-declaration/church-rites-adiaphora/"
+marker = "sd-x-0007"
+occurrence = 1
+triglot_page = 1059
+triglot = "The verse of 'drowned in the depth of the sea [Matt. 18, 6, 7].' (Solid Declaration X 16); the page has no paragraph 7 there."

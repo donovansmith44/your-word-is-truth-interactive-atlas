@@ -146,6 +146,7 @@ dependencies = [
  "anyhow",
  "atlas-core",
  "atlas-graph-types",
+ "ego-tree",
  "scraper",
  "serde",
  "serde_json",
