@@ -117,12 +117,15 @@
         {
             <div class="popover-section" data-testid="@($"{handle}-section-card")">
                 <p class="focus-title" data-testid="@($"{handle}-card-title")">@card.Title</p>
-                <dl class="focus-fields">
-                    @foreach (var field in card.Fields)
-                    {
-                        <div class="focus-field" data-testid="@($"{handle}-field-{field.Name}")"><dt>@field.Name</dt><dd>@field.Value</dd></div>
-                    }
-                </dl>
+                @Fields(handle, card.Fields)
+            </div>
+        }
+
+        @if (presented.Presentation is Presentation.Text text)
+        {
+            <div class="popover-section" data-testid="@($"{handle}-section-text")">
+                <UnitTextView Unit="text.Unit" Handle="@handle" OnFollow="OnFollow" />
+                @Fields(handle, text.Fields)
             </div>
         }
 
@@ -165,6 +168,16 @@
                 @Reveal(presented, group, section)
             </div>
         }
+    };
+
+    private static RenderFragment Fields(string handle, IReadOnlyList<Presentation.Field> fields) => __builder =>
+    {
+        <dl class="focus-fields">
+            @foreach (var field in fields)
+            {
+                <div class="focus-field" data-testid="@($"{handle}-field-{field.Name}")"><dt>@field.Name</dt><dd>@field.Value</dd></div>
+            }
+        </dl>
     };
 
     private static IEnumerable<Entry> Shown(Presented presented, FrontierGroup group) => presented.Windows[group.Kind].Shown;

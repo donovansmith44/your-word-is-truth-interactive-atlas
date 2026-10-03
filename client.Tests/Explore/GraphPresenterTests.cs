@@ -10,7 +10,22 @@ public sealed class GraphPresenterTests
     private const string Genesis1Id = "Container:bible-chapter-GEN-1";
     private const string Genesis1Label = "Genesis 1";
 
+    private const string ProvenanceField = "Provenance";
+    private const string JesusText = "For God so loved the world";
+    private const string ConfessionText = "Our churches teach that God so loved the world.";
+    private const int WorldStart = 21;
+    private const int WorldEnd = 26;
+    private const int CitationStart = 30;
+    private const int CitationEnd = 47;
+
     private static readonly IPresenter Presenter = new GraphPresenter();
+    private static readonly NodeRef John316 = ServedGraph.Ref(NodeKind.TextUnit, "text-unit:JHN.3.16", "JHN.3.16");
+    private static readonly NodeRef AugsburgIv = ServedGraph.Ref(NodeKind.TextUnit, "text-unit:BoC 7.4.1", "BoC 7.4.1");
+    private static readonly NodeRef World = ServedGraph.Ref(NodeKind.Place, "Place:world", "The world");
+    private static readonly UnitText John316Text = ServedGraph.UnitTextOf(
+        new BibleRef(book: BookId.JHN, chapter: 3, verse: 16), JesusText, [ServedGraph.AnchorOf(EdgeKind.Mentions, World, WorldStart, WorldEnd)], [new WordsOfChristSpan(end: JesusText.Length, start: 0)]);
+    private static readonly UnitText AugsburgIvText = ServedGraph.UnitTextOf(
+        new ConcordRef(article: 4, paragraph: 1, part: 7), ConfessionText, [ServedGraph.AnchorOf(EdgeKind.Cites, John316, CitationStart, CitationEnd)], []);
     private static readonly NodeRef ExodusEvent = ServedGraph.Ref(NodeKind.Event, "Event:red_sea", "The Red Sea parted");
     private static readonly NodeRef Exodus14 = ServedGraph.Ref(NodeKind.TextUnit, "text-unit:EXO.14.21", "Exodus 14:21");
     private static readonly EdgeRef AttestedIn = ServedGraph.EdgeRef(EdgeKind.AttestedIn, "Attests:00aa", "The Red Sea parted · Attested in · Exodus 14:21");
@@ -82,5 +97,44 @@ public sealed class GraphPresenterTests
 
         // Assert
         Assert.Null(presentation);
+    }
+
+    [Fact]
+    public async Task A_verse_on_the_popover_presents_its_served_text_with_its_anchors_and_its_provenance()
+    {
+        // Arrange
+        var verse = Resolved.Node(new ServedGraph().Serving(ServedGraph.TextCard(John316, John316Text)), John316);
+
+        // Act
+        var presented = await Presenter.Present(new PresentationRequest(verse, Surface.Popover));
+
+        // Assert
+        Assert.Equal(new Presentation.Text(John316Text, [new Presentation.Field(ProvenanceField, ServedGraph.Provenance)]), presented);
+    }
+
+    [Fact]
+    public async Task A_concord_paragraph_on_the_popover_presents_its_served_text_with_its_citations()
+    {
+        // Arrange
+        var paragraph = Resolved.Node(new ServedGraph().Serving(ServedGraph.TextCard(AugsburgIv, AugsburgIvText)), AugsburgIv);
+
+        // Act
+        var presented = await Presenter.Present(new PresentationRequest(paragraph, Surface.Popover));
+
+        // Assert
+        Assert.Equal(new Presentation.Text(AugsburgIvText, [new Presentation.Field(ProvenanceField, ServedGraph.Provenance)]), presented);
+    }
+
+    [Fact]
+    public async Task A_text_unit_served_without_its_text_is_a_contract_breach()
+    {
+        // Arrange
+        var verse = Resolved.Node(new ServedGraph().Serving(ServedGraph.Card(NodeKind.TextUnit, John316.Id, John316.Label)), John316);
+
+        // Act
+        var breach = await Assert.ThrowsAsync<ContractBreach>(() => Presenter.Present(new PresentationRequest(verse, Surface.Popover)));
+
+        // Assert
+        Assert.Equal($"{John316.Id} is a {NodeKind.TextUnit} served without its {nameof(UnitText)}", breach.Message);
     }
 }

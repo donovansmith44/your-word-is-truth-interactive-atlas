@@ -80,6 +80,14 @@ internal sealed class ServedGraph : IExplorableClient
             @event: null, id: id, kind: kind, label: label, person: null, place: null, era: null, map: null, polity: null,
             provenance: Provenance, text: null, version: Version);
 
+    public static NodeRecord TextCard(NodeRef unit, UnitText text, params FrontierGroup[] groups) =>
+        Card(unit.Kind, unit.Id, unit.Label, groups) with { Text = text };
+
+    public static UnitText UnitTextOf(TextRef locus, string text, IReadOnlyList<Anchor> anchors, IReadOnlyList<WordsOfChristSpan> wordsOfChrist) =>
+        new(anchors: anchors, locus: locus, text: text, wordsOfChrist: wordsOfChrist);
+
+    public static Anchor AnchorOf(EdgeKind kind, NodeRef node, int start, int end) => new(end: end, kind: kind, node: node, start: start);
+
     public static EdgeRecord EdgeRecordOf(EdgeRef edge, NodeRef subject, NodeRef @object, params FrontierGroup[] groups) =>
         EdgeRecordOf(edge, subject, @object, Provenance, groups);
 
