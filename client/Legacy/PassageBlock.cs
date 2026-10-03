@@ -25,7 +25,7 @@ public static class VerseTextResolver
     {
         var pairs = vrefs.Select(CanonRef.ParseVerse).Select(p => (p.Book, p.Chapter)).Distinct().ToList();
         var chapters = new Dictionary<(string, int), ChapterText>();
-        var fetched = await Task.WhenAll(pairs.Select(p => api.ChapterText(p.Book, p.Chapter)));
+        var fetched = await Task.WhenAll(pairs.Select(p => api.ChapterText(LegacyNodeIds.Chapter(p.Book, p.Chapter))));
         foreach (var (pair, chapter) in pairs.Zip(fetched))
         {
             chapters[pair] = chapter;
@@ -47,7 +47,7 @@ public static class VerseTextResolver
     {
         var chapters = spans.SelectMany(ChaptersOf).Distinct().ToList();
         Dictionary<(BookId Book, int Chapter), ChapterText> text;
-        var fetched = await Task.WhenAll(chapters.Select(c => api.ChapterText(c.Book.WireName(), c.Chapter)));
+        var fetched = await Task.WhenAll(chapters.Select(c => api.ChapterText(LegacyNodeIds.Chapter(c.Book.WireName(), c.Chapter))));
         text = chapters.Zip(fetched).ToDictionary(pair => pair.First, pair => pair.Second);
 
         return spans

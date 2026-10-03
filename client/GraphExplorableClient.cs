@@ -1,3 +1,4 @@
+#pragma warning disable ATLASWIRE
 using BibleAtlas.Client.Contract;
 
 namespace BibleAtlas.Client;

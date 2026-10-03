@@ -47,7 +47,7 @@ public sealed class AtlasMapSourceTests
     {
         // Arrange
         var (source, atlas, handler) = Make();
-        var expected = new MapLayers(await atlas.SceneScripture("JHN.3.16"), []);
+        var expected = new MapLayers(await atlas.SceneScripture(Wire.Read<BibleAtlas.Client.Contract.BibleReference>("JHN.3.16")), []);
         handler.Requested.Clear();
         // Act
         var layers = await source.For("JHN.3.16");

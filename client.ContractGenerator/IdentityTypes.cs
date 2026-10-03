@@ -5,6 +5,8 @@ namespace BibleAtlas.Client.ContractGenerator;
 
 public static class IdentityTypes
 {
+    public const string TransportOnly = "ATLASWIRE";
+
     public static IReadOnlyDictionary<JsonSchema, string> Of(OpenApiDocument document)
     {
         var leaves = document.Definitions.Where(definition => IsLeaf(definition.Value) && !ContractGeneration.Unread.Contains(definition.Key)).ToDictionary(definition => definition.Value, definition => definition.Key, (IEqualityComparer<JsonSchema>)ReferenceEqualityComparer.Instance);
@@ -18,7 +20,7 @@ public static class IdentityTypes
         var records = identities
             .OrderBy(identity => identity.Value, StringComparer.Ordinal)
             .Select(identity => Record(identity.Value, identity.Key, document, identities));
-        return "\nnamespace BibleAtlas.Client.Contract\n{\n" + string.Concat(records) + "}\n";
+        return $"\n#pragma warning disable {TransportOnly}\nnamespace BibleAtlas.Client.Contract\n{{\n" + string.Concat(records) + $"}}\n#pragma warning restore {TransportOnly}\n";
     }
 
     public static IReadOnlySet<(string From, string To)> Widenings(OpenApiDocument document)
@@ -63,6 +65,7 @@ public static class IdentityTypes
                 {
                     private {{name}}({{primitive}} value) => Value = value;
 
+                    [System.Diagnostics.CodeAnalysis.Experimental("{{TransportOnly}}")]
                     public {{primitive}} Value { get; }
 
                     public override string ToString() => {{text}};
