@@ -1,0 +1,47 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><TargetFramework>net10.0</TargetFramework><TreatWarningsAsErrors>true</TreatWarningsAsErrors><GeneratedContract>$(MSBuildProjectDirectory)/obj/Contract/Wire.g.fs</GeneratedContract></PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(GeneratedContract)" />
+    <Compile Include="obj/Contract/Vocabulary.g.fs" />
+    <Compile Include="Domain/Positive.fs" />
+    <Compile Include="Domain/NonEmpty.fs" />
+    <Compile Include="Domain/Rooted.fs" />
+    <Compile Include="Domain/Skeleton.fs" />
+    <Compile Include="Domain/Time.fs" />
+    <Compile Include="Domain/Text.fs" />
+    <Compile Include="Domain/Containers.fs" />
+    <Compile Include="Domain/Graph.fs" />
+    <Compile Include="Domain/History.fs" />
+    <Compile Include="Domain/YearReading.fs" />
+    <Compile Include="Paging/ReadingWindow.fs" />
+    <Compile Include="Paging/NeighbourWindow.fs" />
+    <Compile Include="Paging/PageCache.fs" />
+    <Compile Include="Admission/ArrayIndex.fs" />
+    <Compile Include="Admission/DocumentPosition.fs" />
+    <Compile Include="Admission/Coordinates.fs" />
+    <Compile Include="Admission/HttpUrl.fs" />
+    <Compile Include="Admission/Scalars.fs" />
+    <Compile Include="Admission/TextSpans.fs" />
+    <Compile Include="Admission/Paths.fs" />
+    <Compile Include="Admission/WireFailure.fs" />
+    <Compile Include="Admission/ReadFailure.fs" />
+    <Compile Include="Admission/Failure.fs" />
+    <Compile Include="Domain/Position.fs" />
+    <Compile Include="Exploration/Focus.fs" />
+    <Compile Include="Exploration/Trail.fs" />
+    <Compile Include="Exploration/Explore.fs" />
+    <Compile Include="Loading.fs" />
+    <Compile Include="Admission/Json.fs" />
+    <Compile Include="Presentation.fs" />
+    <Compile Include="Api.fs" /><Compile Include="Admission/GraphRead.fs" />
+    <Compile Include="Model.fs" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="FSharp.SystemTextJson" Version="1.4.36" />
+    <PackageReference Include="FSharpPlus" Version="1.9.1" />
+    <ProjectReference Include="../../client-fsharp.ContractGenerator/BibleAtlas.FSharp.ContractGenerator.fsproj" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+  <Target Name="GenerateFSharpContract" BeforeTargets="CoreCompile" Inputs="$(MSBuildProjectDirectory)/../../contracts/openapi.yaml;$(MSBuildProjectDirectory)/../../contracts/atlas-graph-contract/fixtures/graph-vocabulary.json;$(MSBuildProjectDirectory)/../../client-fsharp.ContractGenerator/bin/$(Configuration)/net10.0/BibleAtlas.FSharp.ContractGenerator.dll" Outputs="$(GeneratedContract);$(MSBuildProjectDirectory)/obj/Contract/Vocabulary.g.fs">
+    <Exec Command="dotnet &quot;$(MSBuildProjectDirectory)/../../client-fsharp.ContractGenerator/bin/$(Configuration)/net10.0/BibleAtlas.FSharp.ContractGenerator.dll&quot; &quot;$(MSBuildProjectDirectory)/../../contracts/openapi.yaml&quot; &quot;$(GeneratedContract)&quot; &quot;$(MSBuildProjectDirectory)/../../contracts/atlas-graph-contract/fixtures/graph-vocabulary.json&quot; &quot;$(MSBuildProjectDirectory)/obj/Contract/Vocabulary.g.fs&quot;" />
+  </Target>
+</Project>
