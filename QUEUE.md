@@ -240,6 +240,10 @@ Protocol: `AGENTS.md`. Plan: `docs/superpowers/plans/2026-09-30-v1-roadmap.md`.
 - **Owner ruling (2026-10-02):** "Use overpass for all header fonts and Atkinson hyperlegible for everything else." Bundled (owner chose: unmodified OFL-1.1 files + license text; exception recorded in LICENSES.md — fonts are presentation, not ingested data). Being added to `lane/claude/FSTYLE`; Codex reviews the whole range.
 - **Status:** review (Codex): `b3d7cfa..lane/claude/FSTYLE` b2ff768 (1018890 + 5af437f + b2ff768 fonts: bundled OFL woff2, `--font-heading`/`--font-body`, `TypefaceLawTests` red then green; client 735/735; reader/popover Playwright 113/4/0); law `client.Tests/Views/ViewStyleLawTests.cs` red on the eight classes, then green; client 734/734, contract 55/55, FocusView Playwright 122 pass / 3 skip / 1 carried (density smoke); WebKit before/after screenshots shown to the owner. Was: claimed (base `b3d7cfa`, branch `lane/claude/FSTYLE`; touches `client/wwwroot/css/app.css`, `client/Views/FocusView.razor` class names only, `client.Tests` law; lands before FOCUS-2, which rebases on it)
 
+### A-NOBLURB: places carry no blurb
+- **Owner ruling (2026-10-02):** "Get rid of the blurbs on locations."
+- **Status:** claimed:claude:2026-10-02 (base `b3d7cfa`, `lane/claude/NOBLURB`): commit 1 the client field and specs (merged into FOCUS-2 at once for the owner's app); commit 2 `PlaceDetail.blurb` and the compiled blurb deleted, schema bump, regen, re-bless. The curated place history stays (it feeds established/destroyed).
+
 ### A-REVIEW: review every Codex item in `review`
 - **Status:** standing
 - **Scope:** the PRINCIPLES 14b pass (D.R.Y., the Haskell bar) plus the rule 24a category pass: for every fix, was the category named, the failed abstraction named, the side chosen, every site migrated? Plus 24b: is the category CLOSED (the raw thing private, the abstraction the one door, an enum or an enumerating law), with the guarantee named? Plus a grep of the diff for added comment lines. Land what passes, holding the `land` lock.
