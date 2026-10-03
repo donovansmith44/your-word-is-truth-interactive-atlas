@@ -160,38 +160,6 @@
       ],
       "type": "string"
     },
-    "BookMeta": {
-      "additionalProperties": false,
-      "properties": {
-        "author": {
-          "type": "string"
-        },
-        "write_from": {
-          "format": "int32",
-          "type": [
-            "integer",
-            "null"
-          ]
-        },
-        "write_place": {
-          "type": [
-            "string",
-            "null"
-          ]
-        },
-        "write_to": {
-          "format": "int32",
-          "type": [
-            "integer",
-            "null"
-          ]
-        }
-      },
-      "required": [
-        "author"
-      ],
-      "type": "object"
-    },
     "CanonBook": {
       "additionalProperties": false,
       "properties": {
@@ -2818,120 +2786,6 @@
       ],
       "type": "object"
     },
-    "VerseDetail": {
-      "additionalProperties": false,
-      "properties": {
-        "book_meta": {
-          "$ref": "#/$defs/BookMeta"
-        },
-        "catechism": {
-          "items": {
-            "$ref": "#/$defs/CatechismRef"
-          },
-          "type": "array"
-        },
-        "catechism_provenance": {
-          "items": {
-            "type": "string"
-          },
-          "type": "array"
-        },
-        "cross_refs": {
-          "items": {
-            "$ref": "#/$defs/CrossRef"
-          },
-          "type": "array"
-        },
-        "cross_refs_provenance": {
-          "items": {
-            "type": "string"
-          },
-          "type": "array"
-        },
-        "events": {
-          "items": {
-            "$ref": "#/$defs/VerseEvent"
-          },
-          "type": "array"
-        },
-        "provenance": {
-          "type": "string"
-        },
-        "ref": {
-          "type": "string"
-        },
-        "text": {
-          "type": "string"
-        },
-        "words_of_christ": {
-          "items": {
-            "$ref": "#/$defs/WordsOfChristSpan"
-          },
-          "type": "array"
-        }
-      },
-      "required": [
-        "ref",
-        "text",
-        "words_of_christ",
-        "book_meta",
-        "events",
-        "cross_refs",
-        "catechism",
-        "provenance",
-        "cross_refs_provenance",
-        "catechism_provenance"
-      ],
-      "type": "object"
-    },
-    "VerseEvent": {
-      "additionalProperties": false,
-      "properties": {
-        "id": {
-          "type": "string"
-        },
-        "kind": {
-          "$ref": "#/$defs/EventKind"
-        },
-        "label": {
-          "type": "string"
-        },
-        "places": {
-          "items": {
-            "type": "string"
-          },
-          "type": "array"
-        },
-        "provenance": {
-          "type": "string"
-        },
-        "verse_groups": {
-          "items": {
-            "$ref": "#/$defs/VerseGroup"
-          },
-          "type": "array"
-        },
-        "when": {
-          "oneOf": [
-            {
-              "$ref": "#/$defs/YearSpan"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        }
-      },
-      "required": [
-        "id",
-        "label",
-        "verse_groups",
-        "places",
-        "kind",
-        "provenance"
-      ],
-      "type": "object"
-    },
     "VerseGroup": {
       "additionalProperties": false,
       "properties": {
@@ -3028,5 +2882,5 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "description": "Derived from contracts/openapi.yaml by export_contract; do not edit.",
   "title": "Atlas Query Contract -- shapes",
-  "version": "0.24.0"
+  "version": "0.25.0"
 }

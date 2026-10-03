@@ -31,7 +31,7 @@ fn every_served_route_is_documented() {
     // Arrange
     let expected = [
         "/health", "/api/contract", "/api/scene", "/api/scene/scripture", "/api/books",
-        "/api/chapter/{cref}", "/api/kretzmann/chapter/{cref}", "/api/verse/{vref}", "/api/xrefs/{sref}",
+        "/api/chapter/{cref}", "/api/kretzmann/chapter/{cref}", "/api/xrefs/{sref}",
         "/api/catechism/item/{id}", "/api/catechism/{sref}", "/api/narratives",
         "/api/narrative/event/{id}", "/api/event/{id}", "/api/eras", "/api/polities", "/api/landmarks",
         "/api/land-mask", "/api/sources", "/api/node/{id}", "/api/node/{id}/edges", "/api/elements", "/api/text",

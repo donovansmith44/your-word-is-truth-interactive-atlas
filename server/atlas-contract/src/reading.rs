@@ -4,11 +4,10 @@ use std::sync::Arc;
 use axum::extract::State;
 use axum::Json;
 
-use atlas_core::data::{AtlasData, CanonBook, Event};
+use atlas_core::data::{AtlasData, CanonBook};
 use atlas_core::history::resolve_display_name;
-use atlas_core::refs::{ScriptureRef, VerseId};
-use atlas_core::scene::to_scene_event;
-use atlas_core::xrefs::{aggregate_span_xrefs, AggregatedXref};
+use atlas_core::refs::VerseId;
+use atlas_core::xrefs::aggregate_span_xrefs;
 use atlas_graph::window::{self, WindowDir};
 use atlas_graph::GraphService;
 use atlas_graph_types::edge::{Direction, EdgeKind, RelationId};
@@ -17,7 +16,7 @@ use atlas_graph_types::store::GraphQuery;
 use atlas_graph_types::text::VerseRef;
 
 use crate::error::{ApiError, ReferenceRefusals};
-use crate::reference::{ChapterReference, Reference, VerseReference, VerseSpan};
+use crate::reference::{ChapterReference, Reference, VerseSpan};
 use crate::wire;
 
 /// The books of the canon in order, each with the verse count of every one of its chapters.
@@ -111,104 +110,6 @@ pub async fn kretzmann_chapter(
     Ok(Json(wire::KretzmannChapter { verses, version: atlas_graph::version_hex(graph.version()) }))
 }
 
-/// One verse in full: its text, who wrote its book, the events it belongs to, its cross references with previews, and the catechism items citing it.
-///
-/// `{vref}` is `BOOK.CHAPTER.VERSE`, such as `JHN.3.16`; any other shape is
-/// `bad_ref`, and a well-formed reference this atlas holds no text for is
-/// `not_found`.
-#[utoipa::path(get, path = "/api/verse/{vref}", params(("vref" = String, Path)), responses((status = 200, body = wire::VerseDetail), ReferenceRefusals), tag = "reading")]
-pub async fn verse(State(data): State<Arc<AtlasData>>, State(graph): State<Arc<GraphService>>, Reference(VerseReference(vid)): Reference<VerseReference>) -> Result<Json<wire::VerseDetail>, ApiError> {
-    let canonical = format!("{}.{}.{}", vid.book.code(), vid.chapter, vid.verse);
-
-    let snap = graph.snapshot();
-    let text_id = atlas_graph::kjv_adapter::verse_node_id(vid.book.0, vid.chapter, vid.verse);
-    let text = window::render(&snap, &text_id).ok_or_else(|| ApiError::not_found("verse"))?;
-    let provenance = snap
-        .node(&text_id)
-        .map(|n| n.provenance)
-        .filter(|p| !p.trim().is_empty())
-        .ok_or_else(|| ApiError::internal(&format!("verse {canonical} rendered text with no node to attribute it to")))?;
-
-    let book_meta = data.books_meta.iter().find(|b| b.book == vid.book.code()).cloned().unwrap_or_else(|| atlas_core::data::BookMeta {
-        book: vid.book.code().to_string(),
-        author: String::new(),
-        write_place: None,
-        write_from: None,
-        write_to: None,
-    });
-
-    // An event whose own verses and one of its witnesses both name this verse must
-    // still surface once.
-    let mut seen_events: std::collections::HashSet<String> = std::collections::HashSet::new();
-    let mut attesting_events: Vec<Event> = drain_edges(&snap, &Position::Node(text_id.clone()), EdgeKind::Directed(RelationId::Attests, Direction::Inverse))
-        .into_iter()
-        .filter_map(|entry| match entry.node {
-            Position::Node(eid) => Some(eid),
-            Position::Edge(_) => None,
-        })
-        .filter(|eid| seen_events.insert(eid.raw.clone()))
-        .filter_map(|eid| atlas_graph::legacy::event_from_node(&eid, &snap, &graph.chronology.chrono))
-        .collect();
-    attesting_events.sort_by_key(|e| e.when.from_year);
-    let events: Vec<wire::VerseEvent> = attesting_events
-        .into_iter()
-        .map(|e| {
-            let node_provenance = snap
-                .node(&atlas_graph::event_world::event_node_id(&e.id))
-                .map(|n| n.provenance)
-                .filter(|p| !p.trim().is_empty())
-                .ok_or_else(|| ApiError::internal(&format!("event {} has no provenance to attribute this membership row to", e.id)))?;
-            let se = to_scene_event(&e);
-            let when = e.date();
-            Ok(wire::VerseEvent {
-                id: se.id,
-                label: se.label,
-                when,
-                verse_groups: se.verse_groups,
-                places: e.places.clone(),
-                kind: e.kind,
-                provenance: node_provenance,
-            })
-        })
-        .collect::<Result<Vec<_>, ApiError>>()?;
-
-    let cross_refs_provenance = graph.provenance.by_family(atlas_graph::provenance::family::CROSS_REFS);
-    let by_from = graph.cross_refs_for_span(&ScriptureRef::Verse(vid));
-    let cross_refs: Vec<wire::CrossRef> = by_from
-        .get(&canonical)
-        .map(Vec::as_slice)
-        .unwrap_or(&[])
-        .iter()
-        .filter_map(|cr| {
-            let first = first_verse_of_target(&cr.target)?;
-            let preview = graph.verse_text_of(&VerseRef { book: first.book.0, chapter: first.chapter, verse: first.verse })?;
-            Some(wire::CrossRef::attributed(AggregatedXref { target: cr.target.clone(), votes: cr.votes, preview }, &cross_refs_provenance))
-        })
-        .collect();
-
-    let catechism_provenance = graph.provenance.by_family(atlas_graph::provenance::family::CATECHISM);
-    let catechism: Vec<wire::CatechismRef> = data
-        .catechism_items_for_span(&ScriptureRef::Verse(vid))
-        .into_iter()
-        .map(|c| wire::CatechismRef::attributed(c, &catechism_provenance))
-        .collect();
-
-    let words_of_christ: Vec<wire::WordsOfChristSpan> = graph.red_letter_spans.get(&canonical).map(|spans| spans.iter().map(|&(start, end)| wire::WordsOfChristSpan { start, end }).collect()).unwrap_or_default();
-
-    Ok(Json(wire::VerseDetail {
-        r#ref: canonical,
-        text,
-        words_of_christ,
-        book_meta,
-        events,
-        cross_refs,
-        catechism,
-        provenance,
-        cross_refs_provenance,
-        catechism_provenance,
-    }))
-}
-
 /// The cross references of a verse or a span, strongest first: each target, how strongly it is attested, and a preview of the text it points at.
 ///
 /// `{sref}` is `BOOK.CHAPTER.VERSE` or a same-chapter span such as `GEN.1.1-5`;
@@ -227,20 +128,6 @@ pub async fn xrefs(State(graph): State<Arc<GraphService>>, Reference(VerseSpan(s
         .map(|x| wire::CrossRef::attributed(x, &provenance))
         .collect();
     Ok(Json(out))
-}
-
-/// The first verse id a canonicalised cross-ref target names, whether that target
-/// is one verse, a same-chapter span or a cross-chapter span. Duplicated from the
-/// ETL binary rather than shared: nothing serving a request may depend on it.
-fn first_verse_of_target(target: &str) -> Option<VerseId> {
-    if let Ok(v) = VerseId::parse_canonical(target) {
-        return Some(v);
-    }
-    if let Ok(ScriptureRef::Passage { book, chapter, from_verse, .. }) = ScriptureRef::parse(target) {
-        return Some(VerseId { book, chapter, verse: from_verse });
-    }
-    let (left, _right) = target.split_once('-')?;
-    VerseId::parse_canonical(left).ok()
 }
 
 pub(crate) fn place_ref(id: &str, name: String, query: &dyn GraphQuery) -> Result<wire::PlaceRef, ApiError> {
@@ -271,6 +158,5 @@ pub fn routes() -> utoipa_axum::router::OpenApiRouter<crate::app::AppState> {
         .routes(routes!(books))
         .routes(routes!(chapter))
         .routes(routes!(kretzmann_chapter))
-        .routes(routes!(verse))
         .routes(routes!(xrefs))
 }

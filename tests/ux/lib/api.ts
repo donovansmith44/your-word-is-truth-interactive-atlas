@@ -13,7 +13,6 @@ export const api = {
   books: () => getJson('/api/books'),
   eras: () => getJson('/api/eras'),
   chapter: (cref: string) => getJson(`/api/chapter/${cref}`),
-  verse: (vref: string) => getJson(`/api/verse/${vref}`),
   // Batch G1: GET /api/xrefs/{sref} -- span-aggregated cross-references.
   xrefs: (sref: string) => getJson(`/api/xrefs/${sref}`),
   // Batch F: GET /api/catechism/{sref} -- span-aggregated catechism
@@ -22,10 +21,6 @@ export const api = {
   catechism: (sref: string) => getJson(`/api/catechism/${sref}`),
   catechismItem: (id: string) => getJson(`/api/catechism/item/${id}`),
   narratives: () => getJson('/api/narratives'),
-  // Batch N: GET /api/narrative/event/{id} -- every narrative position the
-  // given event id occupies (mirrors catechismItem's own id-keyed shape;
-  // verse.narrative_positions is the verse-keyed sibling, already present
-  // on the verse() response above -- no separate wrapper needed for it).
   narrativeEventPositions: (eventId: string) => getJson(`/api/narrative/event/${encodeURIComponent(eventId)}`),
   // Batch T requirement 4: GET /api/event/{id} -- an EVENT-kind PASSAGE's
   // own rich content (title/when/places/witnesses/provenance).
