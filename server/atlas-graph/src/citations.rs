@@ -275,7 +275,7 @@ mod tests {
             let node = kjv_adapter::verse_node(&KjvVerse { book_index: position_of(code) as u8, chapter, verse: number, text: String::new() });
             graph.nodes.insert(node.id.clone(), node);
         }
-        let unit = concord_adapter::paragraph_node(PARAGRAPH, paragraph);
+        let unit = concord_adapter::paragraph_node(PARAGRAPH, atlas_graph_types::text::Rendering::whole(paragraph.to_string()));
         graph.reading.insert(CONCORD_CORPUS, ReadingSpine { order: vec![unit.id.clone()] });
         graph.nodes.insert(unit.id.clone(), unit);
         let stats = cite_scripture(&mut graph);

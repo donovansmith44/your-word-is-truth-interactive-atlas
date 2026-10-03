@@ -1,0 +1,170 @@
+# Role corrections to the Concord source markup (FOCUS-3, owner ruling A1).
+# The markup gives a node its default role: an unmarked heading or an all-bold
+# paragraph is a Heading, every other node is Text. Each row here names one
+# source node of a vendored page (document, article slug, its exact text; and
+# `occurrences` when the same words occur more than once in that article), the
+# role the 1921 Concordia Triglotta gives it, the Triglot page checked (the
+# Internet Archive scan concordiatriglot00unse), and what the page shows.
+# A row that matches no node, matches a different number of nodes, or names
+# the role the markup already gives refuses the compile.
+
+[[correction]]
+document = "small-catechism"
+slug = "/small-catechism/how-christians-confess/"
+text = "In particular I confess before you that I have not faithfully trained my children, domestics, and wife [family] for God’s glory. I have cursed, set a bad example by rude words and deeds, have done my neighbor harm and spoken evil of him, have overcharged and given false ware and short measure."
+role = "text"
+triglot_page = 553
+triglot = "The master's or mistress's confession, printed as running text after 'A master or mistress may say thus:'."
+
+[[correction]]
+document = "small-catechism"
+slug = "/small-catechism/how-christians-confess/"
+text = "God be merciful to thee and strengthen thy faith! Amen."
+role = "text"
+triglot_page = 555
+triglot = "The confessor's words, printed as running text."
+
+[[correction]]
+document = "small-catechism"
+slug = "/small-catechism/how-christians-confess/"
+text = "Dost thou believe that my forgiveness is God’s forgiveness?"
+role = "text"
+triglot_page = 555
+triglot = "The confessor's question, printed as running text."
+
+[[correction]]
+document = "small-catechism"
+slug = "/small-catechism/how-christians-confess/"
+text = "As thou believest, so be it done unto thee. And by the command of our Lord Jesus Christ I forgive thee thy sins, in the name of the Father and of the Son and of the Holy Ghost. Amen. Depart in peace."
+role = "text"
+triglot_page = 555
+triglot = "The absolution, printed as running text."
+
+[[correction]]
+document = "small-catechism"
+slug = "/small-catechism/daily-prayers/"
+text = "In the name of God the Father, Son, and Holy Ghost. Amen."
+occurrences = 2
+role = "text"
+triglot_page = 557
+triglot = "The blessing Luther gives to say, printed as running text."
+
+[[correction]]
+document = "small-catechism"
+slug = "/small-catechism/daily-prayers/"
+text = "I thank Thee, my Heavenly Father, through Jesus Christ, Thy dear Son, that Thou hast graciously kept me this day, and I pray Thee to forgive me all my sins, where I have done wrong, and graciously keep me this night. For into Thy hands I commend myself, my body and soul, and all things. Let Thy holy angel be with me, that the Wicked Foe may have no power over me. Amen."
+role = "text"
+triglot_page = 557
+triglot = "Luther's morning and evening prayers, printed as running text."
+
+[[correction]]
+document = "small-catechism"
+slug = "/small-catechism/daily-prayers/"
+text = "I thank Thee, my Heavenly Father, through Jesus Christ, Thy dear Son, that Thou hast kept me this night from all harm and danger; and I pray Thee to keep me this day also from sin and all evil, that all my doings and life may please Thee. For into Thy hands I commend myself, my body and soul, and all things. Let Thy holy angel be with me, that the Wicked Foe may have no power over me. Amen."
+role = "text"
+triglot_page = 557
+triglot = "Luther's morning and evening prayers, printed as running text."
+
+[[correction]]
+document = "small-catechism"
+slug = "/small-catechism/daily-prayers/"
+text = "The eyes of all wait upon Thee, O Lord; and Thou givest them their meat in due season; Thou openest Thine hand, and satisfiest the desire of every living thing."
+role = "text"
+triglot_page = 559
+triglot = "The table blessing (Ps. 145, 15-16), printed as running text."
+
+[[correction]]
+document = "small-catechism"
+slug = "/small-catechism/daily-prayers/"
+text = "Lord God, Heavenly Father, bless us and these Thy gifts, which we take from Thy bountiful goodness, through Jesus Christ, our Lord. Amen."
+role = "text"
+triglot_page = 559
+triglot = "The table prayer, printed as running text."
+
+[[correction]]
+document = "small-catechism"
+slug = "/small-catechism/daily-prayers/"
+text = "O give thanks unto the Lord, for He is good; for His mercy endureth forever. He giveth food to all flesh; He giveth to the beast his food, and to the young ravens which cry. He delighteth not in the strength of the horse; He taketh not pleasure in the legs of a man. The Lord taketh pleasure in them that fear Him, in those that hope in His mercy."
+role = "text"
+triglot_page = 559
+triglot = "The thanksgiving (Ps. 106 and 147), printed as running text."
+
+[[correction]]
+document = "small-catechism"
+slug = "/small-catechism/daily-prayers/"
+text = "We thank Thee, Lord God, Father, through Jesus Christ, our Lord, for all Thy benefits, who livest and reignest forever and ever. Amen."
+role = "text"
+triglot_page = 559
+triglot = "The prayer after meals, printed as running text."
+
+[[correction]]
+document = "small-catechism"
+slug = "/small-catechism/ten-commandments/"
+text = "What Does God Say of All These Commandments?"
+role = "heading"
+triglot_page = 543
+triglot = "The Triglot prints it as the heading over the close of the Commandments."
+
+[[correction]]
+document = "small-catechism"
+slug = "/small-catechism/the-creed/"
+text = "The First Article."
+role = "heading"
+triglot_page = 543
+triglot = "The Triglot prints 'The First Article. Of Creation.' as the heading over the article's words."
+
+[[correction]]
+document = "small-catechism"
+slug = "/small-catechism/the-creed/"
+text = "Of Creation."
+role = "heading"
+triglot_page = 543
+triglot = "The subtitle under 'The First Article.' in the Triglot's heading."
+
+[[correction]]
+document = "small-catechism"
+slug = "/small-catechism/the-creed/"
+text = "The Second Article."
+role = "heading"
+triglot_page = 545
+triglot = "The Triglot prints 'The Second Article. Of Redemption.' as the heading over the article's words."
+
+[[correction]]
+document = "small-catechism"
+slug = "/small-catechism/the-creed/"
+text = "Of Redemption."
+role = "heading"
+triglot_page = 545
+triglot = "The subtitle under 'The Second Article.' in the Triglot's heading."
+
+[[correction]]
+document = "small-catechism"
+slug = "/small-catechism/the-creed/"
+text = "The Third Article."
+role = "heading"
+triglot_page = 545
+triglot = "The Triglot prints 'The Third Article. Of Sanctification.' as the heading over the article's words."
+
+[[correction]]
+document = "small-catechism"
+slug = "/small-catechism/the-creed/"
+text = "Of Sanctification"
+role = "heading"
+triglot_page = 545
+triglot = "The subtitle under 'The Third Article.' in the Triglot's heading."
+
+[[correction]]
+document = "large-catechism"
+slug = "/large-catechism/preface/"
+text = "Thirdly - THE PRAYER, OR “OUR FATHER,” WHICH CHRIST TAUGHT."
+role = "heading"
+triglot_page = 577
+triglot = "The Short Preface's third heading, 'Thirdly. The Prayer, or \u201cOur Father,\u201d which Christ Taught.'"
+
+[[correction]]
+document = "large-catechism"
+slug = "/large-catechism/preface/"
+text = "OF BAPTISM."
+role = "heading"
+triglot_page = 579
+triglot = "The Short Preface's heading over the words of institution of Baptism."

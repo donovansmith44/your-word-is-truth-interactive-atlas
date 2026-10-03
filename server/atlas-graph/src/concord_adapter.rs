@@ -64,10 +64,10 @@ pub fn decode_text_unit(id: &AnyNodeId) -> Option<(u8, u16, u16)> {
     Some((part, article, paragraph))
 }
 
-pub fn paragraph_node(unit: ConcordRef, text: &str) -> Node {
+pub fn paragraph_node(unit: ConcordRef, rendering: Rendering) -> Node {
     let id = text_unit_id(unit.part, unit.article, unit.paragraph);
     let mut renderings = atlas_graph_types::text::LayerMap::new();
-    renderings.insert(TranslationId(CONCORD_TRANSLATION.to_string()), Rendering::whole(text.to_string()));
+    renderings.insert(TranslationId(CONCORD_TRANSLATION.to_string()), rendering);
     Node { id, payload: NodePayload::TextUnit { corpus: CONCORD_CORPUS, renderings }, provenance: PROVENANCE.to_string() }
 }
 
@@ -105,7 +105,7 @@ pub fn normalize(ctx: &mut BuildCtx) -> ConcordAdapterStats {
             for p in &article.paragraphs {
                 stats.paragraphs += 1;
                 let unit = ConcordRef { part: doc.part, article: article.article, paragraph: p.paragraph };
-                let node = paragraph_node(unit.clone(), &p.text);
+                let node = paragraph_node(unit.clone(), p.rendering.clone());
                 order.push(node.id.clone());
                 ctx.graph.nodes.insert(node.id.clone(), node);
 
@@ -210,8 +210,8 @@ mod tests {
                         slug: "/augsburg-confession/of-justification/".into(),
                         title: "Article IV. Of Justification.".into(),
                         paragraphs: vec![
-                            ConcordParagraph { paragraph: 1, source_label: "1".into(), text: "Also they teach that men cannot be justified before God by their own strength.".into() },
-                            ConcordParagraph { paragraph: 2, source_label: "2".into(), text: "This faith God imputes for righteousness in His sight.".into() },
+                            ConcordParagraph { paragraph: 1, source_label: "1".into(), rendering: Rendering::whole("Also they teach that men cannot be justified before God by their own strength.".into()) },
+                            ConcordParagraph { paragraph: 2, source_label: "2".into(), rendering: Rendering::whole("This faith God imputes for righteousness in His sight.".into()) },
                         ],
                     }],
                 },
@@ -226,7 +226,7 @@ mod tests {
                         paragraphs: vec![ConcordParagraph {
                             paragraph: 1,
                             source_label: "1/1b".into(),
-                            text: "Thou shalt have no other gods. What does this mean? \u{2013}Answer: We should fear, love, and trust in God above all things.".into(),
+                            rendering: Rendering::whole("Thou shalt have no other gods. What does this mean? \u{2013}Answer: We should fear, love, and trust in God above all things.".into()),
                         }],
                     }],
                 },
@@ -345,7 +345,7 @@ mod tests {
             article: 5,
             slug: "/augsburg-confession/of-the-ministry/".into(),
             title: "Article V. Of the Ministry.".into(),
-            paragraphs: vec![ConcordParagraph { paragraph: 1, source_label: "1".into(), text: "That we may obtain this faith, the Ministry of Teaching the Gospel was instituted.".into() }],
+            paragraphs: vec![ConcordParagraph { paragraph: 1, source_label: "1".into(), rendering: Rendering::whole("That we may obtain this faith, the Ministry of Teaching the Gospel was instituted.".into()) }],
         });
         let bundle = ConcordBundle { corpus, sc_overlap: vec![] };
         let mut ctx = ctx_with_concord(&canon, &verses, &atlas, &bundle);
