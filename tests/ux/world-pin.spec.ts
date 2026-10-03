@@ -175,7 +175,7 @@ test('TRAVERSAL-3: under a window that splits the narrative chain, the place\'s 
   await page.goto('/read/NUM/13');
   await openVerse(page, 26);
   await expect(page.getByTestId('popover-title')).toHaveText('NUM.13.26');
-  await page.getByTestId('verse-event-ex_kadesh').click();
+  await page.getByTestId('popover-link-attests-Event:ex_kadesh').click();
   await expect(page.getByTestId('popover-title')).toHaveText(kadesh.label);
   await expect(page.getByTestId('popover-section-event-chronology')).toBeVisible();
   await expect(page.getByTestId('event-story-thread-following-event-exodus')).toHaveText(`next → ${followingLabel}`);

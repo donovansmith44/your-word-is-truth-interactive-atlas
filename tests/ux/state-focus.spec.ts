@@ -23,11 +23,8 @@ test('ST-3/R3: the popover back-stack (now a FocusStack dispatch, not a local St
   await expect(page.getByTestId('popover-title')).toHaveText('GEN.1.1');
   await expect(page.getByTestId('popover-breadcrumb-back')).toHaveCount(0); // one entry -- nothing to back INTO yet
 
-  // Drill in via the "About this book" chip (Push -> AuthorNode) -- the
-  // SAME chip selection-tray.spec.ts's own sibling specs never touch, a
-  // genuine multi-level stack.
-  await page.getByTestId('popover-chip-book').click();
-  await expect(page.getByTestId('popover-title')).toHaveText('GEN');
+  await page.getByTestId('popover-up-member-of-Container:bible-chapter-GEN-1').click();
+  await expect(page.getByTestId('popover-title')).toHaveText('GEN.1');
   await expect(page.getByTestId('popover-breadcrumb-back')).toBeVisible();
 
   await page.getByTestId('popover-breadcrumb-back').click();
@@ -43,17 +40,12 @@ test('ST-3/R3: the popover back-stack (now a FocusStack dispatch, not a local St
 });
 
 test('ST-3/Adjudication D, under FOCUS-1 R1/R17: going back follows the dual link -- the breadcrumb collapses the return, the saved trail keeps it', async ({ page }) => {
-  // Back is a traversal of the dual edge (spec §10 R1), so it is a hop the
-  // trail records: GEN.1.1 -> "About this book" (the book container) ->
-  // Back -> save lists THREE nodes (GEN.1.1 -> Genesis -> GEN.1.1). The
-  // popover's breadcrumb, by contrast, collapses a hop followed by its own
-  // return (R17), so after the Back there is nothing left to go back to.
   await page.goto('/read/GEN/1');
   await openVerse(page, 1);
   await expect(page.getByTestId('popover-title')).toHaveText('GEN.1.1');
 
-  await page.getByTestId('popover-chip-book').click();
-  await expect(page.getByTestId('popover-title')).toHaveText('GEN');
+  await page.getByTestId('popover-up-member-of-Container:bible-chapter-GEN-1').click();
+  await expect(page.getByTestId('popover-title')).toHaveText('GEN.1');
 
   await page.getByTestId('popover-breadcrumb-back').click();
   await expect(page.getByTestId('popover-title')).toHaveText('GEN.1.1');
@@ -70,7 +62,7 @@ test('ST-3/Adjudication D, under FOCUS-1 R1/R17: going back follows the dual lin
 
   await item.locator('.hamburger-exploration-summary').click();
   await expect(page.getByTestId('exploration-node-0')).toHaveText('GEN.1.1');
-  await expect(page.getByTestId('exploration-node-1')).toHaveText('Genesis'); // the served label of the book container the hop resolved to
+  await expect(page.getByTestId('exploration-node-1')).toHaveText('Genesis 1');
   await expect(page.getByTestId('exploration-node-2')).toHaveText('GEN.1.1'); // the Back-landing entry itself
 });
 
@@ -95,16 +87,13 @@ test('ST-3/R3: closing the popover and reopening a DIFFERENT node starts a fresh
   // found impractical -- see that file's own header for why).
   await page.goto('/read/GEN/1');
   await openVerse(page, 1);
-  await page.getByTestId('popover-chip-book').click(); // GEN -- a 2-deep stack
+  await page.getByTestId('popover-up-member-of-Container:bible-chapter-GEN-1').click();
   await expect(page.getByTestId('popover-breadcrumb-back')).toBeVisible();
   await page.getByTestId('popover-close').click();
   await expect(page.getByTestId('popover')).toHaveCount(0);
 
   await openVerse(page, 2);
   await expect(page.getByTestId('popover-title')).toHaveText('GEN.1.2');
-  // A stale, un-reset atom would still hold the prior session's 2-deep
-  // stack (GEN.1.1 -> GEN), making THIS back button visible even though
-  // this is a brand-new, single-entry session.
   await expect(page.getByTestId('popover-breadcrumb-back')).toHaveCount(0);
 });
 

@@ -46,7 +46,7 @@ test('req 1b NAMED CASE (2 Kings 18-20 || Isaiah 36-39, Crockett sections 175-17
   // all three witnesses.
   await page.goto('/read/ISA/36');
   await openVerse(page, 2);
-  await page.getByTestId('verse-event-2ki_rabshakeh_message').click();
+  await page.getByTestId('popover-link-attests-Event:2ki_rabshakeh_message').click();
   const witnessesSection = page.getByTestId('popover-section-event-witnesses');
   await expect(witnessesSection).toBeVisible();
   await expect(witnessesSection.getByTestId('event-section-heading')).toHaveText('PARALLEL ACCOUNTS');
@@ -69,7 +69,7 @@ test('req 1b NAMED CASE, this run\'s own new authoring (both sides): Isaiah 2:2-
 
   await page.goto('/read/ISA/2');
   await openVerse(page, 2);
-  await page.getByTestId('verse-event-isa_mountain_of_the_lords_house').click();
+  await page.getByTestId('popover-link-attests-Event:isa_mountain_of_the_lords_house').click();
   const witnessesSection = page.getByTestId('popover-section-event-witnesses');
   await expect(witnessesSection).toBeVisible();
   await expect(witnessesSection.getByTestId('event-section-heading')).toHaveText('PARALLEL ACCOUNTS');

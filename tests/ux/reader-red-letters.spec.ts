@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { openVerse } from './lib/verse';
 import { api } from './lib/api';
+import { neighbourNode } from './lib/edges';
 
 // Batch RED-1 (owner order 2026-08-25, verbatim: "Red letters on Jesus'
 // words in every translation"; "SpokenAt is another edge"): CONTRACT.md's
@@ -73,39 +74,35 @@ test.describe('Batch RED-1: red letters (words of Christ)', () => {
     await expect(line.locator('.words-of-christ')).toHaveCount(0);
   });
 
-  test('RED-1: red letters also render in the verse popover focal preview (a peek), not just the primary reader column', async ({ page }) => {
+  test('RED-1: red letters also render in the verse popover\'s own text, not just the primary reader column', async ({ page }) => {
+    // Arrange
+    const record = await api.node('text-unit:MAT.4.19');
+    const spans = record.text.words_of_christ.map((span: { start: number; end: number }) => record.text.text.slice(span.start, span.end));
     await page.goto('/read/MAT/4');
+
+    // Act
     await openVerse(page, 19);
-    await expect(page.getByTestId('popover-title')).toHaveText('MAT.4.19');
-    // VerseTextSection's own compact FOCUS preview -- the SAME MentionText
-    // component, the SAME rule, a genuinely different rendering surface
-    // (CONTRACT.md's own RED-1 law: "Present on EVERY surface MENTION-1
-    // above already lists"). Scoped to popover-section-verse-text
-    // specifically (not the whole popover): a real, unplanned discovery
-    // this test itself caught live -- MAT.4.19's own cross-references
-    // section ALSO now renders red letters in its OWN passage previews
-    // (parallel Gospel accounts of the identical "Follow me" saying,
-    // e.g. MRK.1.16-20/LUK.5.1-11 -- PassageList.razor's own coverage,
-    // CONTRACT.md's RED-1 law's "PassageList.razor's/ArrowNav.razor's own
-    // compact passage previews" clause), so a bare `.popover
-    // .words-of-christ` locator is genuinely ambiguous now (a correct
-    // consequence of broader coverage, not a bug) -- the focal preview's
-    // own dedicated testid disambiguates.
-    const focal = page.getByTestId('popover-section-verse-text');
-    await expect(focal.locator('.words-of-christ')).toHaveText('Follow me, and I will make you fishers of men.');
+
+    // Assert
+    await expect(page.getByTestId('popover-title')).toHaveText(record.label);
+    await expect(page.getByTestId('popover-text').locator('.words-of-christ')).toHaveText(spans);
   });
 
-  test('RED-1: a parallel-account cross-reference preview also renders its own red letters (PassageList.razor coverage)', async ({ page }) => {
+  test('RED-1: a cross reference followed from the popover renders its own red letters', async ({ page }) => {
+    // Arrange
+    const cites = await api.nodeEdges('text-unit:MAT.4.19', 'cites');
+    const target = neighbourNode(cites.entries[0]);
+    const record = await api.node(target.id);
+    const spans = record.text.words_of_christ.map((span: { start: number; end: number }) => record.text.text.slice(span.start, span.end));
+    expect(spans.length, `${target.id} must carry words of Christ on the wire`).toBeGreaterThan(0);
     await page.goto('/read/MAT/4');
     await openVerse(page, 19);
-    await expect(page.getByTestId('popover-title')).toHaveText('MAT.4.19');
-    const xrefSection = page.getByTestId('xrefs-section-heading');
-    await expect(xrefSection).toBeVisible();
-    // At least one cross-reference passage preview must carry a red span
-    // (the parallel-account "Follow me" sayings in Mark/Luke) -- proves
-    // decision 5's "ONE render rule" reaches this fourth surface too, not
-    // merely the three the batch brief names by name.
-    const anyPassageRed = page.locator('[data-testid^="xref-item-"] .words-of-christ, [data-testid^="verse-parallel-"] .words-of-christ');
-    await expect(anyPassageRed.first()).toBeVisible();
+
+    // Act
+    await page.getByTestId(`popover-link-cites-${target.id}`).click();
+
+    // Assert
+    await expect(page.getByTestId('popover-title')).toHaveText(target.label);
+    await expect(page.getByTestId('popover-text').locator('.words-of-christ')).toHaveText(spans);
   });
 });

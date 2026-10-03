@@ -31,6 +31,9 @@ import { loadToc } from './lib/canon';
 
 type ChapterVerse = { verse: number; text: string; xref_count: number };
 
+const PAGE = 20;
+const CITES_LINKS = '[data-testid^="popover-link-cites-"]';
+
 // M-D4 fix round 2, P1b (owner, verbatim: "well there might be more than
 // 26. if there are then we still need to be in mod26 land but have a
 // system for new superscripts beyond a-z"): mirrors
@@ -180,88 +183,41 @@ test.describe('M-D2: cross-reference superscripts', () => {
     await expect(page.getByTestId(`verse-xref-marker-${target.aaVerse}`)).toHaveText('aa');
   });
 
-  test('XSCRIPT-1: hover opens the SAME composable popover, xrefs section leading, 3 initial entries', async ({ page }) => {
+  test('XSCRIPT-1: hover opens the verse\'s popover, whose Cites group counts every served cross reference and shows the first page of them', async ({ page }) => {
+    // Arrange
     const toc = await loadToc();
     const found = await findVerseByXrefCount(toc, c => c > 3);
     test.skip(!found, 'no sampled verse had >3 cross-references');
     if (!found) return;
     const { book, chapter, verse: v } = found;
-
     await page.goto(`/read/${book}/${chapter}`);
     const marker = page.getByTestId(`verse-xref-marker-${v.verse}`);
-    // P1: the marker's own glyph is now this verse's own ORDINAL among the
-    // chapter's xref-bearing verses, not a function of ITS OWN count -- see
-    // this file's own dedicated lettering test above for the full proof;
-    // this test's own concern is the hover-opens-the-popover mechanism, so
-    // a light shape check (one or more lowercase letters) is enough here.
-    // P1b: `+` not a bare single-char match -- this sampled verse's own
-    // ordinal within its chapter is unconstrained by this test's own
-    // `c > 3` predicate, so a real ordinal past 26 (bijective base-26's
-    // own two-letter range, e.g. "aa") is a genuine, reachable value here,
-    // not a shape this assertion should reject.
     await expect(marker).toHaveText(/^[a-z]+$/);
 
-    // { force: true }: a REAL, live-caught Playwright/production interplay
-    // (not a workaround for a real bug -- see this file's own header
-    // note): the marker's own mouseenter handler opens a full-viewport
-    // `.popover-backdrop` SYNCHRONOUSLY over the marker itself as its
-    // direct effect. Playwright's un-forced `.hover()` performs the
-    // low-level hover correctly on its FIRST attempt (confirmed live via
-    // the actionability log: "performing hover action" precedes the
-    // backdrop appearing) but then RETRIES for up to the full test
-    // timeout trying to re-verify the target is still cleanly hoverable --
-    // which it structurally can never be again once its own reaction
-    // covers it. A real human hovering behaves identically to the FIRST
-    // attempt (one mouseenter, done) with no such re-verification loop;
-    // `force: true` skips Playwright's own post-action interception
-    // re-check, matching real hover semantics instead of an automation
-    // artifact of an element that (by design) obscures itself.
+    // Act
     await marker.hover({ force: true });
+
+    // Assert
     await expect(page.getByTestId('popover-title')).toHaveText(`${book}.${chapter}.${v.verse}`);
-
-    // Xrefs section leads (BEFORE verse-text, the registry's own normal
-    // first slot) -- the entry-point reorder, live. A real, live-caught
-    // test-timing bug in an earlier draft: `popover-title` renders
-    // SYNCHRONOUSLY (straight off Current.Title) the instant the node is
-    // pushed, but the section LIST itself only populates once
-    // ExplorerPopover.LoadCurrent's own async section-resolution completes
-    // (cleared to empty during the fetch, per that method's own comment) --
-    // asserting section order right after the title, with no wait of its
-    // own, could snapshot the sections list mid-empty. Waiting for the
-    // xrefs section specifically to be VISIBLE (an auto-retrying
-    // assertion) guarantees resolution has finished before the order
-    // snapshot below.
-    await expect(page.getByTestId('popover-section-xrefs')).toBeVisible();
-    const sectionIds = await page.getByTestId(/^popover-section-/).evaluateAll(els => els.map(el => el.getAttribute('data-testid')));
-    expect(sectionIds[0]).toBe('popover-section-xrefs');
-
-    // 3 initial entries, unconditionally (owner's own words) -- NOT F2's
-    // context-dependent 2-vs-3 rule, even though this verse may also carry
-    // other context sections.
-    await expect(page.getByTestId(/^xref-item-/)).toHaveCount(3);
-    await expect(page.getByTestId('xrefs-more')).toBeVisible();
+    await expect(page.getByTestId('popover-section-cites-heading')).toHaveText(`Cites (${v.xref_count})`);
+    await expect(page.locator(CITES_LINKS)).toHaveCount(Math.min(v.xref_count, PAGE));
   });
 
   test('XSCRIPT-1: keyboard focus opens the popover identically to hover', async ({ page }) => {
+    // Arrange
     const toc = await loadToc();
-    // <=3, still load-bearing after P1 (a real mistake caught live: an
-    // earlier draft of this fix round widened this to plain `c > 0`,
-    // reasoning the bound only existed for the NOW-retired letters-vs-
-    // many-marker boundary -- it did NOT: the entry-point popover's own
-    // cap is UNCONDITIONALLY 3 (XSCRIPT-1's own rule, unrelated to P1),
-    // so `toHaveCount(v.xref_count)` below only holds when xref_count
-    // itself is <=3 -- otherwise only the first 3 render and this test
-    // fails against its own sampled data, which is exactly what happened).
     const found = await findVerseByXrefCount(toc, c => c > 0 && c <= 3);
     test.skip(!found, 'no sampled verse had 1-3 cross-references');
     if (!found) return;
     const { book, chapter, verse: v } = found;
-
     await page.goto(`/read/${book}/${chapter}`);
-    const marker = page.getByTestId(`verse-xref-marker-${v.verse}`);
-    await marker.focus();
+
+    // Act
+    await page.getByTestId(`verse-xref-marker-${v.verse}`).focus();
+
+    // Assert
     await expect(page.getByTestId('popover-title')).toHaveText(`${book}.${chapter}.${v.verse}`);
-    await expect(page.getByTestId(/^xref-item-/)).toHaveCount(v.xref_count);
+    await expect(page.locator(CITES_LINKS)).toHaveCount(v.xref_count);
   });
 
   test('XSCRIPT-1: click also opens the popover (touch-device fallback, no hover state)', async ({ page }) => {
@@ -285,161 +241,66 @@ test.describe('M-D2: cross-reference superscripts', () => {
     await expect(page.getByTestId('popover')).toHaveCount(1);
   });
 
-  test('XSCRIPT-1: expansion reveals the rest, an entry is explorable one hop, collapse restores', async ({ page }) => {
+  test('XSCRIPT-1: More reveals the next page, an entry is explorable one hop, Less restores the first page', async ({ page }) => {
+    // Arrange
     const toc = await loadToc();
-    // >5, not merely >3: the entry-point cap here is 3 (unconditional,
-    // XSCRIPT-1's own rule) and RevealControls.razor's own Step is 2, so
-    // this test's own "all" link only renders (as meaningfully different
-    // from "more") once Total-3 > 2, i.e. xref_count > 5 -- M-D4 fix round
-    // 1/P2's own ShowAll rule.
-    const found = await findVerseByXrefCount(toc, c => c > 5);
-    test.skip(!found, 'no sampled verse had >5 cross-references');
+    const found = await findVerseByXrefCount(toc, c => c > PAGE);
+    test.skip(!found, `no sampled verse had more than ${PAGE} cross-references`);
     if (!found) return;
     const { book, chapter, verse: v } = found;
-
+    const shown = Math.min(v.xref_count, 2 * PAGE);
     await page.goto(`/read/${book}/${chapter}`);
-    // { force: true }: see "hover opens the SAME composable popover"
-    // above for the full reasoning (the marker's own reaction covers it).
-    await page.getByTestId(`verse-xref-marker-${v.verse}`).hover({ force: true });
-    const items = page.getByTestId(/^xref-item-/);
-    await expect(items).toHaveCount(3);
+    await page.getByTestId(`verse-xref-marker-${v.verse}`).click({ force: true });
+    const links = page.locator(CITES_LINKS);
+    await expect(links).toHaveCount(PAGE);
 
-    // M-D3/U2: "reveals the REST" (not merely "some more") -- the "all"
-    // link is the shared mechanic's own all-at-once control (M-D4 fix
-    // round 1, P2: RevealControls.razor's own quiet text row -- see that
-    // file's own doc comment); a single "more" click would only reveal
-    // +2, which the wire's own count here (only known to be >3, not
-    // bounded) can't guarantee reaches the end.
-    await page.getByTestId('xrefs-more-all').click();
-    await expect(items).toHaveCount(v.xref_count);
-    await expect(page.getByTestId('xrefs-collapse')).toBeVisible();
+    // Act
+    await page.getByTestId('popover-section-cites-more').click();
 
-    // One-hop exploration: clicking a revealed entry PUSHES a fresh
-    // VerseNode/PassageNode onto the SAME popover stack (no page
-    // navigation -- PassageList.Explore -> IPopoverSectionContext.PushAsync,
-    // not a URL change), so the popover's own title changes in place.
-    const targetTestId = await items.nth(v.xref_count - 1).getAttribute('data-testid');
-    await items.nth(v.xref_count - 1).click();
-    await expect(page.getByTestId('popover-title')).not.toHaveText(`${book}.${chapter}.${v.verse}`);
-    // The onward node is an ordinary (non-entry-point) popover -- reopening
-    // its own xrefs section, if any, would follow F2's cap, not this
-    // entry's -- out of this test's own scope, not asserted here.
-    test.info().annotations.push({ type: 'note', description: `explored ${targetTestId}` });
+    // Assert
+    await expect(links).toHaveCount(shown);
+    await expect(page.getByTestId('popover-section-cites-position')).toHaveText(`1–${shown} of ${v.xref_count}`);
 
-    // Close (not browser-back -- there is no navigation to undo) and
-    // re-enter via the marker for a fresh entry-point popover, to verify
-    // collapse restores the capped view.
-    await page.getByTestId('popover-close').click();
-    // R3, a real live-caught race, root-caused with a live diagnostic (this
-    // whole suite was test.skip'd before R3 landed, so this exact
-    // close-then-immediately-re-hover sequence had never once run until
-    // now): identical in kind to XSCRIPT-1 "entry-point parameter vs F2's
-    // general popover"'s own close, a few tests below, whose comment names
-    // it exactly -- ExplorerPopover.RequestClose (the popover's own
-    // popover-close handler) does a JS interop call BEFORE it ever invokes
-    // Reader.razor's own OnClose (which is what actually nulls
-    // _activeNode). Playwright's `.click()` resolves once the synchronous
-    // portion of that DOM dispatch returns, not once that whole async chain
-    // settles, so an immediately-following `.hover({force:true})` on the
-    // marker can fire, open a fresh entry-point popover, and then have that
-    // very popover clobbered a tick later when the STILL-IN-FLIGHT close
-    // finally applies its own (by-then-stale) null -- observed directly via
-    // a live diagnostic as a popover count of exactly 0, stable for the
-    // rest of the window, not a late-arriving 3 (ruling out "just a render
-    // that hasn't caught up yet"). The wait below is that same sibling
-    // test's own fix, applied here too: let the close fully settle before
-    // asking for anything new.
-    await expect(page.getByTestId('popover')).toHaveCount(0);
-    await page.getByTestId(`verse-xref-marker-${v.verse}`).hover({ force: true });
-    // A second, independent race sits right after the first: PassageList
-    // only renders `xrefs-more` once the freshly-opened popover's own async
-    // resolve (verse-anchor measurement, xref preview-text fetch) has
-    // finished, and a hover-opened popover is (correctly, per the brief's
-    // "hover-only auto-dismisses") racing its own close timer from the
-    // instant the pointer leaves the marker. This SAME test's first
-    // hover+click above (line ~209-212) never hits either race because it
-    // waits for `items` to reach its settled count before ever touching
-    // `xrefs-more` -- that auto-retrying wait is what absorbs the open
-    // latency there. Mirrored here for the same reason (not a product
-    // change -- Reader.razor's own hover-close grace period is unchanged).
-    await expect(items).toHaveCount(3);
-    // Same "all" link as above -- "reveals the rest" means all-the-way,
-    // not a single +2 step. P2: "collapse restores" is now LESS's own
-    // one-deep UNDO (the SAME bare `xrefs-collapse` testid, not a separate
-    // "-all" sibling -- that concept retired with the arrow-glyph design):
-    // the immediately-preceding action was "all", so a single LESS click
-    // returns to the exact pre-all view (3), not a slow step-down.
-    await page.getByTestId('xrefs-more-all').click();
-    await expect(items).toHaveCount(v.xref_count);
-    await page.getByTestId('xrefs-collapse').click();
-    await expect(page.getByTestId(/^xref-item-/)).toHaveCount(3);
+    // Act
+    await page.getByTestId('popover-section-cites-collapse').click();
+
+    // Assert
+    await expect(links).toHaveCount(PAGE);
+
+    // Act
+    const last = links.nth(PAGE - 1);
+    const target = await last.textContent();
+    await last.click();
+
+    // Assert
+    await expect(page.getByTestId('popover-title')).toHaveText(target!);
   });
 
-  test('XSCRIPT-1: entry-point parameter vs F2\'s general popover -- the SAME verse, two different initial caps, one abstraction', async ({ page }) => {
-    // The owner's own CAP RECONCILIATION law, proven directly: opening the
-    // SAME verse via its ordinary verse-line click still obeys F2's
-    // xrefs-only-vs-mixed-context rule (2 when ANY other context section is
-    // also present); opening the identical verse via its OWN superscript
-    // instead shows 3, unconditionally -- one component, one provider, a
-    // parameter read at render time, never two implementations.
+  test('XSCRIPT-1: the marker and the verse line open the SAME popover -- one Cites group, the same first page, in served order', async ({ page }) => {
+    // Arrange
     const toc = await loadToc();
     const found = await findVerseByXrefCount(toc, c => c > 2);
     test.skip(!found, 'no sampled verse had >2 cross-references');
     if (!found) return;
     const { book, chapter, verse: v } = found;
-
     await page.goto(`/read/${book}/${chapter}`);
-    // Keyboard activation, not a coordinate .click() -- CONTRACT.md's own
-    // documented MENTION-1 test hazard: a >2-xref verse is no guarantee of
-    // a mention-sparse one (a real, live-caught case: 1CH.24.1's own text,
-    // "Now these are the divisions of the sons of Aaron. The sons of
-    // Aaron; Nadab, and Abihu, Eleazar, and Ithamar," is almost entirely
-    // person mentions), so a coordinate click can land on a mentioned name
-    // instead of the plain verse line and open THAT person's own popover.
+    const links = page.locator(CITES_LINKS);
+    const linkIds = () => links.evaluateAll(els => els.map(el => el.getAttribute('data-testid')));
+
+    // Act
     await page.getByTestId(`verse-line-${v.verse}`).focus();
     await page.keyboard.press('Enter');
     await expect(page.getByTestId('popover-title')).toHaveText(`${book}.${chapter}.${v.verse}`);
-    // OtherContextSectionCount (client, ExplorerPopover.razor) counts EVERY
-    // resolved section except verse-text/xrefs -- the SET of "other"
-    // providers a Verse node can resolve has grown over time (catechism,
-    // then event-membership, then U6's own persons/parallels) and WILL grow
-    // again, so this reads the live DOM's own popover-section-* set
-    // directly (mirroring world-hover-text.spec.ts's own equivalent fix)
-    // rather than hand-enumerating provider names/API-response fields a
-    // second time here. TWO earlier drafts of this exact test each checked
-    // one hand-picked signal (catechism alone, then catechism-or-events)
-    // and each went stale the next time a new context-section provider
-    // shipped.
-    //
-    // Settle-wait first: `popover-title` binds SYNCHRONOUSLY the instant a
-    // node is pushed, BEFORE LoadCurrent's own async section-provider
-    // fetches even start -- querying popover-section-* right after
-    // popover-title alone can read the DOM before that batch has landed (a
-    // real, live-caught race, reader-map.spec.ts's own READ-6). popover-
-    // section-verse-text is UNCONDITIONALLY present for any Verse/Passage
-    // node and renders in the SAME Task.WhenAll batch as every other
-    // section (ExplorerPopover.razor's own LoadCurrent) -- waiting for it
-    // is a direct, retrying proxy for "the whole batch landed."
-    await expect(page.getByTestId('popover-section-verse-text')).toBeVisible();
-    const otherContextSectionCount = await page.getByTestId(/^popover-section-/).evaluateAll(
-      els => els.filter(el => {
-        const id = el.getAttribute('data-testid');
-        return id !== 'popover-section-verse-text' && id !== 'popover-section-xrefs';
-      }).length
-    );
-    const generalExpected = Math.min(v.xref_count, otherContextSectionCount > 0 ? 2 : 3);
-    await expect(page.getByTestId(/^xref-item-/)).toHaveCount(generalExpected);
+    await expect(links).toHaveCount(Math.min(v.xref_count, PAGE));
+    const fromLine = await linkIds();
     await page.getByTestId('popover-close').click();
-    // Wait for the GENERAL popover to fully close (RequestClose is async --
-    // a JS interop call precedes _activeNode=null) before opening the
-    // entry-point one -- a real, live-caught race: re-hovering immediately
-    // could fire while the prior popover's own close is still in flight.
     await expect(page.getByTestId('popover')).toHaveCount(0);
-
-    // { force: true }: see "hover opens the SAME composable popover" above.
-    await page.getByTestId(`verse-xref-marker-${v.verse}`).hover({ force: true });
+    await page.getByTestId(`verse-xref-marker-${v.verse}`).click({ force: true });
     await expect(page.getByTestId('popover-title')).toHaveText(`${book}.${chapter}.${v.verse}`);
-    await expect(page.getByTestId(/^xref-item-/)).toHaveCount(Math.min(v.xref_count, 3));
+    await expect(links).toHaveCount(Math.min(v.xref_count, PAGE));
+
+    // Assert
+    expect(await linkIds()).toEqual(fromLine);
   });
 
   test('JANK-1: a verse with a superscript renders the SAME line-height as a verse with none -- no layout jank', async ({ page }) => {

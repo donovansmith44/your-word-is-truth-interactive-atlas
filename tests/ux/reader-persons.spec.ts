@@ -44,8 +44,8 @@ const MENTIONS_PAGE = 20;
 async function personsNamedIn(cref: string): Promise<{ verse: number; persons: { id: string; name: string }[] }[]> {
   const window = await api.chapterText(cref);
   return window.units.map((u: any) => ({
-    verse: u.locus.verse,
-    persons: [...new Map((u.anchors as { node: NodeRef }[])
+    verse: u.body.locus.verse,
+    persons: [...new Map((u.body.anchors as { node: NodeRef }[])
       .filter(a => a.node.kind === 'Person')
       .map(a => [a.node.id, { id: a.node.id.slice('Person:'.length), name: a.node.label }])).values()],
   }));
@@ -116,47 +116,42 @@ function cmpCanon(a: [number, number, number], b: [number, number, number]): num
 }
 
 test.describe('Batch P: PERSONS section + the person popover', () => {
-  // O4 (owner live-preview correction, 2026-08-23: "remove persons from
-  // hover menus for now") inverts this test's own original premise --
-  // PERSONS-1 used to prove the section's CONDITIONAL presence (shown when
-  // a verse attests a person, absent when it doesn't); it now proves the
-  // section is UNCONDITIONALLY absent either way, on the exact same two
-  // real-data cases the original test already sampled (a person-attesting
-  // verse AND a zero-person one) -- the strongest available proof that the
-  // retirement is total, not merely "usually doesn't show." VersePersonsSection
-  // itself still exists (dead-code law's own exception, per the ruling's
-  // explicit "machinery retained" words) but is unregistered from
-  // PopoverSectionRegistry.Providers -- see PopoverSections.cs's own
-  // comment -- so `persons-section-heading`/`verse-person-*`/
-  // `persons-section-more` can never render from ANY node, ever, regardless
-  // of what the wire says.
-  test('PERSONS-1: a verse popover shows no PERSONS section at all, whether or not the verse attests a person (removed for now, O4)', async ({ page }) => {
+  test('PERSONS-1: a verse popover offers each person its text mentions as a mention anchor, and a verse that mentions none offers no person anchor', async ({ page }) => {
+    // Arrange
     const toc = await loadToc();
     const found = await findVerseWithPersonMentions(toc);
     test.skip(!found, 'no sampled verse carried a literally-text-mentioned Person');
     if (!found) return;
+    const verseId = `text-unit:${found.book}.${found.chapter}.${found.verse}`;
+    const anchors = (await api.node(verseId)).text.anchors as { kind: string; node: NodeRef }[];
+    const personAnchorIds = anchors
+      .map((anchor, n) => ({ anchor, n }))
+      .filter(({ anchor }) => anchor.node.kind === 'Person')
+      .map(({ anchor, n }) => `popover-anchor-${anchor.kind}-${anchor.node.id}-${n}`);
 
+    // Act
     await page.goto(`/read/${found.book}/${found.chapter}`);
     await openVerse(page, found.verse);
+
+    // Assert
     await expect(page.getByTestId('popover-title')).toHaveText(`${found.book}.${found.chapter}.${found.verse}`);
-    await expect(page.getByTestId('persons-section-heading')).toHaveCount(0);
-    for (const person of found.persons) {
-      await expect(page.getByTestId(`verse-person-${person.id}`)).toHaveCount(0);
-    }
-    await expect(page.getByTestId('persons-section-more')).toHaveCount(0);
+    await expect.poll(() => page.getByTestId('popover-text').locator('[data-testid*="-Person:"]').evaluateAll(
+      els => els.map(el => el.getAttribute('data-testid')))).toEqual(personAnchorIds);
     await page.getByTestId('popover-close').click();
 
-    // Second case, same test: a verse the wire itself says attests ZERO
-    // persons (never assumed/hardcoded -- matches this suite's own
-    // "wire-driven" rule throughout) -- absent here too, for the ordinary,
-    // unremarkable reason (nothing to show), not the O4 retirement.
+    // Arrange
     const empty = await findVerseWithoutPersonMentions(toc);
     test.skip(!empty, 'no sampled verse carried zero Person mentions');
     if (!empty) return;
+
+    // Act
     await page.goto(`/read/${empty.book}/${empty.chapter}`);
     await openVerse(page, empty.verse);
+
+    // Assert
     await expect(page.getByTestId('popover-title')).toHaveText(`${empty.book}.${empty.chapter}.${empty.verse}`);
-    await expect(page.getByTestId('persons-section-heading')).toHaveCount(0);
+    await expect(page.getByTestId('popover-text')).toBeVisible();
+    await expect(page.getByTestId('popover-text').locator('[data-testid*="-Person:"]')).toHaveCount(0);
   });
 
   test('PERSONS-1: the verse -> person -> mentions one-hop exploration loop', async ({ page }) => {
