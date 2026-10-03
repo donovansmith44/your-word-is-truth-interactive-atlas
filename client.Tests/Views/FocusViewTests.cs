@@ -55,32 +55,25 @@ public sealed class FocusViewTests : BunitContext
         new ConcordRef(article: 4, paragraph: 1, part: 7), ConfessionWords, [ServedGraph.AnchorOf(EdgeKind.Cites, John316, CitationStart, CitationEnd)], []);
 
     private static readonly string Genesis2Card = $$"""
-        <button type="button" class="focus-up explorable" data-testid="popover-up-member-of-Container:bible-book-GEN">Genesis</button>
-        {{EdgeStep(EdgeKind.MemberOf, Genesis)}}
+        <span class="focus-entry"><button type="button" class="focus-up explorable" data-testid="popover-up-member-of-Container:bible-book-GEN">Genesis</button>{{EdgeStep(EdgeKind.MemberOf, Genesis)}}</span>
         <div class="popover-section" data-testid="popover-section-card">
             <p class="focus-title" data-testid="popover-card-title">Genesis 2</p>
             <dl class="focus-fields">
                 <div class="focus-field" data-testid="popover-field-Provenance"><dt>Provenance</dt><dd>kjv</dd></div>
             </dl>
         </div>
-        <button type="button" class="focus-arrow explorable" data-testid="popover-prev">‹ Genesis 1</button>
-        {{EdgeStep(EdgeKind.PrecedesIn, Genesis1)}}
-        <button type="button" class="focus-arrow explorable" data-testid="popover-next">Genesis 3 ›</button>
-        {{EdgeStep(EdgeKind.FollowsIn, Genesis3)}}
+        <span class="focus-entry"><button type="button" class="focus-arrow explorable" data-testid="popover-prev">‹ Genesis 1</button>{{EdgeStep(EdgeKind.PrecedesIn, Genesis1)}}</span>
+        <span class="focus-entry"><button type="button" class="focus-arrow explorable" data-testid="popover-next">Genesis 3 ›</button>{{EdgeStep(EdgeKind.FollowsIn, Genesis3)}}</span>
         <div class="popover-section" data-testid="popover-children-contains">
-            <button type="button" class="focus-child explorable" data-testid="popover-child-contains-text-unit:GEN.2.1">GEN.2.1</button>
-            {{EdgeStep(EdgeKind.Contains, Verse1)}}
+            <span class="focus-entry"><button type="button" class="focus-child explorable" data-testid="popover-child-contains-text-unit:GEN.2.1">GEN.2.1</button>{{EdgeStep(EdgeKind.Contains, Verse1)}}</span>
             {{Worded($"popover-words-contains-{Verse1.Id}", Verse1)}}
-            <button type="button" class="focus-child explorable" data-testid="popover-child-contains-text-unit:GEN.2.2">GEN.2.2</button>
-            {{EdgeStep(EdgeKind.Contains, Verse2)}}
+            <span class="focus-entry"><button type="button" class="focus-child explorable" data-testid="popover-child-contains-text-unit:GEN.2.2">GEN.2.2</button>{{EdgeStep(EdgeKind.Contains, Verse2)}}</span>
             {{Worded($"popover-words-contains-{Verse2.Id}", Verse2)}}
         </div>
         <div class="popover-section" data-testid="popover-section-mentions">
             <p class="catechism-section-heading" data-testid="popover-section-mentions-heading">Mentions (2)</p>
-            <button type="button" class="focus-link explorable" data-testid="popover-link-mentions-Person:adam">Adam</button>
-            {{EdgeStep(EdgeKind.Mentions, Adam)}}
-            <button type="button" class="focus-link explorable" data-testid="popover-link-mentions-Place:eden">Eden</button>
-            {{EdgeStep(EdgeKind.Mentions, Eden)}}
+            <span class="focus-entry"><button type="button" class="focus-link explorable" data-testid="popover-link-mentions-Person:adam">Adam</button>{{EdgeStep(EdgeKind.Mentions, Adam)}}</span>
+            <span class="focus-entry"><button type="button" class="focus-link explorable" data-testid="popover-link-mentions-Place:eden">Eden</button>{{EdgeStep(EdgeKind.Mentions, Eden)}}</span>
         </div>
         """;
 
@@ -115,8 +108,7 @@ public sealed class FocusViewTests : BunitContext
         </div>
         <div class="popover-section" data-testid="popover-section-mentioned-in">
             <p class="catechism-section-heading" data-testid="popover-section-mentioned-in-heading">Mentioned in (1)</p>
-            <button type="button" class="focus-link explorable" data-testid="popover-link-mentioned-in-text-unit:GEN.2.1">GEN.2.1</button>
-            {{EdgeStep(EdgeKind.MentionedIn, Verse1)}}
+            <span class="focus-entry"><button type="button" class="focus-link explorable" data-testid="popover-link-mentioned-in-text-unit:GEN.2.1">GEN.2.1</button>{{EdgeStep(EdgeKind.MentionedIn, Verse1)}}</span>
             {{Worded($"popover-words-mentioned-in-{Verse1.Id}", Verse1)}}
         </div>
         """;
@@ -381,7 +373,7 @@ public sealed class FocusViewTests : BunitContext
         // Assert
         view.MarkupMatches("""
             <div class="popover-section" data-testid="world-children-shows">
-                <button type="button" class="focus-child explorable" data-testid="world-child-shows-Place:eden">Eden</button>
+                <span class="focus-entry"><button type="button" class="focus-child explorable" data-testid="world-child-shows-Place:eden">Eden</button></span>
             </div>
             <div class="popover-section" data-testid="world-section-mentioned-in">
                 <p class="catechism-section-heading" data-testid="world-section-mentioned-in-heading">Mentioned in</p>
@@ -933,9 +925,8 @@ public sealed class FocusViewTests : BunitContext
         view.Find("[data-testid='popover-section-cites']").MarkupMatches($$"""
             <div class="popover-section" data-testid="popover-section-cites">
               <p class="catechism-section-heading" data-testid="popover-section-cites-heading">Cites (1)</p>
-              <button type="button" class="focus-link explorable-quiet" data-testid="popover-link-cites-{{Romans58.Id}}">{{Romans58.Label}}</button>
-              <button type="button" class="focus-entry-edge explorable-quiet" data-testid="{{EdgeStepHandle(EdgeKind.Cites, Romans58)}}" aria-label:ignore title:ignore>&#8942;</button>
-              <p class="focus-text" data-testid="popover-words-cites-{{Romans58.Id}}-text">{{Romans58Words}}</p>
+              <span class="focus-entry"><button type="button" class="focus-link explorable-quiet" data-testid="popover-link-cites-{{Romans58.Id}}">{{Romans58.Label}}</button><button type="button" class="focus-entry-edge explorable-quiet" data-testid="{{EdgeStepHandle(EdgeKind.Cites, Romans58)}}" aria-label:ignore title:ignore>&#8942;</button></span>
+              <div class="focus-words"><p class="focus-text" data-testid="popover-words-cites-{{Romans58.Id}}-text">{{Romans58Words}}</p></div>
             </div>
             """);
     }
@@ -1190,8 +1181,8 @@ public sealed class FocusViewTests : BunitContext
 
     private static string Cited(IEnumerable<NodeRef> verses) =>
         string.Concat(verses.Select(verse =>
-            $"""<button type="button" class="focus-link explorable-quiet" data-testid="popover-link-cites-{verse.Id}">{verse.Label}</button>{EdgeStep(EdgeKind.Cites, verse)}{Worded($"popover-words-cites-{verse.Id}", verse)}"""));
+            $"""<span class="focus-entry"><button type="button" class="focus-link explorable-quiet" data-testid="popover-link-cites-{verse.Id}">{verse.Label}</button>{EdgeStep(EdgeKind.Cites, verse)}</span>{Worded($"popover-words-cites-{verse.Id}", verse)}"""));
 
     private static string Worded(string handle, NodeRef unit) =>
-        $"""<p class="focus-text" data-testid="{handle}-text">{unit.Id}</p>""";
+        $"""<div class="focus-words"><p class="focus-text" data-testid="{handle}-text">{unit.Id}</p></div>""";
 }
