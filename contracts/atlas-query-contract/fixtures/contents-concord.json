@@ -32,7 +32,7 @@
       {
         "children": [
           {
-            "count": 5,
+            "count": 3,
             "id": "Container:concord-art-ecumenical-creeds-1",
             "kind": "article",
             "locus": {
@@ -697,7 +697,7 @@
             "title": "Article XVII. Of Christ's Return to Judgment."
           },
           {
-            "count": 12,
+            "count": 10,
             "id": "Container:concord-art-defense-17",
             "kind": "article",
             "locus": {
@@ -1348,19 +1348,6 @@
             },
             "ref": "BoC 7.9.1",
             "title": "Table of Duties"
-          },
-          {
-            "count": 21,
-            "id": "Container:concord-art-small-catechism-10",
-            "kind": "article",
-            "locus": {
-              "article": 10,
-              "corpus": "concord",
-              "paragraph": 0,
-              "part": 7
-            },
-            "ref": "BoC 7.10.0",
-            "title": "Christian Questions and their Answers"
           }
         ],
         "id": "Container:concord-doc-small-catechism",
@@ -1859,7 +1846,7 @@
         "title": "Formula of Concord: Solid Declaration"
       }
     ],
-    "version": "9f7f50baef329486cdb2feea13b736fa"
+    "version": "857bc82d310921dff7f6f456081d675d"
   },
   "status": 200
 }

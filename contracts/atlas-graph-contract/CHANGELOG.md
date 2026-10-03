@@ -34,6 +34,14 @@ hatch — and adding one to a previously-green scenario is classified
 
 ---
 
+- **0.26.0** (A-LICENSE-BOC, the served Book of Concord is the 1921 Triglot only, F-79) — **MINOR under the 0.x policy (MAJOR class: blessed fixtures moved).**
+  The concord section no longer serves the vendored pages' non-Triglot material: 25 units leave
+  (BoC 7.10.0-7.10.20, the © 1986 CPH "Christian Questions with Their Answers"; 2.1.4 and 2.1.5;
+  the phantom 4.17.70 and 4.17.106), Apology XVIII's 4.17.107-113 are served as 4.17.70-76, and seven
+  units lose a note, a mark or stray `**` (see the AQC 0.27.0 entry). Re-blessed: `contract` and
+  `graph-vocabulary` (`section_schema_version` 25 -> 26), and every fixture carrying the version
+  root; the http pact carries them too. No scenario or projection changed.
+
 - **0.25.0** (A-NOBLURB, a place has no blurb) — **MINOR under the 0.x policy (MAJOR class: blessed fixtures moved).**
   The served place record carries no blurb and the artifact compiles none (core loses
   `place_history_blurb` and `place_default.blurb`). Re-blessed: `contract` and `graph-vocabulary`

@@ -3224,7 +3224,7 @@
     "GET /api/contract": {
       "body": {
         "manifest_schema": 1,
-        "section_schema_version": 25
+        "section_schema_version": 26
       },
       "status": 200
     },
@@ -3763,7 +3763,7 @@
             "verse": 31
           }
         ],
-        "version": "abb8c97f04fd510db0f8788c81cd6e8e"
+        "version": "b1cd99c28b6a04c00e3d753f2b86625b"
       },
       "status": 200
     },
@@ -5054,7 +5054,7 @@
         "kind": "Event",
         "label": "Terah's family leaves Ur",
         "provenance": "curated",
-        "version": "abb8c97f04fd510db0f8788c81cd6e8e"
+        "version": "b1cd99c28b6a04c00e3d753f2b86625b"
       },
       "status": 200
     },
@@ -5084,7 +5084,7 @@
           "lon": 35.569167
         },
         "provenance": "curated-places",
-        "version": "abb8c97f04fd510db0f8788c81cd6e8e"
+        "version": "b1cd99c28b6a04c00e3d753f2b86625b"
       },
       "status": 200
     },
@@ -5125,7 +5125,7 @@
         "kind": "site-of",
         "next": null,
         "previous": null,
-        "version": "abb8c97f04fd510db0f8788c81cd6e8e"
+        "version": "b1cd99c28b6a04c00e3d753f2b86625b"
       },
       "status": 200
     },
@@ -11300,7 +11300,7 @@
             "name": "Shows"
           }
         ],
-        "section_schema_version": 25,
+        "section_schema_version": 26,
         "symmetric": [
           {
             "display": "Analogous to",
