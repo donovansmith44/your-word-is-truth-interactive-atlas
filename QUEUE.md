@@ -55,6 +55,8 @@ Protocol: `AGENTS.md`. Plan: `docs/superpowers/plans/2026-09-30-v1-roadmap.md`.
 - O-GODLINK: link every occurrence.
 - O-CATECHISM license request: not yet.
 - O-GPL (8): copyleft explained; owner "[No preference]" => the standing licensing rule applies: borders redrawn as our own CC0 work, rivers from Natural Earth (owner may override).
+- FOCUS-3 v2 (`lane/claude/F3-v2` 3a4526b, `docs/superpowers/plans/2026-10-03-focus3-server-data.md`, supersedes the old plan, Amendment A and FOCUS-7 Amendment A): residual Q1 — garbled Triglot scan: confirm by hand with the Triglot page cited, and serve; the build refuses anything neither matched nor confirmed. Q2 — Concord paragraph LABELS use the Triglot citation code ("Ap IV 48"; "Ap IV" where our numbering mismatches); the internal code stays the id.
+- YEAR spec + FOCUS-4/5 server/data (`lane/claude/YEAR-spec` 38c0125): Q1 "alive" = recorded lives + office holders only. Q2 curate kings of Israel and Judah, judges and prophets with Ussher dates and verses — "and we should have a column denoting whether someone is prophet judge or whatever (or multiple roles)" (a person can hold several roles). Q3 the arrows step through every event in curated order; "At the same time" lists the year's other events. Q4 the frozen C# app gets only regenerated types plus one line per new link kind so it keeps opening.
 
 1. **O-PUSH:** resolved 2026-09-30: `gh auth login` + `gh auth setup-git` in WSL; a push and a lock take/release from WSL both succeeded.
 2. **O-CODEX:** Codex CLI 0.159.2 is installed in WSL (`~/.local/bin/codex`, works from any shell). Run `codex login` once. It runs in `~/src` on this machine.
