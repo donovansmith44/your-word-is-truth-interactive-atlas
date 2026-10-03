@@ -1,6 +1,6 @@
 # Parallel F# client
 
-Work in progress on CX-FSHARP. This is an independent Bolero client using Elmish model–view–update and generated immutable F# contract types. The C# client remains the reference and remains runnable. Only Sources and the shared header have a rendered migration slice; Reader/Concord startup state and the exploration algebra are tested foundations, not migrated UI.
+Work in progress on CX-FSHARP. This is an independent Bolero client using Elmish model–view–update and generated immutable F# contract types. The C# client remains the reference and remains runnable. Rendered slices include Sources/header, Reader/Concord text and anchors, Concord Next/Retry, and cards/text in the exploration popover. These are incomplete routes; frontiers, pickers, storage, maps and split composition remain required work.
 
 Run commands from the repository root after `. ~/.bible-atlas-env`:
 
@@ -22,4 +22,4 @@ python3 scripts/fsharp-client/parity-ledger.py
 python3 scripts/fsharp-client/parity-ledger.py --require-complete
 ```
 
-The three browser tests mock API responses and prove real WASM/AOT startup, whole source rendering, Retry, malformed-answer rejection and shared asset bytes. They do not prove side-by-side client parity. The completion gate currently fails with 217 pending inventory entries. Full integration/parity/resource/usage/mutation gates and license reconciliation remain open.
+The six browser tests mock API responses and prove real WASM/AOT startup, whole source/text rendering, visible focus, page Retry, malformed-answer rejection and shared asset bytes. They do not prove side-by-side client parity. The completion gate currently fails with 217 pending inventory entries. Full integration/parity/resource/usage/mutation gates and license reconciliation remain open.
