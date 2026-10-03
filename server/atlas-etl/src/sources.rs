@@ -1,5 +1,5 @@
 use anyhow::{anyhow, bail, Context, Result};
-use atlas_core::sources::{ProvenanceEntry, ProvenanceTitles, SourceCategory, SourceEntry, SourcesDocument};
+use atlas_core::sources::{DuplicateProvenance, ProvenanceEntry, ProvenanceTitles, SourceCategory, SourceEntry, SourcesDocument};
 use serde::Deserialize;
 use std::collections::HashSet;
 
@@ -31,12 +31,10 @@ impl AdmittedSources {
         self.0
     }
 
-    pub fn provenance_titles(&self) -> ProvenanceTitles {
-        self.0
-            .provenances
-            .iter()
-            .filter_map(|p| self.0.sources.iter().find(|s| s.id == p.source).map(|source| (p.id.clone(), source.title.clone())))
-            .collect()
+    pub fn provenance_titles(&self) -> Result<ProvenanceTitles, DuplicateProvenance> {
+        ProvenanceTitles::from_rows(
+            self.0.provenances.iter().filter_map(|p| self.0.sources.iter().find(|s| s.id == p.source).map(|source| (p.id.clone(), source.title.clone()))),
+        )
     }
 }
 
