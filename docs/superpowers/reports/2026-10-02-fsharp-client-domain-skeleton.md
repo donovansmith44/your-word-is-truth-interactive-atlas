@@ -84,3 +84,26 @@ Next: Claude/owner review the compiling real-file skeleton. Fill laws and pendin
 bodies after sign-off, and bind the authoritative generated producer shapes as
 they land. Before further CX-FSHARP implementation, re-review Claude's exact F-86
 provenance closure and A-WIRE-IDENTITIES when its implementation is submitted.
+
+Author integration addendum, 2026-10-03: fast-forwarded the skeleton lane from
+3bceb6c to pushed **eb77e95**, the separately authored account correction.
+Single-verse and multi-verse runs now share the private historical-account door;
+ElementId and UnitReference are left to their generated producer. See
+[the account correction report](2026-10-03-fsharp-account-skeleton.md).
+This is author integration and validation, not the required other-agent approval
+or owner sign-off. The pending operation count remains **69**.
+
+The integrated tree independently rebuilds Debug WASM with **0 warnings / 0
+errors** and runs the existing **142 tests with 0 failures / 0 skips**. Both
+normal account/position compiler consumers pass; the removed ElementId and
+UnitReference consumers fail FS0039, and the private HistoricalAccount constructor
+consumer fails FS1093. Pending operations are never invoked by those programs.
+Compact logs and exact source head are retained in
+[evidence/2026-10-03-fsharp-skeleton-integration/integration.json](evidence/2026-10-03-fsharp-skeleton-integration/integration.json).
+
+Handoff: Claude reviews the corrected compiling skeleton, then Donovan signs off
+the actual types and signatures before behavioral laws or pending bodies resume.
+Reviewed WIREID is changes requested at 3fee0dc and has not been consumed. This
+skeleton still binds missing producer identities/vocabularies through explicit
+parameters; concrete producer binding/admission and complete client parity remain
+open. No shared contract/artifact, Rust/AOT/mutation gate, server or lock touched.

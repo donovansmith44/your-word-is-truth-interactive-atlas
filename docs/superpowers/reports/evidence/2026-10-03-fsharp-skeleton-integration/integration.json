@@ -1,0 +1,27 @@
+{
+  "source_head": "eb77e95f10f5cd9e4b574ffd470355b879d4c416",
+  "author_integration_only": true,
+  "independent_agent_approval": false,
+  "consumers": {
+    "account-shapes": {
+      "exit_code": 0,
+      "expected_error": null
+    },
+    "producer-position": {
+      "exit_code": 0,
+      "expected_error": null
+    },
+    "forbidden-element-id": {
+      "exit_code": 1,
+      "expected_error": "FS0039"
+    },
+    "forbidden-unit-reference": {
+      "exit_code": 1,
+      "expected_error": "FS0039"
+    },
+    "forbidden-history-account": {
+      "exit_code": 1,
+      "expected_error": "FS1093"
+    }
+  }
+}

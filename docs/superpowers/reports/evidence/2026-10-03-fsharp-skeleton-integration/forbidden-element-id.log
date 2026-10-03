@@ -1,0 +1,6 @@
+
+
+/home/donovan/w/CX-FSHARP/docs/superpowers/reports/evidence/2026-10-03-fsharp-account-skeleton/forbidden-element-id.fsx(3,52): error FS0039: The type 'ElementId' is not defined in 'BibleAtlas.FSharp.Domain'. Maybe you want one of the following:
+   Element
+   EventId
+
