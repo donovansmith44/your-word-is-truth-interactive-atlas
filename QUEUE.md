@@ -16,6 +16,46 @@ Protocol: `AGENTS.md`. Plan: `docs/superpowers/plans/2026-09-30-v1-roadmap.md`.
 - **DISK (owner, 2026-10-03): "we ran out of space on wsl so make sure we clear mutation test output and other space hogging crap we dont need periodically".** Claude runs `~/bin/atlas-tidy.sh` every 10 min (mutants.out/StrykerOutput, Playwright results older than 12 h, gate logs older than a day, stale incremental caches) and removes its own worktrees and `~/mut` targets at landing. **Codex:** remove your finished review worktrees and their `~/mut/codex-*` targets: `~/w/A-F1-*review` (7, ~4.7 GB), `~/w/A-F2-review` (4.8 GB), `~/w/A-NOBLURB-review` (4.8 GB), `~/w/CX-R2-scratch`, `~/w/CX-R3-scratch`, after the 0-symlink check. Note: WSL's virtual disk does not shrink by itself on the Windows side; reclaiming host space needs `wsl --manage <distro> --set-sparse true` or an Optimize-VHD pass, which only the owner can run.
 
 ## OWNER QUESTIONS (answer in one line each; agents append)
+
+### OWNER ANSWERS, 2026-10-03 (the all-day Q&A; verbatim where quoted). These settle O-HISTORY(28, partly), O-CATECHISM-MODEL(27), O-WIRE-IDENTITIES(29), O-GPL(8), O-GODLINK(14), O-CATECHISM(13: not yet), NAMES Q3, and the OPEN lists of FOCUS-3 (+A1), FOCUS-4, FOCUS-5, FOCUS-7 (4–6), FOCUS-8, FOCUS-9 (1, 4, 5). Plans are amended to match before any batch starts.
+- O-HISTORY (28): make the repo PRIVATE now (owner does it), decide rewrite vs leave later.
+- F-40 LFS: YES, compiled data moves to Git LFS (convert history in the same pass if a rewrite happens).
+- F-84 Triglot admission: YES, with FOCUS-3.
+- Unread place blurb text in data/curated/place-history.toml: DELETE.
+- F3 Q1: one request per page (verses + headings). Q2: keep old /api/text?ref= frozen for its 3 users.
+- F3 Q3: treat each Concord document like a Bible book — "and it sounds like 1 should be a shared interface" (one container/navigation interface shared by Bible books and Concord documents).
+- F3 Q4: cite to the article and list mismatches — "and I really don't think we should even have curated paragraph numbering if there's already a source out there" (paragraph numbers come from the source/Triglot, never curated).
+- F3 Q5: "Events are passages by definition with the property of recording history." Clarified: each account is a passage marked as recording history; the event groups its accounts ("We have a correct construct now on the UI that links attestations of the same event in multiple places"). Cited ranges are passages.
+- F3 Q6: shift-click selects verses only. Q7: drop chapter-card extras. Q8: delete BoC number picker. Q9: intro into data, on the contents cover. Q10: only paragraphs with somewhere to go are clickable. Q11: Kretzmann arrows/header/rows move now.
+- F3 Q12: reading stays 20/40 by default, plus a "Whole chapter" button that loads every verse of the current chapter.
+- F3 Q13: yes — "scrolling through a chapter under the hood is the same mechanism as changing the focus by clicking next chapter button; it's just another way to do it on the UI" (one focus-change path).
+- F3 A1: label each recovered piece now (source markup + ~16 Triglot-checked corrections).
+- F4 Q1: God's eternity grounds are clickable links. Q2: parentage wording only on the link, not inline. Q3: Mary "Mother of", Joseph "Father of" (plain); God "Eternal Father of", God→Adam "Creator of". Q4: keep Jesus's "Earthly life" from a curated incarnate record.
+- F4 Q5: "Neither. Years are explorable and you can get to the map from there but the primary thing you should get is the set of events in chronological order that happened, active prophets, etc. all explorable." Clarified: a span opens as its own explorable — "but the unit we care about fundamentally is an individual year. Year range is a composition over year." => NEW DESIGN: Year as the atomic explorable (events that happened, prophets/kings/people active, eras, map one step away); a range composes years. Needs its own spec/plan (TIME).
+- F4 Q6: Mentioned in collapsed, last. Q7: F-36 its own item (all kinds with years).
+- F5 Q2: store direction (follows/precedes), temporal adjacency retires.
+- F5 Q3: "Stories are different from objective chronology. Chronologically every event has only forward or back or is in parallel with another set of events." Clarified: card arrows = chronology only; a "Stories" section lists each story the event is in with its previous/next step ("We've also already kind of got the chronological traversal down if you click into an event"). Concurrent events: "Events need to get a concurrent events section (user-friendly name) that just lists the events" (e.g. "At the same time").
+- F5 Q4: frame its years, highlight its stories. Q5: approve (When, superscription, Source; no bookkeeping).
+- F5 Q6: Attested in collapsed, last — "and also if we have constructs like this, contiguous verses should become passages" (attestation runs grouped as passages).
+- F5 Q7: accounts listed as reference + opening words. 
+- F5 Q8 / label style: keep codes "GEN.1.1 / GEN.29.32-30.24".
+- O-CATECHISM-MODEL (27): (2) the Small Catechism paragraphs ARE the catechism; items retire — "And, verse refs in the B.O.C. are intelligently sharing the same source as whatever Bible translation is active so that Bible verses anywhere in the app are explorable by the exact same mechanisms." (1) "Luther's questions should always be included. No toggle there." Triglot brackets: hidden by default with a toggle. (3) Explanation source: "Neither for now we can stick with what we have." (4) Unlicensed brain-fuel proof-verse links: "Keep them, we might be able to get a license." (owner exception pending a license; O-CATECHISM). (5) link name "explains" / "explained by".
+- Catechism model lands WITH FOCUS-3 (kills the hop at the source).
+- O-WIRE-IDENTITIES (29): O1 name every shape and mix; O2 two cursor types; O3 one fenced LegacyNodeIds door on a shrinking ratchet; O4 follow-on item A-WIRE-LOCAL-IDS.
+- F7 Q4: NO — keep Kretzmann notes per Bible chapter (no separate work structure). Q5: title "Kretzmann on GEN.1.1-2". Q6: STOP and hand-match unmatched citations first.
+- "while I want you to keep cooking and talking to me there's no point in writing a bunch of code that's going to be rewritten" => C# CLIENT FROZEN: Claude does only server/data/contract halves of FOCUS-3..9 plus specs; client halves become the F# client's backlog; C# gets only fixes for things the owner hits.
+- F8 Q1: fix every kind's id round trip with a law over all kinds. Q2: yes (lexicon Strong's/translit/POS/glosses; anchor date). Q3: yes, narratives contain their events in order.
+- F8 Q4: translations unlinked — log a finding. Q5: clean anchor citation data (F-50) FIRST, before anchors show citations.
+- Old saves: F# client reads only the current (v3) format.
+- F-83: yes, the server reads only built data; build-from-raw leaves atlas-server.
+- F9 Q1: author line is the link, no duplicate list. F9 Q4/Q5: border-change pop-up keeps map button and verse text.
+- Year: spec it now, build after FOCUS-5.
+- Order/pause: owner — "aren't we gonna need to pause? One thing we can do that doesn't involve c# is working on the map view migration and the client bits can be written in F# from the jump." (map screens wait for the F# style sign-off.)
+- NAMES Q3 map ids: adopt map-generator's identities — "but migration will be of form expand, validate, contract like a proper DB migration".
+- O-GODLINK: link every occurrence.
+- O-CATECHISM license request: not yet.
+- O-GPL (8): copyleft explained; owner "[No preference]" => the standing licensing rule applies: borders redrawn as our own CC0 work, rivers from Natural Earth (owner may override).
+
 1. **O-PUSH:** resolved 2026-09-30: `gh auth login` + `gh auth setup-git` in WSL; a push and a lock take/release from WSL both succeeded.
 2. **O-CODEX:** Codex CLI 0.159.2 is installed in WSL (`~/.local/bin/codex`, works from any shell). Run `codex login` once. It runs in `~/src` on this machine.
 3. **O-PASTOR:** Pastor Hromowyck demo: Oct 21 or 22?
