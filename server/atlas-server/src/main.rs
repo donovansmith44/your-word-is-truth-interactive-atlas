@@ -81,7 +81,7 @@ async fn main() -> Result<()> {
         graph.stats.kjv_verses,
         graph.stats.cites_rows,
         graph.stats.cites_dropped_negative_votes,
-        atlas_graph::version_hex(graph.version())
+        atlas_contract::wire::ArtifactRoot::of(graph.version()).to_string()
     );
     println!(
         "atlas-graph: {} events ({} dated), {} narratives ({} succession rows), {} anchors, {} attests rows, {} located-at rows, {} dated-by rows",

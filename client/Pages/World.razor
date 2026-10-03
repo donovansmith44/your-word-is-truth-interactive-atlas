@@ -947,7 +947,7 @@
 
     public void OnPolityClick(string polityId)
     {
-        if (_polities?.FirstOrDefault(p => p.Id == polityId) is { } polity)
+        if (_polities?.FirstOrDefault(p => p.Id.ToString() == polityId) is { } polity)
         {
             Open(polity.Node);
         }

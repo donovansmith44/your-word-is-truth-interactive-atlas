@@ -82,8 +82,15 @@ pub fn openapi() -> OpenApi {
     doc.info = info;
     doc.tags = Some(FAMILIES.iter().map(|(name, description)| TagBuilder::new().name(*name).description(Some(*description)).build()).collect());
     doc.extensions = Some(ExtensionsBuilder::new().add(RELATIONS_EXTENSION, relations_json()).build());
+    register_every_identity(&mut doc);
     close_every_object(&mut doc);
     doc
+}
+
+fn register_every_identity(doc: &mut OpenApi) {
+    if let Some(components) = doc.components.as_mut() {
+        components.schemas.extend(atlas_core::identity::schemas());
+    }
 }
 
 /// Every object this document publishes is closed. The wire carries only the

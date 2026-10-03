@@ -23,12 +23,12 @@ pub struct Provenance {
 #[serde(deny_unknown_fields)]
 #[schema(description = "One node of the graph at a glance: what it is, what to call it, where it came from, and what it connects to. `version` stamps the data set it was read from.")]
 pub struct NodeRecord {
-    pub id: String,
+    pub id: super::NodeId,
     pub kind: NodeKind,
     pub label: String,
     pub provenance: Provenance,
     pub edge_summary: Vec<EdgeSummaryEntry>,
-    pub version: String,
+    pub version: super::ArtifactRoot,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub person: Option<PersonLife>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -158,9 +158,9 @@ pub struct EdgeSummaryEntry {
 pub struct EdgePage {
     pub kind: EdgeKind,
     pub entries: Vec<EdgeEntry>,
-    pub previous: Option<usize>,
-    pub next: Option<usize>,
-    pub version: String,
+    pub previous: Option<super::EdgePageCursor>,
+    pub next: Option<super::EdgePageCursor>,
+    pub version: super::ArtifactRoot,
 }
 
 #[derive(Debug, Serialize, utoipa::ToSchema)]
@@ -185,7 +185,7 @@ pub struct EdgeEntry {
 #[serde(deny_unknown_fields)]
 #[schema(description = "A reference to an edge: its id, which the page of either end carries for this same connection and the element read answers, the kind it is recorded in, and its compiled label.")]
 pub struct EdgeRef {
-    pub id: String,
+    pub id: super::EdgeId,
     pub kind: EdgeKind,
     pub label: String,
 }
@@ -194,7 +194,7 @@ pub struct EdgeRef {
 #[serde(deny_unknown_fields)]
 #[schema(description = "One edge of the graph: its id, the kind it is recorded in, its compiled label, its two ends in that direction, the source that asserts it (absent for an edge derived from the grounds of the edge it justifies), what it records (`votes` on a cross reference, `narrative` on a narrative's succession, `parentage` on a parent-of edge), and how many neighbours it has of each kind.")]
 pub struct EdgeRecord {
-    pub id: String,
+    pub id: super::EdgeId,
     pub kind: EdgeKind,
     pub label: String,
     pub subject: PositionRef,
@@ -214,7 +214,7 @@ pub struct EdgeRecord {
 pub enum Element {
     Node { node: NodeRecord },
     Edge { edge: EdgeRecord },
-    Missing { id: String },
+    Missing { id: super::ElementId },
 }
 
 const ELEMENT: &str = "element";
@@ -256,7 +256,7 @@ impl ToSchema for Element {
     fn schemas(schemas: &mut Vec<(String, RefOr<Schema>)>) {
         schemas.push((NODE_ELEMENT.name.to_string(), case_of(&Element::name(), &NODE_ELEMENT, [(NODE_ELEMENT.tag, Ref::from_schema_name(NodeRecord::name()).into())])));
         schemas.push((EDGE_ELEMENT.name.to_string(), case_of(&Element::name(), &EDGE_ELEMENT, [(EDGE_ELEMENT.tag, Ref::from_schema_name(EdgeRecord::name()).into())])));
-        schemas.push((MISSING_ELEMENT.name.to_string(), case_of(&Element::name(), &MISSING_ELEMENT, [(MISSING_ID, String::schema())])));
+        schemas.push((MISSING_ELEMENT.name.to_string(), case_of(&Element::name(), &MISSING_ELEMENT, [(MISSING_ID, Ref::from_schema_name(super::ElementId::name()).into())])));
         schemas.push((NodeRecord::name().to_string(), NodeRecord::schema()));
         NodeRecord::schemas(schemas);
         schemas.push((EdgeRecord::name().to_string(), EdgeRecord::schema()));
@@ -269,9 +269,9 @@ impl ToSchema for Element {
 #[schema(description = "The elements asked for, in the order their ids were given: `elements[i]` answers the i-th id. At most the server's largest page is answered; `next` continues. `version` stamps the data set they were read from.")]
 pub struct ElementPage {
     pub elements: Vec<Element>,
-    pub previous: Option<usize>,
-    pub next: Option<usize>,
-    pub version: String,
+    pub previous: Option<super::ElementPageCursor>,
+    pub next: Option<super::ElementPageCursor>,
+    pub version: super::ArtifactRoot,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -331,15 +331,15 @@ atlas_graph_types::vocabulary! {
 #[schema(description = "A window of one corpus's reading spine.")]
 pub struct TextWindow {
     pub units: Vec<TextUnit>,
-    pub next: Option<String>,
-    pub version: String,
+    pub next: Option<super::UnitReference>,
+    pub version: super::ArtifactRoot,
 }
 
 #[derive(Debug, Serialize, utoipa::ToSchema)]
 #[serde(deny_unknown_fields)]
 #[schema(description = "One unit of a reading spine: a verse of Scripture, or a paragraph of the Book of Concord.")]
 pub struct TextUnit {
-    pub r#ref: String,
+    pub r#ref: super::UnitReference,
     pub node: NodeRef,
     pub body: UnitText,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -379,8 +379,8 @@ mod tests {
     fn a_neighbour_is_written_as_its_position_then_the_node_or_the_edge_it_leads_to() {
         // Arrange
         let neighbours = [
-            PositionRef::Node { node: NodeRef { id: HAZOR.to_string(), kind: NodeKind::Place, label: HAZOR_LABEL.to_string() } },
-            PositionRef::Edge { edge: EdgeRef { id: A_DATING.to_string(), kind: EdgeKind::Directed(atlas_graph_types::edge::RelationId::DatedBy, atlas_graph_types::edge::Direction::Forward), label: A_DATING_LABEL.to_string() } },
+            PositionRef::Node { node: NodeRef { id: super::super::NodeId::asked(HAZOR), kind: NodeKind::Place, label: HAZOR_LABEL.to_string() } },
+            PositionRef::Edge { edge: EdgeRef { id: super::super::EdgeId(A_DATING.to_string()), kind: EdgeKind::Directed(atlas_graph_types::edge::RelationId::DatedBy, atlas_graph_types::edge::Direction::Forward), label: A_DATING_LABEL.to_string() } },
         ];
         // Act
         let written = serde_json::to_value(neighbours).unwrap();

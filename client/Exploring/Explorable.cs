@@ -6,12 +6,12 @@ public sealed class Explorable
 {
     private readonly ServedPages _pages;
 
-    internal Explorable(NodeRecord node, string root, ServedPages pages)
+    internal Explorable(NodeRecord node, ArtifactRoot root, ServedPages pages)
         : this(new NodePosition(new NodeRef(id: node.Id, kind: node.Kind, label: node.Label)), root, node, node.Provenance, node.EdgeSummary, [], pages)
     {
     }
 
-    internal Explorable(EdgeRecord edge, string root, ServedPages pages)
+    internal Explorable(EdgeRecord edge, ArtifactRoot root, ServedPages pages)
         : this(
             new EdgePosition(new EdgeRef(id: edge.Id, kind: edge.Kind, label: edge.Label)),
             root,
@@ -23,7 +23,7 @@ public sealed class Explorable
     {
     }
 
-    private Explorable(PositionRef identity, string root, NodeRecord? record, Provenance? provenance, IEnumerable<EdgeSummaryEntry> summary, IReadOnlyList<Link> ends, ServedPages pages)
+    private Explorable(PositionRef identity, ArtifactRoot root, NodeRecord? record, Provenance? provenance, IEnumerable<EdgeSummaryEntry> summary, IReadOnlyList<Link> ends, ServedPages pages)
     {
         Identity = identity;
         Root = root;
@@ -37,13 +37,13 @@ public sealed class Explorable
 
     public ElementKind Kind { get; }
 
-    public string Id { get; }
+    public ElementId Id { get; }
 
     public string Label { get; }
 
     public PositionRef Identity { get; }
 
-    public string Root { get; }
+    public ArtifactRoot Root { get; }
 
     public bool Moved => _pages.Serving is { } serving && serving != Root;
 
@@ -55,7 +55,7 @@ public sealed class Explorable
 
     internal NodeRecord? Record { get; }
 
-    public async Task<Page<Entry>> Entries(EdgeKind kind, int? cursor = null, int limit = Exploring.Affordances.PageSize)
+    public async Task<Page<Entry>> Entries(EdgeKind kind, EdgePageCursor? cursor = null, int limit = Exploring.Affordances.PageSize)
     {
         if (Groups.All(group => group.Kind != kind))
         {
@@ -69,7 +69,7 @@ public sealed class Explorable
             page.Edges.Next);
     }
 
-    private static UnitText? WordsOf(PositionRef neighbour, IReadOnlyDictionary<string, UnitText> words) =>
+    private static UnitText? WordsOf(PositionRef neighbour, IReadOnlyDictionary<ElementId, UnitText> words) =>
         words.GetValueOrDefault(Positions.Of(neighbour).Id);
 
     public override bool Equals(object? obj) => obj is Explorable other && PositionIdentity.Comparer.Equals(Identity, other.Identity);

@@ -1,5 +1,8 @@
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use std::borrow::Cow;
 use std::fmt;
+
+use crate::identity::{one_of, string_schema, verse_shape, whole, ChapterReference, PassageReference};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct BookId(pub u8);
@@ -43,9 +46,29 @@ impl VerseId {
     }
 }
 
+impl fmt::Display for VerseId {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}.{}.{}", self.book.code(), self.chapter, self.verse)
+    }
+}
+
 impl Serialize for VerseId {
     fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        serializer.serialize_str(&format!("{}.{}.{}", self.book.code(), self.chapter, self.verse))
+        serializer.collect_str(self)
+    }
+}
+
+const VERSE_REFERENCE: &str = "One verse of the Bible, as `BOOK.CHAPTER.VERSE`.";
+
+impl utoipa::PartialSchema for VerseId {
+    fn schema() -> utoipa::openapi::RefOr<utoipa::openapi::Schema> {
+        string_schema(VERSE_REFERENCE, whole(verse_shape()))
+    }
+}
+
+impl utoipa::ToSchema for VerseId {
+    fn name() -> Cow<'static, str> {
+        Cow::Borrowed("VerseReference")
     }
 }
 
@@ -59,9 +82,43 @@ impl<'de> Deserialize<'de> for VerseId {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ScriptureRef {
     Book(BookId),
-    Chapter { book: BookId, chapter: u16 },
-    Passage { book: BookId, chapter: u16, from_verse: u16, to_verse: u16 },
+    Chapter(ChapterReference),
+    Passage(PassageReference),
     Verse(VerseId),
+}
+
+impl Serialize for ScriptureRef {
+    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        serializer.collect_str(self)
+    }
+}
+
+impl<'de> Deserialize<'de> for ScriptureRef {
+    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        let s = String::deserialize(deserializer)?;
+        ScriptureRef::parse(&s).map_err(serde::de::Error::custom)
+    }
+}
+
+const BIBLE_REFERENCE: &str = "Any reference into the Bible: a whole book, a chapter, a verse, or a run of verses within one chapter.";
+
+impl utoipa::PartialSchema for ScriptureRef {
+    fn schema() -> utoipa::openapi::RefOr<utoipa::openapi::Schema> {
+        one_of(BIBLE_REFERENCE, &[<BookId as utoipa::ToSchema>::name(), <ChapterReference as utoipa::ToSchema>::name(), <VerseId as utoipa::ToSchema>::name(), <PassageReference as utoipa::ToSchema>::name()])
+    }
+}
+
+impl utoipa::ToSchema for ScriptureRef {
+    fn name() -> Cow<'static, str> {
+        Cow::Borrowed("BibleReference")
+    }
+
+    fn schemas(schemas: &mut Vec<(String, utoipa::openapi::RefOr<utoipa::openapi::Schema>)>) {
+        schemas.push((<BookId as utoipa::ToSchema>::name().to_string(), <BookId as utoipa::PartialSchema>::schema()));
+        schemas.push((<ChapterReference as utoipa::ToSchema>::name().to_string(), <ChapterReference as utoipa::PartialSchema>::schema()));
+        schemas.push((<VerseId as utoipa::ToSchema>::name().to_string(), <VerseId as utoipa::PartialSchema>::schema()));
+        schemas.push((<PassageReference as utoipa::ToSchema>::name().to_string(), <PassageReference as utoipa::PartialSchema>::schema()));
+    }
 }
 
 fn parse_positive(s: &str, whole: &str) -> Result<u16, crate::CoreError> {
@@ -86,7 +143,7 @@ impl ScriptureRef {
             [_] => Ok(ScriptureRef::Book(book)),
             [_, ch] => {
                 let chapter = parse_positive(ch, s)?;
-                Ok(ScriptureRef::Chapter { book, chapter })
+                Ok(ScriptureRef::Chapter(ChapterReference { book, chapter }))
             }
             [_, ch, v] => {
                 let chapter = parse_positive(ch, s)?;
@@ -97,7 +154,7 @@ impl ScriptureRef {
                         if from_verse >= to_verse {
                             return Err(crate::CoreError::BadRef(s.to_string()));
                         }
-                        Ok(ScriptureRef::Passage { book, chapter, from_verse, to_verse })
+                        Ok(ScriptureRef::Passage(PassageReference { book, chapter, from_verse, to_verse }))
                     }
                     None => {
                         let verse = parse_positive(v, s)?;
@@ -114,11 +171,9 @@ impl fmt::Display for ScriptureRef {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             ScriptureRef::Book(book) => write!(f, "{}", book.code()),
-            ScriptureRef::Chapter { book, chapter } => write!(f, "{}.{}", book.code(), chapter),
-            ScriptureRef::Passage { book, chapter, from_verse, to_verse } => {
-                write!(f, "{}.{}.{}-{}", book.code(), chapter, from_verse, to_verse)
-            }
-            ScriptureRef::Verse(v) => write!(f, "{}.{}.{}", v.book.code(), v.chapter, v.verse),
+            ScriptureRef::Chapter(chapter) => chapter.fmt(f),
+            ScriptureRef::Passage(passage) => passage.fmt(f),
+            ScriptureRef::Verse(v) => v.fmt(f),
         }
     }
 }
@@ -193,14 +248,14 @@ mod tests {
             let b = BookId(book);
             let refs = vec![
                 ScriptureRef::Book(b),
-                ScriptureRef::Chapter { book: b, chapter: ch },
+                ScriptureRef::Chapter(ChapterReference { book: b, chapter: ch }),
                 ScriptureRef::Verse(VerseId { book: b, chapter: ch, verse: v }),
             ];
             for r in refs {
                 prop_assert_eq!(ScriptureRef::parse(&r.to_string()).unwrap(), r);
             }
             if v2 > v {
-                let p = ScriptureRef::Passage { book: b, chapter: ch, from_verse: v, to_verse: v2 };
+                let p = ScriptureRef::Passage(PassageReference { book: b, chapter: ch, from_verse: v, to_verse: v2 });
                 prop_assert_eq!(ScriptureRef::parse(&p.to_string()).unwrap(), p);
             }
         }

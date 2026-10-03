@@ -43,7 +43,7 @@ public sealed class DeletionLawTests
     public void No_kind_is_served_by_both_mechanisms()
     {
         // Arrange
-        var migrated = MigratedKinds.Select(kind => Resolved.Node(kind, NodeIds.Of(kind, AnyLocalId), AnyLocalId)).ToList();
+        var migrated = MigratedKinds.Select(kind => Resolved.Node(kind, LegacyNodeIds.Of(kind, AnyLocalId), AnyLocalId)).ToList();
 
         // Act
         var legacyNodesForMigratedKinds = migrated.Select(node => (node.Kind, LegacyNodes.For(node))).ToList();

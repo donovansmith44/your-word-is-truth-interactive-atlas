@@ -400,9 +400,9 @@ fn chron1_coverage_restorations_actually_reach_witnesses_for() {
     for (event_id, vref) in cases {
         let event = real.events.iter().find(|e| e.id == *event_id).unwrap_or_else(|| panic!("'{event_id}' must exist in the real compiled event set"));
         let resolved = atlas_core::scene::witnesses_for(event);
-        let covered: HashSet<&str> = resolved.iter().flat_map(|w| w.verse_groups.iter().flat_map(|g| g.verses.iter().map(String::as_str))).collect();
+        let covered: HashSet<String> = resolved.iter().flat_map(|w| w.verse_groups.iter().flat_map(|g| g.verses.iter().map(ToString::to_string))).collect();
         assert!(
-            covered.contains(vref),
+            covered.contains(*vref),
             "'{event_id}'s own witnesses_for() must cover {vref} -- a widening that only ever touches the top-level `verses` field is INERT once explicit witness rows exist (S-1's own root cause); covered set was: {covered:?}"
         );
     }

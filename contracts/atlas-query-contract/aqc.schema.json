@@ -26,6 +26,10 @@
       ],
       "type": "object"
     },
+    "ArtifactRoot": {
+      "pattern": "^[0-9a-f]{32}$",
+      "type": "string"
+    },
     "BibleRef": {
       "allOf": [
         {
@@ -56,6 +60,22 @@
         }
       ],
       "unevaluatedProperties": false
+    },
+    "BibleReference": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/BookId"
+        },
+        {
+          "$ref": "#/$defs/ChapterReference"
+        },
+        {
+          "$ref": "#/$defs/VerseReference"
+        },
+        {
+          "$ref": "#/$defs/PassageReference"
+        }
+      ]
     },
     "BookDetail": {
       "additionalProperties": false,
@@ -277,7 +297,7 @@
           "type": "string"
         },
         "vref": {
-          "type": "string"
+          "$ref": "#/$defs/VerseReference"
         }
       },
       "required": [
@@ -327,7 +347,7 @@
           "type": "integer"
         },
         "ref": {
-          "type": "string"
+          "$ref": "#/$defs/ChapterReference"
         },
         "verses": {
           "items": {
@@ -343,6 +363,10 @@
         "verses"
       ],
       "type": "object"
+    },
+    "ChapterReference": {
+      "pattern": "^(?:GEN|EXO|LEV|NUM|DEU|JOS|JDG|RUT|1SA|2SA|1KI|2KI|1CH|2CH|EZR|NEH|EST|JOB|PSA|PRO|ECC|SNG|ISA|JER|LAM|EZK|DAN|HOS|JOL|AMO|OBA|JON|MIC|NAM|HAB|ZEP|HAG|ZEC|MAL|MAT|MRK|LUK|JHN|ACT|ROM|1CO|2CO|GAL|EPH|PHP|COL|1TH|2TH|1TI|2TI|TIT|PHM|HEB|JAS|1PE|2PE|1JN|2JN|3JN|JUD|REV)\\.[1-9][0-9]*$",
+      "type": "string"
     },
     "ConcordRef": {
       "allOf": [
@@ -377,6 +401,10 @@
       ],
       "unevaluatedProperties": false
     },
+    "ConcordReference": {
+      "pattern": "^BoC [0-9]+\\.[0-9]+\\.[0-9]+$",
+      "type": "string"
+    },
     "Confidence": {
       "enum": [
         "CanonicalText",
@@ -399,7 +427,7 @@
           "type": "array"
         },
         "version": {
-          "type": "string"
+          "$ref": "#/$defs/ArtifactRoot"
         }
       },
       "required": [
@@ -417,7 +445,7 @@
           "type": "integer"
         },
         "id": {
-          "type": "string"
+          "$ref": "#/$defs/NodeId"
         },
         "kind": {
           "$ref": "#/$defs/ContentsChildKind"
@@ -426,7 +454,7 @@
           "$ref": "#/$defs/TextRef"
         },
         "ref": {
-          "type": "string"
+          "$ref": "#/$defs/ContentsReference"
         },
         "title": {
           "type": "string"
@@ -449,6 +477,16 @@
       ],
       "type": "string"
     },
+    "ContentsReference": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/ChapterReference"
+        },
+        {
+          "$ref": "#/$defs/ConcordReference"
+        }
+      ]
+    },
     "ContentsRoot": {
       "additionalProperties": false,
       "properties": {
@@ -469,7 +507,7 @@
           ]
         },
         "id": {
-          "type": "string"
+          "$ref": "#/$defs/NodeId"
         },
         "kind": {
           "$ref": "#/$defs/ContentsRootKind"
@@ -478,7 +516,7 @@
           "$ref": "#/$defs/TextRef"
         },
         "ref": {
-          "type": "string"
+          "$ref": "#/$defs/ContentsReference"
         },
         "title": {
           "type": "string"
@@ -541,7 +579,7 @@
           "type": "array"
         },
         "target": {
-          "type": "string"
+          "$ref": "#/$defs/CrossReferenceTarget"
         },
         "votes": {
           "format": "int32",
@@ -555,6 +593,19 @@
         "provenance"
       ],
       "type": "object"
+    },
+    "CrossReferenceTarget": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/VerseReference"
+        },
+        {
+          "$ref": "#/$defs/PassageReference"
+        },
+        {
+          "$ref": "#/$defs/VerseRangeReference"
+        }
+      ]
     },
     "DateClaim": {
       "additionalProperties": false,
@@ -673,6 +724,10 @@
       ],
       "type": "object"
     },
+    "EdgeId": {
+      "pattern": "^(?:Contains|Attests|Succession|DatedBy|LocatedAt|Mentions|Cites|Quotes|Confesses|Fulfillment|Typology|NamedAfter|JustifiedBy|CommentsOn|SpokenBy|SpokenAt|DerivedFrom|Occurs|ParentOf|Participates|AuthoredBy|Shows|Analogue|CatechismLink|Corresponds|Parallel|TemporalAdjacency|Spouses|Brethren):[0-9a-f]{32}$",
+      "type": "string"
+    },
     "EdgeKind": {
       "enum": [
         "contains",
@@ -742,21 +797,27 @@
           "$ref": "#/$defs/EdgeKind"
         },
         "next": {
-          "minimum": 0,
-          "type": [
-            "integer",
-            "null"
+          "oneOf": [
+            {
+              "$ref": "#/$defs/EdgePageCursor"
+            },
+            {
+              "type": "null"
+            }
           ]
         },
         "previous": {
-          "minimum": 0,
-          "type": [
-            "integer",
-            "null"
+          "oneOf": [
+            {
+              "$ref": "#/$defs/EdgePageCursor"
+            },
+            {
+              "type": "null"
+            }
           ]
         },
         "version": {
-          "type": "string"
+          "$ref": "#/$defs/ArtifactRoot"
         }
       },
       "required": [
@@ -765,6 +826,11 @@
         "version"
       ],
       "type": "object"
+    },
+    "EdgePageCursor": {
+      "default": 0,
+      "minimum": 0,
+      "type": "integer"
     },
     "EdgePosition": {
       "allOf": [
@@ -795,7 +861,7 @@
           "type": "array"
         },
         "id": {
-          "type": "string"
+          "$ref": "#/$defs/EdgeId"
         },
         "kind": {
           "$ref": "#/$defs/EdgeKind"
@@ -862,7 +928,7 @@
       "additionalProperties": false,
       "properties": {
         "id": {
-          "type": "string"
+          "$ref": "#/$defs/EdgeId"
         },
         "kind": {
           "$ref": "#/$defs/EdgeKind"
@@ -920,6 +986,16 @@
       ],
       "type": "object"
     },
+    "ElementId": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/NodeId"
+        },
+        {
+          "$ref": "#/$defs/EdgeId"
+        }
+      ]
+    },
     "ElementPage": {
       "additionalProperties": false,
       "properties": {
@@ -930,21 +1006,27 @@
           "type": "array"
         },
         "next": {
-          "minimum": 0,
-          "type": [
-            "integer",
-            "null"
+          "oneOf": [
+            {
+              "$ref": "#/$defs/ElementPageCursor"
+            },
+            {
+              "type": "null"
+            }
           ]
         },
         "previous": {
-          "minimum": 0,
-          "type": [
-            "integer",
-            "null"
+          "oneOf": [
+            {
+              "$ref": "#/$defs/ElementPageCursor"
+            },
+            {
+              "type": "null"
+            }
           ]
         },
         "version": {
-          "type": "string"
+          "$ref": "#/$defs/ArtifactRoot"
         }
       },
       "required": [
@@ -952,6 +1034,11 @@
         "version"
       ],
       "type": "object"
+    },
+    "ElementPageCursor": {
+      "default": 0,
+      "minimum": 0,
+      "type": "integer"
     },
     "Era": {
       "additionalProperties": false,
@@ -1157,7 +1244,7 @@
         },
         "mentioned_in": {
           "items": {
-            "type": "string"
+            "$ref": "#/$defs/VerseReference"
           },
           "type": "array"
         },
@@ -1289,7 +1376,7 @@
           "type": "array"
         },
         "version": {
-          "type": "string"
+          "$ref": "#/$defs/ArtifactRoot"
         }
       },
       "required": [
@@ -1308,7 +1395,7 @@
           ]
         },
         "id": {
-          "type": "string"
+          "$ref": "#/$defs/NodeId"
         }
       },
       "required": [
@@ -1427,7 +1514,7 @@
         {
           "properties": {
             "id": {
-              "type": "string"
+              "$ref": "#/$defs/ElementId"
             }
           },
           "required": [
@@ -1586,6 +1673,10 @@
       ],
       "unevaluatedProperties": false
     },
+    "NodeId": {
+      "pattern": "^(?:text-unit:(?:(?:GEN|EXO|LEV|NUM|DEU|JOS|JDG|RUT|1SA|2SA|1KI|2KI|1CH|2CH|EZR|NEH|EST|JOB|PSA|PRO|ECC|SNG|ISA|JER|LAM|EZK|DAN|HOS|JOL|AMO|OBA|JON|MIC|NAM|HAB|ZEP|HAG|ZEC|MAL|MAT|MRK|LUK|JHN|ACT|ROM|1CO|2CO|GAL|EPH|PHP|COL|1TH|2TH|1TI|2TI|TIT|PHM|HEB|JAS|1PE|2PE|1JN|2JN|3JN|JUD|REV)\\.[1-9][0-9]*\\.[1-9][0-9]*|BoC [0-9]+\\.[0-9]+\\.[0-9]+)|(?:Container|Event|Narrative|Place|Person|Anchor|Era|Polity|CatechismItem|Translation|CommentaryItem|LexiconEntry|Map):.+)$",
+      "type": "string"
+    },
     "NodeKind": {
       "enum": [
         "TextUnit",
@@ -1682,7 +1773,7 @@
           ]
         },
         "id": {
-          "type": "string"
+          "$ref": "#/$defs/NodeId"
         },
         "kind": {
           "$ref": "#/$defs/NodeKind"
@@ -1744,7 +1835,7 @@
           ]
         },
         "version": {
-          "type": "string"
+          "$ref": "#/$defs/ArtifactRoot"
         }
       },
       "required": [
@@ -1761,7 +1852,7 @@
       "additionalProperties": false,
       "properties": {
         "id": {
-          "type": "string"
+          "$ref": "#/$defs/NodeId"
         },
         "kind": {
           "$ref": "#/$defs/NodeKind"
@@ -1785,6 +1876,10 @@
         "legal",
         "created"
       ],
+      "type": "string"
+    },
+    "PassageReference": {
+      "pattern": "^(?:GEN|EXO|LEV|NUM|DEU|JOS|JDG|RUT|1SA|2SA|1KI|2KI|1CH|2CH|EZR|NEH|EST|JOB|PSA|PRO|ECC|SNG|ISA|JER|LAM|EZK|DAN|HOS|JOL|AMO|OBA|JON|MIC|NAM|HAB|ZEP|HAG|ZEC|MAL|MAT|MRK|LUK|JHN|ACT|ROM|1CO|2CO|GAL|EPH|PHP|COL|1TH|2TH|1TI|2TI|TIT|PHM|HEB|JAS|1PE|2PE|1JN|2JN|3JN|JUD|REV)\\.[1-9][0-9]*\\.[1-9][0-9]*-[1-9][0-9]*$",
       "type": "string"
     },
     "PersonLife": {
@@ -2047,7 +2142,7 @@
         },
         "verses": {
           "items": {
-            "type": "string"
+            "$ref": "#/$defs/VerseReference"
           },
           "type": "array"
         }
@@ -2201,6 +2296,16 @@
       ],
       "type": "object"
     },
+    "ReadingReference": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/VerseReference"
+        },
+        {
+          "$ref": "#/$defs/ChapterReference"
+        }
+      ]
+    },
     "Scene": {
       "additionalProperties": false,
       "properties": {
@@ -2232,9 +2337,13 @@
           "type": "array"
         },
         "ref": {
-          "type": [
-            "string",
-            "null"
+          "oneOf": [
+            {
+              "$ref": "#/$defs/BibleReference"
+            },
+            {
+              "type": "null"
+            }
           ]
         },
         "window": {
@@ -2614,7 +2723,7 @@
           "$ref": "#/$defs/NodeRef"
         },
         "ref": {
-          "type": "string"
+          "$ref": "#/$defs/UnitReference"
         }
       },
       "required": [
@@ -2629,9 +2738,13 @@
       "additionalProperties": false,
       "properties": {
         "next": {
-          "type": [
-            "string",
-            "null"
+          "oneOf": [
+            {
+              "$ref": "#/$defs/UnitReference"
+            },
+            {
+              "type": "null"
+            }
           ]
         },
         "units": {
@@ -2641,7 +2754,7 @@
           "type": "array"
         },
         "version": {
-          "type": "string"
+          "$ref": "#/$defs/ArtifactRoot"
         }
       },
       "required": [
@@ -2649,6 +2762,19 @@
         "version"
       ],
       "type": "object"
+    },
+    "TextWindowReference": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/VerseReference"
+        },
+        {
+          "$ref": "#/$defs/ChapterReference"
+        },
+        {
+          "$ref": "#/$defs/ConcordReference"
+        }
+      ]
     },
     "TimeRange": {
       "additionalProperties": false,
@@ -2715,6 +2841,16 @@
         "is_continuation"
       ],
       "type": "object"
+    },
+    "UnitReference": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/VerseReference"
+        },
+        {
+          "$ref": "#/$defs/ConcordReference"
+        }
+      ]
     },
     "UnitText": {
       "additionalProperties": false,
@@ -2818,7 +2954,7 @@
         },
         "verses": {
           "items": {
-            "type": "string"
+            "$ref": "#/$defs/VerseReference"
           },
           "type": "array"
         }
@@ -2830,6 +2966,24 @@
         "count"
       ],
       "type": "object"
+    },
+    "VerseRangeReference": {
+      "pattern": "^(?:GEN|EXO|LEV|NUM|DEU|JOS|JDG|RUT|1SA|2SA|1KI|2KI|1CH|2CH|EZR|NEH|EST|JOB|PSA|PRO|ECC|SNG|ISA|JER|LAM|EZK|DAN|HOS|JOL|AMO|OBA|JON|MIC|NAM|HAB|ZEP|HAG|ZEC|MAL|MAT|MRK|LUK|JHN|ACT|ROM|1CO|2CO|GAL|EPH|PHP|COL|1TH|2TH|1TI|2TI|TIT|PHM|HEB|JAS|1PE|2PE|1JN|2JN|3JN|JUD|REV)\\.[1-9][0-9]*\\.[1-9][0-9]*-(?:GEN|EXO|LEV|NUM|DEU|JOS|JDG|RUT|1SA|2SA|1KI|2KI|1CH|2CH|EZR|NEH|EST|JOB|PSA|PRO|ECC|SNG|ISA|JER|LAM|EZK|DAN|HOS|JOL|AMO|OBA|JON|MIC|NAM|HAB|ZEP|HAG|ZEC|MAL|MAT|MRK|LUK|JHN|ACT|ROM|1CO|2CO|GAL|EPH|PHP|COL|1TH|2TH|1TI|2TI|TIT|PHM|HEB|JAS|1PE|2PE|1JN|2JN|3JN|JUD|REV)\\.[1-9][0-9]*\\.[1-9][0-9]*$",
+      "type": "string"
+    },
+    "VerseReference": {
+      "pattern": "^(?:GEN|EXO|LEV|NUM|DEU|JOS|JDG|RUT|1SA|2SA|1KI|2KI|1CH|2CH|EZR|NEH|EST|JOB|PSA|PRO|ECC|SNG|ISA|JER|LAM|EZK|DAN|HOS|JOL|AMO|OBA|JON|MIC|NAM|HAB|ZEP|HAG|ZEC|MAL|MAT|MRK|LUK|JHN|ACT|ROM|1CO|2CO|GAL|EPH|PHP|COL|1TH|2TH|1TI|2TI|TIT|PHM|HEB|JAS|1PE|2PE|1JN|2JN|3JN|JUD|REV)\\.[1-9][0-9]*\\.[1-9][0-9]*$",
+      "type": "string"
+    },
+    "VerseSpanReference": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/VerseReference"
+        },
+        {
+          "$ref": "#/$defs/PassageReference"
+        }
+      ]
     },
     "WindowDir": {
       "enum": [
@@ -2896,5 +3050,5 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "description": "Derived from contracts/openapi.yaml by export_contract; do not edit.",
   "title": "Atlas Query Contract -- shapes",
-  "version": "0.30.0"
+  "version": "0.30.1"
 }

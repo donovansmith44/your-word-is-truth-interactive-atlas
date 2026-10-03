@@ -16,7 +16,7 @@ public sealed class CommentaryItemNode : IExplorable
 
     public string Title { get; }
     public string Kind => "CommentaryItem";
-    public NodeRef Identity => new(id: NodeIds.Of(NodeKind.CommentaryItem, _id), kind: NodeKind.CommentaryItem, label: Title);
+    public NodeRef Identity => new(id: LegacyNodeIds.Of(NodeKind.CommentaryItem, _id), kind: NodeKind.CommentaryItem, label: Title);
 
     public Task<IReadOnlyList<Chip>> ExploreAsync(AtlasClient api) =>
         Task.FromResult<IReadOnlyList<Chip>>(Array.Empty<Chip>());

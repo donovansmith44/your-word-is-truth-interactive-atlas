@@ -28,8 +28,8 @@ struct ResolvedEntry {
 impl ResolvedEntry {
     fn line(&self) -> String {
         let (id, kind, label) = match &self.neighbour {
-            PositionRef::Node { node } => (node.id.as_str(), node.kind.name(), node.label.as_str()),
-            PositionRef::Edge { edge } => (edge.id.as_str(), AN_EDGE, edge.id.as_str()),
+            PositionRef::Node { node } => (node.id.to_string(), node.kind.name(), node.label.clone()),
+            PositionRef::Edge { edge } => (edge.id.to_string(), AN_EDGE, edge.id.to_string()),
         };
         format!("{:<24} {:<12} {:<28} {}\n", self.edge.id, kind, id, label)
     }

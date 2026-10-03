@@ -20,8 +20,8 @@ public sealed class ChapterTextTests
         body: new UnitText(anchors: [], locus: new BibleRef(BookId.GEN, 1, 2), text: "And the earth was without form, and void.", wordsOfChrist: []),
         edgeSummary: [],
         heading: null,
-        node: new NodeRef(id: "text-unit:GEN.1.2", kind: NodeKind.TextUnit, label: "GEN.1.2"),
-        @ref: "GEN.1.2");
+        node: new NodeRef(id: Wire.Node("text-unit:GEN.1.2"), kind: NodeKind.TextUnit, label: "GEN.1.2"),
+        @ref: Wire.Read<UnitReference>("GEN.1.2"));
 
     [Fact]
     public async Task A_chapters_text_is_its_served_chapter_window_read_verse_by_verse()
@@ -56,7 +56,7 @@ public sealed class ChapterTextTests
     {
         // Arrange
         var atlas = new StubbedAtlas(Genesis1Opening);
-        var god = new Anchor(end: 20, kind: EdgeKind.Mentions, node: new NodeRef(id: "Person:god_1324", kind: NodeKind.Person, label: "God"), start: 17);
+        var god = new Anchor(end: 20, kind: EdgeKind.Mentions, node: new NodeRef(id: Wire.Node("Person:god_1324"), kind: NodeKind.Person, label: "God"), start: 17);
 
         // Act
         var verses = await VerseTextResolver.ResolveAsync(atlas.Client(), ["GEN.1.1"]);

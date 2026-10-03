@@ -10,7 +10,7 @@ namespace BibleAtlas.Client.Tests;
 
 public sealed class PlaceOpeningTests : BunitContext
 {
-    private static readonly NodeRef Hazor = new(id: "Place:hazor-1", kind: NodeKind.Place, label: "Hazor");
+    private static readonly NodeRef Hazor = new(id: Wire.Node("Place:hazor-1"), kind: NodeKind.Place, label: "Hazor");
     private const string Mentioned = "Hazor";
     private const int VerseNumber = 1;
     private const string ChapterBook = "JOS";
@@ -57,7 +57,7 @@ public sealed class PlaceOpeningTests : BunitContext
     public async Task A_place_on_the_chapter_card_is_pushed_as_its_served_node()
     {
         // Arrange
-        var chapter = new Chapter(book: ChapterBook, number: ChapterNumber, @ref: $"{ChapterBook}.{ChapterNumber}", verses:
+        var chapter = new Chapter(book: ChapterBook, number: ChapterNumber, @ref: Wire.Read<ChapterReference>($"{ChapterBook}.{ChapterNumber}"), verses:
         [
             new Verse(heading: null, persons: [], places: [new PlaceRef(id: "hazor-1", name: Mentioned, node: Hazor)], text: Mentioned, number: VerseNumber, wordsOfChrist: [], xrefCount: 0),
         ]);

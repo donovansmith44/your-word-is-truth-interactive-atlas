@@ -5,7 +5,7 @@ namespace BibleAtlas.Client.Legacy;
 
 public sealed record PassageListVerse(string Vref, string Text, int? GroupCount = null, IReadOnlyList<Anchor>? Anchors = null, IReadOnlyList<WordsOfChristSpan>? WordsOfChrist = null)
 {
-    public static PassageListVerse Of(TextUnit unit) => new(unit.Ref, unit.Body.Text, Anchors: unit.Body.Anchors, WordsOfChrist: unit.Body.WordsOfChrist);
+    public static PassageListVerse Of(TextUnit unit) => new(unit.Ref.ToString(), unit.Body.Text, Anchors: unit.Body.Anchors, WordsOfChrist: unit.Body.WordsOfChrist);
 }
 
 public record PassageSourceUnit(IReadOnlyList<PassageListVerse> Verses, string? Caption = null);
@@ -69,10 +69,10 @@ public static class VerseTextResolver
         {
             foreach (var v in g.Verses)
             {
-                countByVref[v] = g.Count;
+                countByVref[v.ToString()] = g.Count;
             }
         }
-        var resolved = await ResolveAsync(api, groups.SelectMany(g => g.Verses).ToList());
+        var resolved = await ResolveAsync(api, groups.SelectMany(g => g.Verses).Select(verse => verse.ToString()).ToList());
         return resolved.Select(v => v with { GroupCount = countByVref.TryGetValue(v.Vref, out var c) ? c : null }).ToList();
     }
 }

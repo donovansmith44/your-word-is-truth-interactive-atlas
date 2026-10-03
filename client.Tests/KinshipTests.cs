@@ -5,10 +5,10 @@ namespace BibleAtlas.Client.Tests;
 
 public sealed class KinshipTests
 {
-    private static NodeRef Person(string id, string label) => new(id: $"Person:{id}", kind: NodeKind.Person, label: label);
+    private static NodeRef Person(string id, string label) => new(id: Wire.Node($"Person:{id}"), kind: NodeKind.Person, label: label);
 
     private static EdgeEntry Kin(NodeRef node, Parentage parentage) =>
-        new(edge: new EdgeRef(id: $"ParentOf:{node.Id}", kind: EdgeKind.ParentOf, label: node.Label), loci: null, narrative: null, neighbour: new NodePosition(node), note: null, parentage: parentage, votes: null);
+        new(edge: new EdgeRef(id: Wire.Edge($"ParentOf:{node.Id}"), kind: EdgeKind.ParentOf, label: node.Label), loci: null, narrative: null, neighbour: new NodePosition(node), note: null, parentage: parentage, votes: null);
 
     private static List<string> Shape(IEnumerable<KinGroup> groups) =>
         groups.Select(g => $"{g.Heading} | {g.TestId} | {string.Join(", ", g.People.Select(p => p.Id))} | {g.Via}").ToList();

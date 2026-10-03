@@ -161,7 +161,7 @@ fn an_anchor_serialises_its_offsets_kind_and_node() {
         start: HAZOR_STARTS,
         end: HAZOR_ENDS,
         kind: EdgeKind::Directed(RelationId::Mentions, Direction::Forward),
-        node: NodeRef { id: "Place:hazor-1".to_string(), kind: NodeKind::Place, label: "Hazor".to_string() },
+        node: NodeRef { id: atlas_contract::wire::NodeId::of_place(&atlas_graph_types::id::PlaceId::new("hazor-1")), kind: NodeKind::Place, label: "Hazor".to_string() },
     };
     // Act
     let json = serde_json::to_value(&anchor).unwrap();

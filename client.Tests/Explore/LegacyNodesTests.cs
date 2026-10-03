@@ -82,7 +82,7 @@ public sealed class LegacyNodesTests
             new ChapterNode("GEN", 1),
             new BookNode("GEN"),
             new PassageNode("GEN.1.1-5", "In the beginning"),
-            new PersonNode("Person:moses_2108", "Moses"),
+            new PersonNode(Wire.Node("Person:moses_2108"), "Moses"),
             new EventNode("ab_ur", "Terah's family leaves Ur"),
             new CatechismNode("commandment-1", "The First Commandment"),
             new CommentaryItemNode("kretzmann/0.1.0", "The Creation of Chaos and Light"),

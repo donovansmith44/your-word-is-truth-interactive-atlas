@@ -40,14 +40,14 @@ public class GraphExplorableClientTests
             {"id":"text-unit:JHN.3.16","kind":"TextUnit","label":"JHN.3.16","provenance":{"id":"kjv","title":"The King James Version"},"edge_summary":[{"kind":"cites","count":178}],"version":"abc123"}
             """;
 
-        var card = await client.Card("text-unit:JHN.3.16");
+        var card = await client.Card(Wire.Node("text-unit:JHN.3.16"));
 
         Assert.Equal("/api/node/text-unit:JHN.3.16", Uri.UnescapeDataString(handler.LastRequestUri!.AbsolutePath));
-        Assert.Equal("text-unit:JHN.3.16", card.Id);
+        Assert.Equal(Wire.Node("text-unit:JHN.3.16"), card.Id);
         Assert.Equal(NodeKind.TextUnit, card.Kind);
         Assert.Equal("JHN.3.16", card.Label);
         Assert.Equal(new Provenance(id: "kjv", title: "The King James Version"), card.Provenance);
-        Assert.Equal("abc123", card.Version);
+        Assert.Equal(Wire.Root("abc123"), card.Version);
         Assert.Single(card.EdgeSummary);
         Assert.Equal(EdgeKind.Cites, card.EdgeSummary[0].Kind);
         Assert.Equal(178, card.EdgeSummary[0].Count);
@@ -61,14 +61,14 @@ public class GraphExplorableClientTests
             {"kind":"cites","entries":[{"edge":{"id":"e1","kind":"cites","label":"JHN.3.16 · Cites · ROM.3.23"},"neighbour":{"position":"node","node":{"id":"text-unit:ROM.3.23","kind":"TextUnit","label":"ROM.3.23"}}}],"next":null,"version":"abc123"}
             """;
 
-        var page = await client.Edges("text-unit:JHN.3.16", EdgeKind.Cites, cursor: null, limit: 5);
+        var page = await client.Edges(Wire.Element("text-unit:JHN.3.16"), EdgeKind.Cites, cursor: null, limit: 5);
 
         Assert.Equal("/api/node/text-unit:JHN.3.16/edges", Uri.UnescapeDataString(handler.LastRequestUri!.AbsolutePath));
         Assert.Equal("?kind=cites&limit=5", handler.LastRequestUri.Query);
         Assert.Equal(EdgeKind.Cites, page.Kind);
         Assert.Single(page.Entries);
-        Assert.Equal(new EdgeRef(id: "e1", kind: EdgeKind.Cites, label: "JHN.3.16 · Cites · ROM.3.23"), page.Entries[0].Edge);
-        Assert.Equal(new NodePosition(new NodeRef(id: "text-unit:ROM.3.23", kind: NodeKind.TextUnit, label: "ROM.3.23")), page.Entries[0].Neighbour);
+        Assert.Equal(new EdgeRef(id: Wire.Edge("e1"), kind: EdgeKind.Cites, label: "JHN.3.16 · Cites · ROM.3.23"), page.Entries[0].Edge);
+        Assert.Equal(new NodePosition(new NodeRef(id: Wire.Node("text-unit:ROM.3.23"), kind: NodeKind.TextUnit, label: "ROM.3.23")), page.Entries[0].Neighbour);
         Assert.Null(page.Next);
     }
 
@@ -80,9 +80,9 @@ public class GraphExplorableClientTests
             {"kind":"justifies","entries":[{"edge":{"id":"JustifiedBy:00aa","kind":"justified-by","label":"A dating · Justified by · Solomon crowned"},"neighbour":{"position":"edge","edge":{"id":"DatedBy:00ff","kind":"dated-by","label":"A dating"}}}],"next":null,"version":"abc123"}
             """;
 
-        var page = await client.Edges("Anchor:solomon-crowned", EdgeKind.Justifies, cursor: null, limit: 5);
+        var page = await client.Edges(Wire.Element("Anchor:solomon-crowned"), EdgeKind.Justifies, cursor: null, limit: 5);
 
-        Assert.Equal(new EdgePosition(new EdgeRef(id: "DatedBy:00ff", kind: EdgeKind.DatedBy, label: "A dating")), page.Entries[0].Neighbour);
+        Assert.Equal(new EdgePosition(new EdgeRef(id: Wire.Edge("DatedBy:00ff"), kind: EdgeKind.DatedBy, label: "A dating")), page.Entries[0].Neighbour);
     }
 
     [Fact]
@@ -91,10 +91,10 @@ public class GraphExplorableClientTests
         var (client, handler) = MakeClient();
         handler.ResponseBody = """{"kind":"cites","entries":[],"next":7,"version":"abc123"}""";
 
-        var page = await client.Edges("text-unit:JHN.3.16", EdgeKind.Cites, cursor: 3, limit: 1);
+        var page = await client.Edges(Wire.Element("text-unit:JHN.3.16"), EdgeKind.Cites, cursor: Wire.EdgeCursor(3), limit: 1);
 
         Assert.Contains("cursor=3", handler.LastRequestUri!.Query);
-        Assert.Equal(7, page.Next);
+        Assert.Equal(Wire.EdgeCursor(7), page.Next);
     }
 
     [Fact]
@@ -105,7 +105,7 @@ public class GraphExplorableClientTests
         handler.ResponseBody = """{"kind":"cites","entries":[],"next":null,"version":"abc123"}""";
 
         // Act
-        await client.Edges("text-unit:JHN.3.16", EdgeKind.Cites);
+        await client.Edges(Wire.Element("text-unit:JHN.3.16"), EdgeKind.Cites);
 
         // Assert
         Assert.Equal($"?kind=cites&limit={BibleAtlas.Client.Exploring.Affordances.PageSize}", handler.LastRequestUri!.Query);
@@ -124,18 +124,18 @@ public class GraphExplorableClientTests
             """;
 
         // Act
-        var elements = await client.Elements(["text-unit:EXO.14.21", "Attests:00aa", "Event:nowhere"]);
+        var elements = await client.Elements([Wire.Element("text-unit:EXO.14.21"), Wire.Element("Attests:00aa"), Wire.Element("Event:nowhere")]);
 
         // Assert
         Assert.Equal(
             ("/api/elements", "?ids=text-unit:EXO.14.21,Attests:00aa,Event:nowhere", WholeValue.Of(new Element[]
             {
-                new NodeElement(new NodeRecord(book: null, catechism: null, description: null, edgeSummary: [], @event: null, id: "text-unit:EXO.14.21", kind: NodeKind.TextUnit, label: "Exodus 14:21", person: null, place: null, era: null, map: null, polity: null, provenance: new Provenance(id: "kjv", title: "The King James Version"), text: null, version: "abc123")),
-                new EdgeElement(new EdgeRecord(edgeSummary: [], id: "Attests:00aa", kind: EdgeKind.AttestedIn, label: "The Red Sea parted · Attested in · Exodus 14:21", narrative: null,
-                    @object: new NodePosition(new NodeRef(id: "text-unit:EXO.14.21", kind: NodeKind.TextUnit, label: "Exodus 14:21")), parentage: null, provenance: new Provenance(id: "kjv", title: "The King James Version"),
-                    subject: new NodePosition(new NodeRef(id: "Event:red_sea", kind: NodeKind.Event, label: "The Red Sea parted")), votes: null)),
-                new MissingElement("Event:nowhere"),
-            }), "abc123"),
+                new NodeElement(new NodeRecord(book: null, catechism: null, description: null, edgeSummary: [], @event: null, id: Wire.Node("text-unit:EXO.14.21"), kind: NodeKind.TextUnit, label: "Exodus 14:21", person: null, place: null, era: null, map: null, polity: null, provenance: new Provenance(id: "kjv", title: "The King James Version"), text: null, version: Wire.Root("abc123"))),
+                new EdgeElement(new EdgeRecord(edgeSummary: [], id: Wire.Edge("Attests:00aa"), kind: EdgeKind.AttestedIn, label: "The Red Sea parted · Attested in · Exodus 14:21", narrative: null,
+                    @object: new NodePosition(new NodeRef(id: Wire.Node("text-unit:EXO.14.21"), kind: NodeKind.TextUnit, label: "Exodus 14:21")), parentage: null, provenance: new Provenance(id: "kjv", title: "The King James Version"),
+                    subject: new NodePosition(new NodeRef(id: Wire.Node("Event:red_sea"), kind: NodeKind.Event, label: "The Red Sea parted")), votes: null)),
+                new MissingElement(Wire.Element("Event:nowhere")),
+            }), Wire.Root("abc123")),
             (handler.LastRequestUri!.AbsolutePath, Uri.UnescapeDataString(handler.LastRequestUri.Query), WholeValue.Of(elements.Elements.ToArray()), elements.Version));
     }
 
@@ -149,7 +149,7 @@ public class GraphExplorableClientTests
             : """{"elements":[{"element":"missing","id":"a"},{"element":"missing","id":"b"}],"next":2,"version":"abc123"}""";
 
         // Act
-        var elements = await client.Elements(["a", "b", "c"]);
+        var elements = await client.Elements([Wire.Element("a"), Wire.Element("b"), Wire.Element("c")]);
 
         // Assert
         Assert.Equal(
@@ -169,11 +169,11 @@ public class GraphExplorableClientTests
                 : """{"elements":[{"element":"missing","id":"a"},{"element":"missing","id":"b"}],"next":2,"version":"root-b"}""";
 
         // Act
-        var elements = await client.Elements(["a", "b", "c"]);
+        var elements = await client.Elements([Wire.Element("a"), Wire.Element("b"), Wire.Element("c")]);
 
         // Assert
         Assert.Equal(
-            (WholeValue.Of(new[] { "?ids=a,b,c", "?ids=a,b,c&cursor=2", "?ids=a,b,c", "?ids=a,b,c&cursor=2" }), WholeValue.Of(new[] { "a", "b", "c" }), "root-b"),
+            (WholeValue.Of(new[] { "?ids=a,b,c", "?ids=a,b,c&cursor=2", "?ids=a,b,c", "?ids=a,b,c&cursor=2" }), WholeValue.Of(new[] { "a", "b", "c" }.Select(Wire.Element)), Wire.Root("root-b")),
             (WholeValue.Of(handler.Requests.Select(uri => Uri.UnescapeDataString(uri.Query))), WholeValue.Of(elements.Elements.Cast<MissingElement>().Select(missing => missing.Id)), elements.Version));
     }
 
@@ -185,7 +185,7 @@ public class GraphExplorableClientTests
         handler.ResponseBody = """{"elements":[],"version":"abc123"}""";
 
         // Act
-        await client.Elements(["a,b", "c d"]);
+        await client.Elements([Wire.Element("a,b"), Wire.Element("c d")]);
 
         // Assert
         Assert.Equal("?ids=a%2Cb,c%20d", handler.LastRequestUri!.Query);
@@ -199,15 +199,15 @@ public class GraphExplorableClientTests
             {"units":[{"ref":"JHN.3.16","text":"For God so loved the world..."}],"next":"JHN.3.17","version":"abc123"}
             """;
 
-        var window = await client.Reading("JHN.3.16", 1, WindowDir.Onward);
+        var window = await client.Reading(Wire.Read<TextWindowReference>("JHN.3.16"), 1, WindowDir.Onward);
 
         Assert.Equal("/api/text", Uri.UnescapeDataString(handler.LastRequestUri!.AbsolutePath));
         Assert.Contains("ref=JHN.3.16", handler.LastRequestUri.Query);
         Assert.Contains("n=1", handler.LastRequestUri.Query);
         Assert.Contains("dir=onward", handler.LastRequestUri.Query);
         Assert.Single(window.Units);
-        Assert.Equal("JHN.3.16", window.Units[0].Ref);
-        Assert.Equal("JHN.3.17", window.Next);
+        Assert.Equal(Wire.Read<UnitReference>("JHN.3.16"), window.Units[0].Ref);
+        Assert.Equal(Wire.Read<UnitReference>("JHN.3.17"), window.Next);
     }
 
     [Fact]
@@ -216,7 +216,7 @@ public class GraphExplorableClientTests
         var (client, handler) = MakeClient();
         handler.ResponseBody = """{"units":[],"next":null,"version":"abc123"}""";
 
-        await client.Reading("GEN.1.1", 3);
+        await client.Reading(Wire.Read<TextWindowReference>("GEN.1.1"), 3);
 
         Assert.Contains("dir=onward", handler.LastRequestUri!.Query);
     }

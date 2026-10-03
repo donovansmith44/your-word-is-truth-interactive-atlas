@@ -12,7 +12,7 @@ public sealed class LegacyTextUnitsTests
     public void An_opening_on_a_served_reference_explores_that_text_unit()
     {
         // Arrange
-        var expected = (Opens: "explore", Position: ((ElementKind)new ElementKind.Node(NodeKind.TextUnit), "text-unit:EXO.14.21", ServedReference));
+        var expected = (Opens: "explore", Position: ((ElementKind)new ElementKind.Node(NodeKind.TextUnit), Wire.Element("text-unit:EXO.14.21"), ServedReference));
 
         // Act
         var opening = LegacyTextUnits.Opening(ServedReference);

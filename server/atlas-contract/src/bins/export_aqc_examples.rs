@@ -9,7 +9,8 @@ use atlas_core::data::AtlasData;
 use atlas_graph::GraphService;
 use atlas_graph_types::store::GraphQuery;
 use atlas_contract::aqc_export::{self, FIXTURES, FOCUS_IDENTITY_EXTRA, SEEDS};
-use atlas_contract::graph_wire::{decode_node_id, encode_node_id};
+use atlas_contract::graph_wire::decode_node_id;
+use atlas_contract::wire::NodeId;
 use axum::body::Body;
 use axum::http::Request;
 use tower::ServiceExt;
@@ -48,7 +49,7 @@ async fn main() -> anyhow::Result<()> {
 
     for (kind, wire_id) in SEEDS {
         let decoded = decode_node_id(wire_id).unwrap_or_else(|| panic!("export_aqc_examples: seed id '{wire_id}' does not even PARSE via graph_wire::decode_node_id -- fix the SEEDS list"));
-        let re_encoded = encode_node_id(&decoded, &snap).unwrap_or_else(|_| panic!("export_aqc_examples: seed id '{wire_id}' names a text unit no reference is compiled for"));
+        let re_encoded = NodeId::encoded_one(&decoded, &snap).map(|id| id.to_string()).unwrap_or_else(|_| panic!("export_aqc_examples: seed id '{wire_id}' names a text unit no reference is compiled for"));
         assert_eq!(&re_encoded, wire_id, "export_aqc_examples: seed id '{wire_id}' does not round-trip (got '{re_encoded}') -- the G2 wire bijection is broken for this id");
         let actual_kind = decoded.kind.name();
         assert_eq!(&actual_kind, kind, "export_aqc_examples: seed id '{wire_id}' decodes to kind '{actual_kind}', expected '{kind}'");

@@ -52,7 +52,7 @@ mod tests {
     }
 
     fn passage_span(code: &str, chapter: u16, from_verse: u16, to_verse: u16) -> ScriptureRef {
-        ScriptureRef::Passage { book: book(code), chapter, from_verse, to_verse }
+        ScriptureRef::Passage(crate::identity::PassageReference { book: book(code), chapter, from_verse, to_verse })
     }
 
     fn fixture() -> (HashMap<String, Vec<(String, Option<String>)>>, HashMap<String, String>) {
@@ -111,7 +111,7 @@ mod tests {
     fn book_and_chapter_refs_have_no_member_verses_so_return_empty() {
         let (verse_to_items, item_names) = fixture();
         assert!(items_for_span(&ScriptureRef::Book(book("MAT")), &verse_to_items, &item_names).is_empty());
-        assert!(items_for_span(&ScriptureRef::Chapter { book: book("MAT"), chapter: 28 }, &verse_to_items, &item_names).is_empty());
+        assert!(items_for_span(&ScriptureRef::Chapter(crate::identity::ChapterReference { book: book("MAT"), chapter: 28 }), &verse_to_items, &item_names).is_empty());
     }
 
     #[test]

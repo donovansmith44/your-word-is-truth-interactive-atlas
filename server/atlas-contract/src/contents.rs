@@ -11,7 +11,7 @@ use axum::extract::{Path, State};
 use axum::Json;
 
 use crate::error::{ApiError, NoRefusals};
-use crate::graph_wire::{encode_node_id, UnreferencedUnit};
+use atlas_core::identity::{ArtifactRoot, ChapterReference, ConcordReference, ContentsReference, NodeId, UnreferencedUnit};
 use crate::wire;
 
 const CONTAINS: EdgeKind = EdgeKind::Directed(RelationId::Contains, Direction::Forward);
@@ -21,7 +21,7 @@ const CONTAINS: EdgeKind = EdgeKind::Directed(RelationId::Contains, Direction::F
 /// `{corpus}` is `bible` or `concord`; anything else is `not_found`. Every entry
 /// carries the reference to open for it, how many members it holds, and, for a
 /// book, which half of the canon it belongs to.
-#[utoipa::path(get, path = "/api/contents/{corpus}", params(("corpus" = String, Path)), responses((status = 200, body = wire::Contents), NoRefusals), tag = "contents")]
+#[utoipa::path(get, path = "/api/contents/{corpus}", params(("corpus" = wire::Corpus, Path)), responses((status = 200, body = wire::Contents), NoRefusals), tag = "contents")]
 pub async fn contents(State(graph): State<Arc<GraphService>>, Path(corpus): Path<String>) -> Result<Json<wire::Contents>, ApiError> {
     let snap = graph.snapshot();
     let corpus = wire::Corpus::named(&corpus).ok_or_else(|| ApiError::not_found("corpus"))?;
@@ -29,7 +29,7 @@ pub async fn contents(State(graph): State<Arc<GraphService>>, Path(corpus): Path
         wire::Corpus::Bible => members(&snap, &corpus_root_id::<BibleTag>().erase()).iter().map(|book| book_root(&snap, book)).collect::<Result<_, _>>()?,
         wire::Corpus::Concord => members(&snap, &corpus_root_id::<ConcordTag>().erase()).iter().map(|document| document_root(&snap, document)).collect::<Result<_, _>>()?,
     };
-    Ok(Json(wire::Contents { corpus, version: atlas_graph::version_hex(graph.version()), roots }))
+    Ok(Json(wire::Contents { corpus, version: ArtifactRoot::of(graph.version()), roots }))
 }
 
 fn members<S: GraphQuery>(snap: &S, container: &AnyNodeId) -> Vec<AnyNodeId> {
@@ -46,17 +46,17 @@ fn members<S: GraphQuery>(snap: &S, container: &AnyNodeId) -> Vec<AnyNodeId> {
 fn book_root<S: GraphQuery>(snap: &S, book: &AnyNodeId) -> Result<wire::ContentsRoot, ApiError> {
     let index = atlas_graph::bible_container_adapter::decode_book_container(book)
         .unwrap_or_else(|| panic!("the Bible's root contains {}, which is not a book container", book.raw)) as usize;
-    let code = atlas_core::canon::BOOKS[index].code;
+    let code = atlas_core::refs::BookId(index as u8);
     let children = members(snap, book)
         .iter()
         .filter_map(|child| {
             let (_, chapter) = atlas_graph::bible_container_adapter::decode_chapter_container(child)?;
             let (b, c, v) = members(snap, child).into_iter().find_map(|verse| atlas_graph::kjv_adapter::decode_text_unit(&verse))?;
-            Some(encode_node_id(child, snap).map(|id| wire::ContentsChild {
+            Some(NodeId::encoded_one(child, snap).map(|id| wire::ContentsChild {
                 id,
                 title: chapter.to_string(),
                 kind: wire::ContentsChildKind::Chapter,
-                r#ref: format!("{code}.{chapter}"),
+                r#ref: ChapterReference { book: code, chapter }.into(),
                 locus: wire::TextRef::of_verse(&VerseRef { book: b, chapter: c, verse: v }),
                 count: member_count(snap, child),
             }))
@@ -64,7 +64,7 @@ fn book_root<S: GraphQuery>(snap: &S, book: &AnyNodeId) -> Result<wire::Contents
         .collect::<Result<Vec<_>, _>>()?;
     let (r#ref, locus) = opening(book, &children);
     Ok(wire::ContentsRoot {
-        id: encode_node_id(book, snap)?,
+        id: NodeId::encoded_one(book, snap)?,
         title: title_of(snap, book),
         kind: wire::ContentsRootKind::Book,
         group: Some(atlas_core::canon::Testament::of_book_index(index)),
@@ -83,15 +83,16 @@ fn document_root<S: GraphQuery>(snap: &S, document: &AnyNodeId) -> Result<wire::
         })
         .collect::<Result<Vec<_>, _>>()?;
     let (r#ref, locus) = opening(document, &children);
-    Ok(wire::ContentsRoot { id: encode_node_id(document, snap)?, title: title_of(snap, document), kind: wire::ContentsRootKind::Document, group: None, r#ref, locus, children })
+    Ok(wire::ContentsRoot { id: NodeId::encoded_one(document, snap)?, title: title_of(snap, document), kind: wire::ContentsRootKind::Document, group: None, r#ref, locus, children })
 }
 
 fn article_child<S: GraphQuery>(snap: &S, article: &AnyNodeId, first: &AnyNodeId, locus: wire::TextRef) -> Result<wire::ContentsChild, ApiError> {
-    let r#ref = snap.references(std::slice::from_ref(first)).remove(0).ok_or_else(|| UnreferencedUnit(first.clone()))?;
-    Ok(wire::ContentsChild { id: encode_node_id(article, snap)?, title: title_of(snap, article), kind: wire::ContentsChildKind::Article, r#ref, locus, count: member_count(snap, article) })
+    let compiled = snap.references(std::slice::from_ref(first)).remove(0).ok_or_else(|| UnreferencedUnit(first.clone()))?;
+    let r#ref = compiled.parse::<ConcordReference>().map_err(|_| ApiError::internal(&format!("the compiled reference {compiled} names no paragraph of the Book of Concord")))?.into();
+    Ok(wire::ContentsChild { id: NodeId::encoded_one(article, snap)?, title: title_of(snap, article), kind: wire::ContentsChildKind::Article, r#ref, locus, count: member_count(snap, article) })
 }
 
-fn opening(root: &AnyNodeId, children: &[wire::ContentsChild]) -> (String, wire::TextRef) {
+fn opening(root: &AnyNodeId, children: &[wire::ContentsChild]) -> (ContentsReference, wire::TextRef) {
     let first = children.first().unwrap_or_else(|| panic!("{} contains nothing to open at", root.raw));
     (first.r#ref.clone(), first.locus.clone())
 }

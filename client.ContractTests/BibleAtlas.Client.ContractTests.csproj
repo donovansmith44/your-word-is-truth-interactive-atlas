@@ -41,6 +41,7 @@
   <ItemGroup>
     <ProjectReference Include="..\client\BibleAtlas.Client.csproj" />
     <ProjectReference Include="..\client\Exploring\BibleAtlas.Client.Exploring.csproj" />
+    <ProjectReference Include="..\client.ContractGenerator\BibleAtlas.Client.ContractGenerator.csproj" />
   </ItemGroup>
 
   <!--

@@ -2,9 +2,9 @@ using BibleAtlas.Client.Contract;
 
 namespace BibleAtlas.Client.Exploring;
 
-public delegate Task<Page<T>> PageRead<T>(int? cursor, int limit);
+public delegate Task<Page<T>> PageRead<T>(EdgePageCursor? cursor, int limit);
 
-internal sealed record Paging<T>(IReadOnlyList<T> Kept, int Read, int? Previous, int? Next)
+internal sealed record Paging<T>(IReadOnlyList<T> Kept, int Read, EdgePageCursor? Previous, EdgePageCursor? Next)
 {
     public bool Ended => Next is null;
 
@@ -48,33 +48,33 @@ public static class Paging
             Affordances.Of(kind).InitialClamp,
             () => request.Element.Moved);
 
-    public static async Task<Page<EdgeEntry>> First(IExplorableClient graph, string positionId, EdgeKind kind)
+    public static async Task<Page<EdgeEntry>> First(IExplorableClient graph, ElementId position, EdgeKind kind)
     {
-        var read = await From(Neighbours(graph, positionId, kind), null, Affordances.Of(kind).InitialClamp, Everything);
+        var read = await From(Neighbours(graph, position, kind), null, Affordances.Of(kind).InitialClamp, Everything);
         return new Page<EdgeEntry>(read.Kept, read.Previous, read.Next);
     }
 
-    public static async Task<IReadOnlyList<EdgeEntry>> Whole(IExplorableClient graph, string positionId, EdgeKind kind)
+    public static async Task<IReadOnlyList<EdgeEntry>> Whole(IExplorableClient graph, ElementId position, EdgeKind kind)
     {
-        var read = Neighbours(graph, positionId, kind);
+        var read = Neighbours(graph, position, kind);
         return (await Paging<EdgeEntry>.Of(await read(null, int.MaxValue), Everything).ToTheEnd(read)).Kept;
     }
 
     public static async Task<Link?> FirstLink(Explorable element, EdgeKind kind) => (await Links(element, kind, null)).Items.FirstOrDefault();
 
-    public static async Task<Page<Link>> Links(Explorable element, EdgeKind kind, int? cursor)
+    public static async Task<Page<Link>> Links(Explorable element, EdgeKind kind, EdgePageCursor? cursor)
     {
         var read = await From((next, limit) => element.Entries(kind, next, limit), cursor, Affordances.Of(kind).InitialClamp, Everything);
         return new Page<Link>(read.Kept.Select(entry => entry.Neighbour).ToList(), read.Previous, read.Next);
     }
 
-    internal static async Task<Paging<T>> From<T>(PageRead<T> read, int? start, int wanted, Func<T, bool> keep) =>
+    internal static async Task<Paging<T>> From<T>(PageRead<T> read, EdgePageCursor? start, int wanted, Func<T, bool> keep) =>
         await Paging<T>.Of(await read(start, wanted), keep).Reading(read, wanted, keep);
 
-    private static PageRead<EdgeEntry> Neighbours(IExplorableClient graph, string positionId, EdgeKind kind) =>
+    private static PageRead<EdgeEntry> Neighbours(IExplorableClient graph, ElementId position, EdgeKind kind) =>
         async (cursor, limit) =>
         {
-            var page = await graph.Edges(positionId, kind, cursor, limit);
+            var page = await graph.Edges(position, kind, cursor, limit);
             return new Page<EdgeEntry>(page.Entries, page.Previous, page.Next);
         };
 }

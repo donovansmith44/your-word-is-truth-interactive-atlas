@@ -148,6 +148,12 @@ impl EdgeKind {
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct EdgeId(pub Interned);
 
+impl core::fmt::Display for EdgeId {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        f.write_str(&self.0)
+    }
+}
+
 impl EdgeId {
     pub fn recorded_kind(&self) -> Option<EdgeKind> {
         let (relation, _) = self.0.split_once(':')?;

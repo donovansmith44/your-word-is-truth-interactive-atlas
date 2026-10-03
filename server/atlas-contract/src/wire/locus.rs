@@ -62,8 +62,8 @@ const ARTICLE: &str = "article";
 const PARAGRAPH: &str = "paragraph";
 const TEXT_REF: &str = "One unit of a corpus's text, named by the corpus it belongs to.";
 
-const BIBLE: Case = Case { tag: "bible", name: "BibleRef", description: "A verse of the Bible." };
-const CONCORD: Case = Case { tag: "concord", name: "ConcordRef", description: "A paragraph of the Book of Concord." };
+const BIBLE: Case = Case { tag: super::Corpus::Bible.name(), name: "BibleRef", description: "A verse of the Bible." };
+const CONCORD: Case = Case { tag: super::Corpus::Concord.name(), name: "ConcordRef", description: "A paragraph of the Book of Concord." };
 const CASES: [Case; 2] = [BIBLE, CONCORD];
 
 impl PartialSchema for TextRef {

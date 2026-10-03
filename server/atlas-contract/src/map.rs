@@ -81,6 +81,7 @@ pub async fn scene_scripture(
 #[derive(Debug, Deserialize, IntoParams)]
 #[into_params(parameter_in = Query)]
 pub struct ScripturePassage {
+    #[param(value_type = ScriptureRef)]
     pub r#ref: String,
 }
 
@@ -176,8 +177,8 @@ pub async fn polities(
             reign: curated_span(reign.era.from_year, reign.era.to_year),
             rings: wire::rings(&reign.era.rings),
             color_key: reign.color_key,
-            transition: reign.era.transition.as_ref().map(|d| curated_delta(d, reign.era.from_year)),
-            fall: reign.era.fall.as_ref().map(|d| curated_delta(d, reign.era.from_year)),
+            transition: reign.era.transition.as_ref().map(|d| curated_delta(d, reign.era.from_year)).transpose()?,
+            fall: reign.era.fall.as_ref().map(|d| curated_delta(d, reign.era.from_year)).transpose()?,
         }))
         .collect::<Result<_, ApiError>>()?;
     Ok(Json(wire::Polities { polities }))
@@ -186,8 +187,13 @@ pub async fn polities(
 /// `for_era_from` is unobservable here -- it is `skip_serializing`, so nothing
 /// reads what this writes. It is passed because the domain struct has the field,
 /// and `era_from` is the only value that could ever be right for it.
-fn curated_delta(d: &atlas_graph_types::node::PolityDeltaPayload, era_from: atlas_core::time::Year) -> PolityDelta {
-    PolityDelta { event: d.event.clone(), verses: d.verses.clone(), ref_note: d.ref_note.clone(), for_era_from: era_from }
+fn curated_delta(d: &atlas_graph_types::node::PolityDeltaPayload, era_from: atlas_core::time::Year) -> Result<PolityDelta, ApiError> {
+    let verses = d
+        .verses
+        .iter()
+        .map(|verse| atlas_core::refs::VerseId::parse_canonical(verse).map_err(|_| ApiError::internal(&format!("the polity delta {} cites {verse}, which names no verse", d.event))))
+        .collect::<Result<_, _>>()?;
+    Ok(PolityDelta { event: d.event.clone(), verses, ref_note: d.ref_note.clone(), for_era_from: era_from })
 }
 
 

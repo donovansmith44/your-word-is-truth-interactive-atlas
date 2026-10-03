@@ -11,7 +11,7 @@ use atlas_graph_types::store::GraphSnapshot as _;
 #[test]
 fn version_root_matches_the_captured_pre_pipeline_baseline() {
     let svc = RawSources::read(OptionalCorpora { kretzmann: true, red_letter: false }).build_service(&[]);
-    let hex = atlas_graph::version_hex(svc.snapshot().version());
+    let hex = atlas_core::identity::ArtifactRoot::of(svc.snapshot().version()).to_string();
 
     assert_eq!(
         hex,

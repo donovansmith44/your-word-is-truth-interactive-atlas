@@ -10,15 +10,15 @@ public sealed class GraphExplorableClient : IExplorableClient
 
     public GraphExplorableClient(HttpClient http) => _http = http;
 
-    public Task<NodeRecord> Card(string id) =>
-        _http.GetRequired<NodeRecord>($"api/node/{Uri.EscapeDataString(id)}");
+    public Task<NodeRecord> Card(NodeId id) =>
+        _http.GetRequired<NodeRecord>($"api/node/{Uri.EscapeDataString(id.Value)}");
 
-    public async Task<ElementPage> Elements(IReadOnlyList<string> ids)
+    public async Task<ElementPage> Elements(IReadOnlyList<ElementId> ids)
     {
-        var asked = string.Join(IdSeparator, ids.Select(Uri.EscapeDataString));
+        var asked = string.Join(IdSeparator, ids.Select(id => Uri.EscapeDataString(id.Value)));
         var first = await ElementsAt(asked, null);
         var elements = new List<Element>(first.Elements);
-        for (var page = first; page.Next is int cursor;)
+        for (var page = first; page.Next is { } cursor;)
         {
             page = await ElementsAt(asked, cursor);
             if (page.Version != first.Version)
@@ -32,15 +32,15 @@ public sealed class GraphExplorableClient : IExplorableClient
         return new ElementPage(elements: elements, next: null, previous: null, version: first.Version);
     }
 
-    private Task<ElementPage> ElementsAt(string asked, int? cursor) =>
-        _http.GetRequired<ElementPage>($"api/elements?ids={asked}" + (cursor is int c ? $"&cursor={c}" : ""));
+    private Task<ElementPage> ElementsAt(string asked, ElementPageCursor? cursor) =>
+        _http.GetRequired<ElementPage>($"api/elements?ids={asked}" + (cursor is { } c ? $"&cursor={c.Value}" : ""));
 
-    public Task<EdgePage> Edges(string positionId, EdgeKind kind, int? cursor = null, int limit = Exploring.Affordances.PageSize) =>
+    public Task<EdgePage> Edges(ElementId position, EdgeKind kind, EdgePageCursor? cursor = null, int limit = Exploring.Affordances.PageSize) =>
         _http.GetRequired<EdgePage>(
-            $"api/node/{Uri.EscapeDataString(positionId)}/edges?kind={Uri.EscapeDataString(kind.WireName())}&limit={limit}"
-            + (cursor is int c ? $"&cursor={c}" : ""));
+            $"api/node/{Uri.EscapeDataString(position.Value)}/edges?kind={Uri.EscapeDataString(kind.WireName())}&limit={limit}"
+            + (cursor is { } c ? $"&cursor={c.Value}" : ""));
 
-    public Task<TextWindow> Reading(string fromRef, int n, WindowDir dir = WindowDir.Onward, Corpus corpus = Corpus.Bible) =>
+    public Task<TextWindow> Reading(TextWindowReference from, int n, WindowDir dir = WindowDir.Onward, Corpus corpus = Corpus.Bible) =>
         _http.GetRequired<TextWindow>(
-            $"api/text?ref={Uri.EscapeDataString(fromRef)}&n={n}&dir={Uri.EscapeDataString(dir.WireName())}&corpus={Uri.EscapeDataString(corpus.WireName())}");
+            $"api/text?ref={Uri.EscapeDataString(from.Value)}&n={n}&dir={Uri.EscapeDataString(dir.WireName())}&corpus={Uri.EscapeDataString(corpus.WireName())}");
 }

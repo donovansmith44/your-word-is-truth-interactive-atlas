@@ -16,16 +16,16 @@ public class ContentsTreeModelTests
     private static readonly BibleRef GenesisOneOne = new(BookId.GEN, 1, 1);
     private static readonly BibleRef ExodusOneOne = new(BookId.EXO, 1, 1);
 
-    private static ContentsTreeModel Sample() => ContentsTreeModel.From(new Contents(corpus: Corpus.Bible, version: "v", roots:
+    private static ContentsTreeModel Sample() => ContentsTreeModel.From(new Contents(corpus: Corpus.Bible, version: Wire.Root("v"), roots:
     [
-        new(id: Genesis, title: "Genesis", kind: ContentsRootKind.Book, group: Testament.OT, @ref: "GEN.1", locus: GenesisOneOne, children:
+        new(id: Wire.Node(Genesis), title: "Genesis", kind: ContentsRootKind.Book, group: Testament.OT, @ref: Wire.Read<ContentsReference>("GEN.1"), locus: GenesisOneOne, children:
         [
-            new(id: GenesisOne, title: "1", kind: ContentsChildKind.Chapter, @ref: "GEN.1", locus: GenesisOneOne, count: 31),
-            new(id: GenesisTwo, title: "2", kind: ContentsChildKind.Chapter, @ref: "GEN.2", locus: new BibleRef(BookId.GEN, 2, 1), count: 25),
+            new(id: Wire.Node(GenesisOne), title: "1", kind: ContentsChildKind.Chapter, @ref: Wire.Read<ContentsReference>("GEN.1"), locus: GenesisOneOne, count: 31),
+            new(id: Wire.Node(GenesisTwo), title: "2", kind: ContentsChildKind.Chapter, @ref: Wire.Read<ContentsReference>("GEN.2"), locus: new BibleRef(BookId.GEN, 2, 1), count: 25),
         ]),
-        new(id: Exodus, title: "Exodus", kind: ContentsRootKind.Book, group: Testament.OT, @ref: "EXO.1", locus: ExodusOneOne, children:
+        new(id: Wire.Node(Exodus), title: "Exodus", kind: ContentsRootKind.Book, group: Testament.OT, @ref: Wire.Read<ContentsReference>("EXO.1"), locus: ExodusOneOne, children:
         [
-            new(id: ExodusOne, title: "1", kind: ContentsChildKind.Chapter, @ref: "EXO.1", locus: ExodusOneOne, count: 22),
+            new(id: Wire.Node(ExodusOne), title: "1", kind: ContentsChildKind.Chapter, @ref: Wire.Read<ContentsReference>("EXO.1"), locus: ExodusOneOne, count: 22),
         ]),
     ]));
 
@@ -174,12 +174,12 @@ public class ContentsTreeModelTests
     private const string Grove = "Container:grove";
     private const string GroveOne = "Container:grove-1";
 
-    private static ContentsTreeModel WithALeafRoot() => ContentsTreeModel.From(new Contents(corpus: Corpus.Bible, version: "v", roots:
+    private static ContentsTreeModel WithALeafRoot() => ContentsTreeModel.From(new Contents(corpus: Corpus.Bible, version: Wire.Root("v"), roots:
     [
-        new(id: Leaf, title: "Leaf", kind: ContentsRootKind.Book, group: Testament.OT, @ref: "LEAF.1", locus: GenesisOneOne, children: []),
-        new(id: Grove, title: "Grove", kind: ContentsRootKind.Book, group: Testament.OT, @ref: "GROVE.1", locus: ExodusOneOne, children:
+        new(id: Wire.Node(Leaf), title: "Leaf", kind: ContentsRootKind.Book, group: Testament.OT, @ref: Wire.Read<ContentsReference>("LEAF.1"), locus: GenesisOneOne, children: []),
+        new(id: Wire.Node(Grove), title: "Grove", kind: ContentsRootKind.Book, group: Testament.OT, @ref: Wire.Read<ContentsReference>("GROVE.1"), locus: ExodusOneOne, children:
         [
-            new(id: GroveOne, title: "1", kind: ContentsChildKind.Chapter, @ref: "GROVE.1", locus: ExodusOneOne, count: 1),
+            new(id: Wire.Node(GroveOne), title: "1", kind: ContentsChildKind.Chapter, @ref: Wire.Read<ContentsReference>("GROVE.1"), locus: ExodusOneOne, count: 1),
         ]),
     ]));
 

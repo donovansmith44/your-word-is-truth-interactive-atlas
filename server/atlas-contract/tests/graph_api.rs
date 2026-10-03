@@ -481,11 +481,11 @@ fn loci_of(verse: &atlas_graph_types::text::VerseRef, rows: &[&atlas_graph_types
 }
 
 fn wire_id_of(entity: &atlas_graph_types::id::AnyNodeId) -> String {
-    atlas_contract::graph_wire::encode_node_id(entity, committed_rows()).expect("an entity's id encodes")
+    atlas_contract::wire::NodeId::encoded_one(entity, committed_rows()).expect("an entity's id encodes").to_string()
 }
 
 fn wire_id_of_verse(verse: &atlas_graph_types::text::VerseRef) -> String {
-    atlas_contract::graph_wire::encode_node_id(&atlas_graph::kjv_adapter::verse_node_id(verse.book, verse.chapter, verse.verse), committed_rows()).expect("a verse of the artifact carries its compiled reference")
+    atlas_contract::wire::NodeId::encoded_one(&atlas_graph::kjv_adapter::verse_node_id(verse.book, verse.chapter, verse.verse), committed_rows()).expect("a verse of the artifact carries its compiled reference").to_string()
 }
 
 fn node_and_loci(entries: &serde_json::Value) -> Vec<serde_json::Value> {
@@ -1517,14 +1517,14 @@ fn a_neighbour_is_published_as_a_node_position_or_an_edge_position_told_apart_by
                 "type": "object",
                 "description": "A reference to a node: enough to show it, and the id to fetch it with.",
                 "required": ["id", "kind", "label"],
-                "properties": { "id": { "type": "string" }, "kind": { "$ref": "#/components/schemas/NodeKind" }, "label": { "type": "string" } },
+                "properties": { "id": { "$ref": "#/components/schemas/NodeId" }, "kind": { "$ref": "#/components/schemas/NodeKind" }, "label": { "type": "string" } },
                 "additionalProperties": false,
             },
             "EdgeRef": {
                 "type": "object",
                 "description": "A reference to an edge: its id, which the page of either end carries for this same connection and the element read answers, the kind it is recorded in, and its compiled label.",
                 "required": ["id", "kind", "label"],
-                "properties": { "id": { "type": "string" }, "kind": { "$ref": "#/components/schemas/EdgeKind" }, "label": { "type": "string" } },
+                "properties": { "id": { "$ref": "#/components/schemas/EdgeId" }, "kind": { "$ref": "#/components/schemas/EdgeKind" }, "label": { "type": "string" } },
                 "additionalProperties": false,
             },
             "PositionKind": null,
@@ -2630,7 +2630,7 @@ fn no_relation_name_is_a_node_kind_prefix() {
     let prefixes: Vec<String> = atlas_graph_types::id::NodeKind::ALL
         .iter()
         .map(|kind| {
-            let wire = atlas_contract::graph_wire::encode_node_id(&atlas_graph_types::id::AnyNodeId { kind: *kind, raw: "x".to_string() }, &referenced).unwrap();
+            let wire = atlas_contract::wire::NodeId::encoded_one(&atlas_graph_types::id::AnyNodeId { kind: *kind, raw: "x".to_string() }, &referenced).unwrap().to_string();
             wire.split_once(':').unwrap().0.to_string()
         })
         .collect();
@@ -2655,9 +2655,10 @@ fn no_served_id_carries_the_separator_an_element_read_lists_ids_by() {
 
     // Act
     let held: Vec<atlas_graph_types::id::AnyNodeId> = atlas_graph_types::id::NodeKind::ALL.iter().flat_map(|kind| snap.nodes_of_kind(*kind, None, usize::MAX).ids).collect();
-    let carrying: Vec<String> = atlas_contract::graph_wire::encode_node_ids(&held, &snap)
+    let carrying: Vec<String> = atlas_contract::wire::NodeId::encoded(&held, &snap)
         .expect("every held id encodes")
-        .into_iter()
+        .iter()
+        .map(ToString::to_string)
         .filter(|id| id.contains(atlas_contract::reference::ELEMENT_ID_SEPARATOR))
         .collect();
 

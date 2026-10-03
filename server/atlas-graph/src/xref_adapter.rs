@@ -30,7 +30,7 @@ fn target_span(target: &str) -> Option<(VerseId, VerseId)> {
     if let Ok(v) = VerseId::parse_canonical(target) {
         return Some((v, v));
     }
-    if let Ok(ScriptureRef::Passage { book, chapter, from_verse, to_verse }) = ScriptureRef::parse(target) {
+    if let Ok(ScriptureRef::Passage(atlas_core::identity::PassageReference { book, chapter, from_verse, to_verse })) = ScriptureRef::parse(target) {
         return Some((VerseId { book, chapter, verse: from_verse }, VerseId { book, chapter, verse: to_verse }));
     }
     let (left, right) = target.split_once('-')?;

@@ -395,8 +395,8 @@ impl GraphService {
                 .filter(|(key, _)| match ScriptureRef::parse(key) {
                     Ok(ScriptureRef::Verse(v)) => match span {
                         ScriptureRef::Book(b) => v.book == *b,
-                        ScriptureRef::Chapter { book, chapter } => v.book == *book && v.chapter == *chapter,
-                        ScriptureRef::Passage { book, chapter, from_verse, to_verse } => {
+                        ScriptureRef::Chapter(atlas_core::identity::ChapterReference { book, chapter }) => v.book == *book && v.chapter == *chapter,
+                        ScriptureRef::Passage(atlas_core::identity::PassageReference { book, chapter, from_verse, to_verse }) => {
                             v.book == *book && v.chapter == *chapter && v.verse >= *from_verse && v.verse <= *to_verse
                         }
                         ScriptureRef::Verse(w) => v == *w,

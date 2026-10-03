@@ -3,13 +3,13 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use atlas_graph_types::edge::EdgeId;
-use atlas_graph_types::id::{AnyNodeId, NodeKind, Position};
+use atlas_graph_types::id::{AnyNodeId, Position};
 use atlas_graph_types::store::GraphQuery;
 
 use crate::error::ApiError;
 use crate::wire::{EdgeRef, NodeRef, PositionRef};
 
-pub use atlas_graph::node_ref::{encode_node_id, encode_node_ids, UnreferencedUnit};
+use atlas_core::identity::{ConcordReference, NodeId, UnreferencedUnit};
 use atlas_graph_types::canon::ids::any_node_id_str;
 
 pub fn decode_node_id(s: &str) -> Option<AnyNodeId> {
@@ -17,38 +17,13 @@ pub fn decode_node_id(s: &str) -> Option<AnyNodeId> {
     if rest.is_empty() {
         return None;
     }
-    match kind {
-        "text-unit" => {
-            // A Bible dot-ref never starts "BoC ", so the prefix decides the
-            // corpus unambiguously and the Bible parse below needs no guard.
-            if let Some(concord_rest) = rest.strip_prefix("BoC ") {
-                let mut parts = concord_rest.split('.');
-                let part: u8 = parts.next()?.parse().ok()?;
-                let article: u16 = parts.next()?.parse().ok()?;
-                let paragraph: u16 = parts.next()?.parse().ok()?;
-                if parts.next().is_some() {
-                    return None;
-                }
-                return Some(atlas_graph::concord_adapter::text_unit_id(part, article, paragraph));
-            }
-            let vid = atlas_core::refs::VerseId::parse_canonical(rest).ok()?;
-            Some(atlas_graph::kjv_adapter::verse_node_id(vid.book.0, vid.chapter, vid.verse))
-        }
-        "Event" => Some(AnyNodeId { kind: NodeKind::Event, raw: rest.to_string() }),
-        "Narrative" => Some(AnyNodeId { kind: NodeKind::Narrative, raw: rest.to_string() }),
-        "Anchor" => Some(AnyNodeId { kind: NodeKind::Anchor, raw: rest.to_string() }),
-        "Place" => Some(AnyNodeId { kind: NodeKind::Place, raw: rest.to_string() }),
-        "Era" => Some(AnyNodeId { kind: NodeKind::Era, raw: rest.to_string() }),
-        "Polity" => Some(AnyNodeId { kind: NodeKind::Polity, raw: rest.to_string() }),
-        "CatechismItem" => Some(AnyNodeId { kind: NodeKind::CatechismItem, raw: rest.to_string() }),
-        "Person" => Some(AnyNodeId { kind: NodeKind::Person, raw: rest.to_string() }),
-        "Translation" => Some(AnyNodeId { kind: NodeKind::Translation, raw: rest.to_string() }),
-        "CommentaryItem" => Some(AnyNodeId { kind: NodeKind::CommentaryItem, raw: rest.to_string() }),
-        "Container" => Some(AnyNodeId { kind: NodeKind::Container, raw: rest.to_string() }),
-        "LexiconEntry" => Some(AnyNodeId { kind: NodeKind::LexiconEntry, raw: rest.to_string() }),
-        "Map" => Some(AnyNodeId { kind: NodeKind::Map, raw: rest.to_string() }),
-        _ => None,
+    if kind == NodeId::TEXT_UNIT {
+        return match rest.parse::<ConcordReference>() {
+            Ok(paragraph) => Some(atlas_graph::concord_adapter::text_unit_id(paragraph.part, paragraph.article, paragraph.paragraph)),
+            Err(_) => atlas_core::refs::VerseId::parse_canonical(rest).ok().map(|verse| atlas_graph::kjv_adapter::verse_node_id(verse.book.0, verse.chapter, verse.verse)),
+        };
     }
+    NodeId::addressable().find(|addressable| addressable.name() == kind).map(|kind| AnyNodeId { kind, raw: rest.to_string() })
 }
 
 pub fn describe_node(id: &AnyNodeId, query: &dyn GraphQuery) -> Result<String, ApiError> {
@@ -60,7 +35,7 @@ pub fn describe_nodes(ids: &BTreeSet<AnyNodeId>, query: &dyn GraphQuery) -> Resu
     let ids: Vec<AnyNodeId> = ids.iter().cloned().collect();
     let at: Vec<Position> = ids.iter().map(|id| Position::Node(id.clone())).collect();
     let labels = labelled_positions(&at, query)?;
-    let wire_ids = encode_node_ids(&ids, query)?;
+    let wire_ids = NodeId::encoded(&ids, query)?;
     Ok(ids.into_iter().zip(wire_ids).zip(labels).map(|((id, wire_id), label)| (id.clone(), NodeRef { id: wire_id, kind: id.kind, label })).collect())
 }
 
@@ -70,7 +45,7 @@ pub fn describe_positions(at: &[Position], query: &dyn GraphQuery) -> Result<Vec
         Position::Node(id) => Some(id.clone()),
         Position::Edge(_) => None,
     }).collect();
-    let mut wire_ids = encode_node_ids(&nodes, query)?.into_iter();
+    let mut wire_ids = NodeId::encoded(&nodes, query)?.into_iter();
     at.iter()
         .zip(labels)
         .map(|(position, label)| match position {
@@ -89,7 +64,7 @@ pub fn describe_position(at: &Position, query: &dyn GraphQuery) -> Result<Positi
 
 pub fn edge_ref(id: &EdgeId, label: String) -> Result<EdgeRef, ApiError> {
     let kind = id.recorded_kind().ok_or_else(|| ApiError::internal(&format!("the edge id {} names no relation", id.0)))?;
-    Ok(EdgeRef { id: id.0.clone(), kind, label })
+    Ok(EdgeRef { id: id.clone(), kind, label })
 }
 
 pub fn labelled_positions(at: &[Position], query: &dyn GraphQuery) -> Result<Vec<String>, ApiError> {
@@ -120,6 +95,7 @@ impl From<UnreferencedUnit> for ApiError {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use atlas_graph_types::id::NodeKind;
 
     const A_DATING: &str = "DatedBy:00ff";
     const A_DATING_LABEL: &str = "Solomon crowned · Dated by · 970 BC";
@@ -141,10 +117,10 @@ mod tests {
         assert_eq!(
             described,
             vec![
-                PositionRef::Node { node: NodeRef { id: "text-unit:JHN.3.16".to_string(), kind: NodeKind::TextUnit, label: VERSE_LABEL.to_string() } },
+                PositionRef::Node { node: NodeRef { id: NodeId::asked("text-unit:JHN.3.16"), kind: NodeKind::TextUnit, label: VERSE_LABEL.to_string() } },
                 PositionRef::Edge {
                     edge: EdgeRef {
-                        id: A_DATING.to_string(),
+                        id: atlas_graph_types::edge::EdgeId(A_DATING.to_string()),
                         kind: atlas_graph_types::edge::EdgeKind::Directed(atlas_graph_types::edge::RelationId::DatedBy, atlas_graph_types::edge::Direction::Forward),
                         label: A_DATING_LABEL.to_string(),
                     }
@@ -184,7 +160,7 @@ mod tests {
             (NodeKind::Map, "era-primeval", "Map:era-primeval"),
         ] {
             let id = AnyNodeId { kind, raw: raw.to_string() };
-            let wire = encode_node_id(&id, &atlas_graph_types::graph::Graph::default()).unwrap();
+            let wire = NodeId::encoded_one(&id, &atlas_graph_types::graph::Graph::default()).unwrap().to_string();
             assert_eq!(wire, expected_wire, "encode_node_id's own pre-existing generic fallback must already produce this shape");
             assert_eq!(decode_node_id(&wire), Some(id), "decode must be encode's exact inverse for every M-B/M-C kind");
         }
@@ -201,7 +177,7 @@ mod tests {
         let id = atlas_graph::kjv_adapter::verse_node_id(42, 3, 16);
         let mut graph = atlas_graph_types::graph::Graph::default();
         graph.references.insert(id.clone(), VERSE_REFERENCE.to_string());
-        let wire = encode_node_id(&id, &graph).unwrap();
+        let wire = NodeId::encoded_one(&id, &graph).unwrap().to_string();
         assert_eq!(wire, "text-unit:JHN.3.16");
         assert_eq!(decode_node_id(&wire), Some(id));
     }

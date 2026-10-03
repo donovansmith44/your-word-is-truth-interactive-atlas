@@ -23,7 +23,7 @@ public class YearNodeEventTimeTests
         Assert.Equal([("AD 31", "Year"), ("1000 – 960 BC", "Year")], titles);
     }
 
-    private static readonly NodeRef TheEvent = new(id: "Event:ab_ur", kind: NodeKind.Event, label: "Terah's family leaves Ur");
+    private static readonly NodeRef TheEvent = new(id: Wire.Node("Event:ab_ur"), kind: NodeKind.Event, label: "Terah's family leaves Ur");
     private static readonly Year Ad30 = new(label: "AD 30", value: 30);
     private static readonly Year Ad31 = new(label: "AD 31", value: 31);
     private static readonly TimeRange Ad31Only = new(from: Ad31, label: "AD 31", to: Ad31);

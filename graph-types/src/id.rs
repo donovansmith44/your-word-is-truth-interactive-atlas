@@ -152,12 +152,14 @@ pub struct ContentHash(pub u64);
 
 #[cfg(not(feature = "canon-ids"))]
 impl ContentHash {
+    pub const HEX_WIDTH: usize = 16;
+
     pub fn hex(&self) -> String {
         format!("{:016x}", self.0)
     }
 
     pub fn from_hex(s: &str) -> Option<ContentHash> {
-        if s.len() != 16 || !s.bytes().all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b)) {
+        if s.len() != ContentHash::HEX_WIDTH || !s.bytes().all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b)) {
             return None;
         }
         u64::from_str_radix(s, 16).ok().map(ContentHash)
@@ -170,6 +172,8 @@ pub struct ContentHash(pub [u8; 16]);
 
 #[cfg(feature = "canon-ids")]
 impl ContentHash {
+    pub const HEX_WIDTH: usize = 32;
+
     pub fn hex(&self) -> String {
         use std::fmt::Write;
         let mut s = String::with_capacity(32);
@@ -180,7 +184,7 @@ impl ContentHash {
     }
 
     pub fn from_hex(s: &str) -> Option<ContentHash> {
-        if s.len() != 32 || !s.bytes().all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b)) {
+        if s.len() != ContentHash::HEX_WIDTH || !s.bytes().all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b)) {
             return None;
         }
         let bytes = s.as_bytes();

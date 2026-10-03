@@ -75,8 +75,8 @@ public sealed class ExplorerPopoverTests : BunitContext
         const string prose = "In the beginning, cp. John 1, 1, that is, when time first began.";
         Hosting(new ServedGraph().Serving(new NodeRecord(
             book: null, catechism: null, description: prose, edgeSummary: [], @event: null,
-            id: "CommentaryItem:kretzmann/0.1.0", kind: NodeKind.CommentaryItem, label: "The Creation of Chaos and Light",
-            person: null, place: null, era: null, map: null, polity: null, provenance: ServedGraph.ServedProvenance, text: null, version: "v")));
+            id: Wire.Node("CommentaryItem:kretzmann/0.1.0"), kind: NodeKind.CommentaryItem, label: "The Creation of Chaos and Light",
+            person: null, place: null, era: null, map: null, polity: null, provenance: ServedGraph.ServedProvenance, text: null, version: Wire.Root("v"))));
 
         // Act
         var popover = Render<ExplorerPopover>(p => p.Add(v => v.Opening, new PopoverOpening.Legacy(new CommentaryItemNode("kretzmann/0.1.0", "The Creation of Chaos and Light"))));
@@ -273,16 +273,16 @@ public sealed class ExplorerPopoverTests : BunitContext
         private int _reads;
         private int _cards;
 
-        public Task<NodeRecord> Card(string id) =>
+        public Task<NodeRecord> Card(NodeId id) =>
             _cards++ < failedCards ? Task.FromException<NodeRecord>(new HttpRequestException(Offline)) : served.Card(id);
 
-        public Task<ElementPage> Elements(IReadOnlyList<string> ids) =>
+        public Task<ElementPage> Elements(IReadOnlyList<ElementId> ids) =>
             _reads++ < failedReads ? Task.FromException<ElementPage>(new HttpRequestException(Offline)) : served.Elements(ids);
 
-        public Task<EdgePage> Edges(string positionId, EdgeKind kind, int? cursor = null, int limit = BibleAtlas.Client.Exploring.Affordances.PageSize) =>
+        public Task<EdgePage> Edges(ElementId positionId, EdgeKind kind, EdgePageCursor? cursor = null, int limit = BibleAtlas.Client.Exploring.Affordances.PageSize) =>
             served.Edges(positionId, kind, cursor, limit);
 
-        public Task<TextWindow> Reading(string fromRef, int n, WindowDir dir = WindowDir.Onward, Corpus corpus = Corpus.Bible) =>
+        public Task<TextWindow> Reading(TextWindowReference fromRef, int n, WindowDir dir = WindowDir.Onward, Corpus corpus = Corpus.Bible) =>
             served.Reading(fromRef, n, dir, corpus);
     }
 

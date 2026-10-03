@@ -19,7 +19,7 @@ public sealed class GraphExplorer(IExplorableClient graph) : IExplorer
         return served.Elements.Select(element => Of(element, served.Version)).ToList();
     }
 
-    private Explorable Of(Element element, string root) => element switch
+    private Explorable Of(Element element, ArtifactRoot root) => element switch
     {
         NodeElement { Node: var node } => new Explorable(node, root, _pages),
         EdgeElement { Edge: var edge } => new Explorable(edge, root, _pages),

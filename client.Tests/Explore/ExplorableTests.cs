@@ -11,7 +11,7 @@ public sealed class ExplorableTests
     private const string Genesis2Label = "Genesis 2";
     private const string LegacyGenesis1Label = "GEN.1";
     private const int VersesInGenesis1 = 31;
-    private const int SecondPageCursor = 20;
+    private static readonly EdgePageCursor SecondPageCursor = Wire.EdgeCursor(20);
 
     private static readonly FrontierGroup[] Genesis1Groups =
     [
@@ -35,7 +35,7 @@ public sealed class ExplorableTests
         var identity = (genesis1.Kind, genesis1.Id, genesis1.Label);
 
         // Assert
-        Assert.Equal((new ElementKind.Node(NodeKind.Container) as ElementKind, Genesis1Id, Genesis1Label), identity);
+        Assert.Equal((new ElementKind.Node(NodeKind.Container) as ElementKind, Wire.Element(Genesis1Id), Genesis1Label), identity);
     }
 
     [Fact]
@@ -70,7 +70,7 @@ public sealed class ExplorableTests
         // Arrange
         var graph = new ServedGraph()
             .Serving(ServedGraph.Card(NodeKind.Container, Genesis1Id, Genesis1Label, Genesis1Groups))
-            .Serving(Genesis1Id, EdgeKind.FollowsIn, null, ServedGraph.Page(EdgeKind.FollowsIn, SecondPageCursor, new NodePosition(Genesis2Ref)));
+            .Serving(Genesis1Id, EdgeKind.FollowsIn, null, ServedGraph.Page(EdgeKind.FollowsIn, SecondPageCursor.Value, new NodePosition(Genesis2Ref)));
         var genesis1 = Resolved.Node(graph, ServedGraph.Ref(NodeKind.Container, Genesis1Id, Genesis1Label));
 
         // Act

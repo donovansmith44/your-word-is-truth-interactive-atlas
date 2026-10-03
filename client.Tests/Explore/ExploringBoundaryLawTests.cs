@@ -22,8 +22,8 @@ public sealed class ExploringBoundaryLawTests
         // Assert
         Assert.Equal(
             [
-                "BibleAtlas.Client.Exploring: Explorable..ctor(NodeRecord, String, ServedPages) internal",
-                "BibleAtlas.Client.Exploring: Explorable..ctor(EdgeRecord, String, ServedPages) internal",
+                "BibleAtlas.Client.Exploring: Explorable..ctor(NodeRecord, ArtifactRoot, ServedPages) internal",
+                "BibleAtlas.Client.Exploring: Explorable..ctor(EdgeRecord, ArtifactRoot, ServedPages) internal",
                 "BibleAtlas.Client.Exploring: Explore`1..ctor(Func`3) internal",
                 "BibleAtlas.Client.Exploring: IExplorer.Resolve(IReadOnlyList`1) internal",
             ],

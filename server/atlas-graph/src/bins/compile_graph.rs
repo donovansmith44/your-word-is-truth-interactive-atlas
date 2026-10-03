@@ -227,7 +227,7 @@ fn main() -> Result<()> {
     );
     let mut version_store = MemStore::default();
     let graph_version = version_store.publish(graph_a_indexed).context("indexing the graph into its sections")?;
-    let version_hex = atlas_graph::version_hex(graph_version);
+    let version_hex = atlas_core::identity::ArtifactRoot::of(graph_version).to_string();
 
     let gazetteer_export = atlas_graph::exports::GazetteerExport {
         format_version: atlas_graph::exports::GAZETTEER_FORMAT_VERSION,

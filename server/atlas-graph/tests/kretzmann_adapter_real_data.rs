@@ -24,7 +24,7 @@ fn kretzmann_comments_on_rows_have_the_pinned_real_count() {
 fn chapter_commentary_serves_psalm_119_with_real_counts_matching_a_direct_comments_on_cross_check() {
     let graph = real_graph();
 
-    let atlas_core::refs::ScriptureRef::Chapter { book, chapter } = atlas_core::refs::ScriptureRef::parse("PSA.119").expect("PSA.119 must parse as a chapter ref") else {
+    let atlas_core::refs::ScriptureRef::Chapter(atlas_core::identity::ChapterReference { book, chapter }) = atlas_core::refs::ScriptureRef::parse("PSA.119").expect("PSA.119 must parse as a chapter ref") else {
         panic!("PSA.119 must parse as ScriptureRef::Chapter");
     };
     assert_eq!(chapter, 119);

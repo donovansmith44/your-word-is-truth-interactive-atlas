@@ -6,8 +6,8 @@ namespace BibleAtlas.Client.Tests;
 
 public sealed class ArtifactRootTests
 {
-    private const string RootA = "root-a";
-    private const string RootB = "root-b";
+    private static readonly ArtifactRoot RootA = Wire.Root("root-a");
+    private static readonly ArtifactRoot RootB = Wire.Root("root-b");
 
     private static readonly NodeRef Map = ServedGraph.Ref(NodeKind.Map, "Map:eden", "The world of Eden");
     private static readonly NodeRef Eden = ServedGraph.Ref(NodeKind.Place, "Place:eden", "Eden");
@@ -100,8 +100,8 @@ public sealed class ArtifactRootTests
     public async Task The_page_store_keeps_only_its_resident_pages()
     {
         // Arrange
-        var cursors = Enumerable.Range(0, ServedPages.Resident + 1).Select(cursor => (int?)cursor).ToList();
-        var graph = cursors.Aggregate(Graph(), (served, cursor) => served.Serving(Map.Id, EdgeKind.Shows, cursor, ServedGraph.Page(EdgeKind.Shows, null, Eden)));
+        var cursors = Enumerable.Range(0, ServedPages.Resident + 1).Select(cursor => Wire.EdgeCursor((int?)cursor)).ToList();
+        var graph = cursors.Aggregate(Graph(), (served, cursor) => served.Serving(Map.Id, EdgeKind.Shows, cursor?.Value, ServedGraph.Page(EdgeKind.Shows, null, Eden)));
         var map = await new GraphExplorer(graph).BeginAt(ServedGraph.At(Map));
         foreach (var cursor in cursors)
         {

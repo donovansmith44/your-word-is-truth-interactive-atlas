@@ -39,7 +39,7 @@ public class AqcSteps
     private Query? _query;
     private int _status;
     private JsonElement _body;
-    private string? _capturedRef;
+    private NodeId? _capturedRef;
 
     private string? _focusRequestedId;
 
@@ -105,7 +105,7 @@ public class AqcSteps
     public void WhenFocusQueryCaptured()
     {
         if (_capturedRef is null) throw new InvalidOperationException("no focus reference was captured yet");
-        Answer(Query.Focus, FocusFixtureNameForCapturedIdentity(_capturedRef));
+        Answer(Query.Focus, FocusFixtureNameForCapturedIdentity(_capturedRef.Value));
     }
 
     [When("I run TraversalQuery for \"([^\"]+)\" adjacency \"([^\"]+)\"")]
@@ -199,9 +199,9 @@ public class AqcSteps
     };
 
     [When("I query \"([^\"]+)\"")]
-    public void WhenQueryPath(string path)
-    {
-        var name = path switch
+    public void WhenQueryPath(string path) => Answer(Query.ByPath, QueriedFixture(path));
+
+    internal static string QueriedFixture(string path) => path switch
         {
             "/api/contract" => "contract",
             "/api/contents/bible" => "contents-bible",
@@ -215,8 +215,6 @@ public class AqcSteps
             "/api/event/ab_ur" => "event-page-ab-ur",
             _ => throw new NotSupportedException($"AqcSteps: no fixture mapped for path '{path}'."),
         };
-        Answer(Query.ByPath, name);
-    }
 
     [When("I capture the returned focus reference")]
     public void WhenCaptureFocusRef()
@@ -306,7 +304,7 @@ public class AqcSteps
         Assert.Equal(_capturedRef, Body<NodeRecord>().Id);
         if (_focusRequestedId is not null)
         {
-            Assert.Equal(_focusRequestedId, _capturedRef);
+            Assert.Equal(_focusRequestedId, _capturedRef.Value);
         }
     }
 
@@ -316,9 +314,9 @@ public class AqcSteps
         var entries = Body<EdgePage>().Entries;
         Assert.NotEmpty(entries);
         var targets = entries.Select(e => Assert.IsType<NodePosition>(e.Neighbour).Node).ToList();
-        Assert.All(targets, t => Assert.False(string.IsNullOrEmpty(t.Id) || string.IsNullOrEmpty(t.Label)));
+        Assert.All(targets, t => Assert.False(string.IsNullOrEmpty(t.Id.Value) || string.IsNullOrEmpty(t.Label)));
         var first = targets[0].Id;
-        var (status, focusBody) = LoadFixture(FocusFixtureNameForCapturedIdentity(first));
+        var (status, focusBody) = LoadFixture(FocusFixtureNameForCapturedIdentity(first.Value));
         Assert.Equal((200, first), (status, focusBody.Deserialize<NodeRecord>()!.Id));
     }
 
@@ -327,7 +325,7 @@ public class AqcSteps
     {
         var entries = Body<EdgePage>().Entries;
         Assert.NotEmpty(entries);
-        Assert.All(entries, e => Assert.False(string.IsNullOrEmpty(e.Edge.Id)));
+        Assert.All(entries, e => Assert.False(string.IsNullOrEmpty(e.Edge.Id.Value)));
     }
 
     [Then("the response \"entries\" array has at most (\\d+) entry")]
@@ -360,7 +358,7 @@ public class AqcSteps
     [Then("the units' \"ref\" fields are \"([^\"]+)\", \"([^\"]+)\", \"([^\"]+)\" in order")]
     public void ThenUnitsRefsInOrder(string a, string b, string c)
     {
-        Assert.Equal([a, b, c], Body<TextWindow>().Units.Select(u => u.Ref));
+        Assert.Equal([a, b, c], Body<TextWindow>().Units.Select(u => u.Ref.Value));
     }
 
     [Then("every \"words_of_christ\" span lies within its own verse's text length")]

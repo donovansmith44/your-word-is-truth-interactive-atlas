@@ -103,8 +103,9 @@ public sealed class AtlasClient
     public Task<KretzmannChapter> KretzmannChapter(string book, int chapter) =>
         _http.GetRequired<KretzmannChapter>($"api/kretzmann/chapter/{book}.{chapter}");
 
-    public async Task<IReadOnlyList<CrossRef>> Xrefs(string sref)
+    public async Task<IReadOnlyList<CrossRef>> Xrefs(VerseSpanReference span)
     {
+        var sref = span.Value;
         if (_xrefsCache.TryGet(sref, out var cached))
         {
             return cached;
@@ -115,8 +116,9 @@ public sealed class AtlasClient
         return result;
     }
 
-    public async Task<IReadOnlyList<CatechismRef>> Catechism(string sref)
+    public async Task<IReadOnlyList<CatechismRef>> Catechism(VerseSpanReference span)
     {
+        var sref = span.Value;
         if (_catechismSpanCache.TryGet(sref, out var cached))
         {
             return cached;
@@ -158,8 +160,8 @@ public sealed class AtlasClient
 
     public Task<SourcesDocument> Sources() => _sourcesCache.Get(() => _http.GetRequired<SourcesDocument>("api/sources"));
 
-    public Task<NodeRecord> NodeRecord(string nodeId) =>
-        _http.GetRequired<NodeRecord>($"api/node/{Uri.EscapeDataString(nodeId)}");
+    public Task<NodeRecord> NodeRecord(NodeId id) =>
+        _http.GetRequired<NodeRecord>($"api/node/{Uri.EscapeDataString(id.Value)}");
 
     public Task<Contract.Contents> Contents(Corpus corpus)
     {

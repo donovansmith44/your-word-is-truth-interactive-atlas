@@ -64,16 +64,16 @@ public static class LegacySaves
 
     public static NodeRef? Node(V1Node node) => node.Kind switch
     {
-        "Verse" or "ConcordUnit" => Ref(NodeKind.TextUnit, NodeIds.Of(NodeKind.TextUnit, node.Key), node.Title),
-        "Passage" => Ref(NodeKind.TextUnit, NodeIds.Of(NodeKind.TextUnit, CanonRef.FirstVerseOf(node.Key)), node.Title),
+        "Verse" or "ConcordUnit" => Ref(NodeKind.TextUnit, LegacyNodeIds.Of(NodeKind.TextUnit, node.Key), node.Title),
+        "Passage" => Ref(NodeKind.TextUnit, LegacyNodeIds.Of(NodeKind.TextUnit, CanonRef.FirstVerseOf(node.Key)), node.Title),
         "Chapter" => Chapter(node),
         "Book" => Ref(NodeKind.Container, LegacyNodes.BookContainerId(node.Key), node.Title),
-        "Place" => Ref(NodeKind.Place, NodeIds.Of(NodeKind.Place, node.Key), node.Title),
-        "Person" => Ref(NodeKind.Person, node.Key, node.Title),
-        "Event" => Ref(NodeKind.Event, NodeIds.Of(NodeKind.Event, node.Key), node.Title),
+        "Place" => Ref(NodeKind.Place, LegacyNodeIds.Of(NodeKind.Place, node.Key), node.Title),
+        "Person" => Ref(NodeKind.Person, LegacyNodeIds.Read<NodeId>(node.Key), node.Title),
+        "Event" => Ref(NodeKind.Event, LegacyNodeIds.Of(NodeKind.Event, node.Key), node.Title),
         "TimeAndPlace" => AttestedEvent(node),
-        "Catechism" => Ref(NodeKind.CatechismItem, NodeIds.Of(NodeKind.CatechismItem, node.Key), node.Title),
-        "CommentaryItem" => Ref(NodeKind.CommentaryItem, NodeIds.Of(NodeKind.CommentaryItem, node.Key), node.Title),
+        "Catechism" => Ref(NodeKind.CatechismItem, LegacyNodeIds.Of(NodeKind.CatechismItem, node.Key), node.Title),
+        "CommentaryItem" => Ref(NodeKind.CommentaryItem, LegacyNodeIds.Of(NodeKind.CommentaryItem, node.Key), node.Title),
         _ => null,
     };
 
@@ -98,9 +98,9 @@ public static class LegacySaves
     {
         var placeAndEvent = node.Key.Split(KeySeparator, 2);
         return placeAndEvent.Length == 2
-            ? Ref(NodeKind.Event, NodeIds.Of(NodeKind.Event, placeAndEvent[1]), node.Title)
+            ? Ref(NodeKind.Event, LegacyNodeIds.Of(NodeKind.Event, placeAndEvent[1]), node.Title)
             : null;
     }
 
-    private static NodeRef Ref(NodeKind kind, string id, string label) => new(id: id, kind: kind, label: label);
+    private static NodeRef Ref(NodeKind kind, NodeId id, string label) => new(id: id, kind: kind, label: label);
 }

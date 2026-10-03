@@ -1090,14 +1090,14 @@ public sealed class FocusViewTests : BunitContext
     {
         private int _failed;
 
-        public Task<NodeRecord> Card(string id) => served.Card(id);
+        public Task<NodeRecord> Card(NodeId id) => served.Card(id);
 
-        public Task<ElementPage> Elements(IReadOnlyList<string> ids) => served.Elements(ids);
+        public Task<ElementPage> Elements(IReadOnlyList<ElementId> ids) => served.Elements(ids);
 
-        public Task<EdgePage> Edges(string positionId, EdgeKind kind, int? cursor = null, int limit = BibleAtlas.Client.Exploring.Affordances.PageSize) =>
+        public Task<EdgePage> Edges(ElementId positionId, EdgeKind kind, EdgePageCursor? cursor = null, int limit = BibleAtlas.Client.Exploring.Affordances.PageSize) =>
             _failed++ < failures ? Task.FromException<EdgePage>(new HttpRequestException(Offline)) : served.Edges(positionId, kind, cursor, limit);
 
-        public Task<TextWindow> Reading(string fromRef, int n, WindowDir dir = WindowDir.Onward, Corpus corpus = Corpus.Bible) =>
+        public Task<TextWindow> Reading(TextWindowReference fromRef, int n, WindowDir dir = WindowDir.Onward, Corpus corpus = Corpus.Bible) =>
             served.Reading(fromRef, n, dir, corpus);
     }
 
@@ -1126,13 +1126,13 @@ public sealed class FocusViewTests : BunitContext
             return true;
         }
 
-        public Task<NodeRecord> Card(string id) => _cards.Card(id);
+        public Task<NodeRecord> Card(NodeId id) => _cards.Card(id);
 
-        public Task<ElementPage> Elements(IReadOnlyList<string> ids) => _cards.Elements(ids);
+        public Task<ElementPage> Elements(IReadOnlyList<ElementId> ids) => _cards.Elements(ids);
 
-        public Task<EdgePage> Edges(string positionId, EdgeKind kind, int? cursor = null, int limit = BibleAtlas.Client.Exploring.Affordances.PageSize)
+        public Task<EdgePage> Edges(ElementId positionId, EdgeKind kind, EdgePageCursor? cursor = null, int limit = BibleAtlas.Client.Exploring.Affordances.PageSize)
         {
-            var from = cursor ?? 0;
+            var from = cursor?.Value ?? 0;
             var to = Math.Min(from + limit, size);
             var (asked, read) = _reads.GetValueOrDefault(kind);
             _reads[kind] = (asked + 1, read + to - from);
@@ -1149,7 +1149,7 @@ public sealed class FocusViewTests : BunitContext
             return answer.Task;
         }
 
-        public Task<TextWindow> Reading(string fromRef, int n, WindowDir dir = WindowDir.Onward, Corpus corpus = Corpus.Bible) =>
+        public Task<TextWindow> Reading(TextWindowReference fromRef, int n, WindowDir dir = WindowDir.Onward, Corpus corpus = Corpus.Bible) =>
             throw new NotSupportedException();
     }
 
@@ -1163,13 +1163,13 @@ public sealed class FocusViewTests : BunitContext
 
         public void Fail() => _release.SetException(new HttpRequestException(Offline));
 
-        public Task<NodeRecord> Card(string id) => served.Card(id);
+        public Task<NodeRecord> Card(NodeId id) => served.Card(id);
 
-        public Task<ElementPage> Elements(IReadOnlyList<string> ids) => served.Elements(ids);
+        public Task<ElementPage> Elements(IReadOnlyList<ElementId> ids) => served.Elements(ids);
 
-        public async Task<EdgePage> Edges(string positionId, EdgeKind kind, int? cursor = null, int limit = BibleAtlas.Client.Exploring.Affordances.PageSize)
+        public async Task<EdgePage> Edges(ElementId positionId, EdgeKind kind, EdgePageCursor? cursor = null, int limit = BibleAtlas.Client.Exploring.Affordances.PageSize)
         {
-            if (kind == heldKind && cursor == heldCursor)
+            if (kind == heldKind && cursor?.Value == heldCursor)
             {
                 await _release.Task;
             }
@@ -1177,7 +1177,7 @@ public sealed class FocusViewTests : BunitContext
             return await served.Edges(positionId, kind, cursor, limit);
         }
 
-        public Task<TextWindow> Reading(string fromRef, int n, WindowDir dir = WindowDir.Onward, Corpus corpus = Corpus.Bible) =>
+        public Task<TextWindow> Reading(TextWindowReference fromRef, int n, WindowDir dir = WindowDir.Onward, Corpus corpus = Corpus.Bible) =>
             served.Reading(fromRef, n, dir, corpus);
     }
 

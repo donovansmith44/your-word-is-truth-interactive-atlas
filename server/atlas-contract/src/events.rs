@@ -126,17 +126,11 @@ pub async fn event(State(data): State<Arc<AtlasData>>, State(graph): State<Arc<G
     let when = window;
 
     let event_pos = Position::Node(atlas_graph::event_world::event_node_id(&e.id));
-    let mut mentioned_in: Vec<String> = drain_edges(&snap, &event_pos, EdgeKind::Directed(RelationId::Mentions, Direction::Inverse))
+    let mut mentioned_in: Vec<atlas_core::refs::VerseId> = drain_edges(&snap, &event_pos, EdgeKind::Directed(RelationId::Mentions, Direction::Inverse))
         .into_iter()
         .filter_map(|entry| match entry.node {
-            Position::Node(id) => id.raw.strip_prefix("bible/").and_then(|rest| {
-                let mut parts = rest.split('.');
-                let book: u8 = parts.next()?.parse().ok()?;
-                let chapter: u16 = parts.next()?.parse().ok()?;
-                let verse: u16 = parts.next()?.parse().ok()?;
-                let code = atlas_core::refs::BookId(book).code();
-                Some(((book, chapter, verse), format!("{code}.{chapter}.{verse}")))
-            }),
+            Position::Node(id) => atlas_graph::kjv_adapter::decode_text_unit(&id)
+                .map(|(book, chapter, verse)| ((book, chapter, verse), atlas_core::refs::VerseId { book: atlas_core::refs::BookId(book), chapter, verse })),
             Position::Edge(_) => None,
         })
         .collect::<std::collections::BTreeMap<_, _>>()

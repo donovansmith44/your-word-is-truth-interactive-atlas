@@ -3,7 +3,7 @@ openapi: 3.1.0
 info:
   title: Bible Atlas API
   description: The Bible Atlas HTTP API, generated from the Rust that serves it. The `x-atlas-relations` extension lists every relation this atlas joins two nodes by, each with the label its forward and its inverse neighbours are asked for and the words each is displayed by, so a consumer builds its own vocabulary from that list rather than writing one out.
-  version: 0.30.0
+  version: 0.30.1
 paths:
   /api/books:
     get:
@@ -68,7 +68,7 @@ paths:
         in: path
         required: true
         schema:
-          type: string
+          $ref: '#/components/schemas/VerseSpanReference'
       responses:
         '200':
           content:
@@ -110,7 +110,7 @@ paths:
         in: path
         required: true
         schema:
-          type: string
+          $ref: '#/components/schemas/ChapterReference'
       responses:
         '200':
           content:
@@ -150,7 +150,7 @@ paths:
         in: path
         required: true
         schema:
-          type: string
+          $ref: '#/components/schemas/Corpus'
       responses:
         '200':
           content:
@@ -195,7 +195,7 @@ paths:
         schema:
           type: array
           items:
-            type: string
+            $ref: '#/components/schemas/ElementId'
           minItems: 1
         style: form
         explode: false
@@ -203,9 +203,7 @@ paths:
         in: query
         required: false
         schema:
-          type: integer
-          default: 0
-          minimum: 0
+          $ref: '#/components/schemas/ElementPageCursor'
       responses:
         '200':
           content:
@@ -292,7 +290,7 @@ paths:
         in: path
         required: true
         schema:
-          type: string
+          $ref: '#/components/schemas/ChapterReference'
       responses:
         '200':
           content:
@@ -408,7 +406,7 @@ paths:
         in: path
         required: true
         schema:
-          type: string
+          $ref: '#/components/schemas/NodeId'
       responses:
         '200':
           content:
@@ -445,7 +443,7 @@ paths:
         in: path
         required: true
         schema:
-          type: string
+          $ref: '#/components/schemas/ElementId'
       - name: kind
         in: query
         required: true
@@ -455,9 +453,7 @@ paths:
         in: query
         required: false
         schema:
-          type: integer
-          default: 0
-          minimum: 0
+          $ref: '#/components/schemas/EdgePageCursor'
       - name: limit
         in: query
         required: false
@@ -616,7 +612,7 @@ paths:
         in: query
         required: true
         schema:
-          type: string
+          $ref: '#/components/schemas/BibleReference'
       responses:
         '200':
           content:
@@ -683,7 +679,7 @@ paths:
         in: query
         required: true
         schema:
-          type: string
+          $ref: '#/components/schemas/TextWindowReference'
       - name: n
         in: query
         required: false
@@ -744,7 +740,7 @@ paths:
         in: path
         required: true
         schema:
-          type: string
+          $ref: '#/components/schemas/VerseSpanReference'
       responses:
         '200':
           content:
@@ -805,6 +801,10 @@ components:
           type: integer
           minimum: 0
       additionalProperties: false
+    ArtifactRoot:
+      type: string
+      description: 'The root of the compiled artifact a response was read from: two responses that carry the same root were read from the same data.'
+      pattern: ^[0-9a-f]{32}$
     BibleRef:
       allOf:
       - $ref: '#/components/schemas/TextRef'
@@ -826,6 +826,13 @@ components:
             minimum: 0
       description: A verse of the Bible.
       unevaluatedProperties: false
+    BibleReference:
+      oneOf:
+      - $ref: '#/components/schemas/BookId'
+      - $ref: '#/components/schemas/ChapterReference'
+      - $ref: '#/components/schemas/VerseReference'
+      - $ref: '#/components/schemas/PassageReference'
+      description: 'Any reference into the Bible: a whole book, a chapter, a verse, or a run of verses within one chapter.'
     BookDetail:
       type: object
       description: Who wrote one book of the Bible, where, and when; the place and the years are absent where they are not recorded.
@@ -1003,7 +1010,7 @@ components:
         text:
           type: string
         vref:
-          type: string
+          $ref: '#/components/schemas/VerseReference'
       additionalProperties: false
     CatechismRef:
       type: object
@@ -1042,12 +1049,16 @@ components:
           format: int32
           minimum: 0
         ref:
-          type: string
+          $ref: '#/components/schemas/ChapterReference'
         verses:
           type: array
           items:
             $ref: '#/components/schemas/Verse'
       additionalProperties: false
+    ChapterReference:
+      type: string
+      description: One whole chapter of the Bible, as `BOOK.CHAPTER`.
+      pattern: ^(?:GEN|EXO|LEV|NUM|DEU|JOS|JDG|RUT|1SA|2SA|1KI|2KI|1CH|2CH|EZR|NEH|EST|JOB|PSA|PRO|ECC|SNG|ISA|JER|LAM|EZK|DAN|HOS|JOL|AMO|OBA|JON|MIC|NAM|HAB|ZEP|HAG|ZEC|MAL|MAT|MRK|LUK|JHN|ACT|ROM|1CO|2CO|GAL|EPH|PHP|COL|1TH|2TH|1TI|2TI|TIT|PHM|HEB|JAS|1PE|2PE|1JN|2JN|3JN|JUD|REV)\.[1-9][0-9]*$
     ConcordRef:
       allOf:
       - $ref: '#/components/schemas/TextRef'
@@ -1071,6 +1082,10 @@ components:
             minimum: 0
       description: A paragraph of the Book of Concord.
       unevaluatedProperties: false
+    ConcordReference:
+      type: string
+      description: One paragraph of the Book of Concord, as `BoC PART.ARTICLE.PARAGRAPH`.
+      pattern: ^BoC [0-9]+\.[0-9]+\.[0-9]+$
     Confidence:
       type: string
       description: How a claim was arrived at.
@@ -1094,7 +1109,7 @@ components:
           items:
             $ref: '#/components/schemas/ContentsRoot'
         version:
-          type: string
+          $ref: '#/components/schemas/ArtifactRoot'
       additionalProperties: false
     ContentsChild:
       type: object
@@ -1111,13 +1126,13 @@ components:
           type: integer
           minimum: 0
         id:
-          type: string
+          $ref: '#/components/schemas/NodeId'
         kind:
           $ref: '#/components/schemas/ContentsChildKind'
         locus:
           $ref: '#/components/schemas/TextRef'
         ref:
-          type: string
+          $ref: '#/components/schemas/ContentsReference'
         title:
           type: string
       additionalProperties: false
@@ -1127,6 +1142,11 @@ components:
       enum:
       - chapter
       - article
+    ContentsReference:
+      oneOf:
+      - $ref: '#/components/schemas/ChapterReference'
+      - $ref: '#/components/schemas/ConcordReference'
+      description: 'The reference a contents entry opens at: a chapter of the Bible, or a paragraph of the Book of Concord.'
     ContentsRoot:
       type: object
       description: 'A top-level entry: a book of the Bible, or a document of the Book of Concord.'
@@ -1147,13 +1167,13 @@ components:
           - $ref: '#/components/schemas/Testament'
           - type: 'null'
         id:
-          type: string
+          $ref: '#/components/schemas/NodeId'
         kind:
           $ref: '#/components/schemas/ContentsRootKind'
         locus:
           $ref: '#/components/schemas/TextRef'
         ref:
-          type: string
+          $ref: '#/components/schemas/ContentsReference'
         title:
           type: string
       additionalProperties: false
@@ -1181,7 +1201,7 @@ components:
       additionalProperties: false
     Corpus:
       type: string
-      description: ''
+      description: 'Which corpus of text something belongs to: the Bible or the Book of Concord.'
       enum:
       - bible
       - concord
@@ -1201,11 +1221,17 @@ components:
           items:
             $ref: '#/components/schemas/Provenance'
         target:
-          type: string
+          $ref: '#/components/schemas/CrossReferenceTarget'
         votes:
           type: integer
           format: int32
       additionalProperties: false
+    CrossReferenceTarget:
+      oneOf:
+      - $ref: '#/components/schemas/VerseReference'
+      - $ref: '#/components/schemas/PassageReference'
+      - $ref: '#/components/schemas/VerseRangeReference'
+      description: 'Where a cross reference points: one verse, a run of verses within a chapter, or a run that crosses chapters.'
     DateClaim:
       type: object
       description: A date something is claimed to have happened at, the verses the claim rests on, the event it rests on where it names one, and the note that qualifies it where the date is not Scripture's own; the label is marked `c. ` where the claim carries a note.
@@ -1278,6 +1304,10 @@ components:
           format: int32
           minimum: 0
       additionalProperties: false
+    EdgeId:
+      type: string
+      description: 'The id of one edge of the graph: the relation it is recorded in, a colon, and its content address. Either end''s neighbour page and the element read carry the same id for the same connection.'
+      pattern: ^(?:Contains|Attests|Succession|DatedBy|LocatedAt|Mentions|Cites|Quotes|Confesses|Fulfillment|Typology|NamedAfter|JustifiedBy|CommentsOn|SpokenBy|SpokenAt|DerivedFrom|Occurs|ParentOf|Participates|AuthoredBy|Shows|Analogue|CatechismLink|Corresponds|Parallel|TemporalAdjacency|Spouses|Brethren):[0-9a-f]{32}$
     EdgeKind:
       type: string
       description: 'A relation between two nodes, named in the direction it is travelled: the label one page of a node''s neighbours is asked for by.'
@@ -1348,18 +1378,21 @@ components:
         kind:
           $ref: '#/components/schemas/EdgeKind'
         next:
-          type:
-          - integer
-          - 'null'
-          minimum: 0
+          oneOf:
+          - $ref: '#/components/schemas/EdgePageCursor'
+          - type: 'null'
         previous:
-          type:
-          - integer
-          - 'null'
-          minimum: 0
+          oneOf:
+          - $ref: '#/components/schemas/EdgePageCursor'
+          - type: 'null'
         version:
-          type: string
+          $ref: '#/components/schemas/ArtifactRoot'
       additionalProperties: false
+    EdgePageCursor:
+      type: integer
+      description: Where a page of one position's neighbours resumes, as an edge page's `next` or `previous` hands it back; the first page is 0.
+      default: 0
+      minimum: 0
     EdgePosition:
       allOf:
       - $ref: '#/components/schemas/PositionRef'
@@ -1387,7 +1420,7 @@ components:
           items:
             $ref: '#/components/schemas/EdgeSummaryEntry'
         id:
-          type: string
+          $ref: '#/components/schemas/EdgeId'
         kind:
           $ref: '#/components/schemas/EdgeKind'
         label:
@@ -1424,7 +1457,7 @@ components:
       - label
       properties:
         id:
-          type: string
+          $ref: '#/components/schemas/EdgeId'
         kind:
           $ref: '#/components/schemas/EdgeKind'
         label:
@@ -1462,6 +1495,11 @@ components:
           missing: '#/components/schemas/MissingElement'
           node: '#/components/schemas/NodeElement'
         propertyName: element
+    ElementId:
+      oneOf:
+      - $ref: '#/components/schemas/NodeId'
+      - $ref: '#/components/schemas/EdgeId'
+      description: 'A node''s id or an edge''s id: the form the element read and a neighbour page take a position in. The two never share a prefix.'
     ElementPage:
       type: object
       description: 'The elements asked for, in the order their ids were given: `elements[i]` answers the i-th id. At most the server''s largest page is answered; `next` continues. `version` stamps the data set they were read from.'
@@ -1474,18 +1512,21 @@ components:
           items:
             $ref: '#/components/schemas/Element'
         next:
-          type:
-          - integer
-          - 'null'
-          minimum: 0
+          oneOf:
+          - $ref: '#/components/schemas/ElementPageCursor'
+          - type: 'null'
         previous:
-          type:
-          - integer
-          - 'null'
-          minimum: 0
+          oneOf:
+          - $ref: '#/components/schemas/ElementPageCursor'
+          - type: 'null'
         version:
-          type: string
+          $ref: '#/components/schemas/ArtifactRoot'
       additionalProperties: false
+    ElementPageCursor:
+      type: integer
+      description: Where a read of many elements resumes in the list of ids it was asked, as an element page's `next` or `previous` hands it back; the first page is 0.
+      default: 0
+      minimum: 0
     Era:
       type: object
       description: 'A named stretch of this atlas''s timeline: its first and last years (negative for BC) and the same years labelled.'
@@ -1523,7 +1564,7 @@ components:
       additionalProperties: false
     EraId:
       type: string
-      description: The id of one Era node.
+      description: The local name of one Era node, without its kind.
     ErrorBody:
       type: object
       required:
@@ -1643,7 +1684,7 @@ components:
         mentioned_in:
           type: array
           items:
-            type: string
+            $ref: '#/components/schemas/VerseReference'
         mentions_provenance:
           type: array
           items:
@@ -1729,7 +1770,7 @@ components:
           items:
             $ref: '#/components/schemas/KretzmannChapterVerse'
         version:
-          type: string
+          $ref: '#/components/schemas/ArtifactRoot'
       additionalProperties: false
     KretzmannChapterItem:
       type: object
@@ -1742,7 +1783,7 @@ components:
           - string
           - 'null'
         id:
-          type: string
+          $ref: '#/components/schemas/NodeId'
       additionalProperties: false
     KretzmannChapterVerse:
       type: object
@@ -1828,7 +1869,7 @@ components:
         - id
         properties:
           id:
-            type: string
+            $ref: '#/components/schemas/ElementId'
       description: An id that reads as a node's or an edge's but names nothing this atlas holds.
       unevaluatedProperties: false
     Narrative:
@@ -1890,7 +1931,7 @@ components:
       additionalProperties: false
     NarrativeId:
       type: string
-      description: The id of one Narrative node.
+      description: The local name of one Narrative node, without its kind.
     NarrativePosition:
       type: object
       description: One event's place in one narrative, with the legs on either side of it.
@@ -1928,6 +1969,10 @@ components:
             $ref: '#/components/schemas/NodeRecord'
       description: The node an id names, as its own record.
       unevaluatedProperties: false
+    NodeId:
+      type: string
+      description: 'The id of one node of the graph, as every response names it and every read takes it: its kind, a colon, and its name within that kind -- or, for a unit of text, `text-unit:` and the unit''s reference.'
+      pattern: ^(?:text-unit:(?:(?:GEN|EXO|LEV|NUM|DEU|JOS|JDG|RUT|1SA|2SA|1KI|2KI|1CH|2CH|EZR|NEH|EST|JOB|PSA|PRO|ECC|SNG|ISA|JER|LAM|EZK|DAN|HOS|JOL|AMO|OBA|JON|MIC|NAM|HAB|ZEP|HAG|ZEC|MAL|MAT|MRK|LUK|JHN|ACT|ROM|1CO|2CO|GAL|EPH|PHP|COL|1TH|2TH|1TI|2TI|TIT|PHM|HEB|JAS|1PE|2PE|1JN|2JN|3JN|JUD|REV)\.[1-9][0-9]*\.[1-9][0-9]*|BoC [0-9]+\.[0-9]+\.[0-9]+)|(?:Container|Event|Narrative|Place|Person|Anchor|Era|Polity|CatechismItem|Translation|CommentaryItem|LexiconEntry|Map):.+)$
     NodeKind:
       type: string
       description: What kind of thing one node of this atlas stands for.
@@ -1995,7 +2040,7 @@ components:
           - $ref: '#/components/schemas/EventDetail'
           - type: 'null'
         id:
-          type: string
+          $ref: '#/components/schemas/NodeId'
         kind:
           $ref: '#/components/schemas/NodeKind'
         label:
@@ -2023,7 +2068,7 @@ components:
           - $ref: '#/components/schemas/UnitText'
           - type: 'null'
         version:
-          type: string
+          $ref: '#/components/schemas/ArtifactRoot'
       additionalProperties: false
     NodeRef:
       type: object
@@ -2034,7 +2079,7 @@ components:
       - label
       properties:
         id:
-          type: string
+          $ref: '#/components/schemas/NodeId'
         kind:
           $ref: '#/components/schemas/NodeKind'
         label:
@@ -2049,6 +2094,10 @@ components:
       - virgin
       - legal
       - created
+    PassageReference:
+      type: string
+      description: A run of verses within one chapter of the Bible, as `BOOK.CHAPTER.FIRST-LAST`, the first verse before the last.
+      pattern: ^(?:GEN|EXO|LEV|NUM|DEU|JOS|JDG|RUT|1SA|2SA|1KI|2KI|1CH|2CH|EZR|NEH|EST|JOB|PSA|PRO|ECC|SNG|ISA|JER|LAM|EZK|DAN|HOS|JOL|AMO|OBA|JON|MIC|NAM|HAB|ZEP|HAG|ZEC|MAL|MAT|MRK|LUK|JHN|ACT|ROM|1CO|2CO|GAL|EPH|PHP|COL|1TH|2TH|1TI|2TI|TIT|PHM|HEB|JAS|1PE|2PE|1JN|2JN|3JN|JUD|REV)\.[1-9][0-9]*\.[1-9][0-9]*-[1-9][0-9]*$
     PersonLife:
       type: object
       description: What is recorded about one person's life.
@@ -2223,7 +2272,7 @@ components:
         verses:
           type: array
           items:
-            type: string
+            $ref: '#/components/schemas/VerseReference'
       additionalProperties: false
     PolityDetail:
       type: object
@@ -2236,7 +2285,7 @@ components:
       additionalProperties: false
     PolityId:
       type: string
-      description: The id of one Polity node.
+      description: The local name of one Polity node, without its kind.
     PositionRef:
       type: object
       description: 'What an edge leads to: a node, or, where one relation grounds another, the edge it grounds. `position` says which shape follows.'
@@ -2325,6 +2374,11 @@ components:
           format: int32
           minimum: 0
       additionalProperties: false
+    ReadingReference:
+      oneOf:
+      - $ref: '#/components/schemas/VerseReference'
+      - $ref: '#/components/schemas/ChapterReference'
+      description: 'Where a reading of the Bible opens: a verse, or a whole chapter.'
     Scene:
       type: object
       description: 'The map at one moment of enquiry: which places are lit, which are only present, and which arrows run between them.'
@@ -2354,9 +2408,9 @@ components:
           items:
             $ref: '#/components/schemas/QuietPlace'
         ref:
-          type:
-          - string
-          - 'null'
+          oneOf:
+          - $ref: '#/components/schemas/BibleReference'
+          - type: 'null'
         window:
           oneOf:
           - $ref: '#/components/schemas/TimeRange'
@@ -2627,7 +2681,7 @@ components:
         node:
           $ref: '#/components/schemas/NodeRef'
         ref:
-          type: string
+          $ref: '#/components/schemas/UnitReference'
       additionalProperties: false
     TextWindow:
       type: object
@@ -2637,16 +2691,22 @@ components:
       - version
       properties:
         next:
-          type:
-          - string
-          - 'null'
+          oneOf:
+          - $ref: '#/components/schemas/UnitReference'
+          - type: 'null'
         units:
           type: array
           items:
             $ref: '#/components/schemas/TextUnit'
         version:
-          type: string
+          $ref: '#/components/schemas/ArtifactRoot'
       additionalProperties: false
+    TextWindowReference:
+      oneOf:
+      - $ref: '#/components/schemas/VerseReference'
+      - $ref: '#/components/schemas/ChapterReference'
+      - $ref: '#/components/schemas/ConcordReference'
+      description: 'Where a window of a corpus''s reading spine opens: a verse or a chapter of the Bible, or a paragraph of the Book of Concord.'
     TimeRange:
       type: object
       description: 'A span of years, both ends included, with the label a reader sees for it: an era both ends share is named once, as in `1450 – 1400 BC`, `5 BC – AD 30` or, for a single year, `AD 33`.'
@@ -2690,6 +2750,11 @@ components:
         kind:
           $ref: '#/components/schemas/EventKind'
       additionalProperties: false
+    UnitReference:
+      oneOf:
+      - $ref: '#/components/schemas/VerseReference'
+      - $ref: '#/components/schemas/ConcordReference'
+      description: 'One unit of a corpus''s text by its reference: a verse of the Bible, or a paragraph of the Book of Concord.'
     UnitText:
       type: object
       description: 'What a text unit is: where it stands, its words, the words of Christ in it, and what its words stand for, each anchor in reading order.'
@@ -2771,8 +2836,21 @@ components:
         verses:
           type: array
           items:
-            type: string
+            $ref: '#/components/schemas/VerseReference'
       additionalProperties: false
+    VerseRangeReference:
+      type: string
+      description: A run of verses that crosses a chapter boundary, as two verse references joined by `-`.
+      pattern: ^(?:GEN|EXO|LEV|NUM|DEU|JOS|JDG|RUT|1SA|2SA|1KI|2KI|1CH|2CH|EZR|NEH|EST|JOB|PSA|PRO|ECC|SNG|ISA|JER|LAM|EZK|DAN|HOS|JOL|AMO|OBA|JON|MIC|NAM|HAB|ZEP|HAG|ZEC|MAL|MAT|MRK|LUK|JHN|ACT|ROM|1CO|2CO|GAL|EPH|PHP|COL|1TH|2TH|1TI|2TI|TIT|PHM|HEB|JAS|1PE|2PE|1JN|2JN|3JN|JUD|REV)\.[1-9][0-9]*\.[1-9][0-9]*-(?:GEN|EXO|LEV|NUM|DEU|JOS|JDG|RUT|1SA|2SA|1KI|2KI|1CH|2CH|EZR|NEH|EST|JOB|PSA|PRO|ECC|SNG|ISA|JER|LAM|EZK|DAN|HOS|JOL|AMO|OBA|JON|MIC|NAM|HAB|ZEP|HAG|ZEC|MAL|MAT|MRK|LUK|JHN|ACT|ROM|1CO|2CO|GAL|EPH|PHP|COL|1TH|2TH|1TI|2TI|TIT|PHM|HEB|JAS|1PE|2PE|1JN|2JN|3JN|JUD|REV)\.[1-9][0-9]*\.[1-9][0-9]*$
+    VerseReference:
+      type: string
+      description: One verse of the Bible, as `BOOK.CHAPTER.VERSE`.
+      pattern: ^(?:GEN|EXO|LEV|NUM|DEU|JOS|JDG|RUT|1SA|2SA|1KI|2KI|1CH|2CH|EZR|NEH|EST|JOB|PSA|PRO|ECC|SNG|ISA|JER|LAM|EZK|DAN|HOS|JOL|AMO|OBA|JON|MIC|NAM|HAB|ZEP|HAG|ZEC|MAL|MAT|MRK|LUK|JHN|ACT|ROM|1CO|2CO|GAL|EPH|PHP|COL|1TH|2TH|1TI|2TI|TIT|PHM|HEB|JAS|1PE|2PE|1JN|2JN|3JN|JUD|REV)\.[1-9][0-9]*\.[1-9][0-9]*$
+    VerseSpanReference:
+      oneOf:
+      - $ref: '#/components/schemas/VerseReference'
+      - $ref: '#/components/schemas/PassageReference'
+      description: One verse, or a run of verses within one chapter.
     WindowDir:
       type: string
       description: |-
