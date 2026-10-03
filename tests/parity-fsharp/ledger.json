@@ -1,6 +1,6 @@
 {
-  "reference": "ace063d4799a6447920add63336824a00cd34ef7",
-  "contract_sha256": "1e2ad669f4500068684e1a0a838a133d1640f2c6b7bb50323331dbbddde088de",
+  "reference": "e57542c00b7f688f571bdd16384e6a225bbfebbd",
+  "contract_sha256": "f2c202d110832c0ee5edcf1e1fc312914581b42ab9da2e709755109059021844",
   "inventory": [
     {
       "source": "client/App.razor",
@@ -536,7 +536,7 @@
     },
     {
       "source": "client/Exploring/Presenter.cs",
-      "sha256": "1031e0674dc80d7c3e64df75d34a5d1b4857a81c31292af5e536be8557b88bc9",
+      "sha256": "87965f47107a0bebd941d2ec8148db325740acb216bd5ee6c9b1c4d9372216b3",
       "status": "pending",
       "replacement": [],
       "evidence": []
@@ -1341,7 +1341,7 @@
     },
     {
       "source": "tests/ux/popover-sections.spec.ts",
-      "sha256": "85dfd358875c0c74ccdc8b53311c9f5cfe90a69c05290c9e83ecdbecab463fb2",
+      "sha256": "39266b41a709b05b1bffaf265a1a6b3de7495e5946bb7b12e098bbd4dd66b0a2",
       "status": "pending",
       "replacement": [],
       "evidence": []
@@ -1614,14 +1614,14 @@
     },
     {
       "source": "tests/ux/world-place-history.spec.ts",
-      "sha256": "0fae4e11b57e9747e3d48378a38202b164b39fb9131f74a90cb77558ea4a9734",
+      "sha256": "0987ce15fa3e95f1fc16b32dee5177b90420da4663eab20720e5e9766df7e3d7",
       "status": "pending",
       "replacement": [],
       "evidence": []
     },
     {
       "source": "tests/ux/world-quiet-places.spec.ts",
-      "sha256": "5027c0148172dd0f3e2764977d6e770a2d1852678f50fcd98a043b8104540665",
+      "sha256": "32a6a8330917476cfc3944966112bdcebd7bf6d13d09dbf982a3cf171e4e29f0",
       "status": "pending",
       "replacement": [],
       "evidence": []

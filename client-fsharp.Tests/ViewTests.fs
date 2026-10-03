@@ -17,6 +17,104 @@ let render (context: BunitContext) (model: Model) (dispatch: Message -> unit) =
 let find<'a when 'a :> Microsoft.AspNetCore.Components.IComponent> (view: IRenderedComponent<'a>) selector =
     RenderedComponentExtensions.Find<'a>(view, selector)
 
+let readingNode = { Id = "TextUnit:served-verse"; Kind = NodeKind.TextUnit; Label = "Genesis 1:1" }
+let readingAnchor = { Start = 2; End = 4; Kind = EdgeKind.Mentions; Node = { Id = "Place:served-place"; Kind = NodeKind.Place; Label = "Served place" } }
+let readingUnit = { Ref = "GEN.1.1"; Node = readingNode; Heading = None; EdgeSummary = []; Body = { Text = "😀 ab cd"; Locus = ModelTests.firstChapter.Locus; Anchors = [readingAnchor]; WordsOfChrist = [{ Start = 2; End = 7 }] } }
+
+[<Fact>]
+let ``the reader renders the whole served chapter with anchored red letter text`` () =
+    let model, _ = Model.init Route.Reader
+    let model = { model with Contents = Map.ofList [Corpus.Bible, Ready ModelTests.contents]; Reading = Ready { Units = [readingUnit]; Next = None; Version = "root" } }
+    use context = new BunitContext()
+    let view = render context model ignore
+    let expected = """<article class="reader-column"><h1 class="chapter-head"><span class="chapter-head-book">Genesis</span><span class="chapter-head-num">1</span></h1><div class="verse-line explorable" data-testid="verse-line-1" data-focal="false" id="v1" tabindex="0" role="button" aria-label="Explore Genesis 1:1"><button type="button" class="verse-num" data-testid="verse-num-1">1</button><span class="verse-text">😀 <span class="words-of-christ"><span class="verse-mention" data-testid="verse-mention-1-Place:served-place" tabindex="0" role="button" aria-label="Explore ab">ab</span> cd</span></span></div></article>"""
+    (find view ".reader-column").MarkupMatches(expected)
+
+[<Theory>]
+[<InlineData("Enter")>]
+[<InlineData(" ")>]
+let ``a served reader anchor opens its typed position from the keyboard`` key =
+    let model, _ = Model.init Route.Reader
+    let model = { model with Reading = Ready { Units = [readingUnit]; Next = None; Version = "root" } }
+    let mutable messages = []
+    use context = new BunitContext()
+    let view = render context model (fun message -> messages <- messages @ [message])
+    (find view ".verse-mention").KeyDown(Microsoft.AspNetCore.Components.Web.KeyboardEventArgs(Key = key))
+    Assert.Equal<Message list>([OpenPosition(PositionRef.Node { Node = readingAnchor.Node })], messages)
+
+[<Fact>]
+let ``the reader shows a failed contents read with an explicit Retry`` () =
+    let model, _ = Model.init Route.Reader
+    let model = { model with Contents = Map.ofList [Corpus.Bible, Failed(model.Serial, Transport "offline", None)] }
+    let mutable messages = []
+    use context = new BunitContext()
+    let view = render context model (fun message -> messages <- message :: messages)
+    (find view "[data-testid='could-not-load-retry']").Click()
+    Assert.Equal<Message list>([Retry], messages)
+
+[<Fact>]
+let ``the Concord view renders the entire served paragraph and citation`` () =
+    let model, _ = Model.init (Route.Concord None)
+    let unit = { readingUnit with Ref = "BoC 1.1.1"; Body = { readingUnit.Body with Locus = TextRef.Concord { Part = 1; Article = 1; Paragraph = 1 }; WordsOfChrist = [] }; Node = { readingNode with Label = "BoC 1.1.1" }; EdgeSummary = [{ Kind = EdgeKind.Cites; Count = 1 }] }
+    let model = { model with Reading = Ready { Units = [unit]; Next = None; Version = "root" } }
+    use context = new BunitContext()
+    let view = render context model ignore
+    let expected = """<div class="concord-unit explorable" data-testid="concord-unit-TextUnit:served-verse" tabindex="0" role="button" aria-label="Explore BoC 1.1.1"><span class="concord-unit-ref">BoC 1.1.1</span>😀 <span class="concord-ref" data-testid="concord-ref-TextUnit:served-verse-2" tabindex="0" role="button" aria-label="Explore ab">ab</span> cd</div>"""
+    (find view ".concord-unit").MarkupMatches(expected)
+
+[<Fact>]
+let ``activating a served reader row dispatches exactly its typed position`` () =
+    let model, _ = Model.init Route.Reader
+    let model = { model with Reading = Ready { Units = [readingUnit]; Next = None; Version = "root" } }
+    let mutable messages = []
+    use context = new BunitContext()
+    let view = render context model (fun message -> messages <- messages @ [message])
+    (find view ".verse-line").Click()
+    Assert.Equal<Message list>([OpenPosition(PositionRef.Node { Node = readingUnit.Node })], messages)
+
+[<Fact>]
+let ``the reader retains a continued quiet heading and its served target`` () =
+    let event = { Id = "Event:served-heading"; Kind = NodeKind.Event; Label = "Served heading" }
+    let unit = { readingUnit with Heading = Some { Event = event; IsContinuation = true; Kind = EventKind.General } }
+    let model, _ = Model.init Route.Reader
+    let model = { model with Reading = Ready { Units = [unit]; Next = None; Version = "root" } }
+    let mutable messages = []
+    use context = new BunitContext()
+    let view = render context model (fun message -> messages <- messages @ [message])
+    let heading = find view ".pericope-heading"
+    heading.MarkupMatches("""<h2 class="pericope-heading pericope-heading-continuation explorable-quiet" data-testid="pericope-heading-Event:served-heading" data-continuation="true" tabindex="0" role="button" aria-label="Explore Served heading (continued)"><span class="pericope-heading-continuation-marker" data-testid="pericope-heading-continuation-marker-Event:served-heading">continued</span>Served heading</h2>""")
+    heading.Click()
+    Assert.Equal<Message list>([OpenPosition(PositionRef.Node { Node = event })], messages)
+
+[<Fact>]
+let ``the reader renders an event heading without an invented continuation`` () =
+    let event = { Id = "Event:served-heading"; Kind = NodeKind.Event; Label = "Served heading" }
+    let unit = { readingUnit with Heading = Some { Event = event; IsContinuation = false; Kind = EventKind.Event } }
+    let model, _ = Model.init Route.Reader
+    let model = { model with Reading = Ready { Units = [unit]; Next = None; Version = "root" } }
+    use context = new BunitContext()
+    let view = render context model ignore
+    (find view ".pericope-heading").MarkupMatches("""<h2 class="pericope-heading explorable" data-testid="pericope-heading-Event:served-heading" data-continuation="false" tabindex="0" role="button" aria-label="Explore Served heading">Served heading</h2>""")
+
+[<Fact>]
+let ``unrelated typing over a reader anchor does not open a focus`` () =
+    let model, _ = Model.init Route.Reader
+    let model = { model with Reading = Ready { Units = [readingUnit]; Next = None; Version = "root" } }
+    let mutable messages = []
+    use context = new BunitContext()
+    let view = render context model (fun message -> messages <- messages @ [message])
+    (find view ".verse-mention").KeyDown(Microsoft.AspNetCore.Components.Web.KeyboardEventArgs(Key = "a"))
+    Assert.Equal<Message list>([], messages)
+
+[<Fact>]
+let ``the Concord view keeps a paragraph with no served edges as plain text`` () =
+    let model, _ = Model.init (Route.Concord None)
+    let unit = { readingUnit with Ref = "BoC 1.1.1"; Body = { readingUnit.Body with Locus = TextRef.Concord { Part = 1; Article = 1; Paragraph = 1 }; Anchors = []; WordsOfChrist = [] } }
+    let model = { model with Reading = Ready { Units = [unit]; Next = None; Version = "root" } }
+    use context = new BunitContext()
+    let view = render context model ignore
+    (find view ".concord-unit").MarkupMatches("""<div class="concord-unit" data-testid="concord-unit-TextUnit:served-verse"><span class="concord-unit-ref">BoC 1.1.1</span>😀 ab cd</div>""")
+
 [<Fact>]
 let ``the source view composes the complete served source under its category`` () =
     let source = { Id = "test"; Category = "text"; Title = "Served source"; WhatItIs = "What it is"; WhatWeBuilt = "What we built"; License = "CC0"; LicensesRowKey = "test"; Link = Some "https://example.test/" }

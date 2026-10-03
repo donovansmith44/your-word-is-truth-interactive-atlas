@@ -2,6 +2,8 @@
 
 Owner authorization: 2026-10-02, whole frontend rewrite in F# WebAssembly using Bolero and Elmish MVU, coexistence before retirement. Initial reference: `ace063d`, approved FOCUS-2/style. Claude continues to own the C# client and FOCUS architecture. Codex writes only the migration item's separate paths.
 
+The pinned reference now includes approved A-NOBLURB `e57542c`. The Reader and Concord view slice uses TextWindow's complete UnitText, NodeRef, UnitHeading and served Contents labels. Each row, heading and inline anchor emits OpenPosition with a generated PositionRef; no legacy reference/id parser supplies a domain fact. Inline rendering shares AnchoredText, keyboard activation and the existing explicit failure view. Internal anchor selectors retain opaque node ids and served offsets; legacy selector spelling is not yet a parity claim. Contents controls, paging, focus presentation, selections, split composition and persistence remain separate required slices.
+
 ## Boundaries and behavior
 
 The Rust server, compiled artifact and OpenAPI stay authoritative. No server or artifact changes are required by the language migration. F# consumes generated immutable records, closed enum unions and tagged unions derived from the committed OpenAPI, built into `obj/`; it does not link a C# application assembly. Both clients consume the same server, JS map module, CSS and font files. Assets are linked by MSBuild, never copied into an independently maintained second source.

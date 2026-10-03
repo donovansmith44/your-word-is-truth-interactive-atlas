@@ -5,7 +5,7 @@ open System.Text.Json.Serialization
 
 module Json =
     let private readOptions =
-        JsonFSharpOptions.Default().WithAllowOverride().WithSkippableOptionFields(SkippableOptionFields.Always).ToJsonSerializerOptions()
+        JsonFSharpOptions.Default().WithAllowOverride().WithSkippableOptionFields(SkippableOptionFields.Always, deserializeNullAsNone = true).ToJsonSerializerOptions()
 
     let private writeOptions =
         let options = JsonSerializerOptions(readOptions)
