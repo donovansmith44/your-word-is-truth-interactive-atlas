@@ -21,6 +21,7 @@
 shingle_words = 6
 threshold_percent = 40
 numbering_percent = 70
+heading_percent = 100
 
 [[window]]
 document = "preface"

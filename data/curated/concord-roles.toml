@@ -188,3 +188,233 @@ marker = "sd-x-0007"
 occurrence = 2
 triglot_page = 1059
 triglot = "The verse of 'drowned in the depth of the sea [Matt. 18, 6, 7].' (Solid Declaration X 16); the page has no paragraph 7 there."
+
+# A [[heading]] reads one heading node of a page, by document, slug and its
+# exact text, `as` the Triglot's own wording (`with`, checked on `triglot_page`
+# and then admitted against the scan like any heading), as `confirmed` (the
+# scan garbles it; the page shows it), or as `our-wording` (the Triglot prints
+# no such heading; served as our own words, Editorial).
+
+[[heading]]
+document = "preface"
+slug = "/preface/"
+text = "The Issues"
+reading = { as = "our-wording", with = "The Issues" }
+triglot = "A section heading of the site's; the Triglot prints the Preface without section headings."
+
+[[heading]]
+document = "preface"
+slug = "/preface/"
+text = "The Naumburg Conference of 1561"
+reading = { as = "our-wording", with = "The Naumburg Conference of 1561" }
+triglot = "A section heading of the site's; the Triglot prints the Preface without section headings."
+
+[[heading]]
+document = "preface"
+slug = "/preface/"
+text = "The Naumburg Conference Failed"
+reading = { as = "our-wording", with = "The Naumburg Conference Failed" }
+triglot = "A section heading of the site's; the Triglot prints the Preface without section headings."
+
+[[heading]]
+document = "preface"
+slug = "/preface/"
+text = "The Torgau Conference of 1576"
+reading = { as = "our-wording", with = "The Torgau Conference of 1576" }
+triglot = "A section heading of the site's; the Triglot prints the Preface without section headings."
+
+[[heading]]
+document = "preface"
+slug = "/preface/"
+text = "The Role of the Augsburg Confession"
+reading = { as = "our-wording", with = "The Role of the Augsburg Confession" }
+triglot = "A section heading of the site's; the Triglot prints the Preface without section headings."
+
+[[heading]]
+document = "small-catechism"
+slug = "/small-catechism/ten-commandments/"
+text = "As the head of the family should teach them in a simple way to his household."
+reading = { as = "confirmed", triglot_page = 539 }
+triglot = "The scan reads 'as the Head of the Family Should Teach Them in à Simple Way to His Household.'"
+
+[[heading]]
+document = "small-catechism"
+slug = "/small-catechism/the-lords-prayer/"
+text = "Conclusion"
+reading = { as = "our-wording", with = "Conclusion" }
+triglot = "The site's heading over the Lord's Prayer's doxology; the scan prints no such heading."
+
+[[heading]]
+document = "small-catechism"
+slug = "/small-catechism/daily-prayers/"
+text = "How the head of the family should teach his household to pray morning and evening"
+reading = { as = "triglot-wording", with = "How the Head of the Family Should Teach His Household to Bless Themselves in the Morning and in the Evening.", triglot_page = 557 }
+triglot = "The Triglot prints 'HOW THE HEAD OF THE FAMILY Should Teach His Household to Bless Themselves in the Morning and in the Evening.' (Appendix I)."
+
+[[heading]]
+document = "small-catechism"
+slug = "/small-catechism/table-of-duties/"
+text = "Certain passages of scripture for various holy orders and positions, admonishing them about their duties and responsibilities"
+reading = { as = "our-wording", with = "Certain passages of scripture for various holy orders and positions, admonishing them about their duties and responsibilities" }
+triglot = "The site's summary of the Table of Duties' long title; its words are not the Triglot's."
+
+[[heading]]
+document = "large-catechism"
+slug = "/large-catechism/intro/"
+text = "Introduction"
+reading = { as = "our-wording", with = "Introduction" }
+triglot = "The site's heading over Luther's longer preface; the scan prints no such heading."
+
+[[heading]]
+document = "large-catechism"
+slug = "/large-catechism/lords-prayer/"
+text = "The Seventh Petition."
+reading = { as = "our-wording", with = "The Seventh Petition." }
+triglot = "The scan prints the Seventh Petition only in the running head ('The Lord's Prayer, Seventh Petition.', pp. 729-731); the heading is ours."
+
+[[heading]]
+document = "epitome"
+slug = "/epitome/rule-and-norm/"
+text = "Comprehensive Summary, Rule and Norm According to which all dogmas should be judged, and the erroneous teachings [controversies]that have occurred should be decided and explained in a Christian way."
+reading = { as = "triglot-wording", with = "Of the Summary Content, Rule, and Standard according to which all dogmas should be judged, and the erroneous teachings [controversies] that have occurred should be decided and explained in a Christian way.", triglot_page = 777 }
+triglot = "The Triglot heads the Epitome 'OF THE SUMMARY CONTENT, RULE, AND STANDARD according to which ...'."
+
+[[heading]]
+document = "epitome"
+slug = "/epitome/original-sin/"
+text = "AFFIRMATIVE THESES: The Pure Doctrine, Faith, and Confession according to the Aforesaid Standard and Summary Declaration."
+reading = { as = "triglot-wording", with = "AFFIRMATIVA. The Pure Doctrine, Faith, and Confession according to the Aforesaid Standard and Summary Declaration.", triglot_page = 779 }
+triglot = "The Triglot heads the affirmative theses 'AFFIRMATIVA.' over 'The Pure Doctrine, Faith, and Confession according to the Aforesaid Standard and Summary Declaration.'; 'Affirmative Theses' is the site's wording."
+
+[[heading]]
+document = "epitome"
+slug = "/epitome/free-will/"
+text = "AFFIRMATIVE THESES: The Pure Doctrine concerning This Article, according to God’s Word."
+reading = { as = "triglot-wording", with = "AFFIRMATIVA. The Pure Doctrine concerning This Article, according to God’s Word.", triglot_page = 787 }
+triglot = "The Triglot heads the affirmative theses 'AFFIRMATIVA.' over 'The Pure Doctrine concerning This Article, according to God’s Word.'; 'Affirmative Theses' is the site's wording."
+
+[[heading]]
+document = "epitome"
+slug = "/epitome/righteousness-of-faith/"
+text = "AFFIRMATIVE THESES: Pure Doctrine of the Christian Churches against Both Errors Just Mentioned."
+reading = { as = "triglot-wording", with = "AFFIRMATIVA. Pure Doctrine of the Christian Churches against Both Errors Just Mentioned.", triglot_page = 793 }
+triglot = "The Triglot heads the affirmative theses 'AFFIRMATIVA.' over 'Pure Doctrine of the Christian Churches against Both Errors Just Mentioned.'; 'Affirmative Theses' is the site's wording."
+
+[[heading]]
+document = "epitome"
+slug = "/epitome/good-works/"
+text = "AFFIRMITIVE THESES: Pure Doctrine of the Christian Churches concerning This Controversy."
+reading = { as = "triglot-wording", with = "AFFIRMATIVA. Pure Doctrine of the Christian Churches concerning This Controversy.", triglot_page = 797 }
+triglot = "The Triglot heads the affirmative theses 'AFFIRMATIVA.' over 'Pure Doctrine of the Christian Churches concerning This Controversy.'; 'Affirmative Theses' is the site's wording."
+
+[[heading]]
+document = "epitome"
+slug = "/epitome/third-use-of-the-law/"
+text = "Affirmative Theses: The True Christian Doctrine concerning This Controversy."
+reading = { as = "triglot-wording", with = "AFFIRMATIVA. The True Christian Doctrine concerning This Controversy.", triglot_page = 805 }
+triglot = "The Triglot heads the affirmative theses 'AFFIRMATIVA.' over 'The True Christian Doctrine concerning This Controversy.'; 'Affirmative Theses' is the site's wording."
+
+[[heading]]
+document = "epitome"
+slug = "/epitome/the-lords-supper/"
+text = "AFFIRMATIVE THESES: Confession of the Pure Doctrine concerning the Holy Supper against the Sacramentarians."
+reading = { as = "triglot-wording", with = "AFFIRMATIVA. Confession of the Pure Doctrine concerning the Holy Supper against the Sacramentarians.", triglot_page = 809 }
+triglot = "The Triglot heads the affirmative theses 'AFFIRMATIVA.' over 'Confession of the Pure Doctrine concerning the Holy Supper against the Sacramentarians.'; 'Affirmative Theses' is the site's wording."
+
+[[heading]]
+document = "epitome"
+slug = "/epitome/person-of-christ/"
+text = "Affirmative Theses: Pure Doctrine of the Christian Church concerning the Person of Christ."
+reading = { as = "triglot-wording", with = "AFFIRMATIVA. Pure Doctrine of the Christian Church concerning the Person of Christ.", triglot_page = 819 }
+triglot = "The Triglot heads the affirmative theses 'AFFIRMATIVA.' over 'Pure Doctrine of the Christian Church concerning the Person of Christ.'; 'Affirmative Theses' is the site's wording."
+
+[[heading]]
+document = "epitome"
+slug = "/epitome/church-rites/"
+text = "AFFIRMATIVE THESES: The Correct and True Doctrine and Confession concerning This Article."
+reading = { as = "triglot-wording", with = "AFFIRMATIVA. The Correct and True Doctrine and Confession concerning This Article.", triglot_page = 829 }
+triglot = "The Triglot heads the affirmative theses 'AFFIRMATIVA.' over 'The Correct and True Doctrine and Confession concerning This Article.'; 'Affirmative Theses' is the site's wording."
+
+[[heading]]
+document = "epitome"
+slug = "/epitome/election/"
+text = "AFFIRMATIVE THESES: The Pure and True Doctrine concerning This Article."
+reading = { as = "triglot-wording", with = "AFFIRMATIVA. The Pure and True Doctrine concerning This Article.", triglot_page = 831 }
+triglot = "The Triglot heads the affirmative theses 'AFFIRMATIVA.' over 'The Pure and True Doctrine concerning This Article.'; 'Affirmative Theses' is the site's wording."
+
+[[heading]]
+document = "epitome"
+slug = "/epitome/original-sin/"
+text = "NEGATIVE THESES: Rejection of the False Opposite Dogmas."
+reading = { as = "triglot-wording", with = "NEGATIVA. Rejection of the False Opposite Dogmas.", triglot_page = 781 }
+triglot = "The Triglot heads the rejected errors 'NEGATIVA. Rejection of the False Opposite Dogmas.'; 'Negative Theses' is the site's wording."
+
+[[heading]]
+document = "epitome"
+slug = "/epitome/free-will/"
+text = "NEGATIVE THESES: Contrary False Doctrine."
+reading = { as = "triglot-wording", with = "NEGATIVA. Contrary False Doctrine.", triglot_page = 787 }
+triglot = "The Triglot heads the rejected errors 'NEGATIVA. Contrary False Doctrine.'; 'Negative Theses' is the site's wording."
+
+[[heading]]
+document = "epitome"
+slug = "/epitome/righteousness-of-faith/"
+text = "NEGATIVE THESES: Rejection of the False Opposite Dogmas."
+reading = { as = "triglot-wording", with = "ANTITHESIS or NEGATIVA. Contrary Doctrine Rejected.", triglot_page = 795 }
+triglot = "The Triglot heads the rejected errors 'ANTITHESIS or NEGATIVA. Contrary Doctrine Rejected.'; 'Negative Theses' is the site's wording."
+
+[[heading]]
+document = "epitome"
+slug = "/epitome/good-works/"
+text = "NEGATIVE THESES: Rejection of the False Opposite Dogmas."
+reading = { as = "triglot-wording", with = "NEGATIVA. False Contrary Doctrine.", triglot_page = 801 }
+triglot = "The Triglot heads the rejected errors 'NEGATIVA. False Contrary Doctrine.'; 'Negative Theses' is the site's wording."
+
+[[heading]]
+document = "epitome"
+slug = "/epitome/law-and-gospel/"
+text = "NEGATIVE THESES: Contrary Doctrine which is Rejected.**"
+reading = { as = "triglot-wording", with = "NEGATIVA. Contrary Doctrine which is Rejected.", triglot_page = 805 }
+triglot = "The Triglot heads the rejected errors 'NEGATIVA. Contrary Doctrine which is Rejected.'; 'Negative Theses' is the site's wording."
+
+[[heading]]
+document = "epitome"
+slug = "/epitome/third-use-of-the-law/"
+text = "Negative Theses. False Contrary Doctrine."
+reading = { as = "triglot-wording", with = "NEGATIVA. False Contrary Doctrine.", triglot_page = 807 }
+triglot = "The Triglot heads the rejected errors 'NEGATIVA. False Contrary Doctrine.'; 'Negative Theses' is the site's wording."
+
+[[heading]]
+document = "epitome"
+slug = "/epitome/the-lords-supper/"
+text = "Negative Theses: Contrary, Condemned Doctrines of the Sacramentarians."
+reading = { as = "triglot-wording", with = "NEGATIVA. Contrary, Condemned Doctrines of the Sacramentarians.", triglot_page = 813 }
+triglot = "The Triglot heads the rejected errors 'NEGATIVA. Contrary, Condemned Doctrines of the Sacramentarians.'; 'Negative Theses' is the site's wording."
+
+[[heading]]
+document = "epitome"
+slug = "/epitome/person-of-christ/"
+text = "NEGATIVE THESES: Contrary False Doctrine concerning the Person of Christ."
+reading = { as = "triglot-wording", with = "NEGATIVA. Contrary False Doctrine concerning the Person of Christ.", triglot_page = 823 }
+triglot = "The Triglot heads the rejected errors 'NEGATIVA. Contrary False Doctrine concerning the Person of Christ.'; 'Negative Theses' is the site's wording."
+
+[[heading]]
+document = "epitome"
+slug = "/epitome/church-rites/"
+text = "NEGATIVE THESES: False Doctrine concerning This Article."
+reading = { as = "triglot-wording", with = "NEGATIVA. False Doctrine concerning This Article.", triglot_page = 831 }
+triglot = "The Triglot heads the rejected errors 'NEGATIVA. False Doctrine concerning This Article.'; 'Negative Theses' is the site's wording."
+
+[[heading]]
+document = "epitome"
+slug = "/epitome/election/"
+text = "Negative Theses: False Doctrine concerning This Article."
+reading = { as = "triglot-wording", with = "ANTITHESIS or NEGATIVA. False Doctrine concerning This Article.", triglot_page = 837 }
+triglot = "The Triglot heads the rejected errors 'ANTITHESIS or NEGATIVA. False Doctrine concerning This Article.'; 'Negative Theses' is the site's wording."
+
+[[heading]]
+document = "epitome"
+slug = "/epitome/descent-of-christ-into-hell/"
+text = "STATUS CONTROVERSIAE: Chief Controversy concerning This Article.**"
+reading = { as = "triglot-wording", with = "STATUS CONTROVERSIAE: Chief Controversy concerning This Article.", triglot_page = 827 }
+triglot = "A stray Markdown bold marker closes the site's heading; the Triglot prints it unmarked."

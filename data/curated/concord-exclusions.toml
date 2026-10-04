@@ -137,33 +137,9 @@ with = "In This Article."
 kind = "markup-residue"
 triglot = "The matching closing Markdown bold marker of the same heading."
 
-[[strip]]
-document = "epitome"
-slug = "/epitome/law-and-gospel/"
-text = "Rejected.**"
-with = "Rejected."
-kind = "markup-residue"
-triglot = "A stray Markdown bold marker closing the Epitome V 'Negative Theses' heading, served since FOCUS-3 recovers the heading; the Triglot prints the heading unmarked."
-
-[[strip]]
-document = "epitome"
-slug = "/epitome/descent-of-christ-into-hell/"
-text = "This Article.**"
-with = "This Article."
-kind = "markup-residue"
-triglot = "A stray Markdown bold marker closing the Epitome IX 'Status Controversiae' heading, served since FOCUS-3 recovers the heading; the Triglot prints the heading unmarked."
-
 [[run]]
 document = "defense"
 slug = "/defense/of-love-and-fulfilling-the-law/"
 text = "Shouldn’t this be V (IV II) – in Tappert and Kolb it’s just an extension of the IV, Justification. So if anything it should be numbered IV II."
 kind = "editorial-note"
 triglot = "An editor's query left in the page as an <h5> above Apology III (IV II) 1; 'Tappert and Kolb' occurs nowhere in the Triglot, whose Apology III opens 'Here the adversaries urge against us' (p. 157). Never served: the parser dropped it as a heading until FOCUS-3."
-
-[[strip]]
-document = "epitome"
-slug = "/epitome/righteousness-of-faith/"
-text = "NEGATIVE THESES: Rejection of the False Opposite Dogmas."
-with = "ANTITHESIS or NEGATIVA. Contrary Doctrine Rejected."
-kind = "site-wording"
-triglot = "The site's heading for Epitome III's rejected errors; the Triglot prints 'ANTITHESIS or NEGATIVA. Contrary Doctrine Rejected.' (p. 795)."

@@ -2,7 +2,7 @@ use std::fmt;
 
 use anyhow::{Context, Result};
 
-use crate::concord::{ConcordDocument, ConcordTitleOverride};
+use crate::concord::{ConcordDocument, ConcordTitleOverride, HeadingWording};
 use crate::triglot::{Coverage, TriglotLeaf, TriglotPage, TriglotReference, TriglotWord};
 
 #[derive(Debug, Clone, PartialEq, serde::Deserialize)]
@@ -11,6 +11,7 @@ pub struct AdmissionPolicy {
     pub shingle_words: usize,
     pub threshold_percent: u32,
     pub numbering_percent: u32,
+    pub heading_percent: u32,
     pub window: Vec<DocumentWindow>,
     #[serde(default)]
     pub confirmed: Vec<Confirmation>,
@@ -45,6 +46,7 @@ pub enum ConfirmationReason {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum EditorialReason {
     OurTitle,
+    OurHeading,
     CorpusDescription,
 }
 
@@ -60,6 +62,7 @@ pub enum Admitted {
     Description,
     Title { part: u8, article: u16 },
     Paragraph { part: u8, article: u16, paragraph: u16 },
+    Heading { part: u8, article: u16, paragraph: u16, heading: u16 },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -135,6 +138,25 @@ pub fn admit(documents: &[ConcordDocument], titles: &[ConcordTitleOverride], ref
             for paragraph in &article.paragraphs {
                 let admitted = Admitted::Paragraph { part: document.part, article: article.article, paragraph: paragraph.paragraph };
                 let text = paragraph.rendering.text();
+                for (index, heading) in (0u16..).zip(&paragraph.headings) {
+                    let admitted = Admitted::Heading { part: document.part, article: article.article, paragraph: paragraph.paragraph, heading: index };
+                    match heading.wording {
+                        HeadingWording::Ours => {
+                            admissions.push((admitted, Admission::Editorial { reason: EditorialReason::OurHeading }));
+                            continue;
+                        }
+                        HeadingWording::Confirmed { page } => {
+                            admissions.push((admitted, Admission::Confirmed { page: TriglotPage(page), reason: ConfirmationReason::OcrDamage }));
+                            continue;
+                        }
+                        HeadingWording::Source => {}
+                    }
+                    let found = reference.find(&heading.text, &window, TriglotWord(window.start));
+                    match found.start.filter(|_| found.coverage.reaches(policy.heading_percent)) {
+                        Some(start) => admissions.push((admitted, Admission::Matched { start, coverage: found.coverage })),
+                        None => refusals.push(AdmissionRefusal::Unmatched { document: document.key.to_string(), slug: article.slug.clone(), admitted, opening: heading.text.chars().take(OPENING_CHARACTERS).collect(), coverage: found.coverage }),
+                    }
+                }
                 let found = reference.find(text, &window, after);
                 let confirmation = policy.confirmed.iter().position(|row| row.document == document.key && row.slug == article.slug && text.starts_with(row.begins.as_str()));
                 if let Some(i) = confirmation {
@@ -171,18 +193,17 @@ mod tests {
     use super::*;
     use crate::concord::{Citation, ConcordArticle, ConcordParagraph};
     use atlas_graph_types::text::Rendering;
-
     const SHINGLE: usize = 3;
     const THRESHOLD: u32 = 40;
     const PAGE: &str = "553";
     const SCAN: &str = "Article XI. Of Confession. Of Confession they teach that Private Absolution ought to be retained in the churches.";
 
     fn policy(confirmed: Vec<Confirmation>) -> AdmissionPolicy {
-        AdmissionPolicy { shingle_words: SHINGLE, threshold_percent: THRESHOLD, numbering_percent: THRESHOLD, window: vec![DocumentWindow { document: "augsburg-confession".to_string(), first_leaf: 0, last_leaf: 0 }], confirmed }
+        AdmissionPolicy { shingle_words: SHINGLE, threshold_percent: THRESHOLD, numbering_percent: THRESHOLD, heading_percent: THRESHOLD, window: vec![DocumentWindow { document: "augsburg-confession".to_string(), first_leaf: 0, last_leaf: 0 }], confirmed }
     }
 
     fn document(title: &str, paragraphs: &[&str]) -> ConcordDocument {
-        let paragraphs = paragraphs.iter().zip(1..).map(|(text, paragraph)| ConcordParagraph { paragraph, source_label: paragraph.to_string(), rendering: Rendering::whole(text.to_string()) }).collect();
+        let paragraphs = paragraphs.iter().zip(1..).map(|(text, paragraph)| ConcordParagraph { paragraph, source_label: paragraph.to_string(), rendering: Rendering::whole(text.to_string()), headings: Vec::new() }).collect();
         ConcordDocument { part: 3, key: "augsburg-confession", title: "The Augsburg Confession", articles: vec![ConcordArticle { article: 1, slug: "/augsburg-confession/of-confession/".to_string(), title: title.to_string(), section_title: None, citation: Citation::uncited(), paragraphs }] }
     }
 

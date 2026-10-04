@@ -114,6 +114,7 @@ fn open_first_article_with_its_part(doc: &mut ConcordDocument, part: &str) -> Re
         spaced_after(&mut pieces, paragraph.rendering.pieces());
     }
     opening.rendering = Rendering::compose(&pieces);
+    opening.headings = lead_in.paragraphs.iter().flat_map(|paragraph| paragraph.headings.iter().cloned()).chain(opening.headings.drain(..)).collect();
     Ok(())
 }
 
@@ -122,6 +123,20 @@ pub struct ConcordParagraph {
     pub paragraph: u16,
     pub source_label: String,
     pub rendering: Rendering,
+    pub headings: Vec<Heading>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Heading {
+    pub text: String,
+    pub wording: HeadingWording,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum HeadingWording {
+    Source,
+    Confirmed { page: u16 },
+    Ours,
 }
 
 #[derive(Debug, Clone)]
@@ -457,6 +472,7 @@ struct SourceNode {
     block: SourceBlock,
     marker: Option<SourceMarker>,
     text: String,
+    wording: HeadingWording,
 }
 
 impl SourceNode {
@@ -476,6 +492,7 @@ fn paragraphs_of(body: &[ElementRef], article: &mut ArticleCuration) -> (Vec<Con
     for node in nodes {
         if !article.drops_run(&node) {
             let role = article.role_of(&node);
+            let node = if role == TextPartRole::Heading { article.read_heading(node) } else { node };
             kept_nodes.push((node, role));
         }
     }
@@ -560,7 +577,7 @@ impl NodeWalk<'_> {
             SourceBlock::Paragraph if !open.outside_strong && !text.is_empty() => SourceBlock::BoldParagraph,
             block => block,
         };
-        self.nodes.push(SourceNode { block, marker: open.marker, text });
+        self.nodes.push(SourceNode { block, marker: open.marker, text, wording: HeadingWording::Source });
     }
 }
 
@@ -591,6 +608,7 @@ struct Group {
     markers: Vec<SourceMarker>,
     base: Option<u16>,
     rendering: Rendering,
+    headings: Vec<Heading>,
 }
 
 fn groups_of(nodes: Vec<(SourceNode, TextPartRole)>, numbered_by_source: bool) -> Vec<Group> {
@@ -640,7 +658,8 @@ fn group_of(nodes: Vec<(SourceNode, TextPartRole)>) -> Group {
     for (node, role) in nodes.iter().filter(|(node, _)| !node.text.is_empty()) {
         spaced_after(&mut pieces, pieces_of(*role, &node.text));
     }
-    Group { markers, base, rendering: Rendering::compose(&pieces) }
+    let headings = nodes.iter().filter(|(node, role)| *role == TextPartRole::Heading && !node.text.is_empty()).map(|(node, _)| Heading { text: node.text.clone(), wording: node.wording }).collect();
+    Group { markers, base, rendering: Rendering::compose(&pieces), headings }
 }
 
 fn spaced_after(pieces: &mut Vec<Piece>, mut next: Vec<Piece>) {
@@ -674,7 +693,7 @@ fn number(groups: Vec<Group>, numbered_by_source: bool) -> (Vec<ConcordParagraph
         } else {
             vec![format!("no native paragraph numbering in source -- {} paragraph(s) assigned synthetic sequential positions 1..{}", groups.len(), groups.len())]
         };
-        let paragraphs = groups.into_iter().enumerate().map(|(i, group)| ConcordParagraph { paragraph: (i + 1) as u16, source_label: String::new(), rendering: group.rendering }).collect();
+        let paragraphs = groups.into_iter().enumerate().map(|(i, group)| ConcordParagraph { paragraph: (i + 1) as u16, source_label: String::new(), rendering: group.rendering, headings: group.headings }).collect();
         return (paragraphs, anomalies);
     }
     let mut out = Vec::with_capacity(groups.len());
@@ -694,7 +713,7 @@ fn number(groups: Vec<Group>, numbered_by_source: bool) -> (Vec<ConcordParagraph
         };
         last_assigned = assigned;
         let source_label = group.markers.iter().map(|marker| marker.label.as_str()).collect::<Vec<_>>().join("/");
-        out.push(ConcordParagraph { paragraph: assigned, source_label, rendering: group.rendering });
+        out.push(ConcordParagraph { paragraph: assigned, source_label, rendering: group.rendering, headings: group.headings });
     }
     let mut anomalies = Vec::new();
     if let Some(&(first_label, first_prior, first_remap)) = collisions.first() {
@@ -742,7 +761,6 @@ pub enum NonTriglotKind {
     EditorialNote,
     SiteFurniture,
     MarkupResidue,
-    SiteWording,
 }
 
 #[derive(Debug, Clone, PartialEq, serde::Deserialize)]
@@ -834,6 +852,26 @@ pub struct ConcordReadings {
     pub correction: Vec<RoleCorrection>,
     #[serde(default)]
     pub text_marker: Vec<TextMarker>,
+    #[serde(default)]
+    pub heading: Vec<HeadingReading>,
+}
+
+#[derive(Debug, Clone, PartialEq, serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct HeadingReading {
+    pub document: String,
+    pub slug: String,
+    pub text: String,
+    pub reading: HeadingReadingKind,
+    pub triglot: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
+#[serde(rename_all = "kebab-case", tag = "as")]
+pub enum HeadingReadingKind {
+    TriglotWording { with: String, triglot_page: u16 },
+    Confirmed { triglot_page: u16 },
+    OurWording { with: String },
 }
 
 fn one_occurrence() -> usize {
@@ -852,6 +890,7 @@ struct Curation<'a> {
     run_hits: Vec<usize>,
     role_hits: Vec<usize>,
     text_marker_hits: Vec<usize>,
+    heading_hits: Vec<usize>,
     idle_roles: Vec<String>,
     gaps: Vec<String>,
 }
@@ -866,6 +905,7 @@ impl<'a> Curation<'a> {
             run_hits: vec![0; exclusions.run.len()],
             role_hits: vec![0; readings.correction.len()],
             text_marker_hits: vec![0; readings.text_marker.len()],
+            heading_hits: vec![0; readings.heading.len()],
             idle_roles: Vec::new(),
             gaps: Vec::new(),
         }
@@ -894,8 +934,9 @@ impl<'a> Curation<'a> {
         let units = self.exclusions.unit.iter().zip(&self.unit_hits).filter(|(_, n)| **n != 1).map(|(x, n)| format!("concord-exclusions.toml: [[unit]] {}{} {:?} matched {n} time(s)", x.document, x.slug, x.text));
         let runs = self.exclusions.run.iter().zip(&self.run_hits).filter(|(_, n)| **n != 1).map(|(x, n)| format!("concord-exclusions.toml: [[run]] {}{} {:?} matched {n} time(s)", x.document, x.slug, x.text));
         let text_markers = self.readings.text_marker.iter().zip(&self.text_marker_hits).filter(|(_, n)| **n != 1).map(|(x, n)| format!("concord-roles.toml: [[text_marker]] {}{} {:?} matched {n} time(s)", x.document, x.slug, x.marker));
+        let headings = self.readings.heading.iter().zip(&self.heading_hits).filter(|(_, n)| **n != 1).map(|(x, n)| format!("concord-roles.toml: [[heading]] {}{} {:?} matched {n} heading(s)", x.document, x.slug, x.text));
         let roles = self.readings.correction.iter().zip(&self.role_hits).filter(|(x, n)| **n != x.occurrences).map(|(x, n)| format!("concord-roles.toml: [[correction]] {}{} {:?} matched {n} time(s), not {}", x.document, x.slug, x.text, x.occurrences));
-        let unmatched: Vec<String> = articles.chain(units).chain(runs).chain(roles).chain(text_markers).chain(self.idle_roles.iter().cloned()).collect();
+        let unmatched: Vec<String> = articles.chain(units).chain(runs).chain(roles).chain(text_markers).chain(headings).chain(self.idle_roles.iter().cloned()).collect();
         if unmatched.is_empty() {
             Ok(())
         } else {
@@ -934,6 +975,18 @@ impl ArticleCuration<'_, '_> {
             }
         }
         listed
+    }
+
+    fn read_heading(&mut self, node: SourceNode) -> SourceNode {
+        let Some(i) = self.curation.readings.heading.iter().position(|x| x.document == self.document && x.slug == self.slug && x.text == node.text) else {
+            return node;
+        };
+        self.curation.heading_hits[i] += 1;
+        match &self.curation.readings.heading[i].reading {
+            HeadingReadingKind::TriglotWording { with, .. } => SourceNode { text: with.clone(), wording: HeadingWording::Source, ..node },
+            HeadingReadingKind::Confirmed { triglot_page } => SourceNode { wording: HeadingWording::Confirmed { page: *triglot_page }, ..node },
+            HeadingReadingKind::OurWording { with } => SourceNode { text: with.clone(), wording: HeadingWording::Ours, ..node },
+        }
     }
 
     fn drops_run(&mut self, node: &SourceNode) -> bool {
@@ -984,6 +1037,9 @@ fn apply_strips(docs: &mut [ConcordDocument], strips: &[StrippedFragment]) -> Re
         }
         let unit = article.paragraphs.iter_mut().find(|p| occurrences(p) == 1).expect("the one occurrence lies in a paragraph");
         let mut pieces = unit.rendering.pieces();
+        if pieces.iter().any(|piece| piece.role == TextPartRole::Heading && piece.text.contains(x.text.as_str())) {
+            anyhow::bail!("concord-exclusions.toml: [[strip]] {:?} lies in a heading of {at}; a heading is read through a [[heading]] row of concord-roles.toml", x.text);
+        }
         let piece = pieces.iter_mut().find(|piece| piece.text.contains(x.text.as_str())).expect("the one occurrence lies in a piece");
         piece.text = squeeze_ws(&piece.text.replacen(x.text.as_str(), &x.with, 1));
         unit.rendering = Rendering::compose(&without_doubled_spaces(pieces));
@@ -1091,7 +1147,7 @@ mod tests {
     }
 
     fn served(key: &'static str, slug: &str, paragraphs: &[(u16, &str)]) -> ConcordCorpus {
-        let paragraphs = paragraphs.iter().map(|(n, t)| ConcordParagraph { paragraph: *n, source_label: n.to_string(), rendering: Rendering::whole(t.to_string()) }).collect();
+        let paragraphs = paragraphs.iter().map(|(n, t)| ConcordParagraph { paragraph: *n, source_label: n.to_string(), rendering: Rendering::whole(t.to_string()), headings: Vec::new() }).collect();
         let article = ConcordArticle { article: 1, slug: slug.to_string(), title: "Title".to_string(), section_title: None, citation: Citation::uncited(), paragraphs };
         ConcordCorpus { title: "The Book of Concord".to_string(), description: String::new(), documents: vec![ConcordDocument { part: 2, key, title: key, articles: vec![article] }], stats: ConcordStats::default(), admissions: Vec::new() }
     }
@@ -1597,6 +1653,53 @@ in His sight. Rom. 3 and 4.</p>"#;
         assert_eq!(numbered(&paragraphs), vec![(1, vec![text("Rock\u{2019}s & a test \u{2013} 'quoted' \u{2019}")])]);
     }
 
+    const SITE_HEADINGS: &str = r#"<p><strong>NEGATIVE THESES: Contrary False Doctrine.</strong></p>
+<p><span id="a-acontent" class="bocanchor-content">7</span>Accordingly, we reject.</p>
+<p><strong>The Issues</strong></p>
+<p><span id="b-acontent" class="bocanchor-content">8</span>It is a remarkable favor.</p>"#;
+
+    #[test]
+    fn a_heading_is_read_in_the_triglots_words_or_served_as_ours() {
+        // Arrange
+        let none = ConcordExclusions::default();
+        let reading = |text: &str, reading: HeadingReadingKind| HeadingReading { document: FIXTURE_DOCUMENT.to_string(), slug: FIXTURE_SLUG.to_string(), text: text.to_string(), reading, triglot: "checked".to_string() };
+        let readings = ConcordReadings {
+            correction: Vec::new(),
+            text_marker: Vec::new(),
+            heading: vec![
+                reading("NEGATIVE THESES: Contrary False Doctrine.", HeadingReadingKind::TriglotWording { with: "NEGATIVA. Contrary False Doctrine.".to_string(), triglot_page: 787 }),
+                reading("The Issues", HeadingReadingKind::OurWording { with: "The Issues".to_string() }),
+            ],
+        };
+        let mut curation = Curation::new(&none, &readings);
+        let page = Html::parse_fragment(SITE_HEADINGS);
+        // Act
+        let (paragraphs, _) = paragraphs_of(&[page.root_element()], &mut curation.article(FIXTURE_DOCUMENT, FIXTURE_SLUG));
+        // Assert
+        let read: Vec<(u16, Vec<Heading>)> = paragraphs.iter().map(|p| (p.paragraph, p.headings.clone())).collect();
+        assert_eq!(
+            (read, curation.every_entry_matched_once().is_ok()),
+            (
+                vec![
+                    (7, vec![Heading { text: "NEGATIVA. Contrary False Doctrine.".to_string(), wording: HeadingWording::Source }]),
+                    (8, vec![Heading { text: "The Issues".to_string(), wording: HeadingWording::Ours }]),
+                ],
+                true
+            )
+        );
+    }
+
+    #[test]
+    fn a_strip_that_would_rewrite_a_heading_is_refused() {
+        // Arrange
+        let mut docs = served("ecumenical-creeds", "/ecumenical-creeds/apostles-creed/", &[]).documents;
+        docs[0].articles[0].paragraphs.push(ConcordParagraph { paragraph: 3, source_label: "3".to_string(), rendering: Rendering::compose(&[heading("Of a mark")]), headings: Vec::new() });
+        // Act
+        let refused = apply_strips(&mut docs, &exclusions(ONE_OF_EACH).strip).unwrap_err().to_string();
+        // Assert
+        assert!(refused.contains("lies in a heading"), "{refused}");
+    }
+
     const FIXTURE_DOCUMENT: &str = "defense";
     const FIXTURE_SLUG: &str = "/defense/x/";
 
@@ -1610,7 +1713,7 @@ in His sight. Rom. 3 and 4.</p>"#;
     }
 
     fn readings(corrections: &[RoleCorrection]) -> ConcordReadings {
-        ConcordReadings { correction: corrections.to_vec(), text_marker: Vec::new() }
+        ConcordReadings { correction: corrections.to_vec(), text_marker: Vec::new(), heading: Vec::new() }
     }
 
     fn numbered(paragraphs: &[ConcordParagraph]) -> Vec<(u16, Vec<Piece>)> {

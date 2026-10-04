@@ -275,9 +275,9 @@ fn every_served_concord_span_is_admitted_against_the_triglot() {
     assert_eq!(admitted.map_err(|refusal| refusal.to_string()), Ok(AdmissionStats { matched: MATCHED_SPANS, confirmed: CONFIRMED_BY_HAND, editorial: OUR_WORDS }));
 }
 
-const MATCHED_SPANS: usize = 3864;
-const CONFIRMED_BY_HAND: usize = 6;
-const OUR_WORDS: usize = 62;
+const MATCHED_SPANS: usize = 3996;
+const CONFIRMED_BY_HAND: usize = 7;
+const OUR_WORDS: usize = 71;
 
 #[test]
 fn a_paragraph_the_triglot_does_not_print_is_refused() {
@@ -285,7 +285,7 @@ fn a_paragraph_the_triglot_does_not_print_is_refused() {
     let c = corpus();
     let mut articles = c.documents.into_iter().find(|d| d.key == "augsburg-confession").unwrap();
     articles.articles.truncate(1);
-    articles.articles[0].paragraphs = MODERN_PARAPHRASES.iter().zip(1..).map(|(text, paragraph)| concord::ConcordParagraph { paragraph, source_label: paragraph.to_string(), rendering: Rendering::whole(text.to_string()) }).collect();
+    articles.articles[0].paragraphs = MODERN_PARAPHRASES.iter().zip(1..).map(|(text, paragraph)| concord::ConcordParagraph { paragraph, source_label: paragraph.to_string(), rendering: Rendering::whole(text.to_string()), headings: Vec::new() }).collect();
     let policy = admission::parse_admission_policy(&std::fs::read_to_string(curated_dir().join("concord-admission.toml")).unwrap()).unwrap();
     let reference = TriglotReference::read(&raw_dir(), policy.shingle_words).unwrap();
     // Act
@@ -441,4 +441,28 @@ fn the_book_of_concord_is_titled_and_described_from_data_and_its_description_is_
         (c.title.as_str(), c.description.as_str(), description_admitted),
         ("The Book of Concord", "The Lutheran confessions of 1580 \u{2014} the church's own confession, subordinate to the Scripture it confesses.", vec![Admission::Editorial { reason: admission::EditorialReason::CorpusDescription }])
     );
+}
+
+#[test]
+fn no_served_heading_is_unadmitted() {
+    // Arrange
+    let c = corpus();
+    // Act
+    let mut unadmitted: Vec<String> = Vec::new();
+    let mut unlisted: Vec<String> = Vec::new();
+    for (part, article, _, p) in c.iter_paragraphs() {
+        for heading in 0..p.headings.len() as u16 {
+            let admitted = Admitted::Heading { part, article, paragraph: p.paragraph, heading };
+            if !c.admissions.iter().any(|(at, _)| *at == admitted) {
+                unadmitted.push(format!("{part}.{article}.{} heading {heading}", p.paragraph));
+            }
+        }
+        let served: String = p.rendering.pieces().iter().filter(|piece| piece.role != TextPartRole::Text).flat_map(|piece| piece.text.chars()).filter(|c| !c.is_whitespace()).collect();
+        let listed: String = p.headings.iter().flat_map(|heading| heading.text.chars()).filter(|c| !c.is_whitespace()).collect();
+        if !served.starts_with(&listed) && !served.contains(&listed) {
+            unlisted.push(format!("{part}.{article}.{}", p.paragraph));
+        }
+    }
+    // Assert
+    assert_eq!((unadmitted, unlisted), (Vec::<String>::new(), Vec::<String>::new()));
 }
