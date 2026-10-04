@@ -141,3 +141,14 @@ unchanged. No Codex lock remains; Claude's F3 contract lock is preserved.
 CX-I3 retains the owner's cleanup reminder. Current capacity is about
 **773 GB WSL free / 1.9 GB Windows VHD-host free**. No fresh Cargo/AOT,
 full browser/mutation gate, shared artifact/schema, raw/cache or Claude edit.
+
+After pushing `42c30c4`, six completed native/export/browser bin/obj trees
+were pruned: **205,241,554 logical bytes**. The
+[cleanup inventory](evidence/2026-10-03-fsharp-schema-binding-fit/cleanup.json)
+retains ownership checks and the system-service process-visibility limit.
+The active Binding/bin and Binding/obj caches remain for the next correction;
+source, original logs, compact results, raw/cache/scratch and Claude outputs
+remain untouched. Latest Windows host headroom is only **1.7 GB**, while WSL
+still has about **773 GB** free. Guest cleanup has not compacted the VHD or
+restored equivalent Windows space; continue with existing bounded native
+output and avoid fresh WASM/AOT/Cargo growth while host capacity is critical.
