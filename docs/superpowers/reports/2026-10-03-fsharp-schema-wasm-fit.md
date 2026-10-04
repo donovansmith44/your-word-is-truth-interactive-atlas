@@ -116,3 +116,16 @@ results and disposable build output after preserving compact outcomes. Current
 WSL free space is about **780 GB**, but the Windows VHD host has only
 **1.9 GB** free. No fresh Cargo/AOT target, raw/cache deletion, other-agent
 cleanup or VHD compaction occurred.
+
+After the source/evidence checkpoint was pushed as `f343212`, six stopped
+task-owned native/export/WASM `bin` and `obj` directories were removed:
+**205,238,819 logical file bytes**. The
+[cleanup inventory](evidence/2026-10-03-fsharp-schema-wasm-fit/cleanup.json)
+records no tracked files, symlinks or observed live references. Some system
+service descriptors/maps are inaccessible without root; their readable
+command lines contain no candidate paths and none are build/browser processes.
+That visibility limit is retained rather than claiming complete `/proc`
+access. Sources, original logs, compact outcomes, pinned validator source,
+raw/cache/scratch and Claude outputs are retained. Latest capacity is about
+**786 GB WSL free / 1.9 GB Windows C: free**; guest deletion has not compacted
+the VHD or recovered equivalent host space.

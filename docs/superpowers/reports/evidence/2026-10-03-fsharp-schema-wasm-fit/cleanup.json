@@ -1,0 +1,220 @@
+{
+  "source_commit": "f343212f128ee1b6d100347d58d201097cae60ed",
+  "source_pushed": true,
+  "paths": [
+    {
+      "path": "/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/SchemaSpike/Export/bin",
+      "files": 20,
+      "logical_bytes": 3256928,
+      "tracked_files": 0,
+      "symlinks": 0
+    },
+    {
+      "path": "/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/SchemaSpike/Export/obj",
+      "files": 21,
+      "logical_bytes": 179639,
+      "tracked_files": 0,
+      "symlinks": 0
+    },
+    {
+      "path": "/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/SchemaSpike/Wasm/bin",
+      "files": 778,
+      "logical_bytes": 115465392,
+      "tracked_files": 0,
+      "symlinks": 0
+    },
+    {
+      "path": "/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/SchemaSpike/Wasm/obj",
+      "files": 537,
+      "logical_bytes": 62228856,
+      "tracked_files": 0,
+      "symlinks": 0
+    },
+    {
+      "path": "/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/SchemaSpike/bin",
+      "files": 129,
+      "logical_bytes": 23606597,
+      "tracked_files": 0,
+      "symlinks": 0
+    },
+    {
+      "path": "/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/SchemaSpike/obj",
+      "files": 20,
+      "logical_bytes": 501407,
+      "tracked_files": 0,
+      "symlinks": 0
+    }
+  ],
+  "total_logical_bytes": 205238819,
+  "observed_live_references": [],
+  "inaccessible_system_processes": [
+    {
+      "pid": 1,
+      "uid": 0,
+      "name": "systemd"
+    },
+    {
+      "pid": 2,
+      "uid": 0,
+      "name": "init-systemd(Ub"
+    },
+    {
+      "pid": 6,
+      "uid": 0,
+      "name": "init"
+    },
+    {
+      "pid": 60,
+      "uid": 0,
+      "name": "systemd-journal"
+    },
+    {
+      "pid": 82,
+      "uid": 0,
+      "name": "systemd-udevd"
+    },
+    {
+      "pid": 95,
+      "uid": 0,
+      "name": "snapfuse"
+    },
+    {
+      "pid": 96,
+      "uid": 0,
+      "name": "snapfuse"
+    },
+    {
+      "pid": 104,
+      "uid": 0,
+      "name": "snapfuse"
+    },
+    {
+      "pid": 108,
+      "uid": 0,
+      "name": "snapfuse"
+    },
+    {
+      "pid": 113,
+      "uid": 0,
+      "name": "snapfuse"
+    },
+    {
+      "pid": 118,
+      "uid": 0,
+      "name": "snapfuse"
+    },
+    {
+      "pid": 123,
+      "uid": 0,
+      "name": "snapfuse"
+    },
+    {
+      "pid": 181,
+      "uid": 101,
+      "name": "systemd-resolve"
+    },
+    {
+      "pid": 182,
+      "uid": 103,
+      "name": "systemd-timesyn"
+    },
+    {
+      "pid": 230,
+      "uid": 0,
+      "name": "cron"
+    },
+    {
+      "pid": 232,
+      "uid": 102,
+      "name": "dbus-daemon"
+    },
+    {
+      "pid": 238,
+      "uid": 0,
+      "name": "networkd-dispat"
+    },
+    {
+      "pid": 239,
+      "uid": 104,
+      "name": "rsyslogd"
+    },
+    {
+      "pid": 241,
+      "uid": 0,
+      "name": "snapd"
+    },
+    {
+      "pid": 242,
+      "uid": 0,
+      "name": "systemd-logind"
+    },
+    {
+      "pid": 246,
+      "uid": 0,
+      "name": "containerd"
+    },
+    {
+      "pid": 272,
+      "uid": 0,
+      "name": "agetty"
+    },
+    {
+      "pid": 274,
+      "uid": 0,
+      "name": "agetty"
+    },
+    {
+      "pid": 285,
+      "uid": 0,
+      "name": "unattended-upgr"
+    },
+    {
+      "pid": 325,
+      "uid": 0,
+      "name": "dockerd"
+    },
+    {
+      "pid": 629,
+      "uid": 0,
+      "name": "SessionLeader"
+    },
+    {
+      "pid": 631,
+      "uid": 0,
+      "name": "Relay(635)"
+    },
+    {
+      "pid": 636,
+      "uid": 0,
+      "name": "login"
+    },
+    {
+      "pid": 689,
+      "uid": 1000,
+      "name": "(sd-pam)"
+    },
+    {
+      "pid": 792,
+      "uid": 0,
+      "name": "SessionLeader"
+    },
+    {
+      "pid": 793,
+      "uid": 0,
+      "name": "Relay(798)"
+    },
+    {
+      "pid": 26831,
+      "uid": 0,
+      "name": "packagekitd"
+    },
+    {
+      "pid": 26835,
+      "uid": 0,
+      "name": "polkitd"
+    }
+  ],
+  "process_check_limit": "System service descriptors/maps are inaccessible without root. Readable command lines contain no candidate paths; none are build/browser processes. All observable cwd/exe/fd/maps have zero candidate references; every task-owned host/test/build session is terminal.",
+  "removed": true,
+  "retained": "All source, native exporter/property/driver inputs, pinned validator source, compact committed evidence and original integration logs; raw/cache/scratch and other-agent outputs."
+}
