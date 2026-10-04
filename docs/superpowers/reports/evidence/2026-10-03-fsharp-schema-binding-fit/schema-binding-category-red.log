@@ -1,0 +1,333 @@
+  Determining projects to restore...
+  All projects are up-to-date for restore.
+  Json.More -> /home/donovan/mut/codex-json-schema-fit-source/src/Json.More/bin/Debug/net10.0/Json.More.dll
+  JsonPointer -> /home/donovan/mut/codex-json-schema-fit-source/src/JsonPointer/bin/Debug/net10.0/JsonPointer.Net.dll
+  JsonSchema -> /home/donovan/mut/codex-json-schema-fit-source/src/JsonSchema/bin/Debug/net10.0/JsonSchema.Net.dll
+  BibleAtlas.FSharp.ContractGenerator -> /home/donovan/w/CX-FSHARP-wire/client-fsharp.ContractGenerator/bin/Debug/net10.0/BibleAtlas.FSharp.ContractGenerator.dll
+  BibleAtlas.FSharp.Core -> /home/donovan/w/CX-FSHARP-wire/client-fsharp/Core/bin/Debug/net10.0/BibleAtlas.FSharp.Core.dll
+  BindingFit -> /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/SchemaSpike/Binding/bin/Debug/net10.0/BindingFit.dll
+Test run for /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/SchemaSpike/Binding/bin/Debug/net10.0/BindingFit.dll (.NETCoreApp,Version=v10.0)
+A total of 1 test files matched the specified pattern.
+[xUnit.net 00:00:00.00] xUnit.net VSTest Adapter v3.1.4+50e68bbb8b (64-bit .NET 10.0.12)
+[xUnit.net 00:00:00.05]   Discovering: BindingFit
+[xUnit.net 00:00:00.08]   Discovered:  BindingFit
+[xUnit.net 00:00:00.09]   Starting:    BindingFit
+[xUnit.net 00:00:00.51]     BibleAtlas.FSharp.Tests.SchemaSpike.Binding.BindingLaws.the schema bound converter refuses opaque identity patterns and closed leaf record extras [FAIL]
+[xUnit.net 00:00:00.51]       FsCheck.Xunit.PropertyFailedException :
+[xUnit.net 00:00:00.51]       Falsifiable, after 1 test (0 shrinks) (5401038944010143916,14141020722138188569).
+[xUnit.net 00:00:00.51]       Last step was invoked with size of 2 and seed of (11218428698324072492,15161152630289541325):
+[xUnit.net 00:00:00.51]       Original:
+[xUnit.net 00:00:00.51]       0us
+[xUnit.net 00:00:00.51]
+[xUnit.net 00:00:00.51]       ---- System.TypeLoadException : Could not resolve type 'BibleAtlas.FSharp.Contract.Point' in assembly 'BibleAtlas.FSharp.Core, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null'.
+[xUnit.net 00:00:00.51]       Stack Trace:
+[xUnit.net 00:00:00.51]
+[xUnit.net 00:00:00.51]         ----- Inner Stack Trace -----
+[xUnit.net 00:00:00.51]            at System.Reflection.TypeNameResolver.GetType(String escapedTypeName, ReadOnlySpan`1 nestedTypeNames, TypeName parsedName)
+[xUnit.net 00:00:00.51]            at System.Reflection.TypeNameResolver.Resolve(TypeName typeName)
+[xUnit.net 00:00:00.51]            at System.Reflection.TypeNameResolver.GetType(String typeName, Boolean throwOnError, Boolean ignoreCase, Assembly topLevelAssembly)
+[xUnit.net 00:00:00.51]         /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/SchemaSpike/Binding/BindingLaws.fs(86,0): at BibleAtlas.FSharp.Tests.SchemaSpike.Binding.BindingLaws.configure()
+[xUnit.net 00:00:00.51]         /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/SchemaSpike/Binding/BindingLaws.fs(81,0): at BibleAtlas.FSharp.Tests.SchemaSpike.Binding.BindingLaws.options@81.Invoke(Assembly _arg1)
+[xUnit.net 00:00:00.51]            at System.Collections.Concurrent.ConcurrentDictionary`2.GetOrAdd(TKey key, Func`2 valueFactory)
+[xUnit.net 00:00:00.51]         /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/SchemaSpike/Binding/BindingLaws.fs(81,0): at BibleAtlas.FSharp.Tests.SchemaSpike.Binding.BindingLaws.options()
+[xUnit.net 00:00:00.51]         /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/SchemaSpike/Binding/BindingLaws.fs(66,0): at BibleAtlas.FSharp.Tests.SchemaSpike.Binding.BindingLaws.accepts(String name, JsonElement body)
+[xUnit.net 00:00:00.51]         /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/SchemaSpike/Binding/BindingLaws.fs(34,0): at BibleAtlas.FSharp.Tests.SchemaSpike.Binding.BindingLaws.actual@34-2.Invoke(Tuple`2 tupledArg)
+[xUnit.net 00:00:00.51]         /__w/1/s/src/fsharp/src/FSharp.Core/local.fs(247,0): at Microsoft.FSharp.Primitives.Basics.List.map[T,TResult](FSharpFunc`2 mapping, FSharpList`1 x)
+[xUnit.net 00:00:00.51]         /__w/1/s/src/fsharp/src/FSharp.Core/list.fs(97,0): at Microsoft.FSharp.Collections.ListModule.Map[T,TResult](FSharpFunc`2 mapping, FSharpList`1 list)
+[xUnit.net 00:00:00.51]         /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/SchemaSpike/Binding/BindingLaws.fs(34,0): at BibleAtlas.FSharp.Tests.SchemaSpike.Binding.BindingLaws.the schema bound converter refuses opaque identity patterns and closed leaf record extras(UInt16 suffix)
+[xUnit.net 00:00:00.51]            at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+[xUnit.net 00:00:00.51]            at System.Reflection.MethodBaseInvoker.InvokeDirectByRefWithFewArgs(Object obj, Span`1 copyOfArgs, BindingFlags invokeAttr)
+[xUnit.net 00:00:00.51]         --- End of stack trace from previous location ---
+[xUnit.net 00:00:00.51]         C:\Users\kurts\Projects\FsCheck\src\FsCheck\Runner.fs(595,0): at FsCheck.Runner.invokeAndThrowInner@592-1.Invoke(Object[] o)
+[xUnit.net 00:00:00.51]         /__w/1/s/src/fsharp/src/FSharp.Core/reflect.fs(1230,0): at <StartupCode$FSharp-Core>.$Reflect.Invoke@1230.Invoke(T1 inp)
+[xUnit.net 00:00:00.51]            at System.Lazy`1.ViaFactory(LazyThreadSafetyMode mode)
+[xUnit.net 00:00:00.51]            at System.Lazy`1.ExecutionAndPublication(LazyHelper executionAndPublication, Boolean useDefaultConstructor)
+[xUnit.net 00:00:00.51]            at System.Lazy`1.CreateValue()
+[xUnit.net 00:00:00.51]         C:\Users\kurts\Projects\FsCheck\src\FsCheck\Testable.fs(164,0): at FsCheck.Testable.Prop.safeForce[a](Lazy`1 body)
+[xUnit.net 00:00:00.52]     BibleAtlas.FSharp.Tests.SchemaSpike.Binding.BindingLaws.every original component has a generated runtime type registered with the existing validating converter [FAIL]
+[xUnit.net 00:00:00.52]       FsCheck.Xunit.PropertyFailedException :
+[xUnit.net 00:00:00.52]       Falsifiable, after 1 test (0 shrinks) (6163663923843483528,14406421195600759961).
+[xUnit.net 00:00:00.52]       Last step was invoked with size of 100 and seed of (134146948994353378,2235758024274565043):
+[xUnit.net 00:00:00.52]       Original:
+[xUnit.net 00:00:00.52]       <null>
+[xUnit.net 00:00:00.52]
+[xUnit.net 00:00:00.52]       ---- System.TypeLoadException : Could not resolve type 'BibleAtlas.FSharp.Contract.Point' in assembly 'BibleAtlas.FSharp.Core, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null'.
+[xUnit.net 00:00:00.52]       Stack Trace:
+[xUnit.net 00:00:00.52]
+[xUnit.net 00:00:00.52]         ----- Inner Stack Trace -----
+[xUnit.net 00:00:00.52]            at System.Reflection.TypeNameResolver.GetType(String escapedTypeName, ReadOnlySpan`1 nestedTypeNames, TypeName parsedName)
+[xUnit.net 00:00:00.52]            at System.Reflection.TypeNameResolver.Resolve(TypeName typeName)
+[xUnit.net 00:00:00.52]            at System.Reflection.TypeNameResolver.GetType(String typeName, Boolean throwOnError, Boolean ignoreCase, Assembly topLevelAssembly)
+[xUnit.net 00:00:00.52]         /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/SchemaSpike/Binding/BindingLaws.fs(86,0): at BibleAtlas.FSharp.Tests.SchemaSpike.Binding.BindingLaws.configure()
+[xUnit.net 00:00:00.52]         /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/SchemaSpike/Binding/BindingLaws.fs(81,0): at BibleAtlas.FSharp.Tests.SchemaSpike.Binding.BindingLaws.options@81.Invoke(Assembly _arg1)
+[xUnit.net 00:00:00.52]            at System.Collections.Concurrent.ConcurrentDictionary`2.GetOrAdd(TKey key, Func`2 valueFactory)
+[xUnit.net 00:00:00.52]         /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/SchemaSpike/Binding/BindingLaws.fs(81,0): at BibleAtlas.FSharp.Tests.SchemaSpike.Binding.BindingLaws.options()
+[xUnit.net 00:00:00.52]         /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/SchemaSpike/Binding/BindingLaws.fs(15,0): at BibleAtlas.FSharp.Tests.SchemaSpike.Binding.BindingLaws.every original component has a generated runtime type registered with the existing validating converter()
+[xUnit.net 00:00:00.52]            at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+[xUnit.net 00:00:00.52]            at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+[xUnit.net 00:00:00.52]         --- End of stack trace from previous location ---
+[xUnit.net 00:00:00.52]         C:\Users\kurts\Projects\FsCheck\src\FsCheck\Runner.fs(595,0): at FsCheck.Runner.invokeAndThrowInner@592-1.Invoke(Object[] o)
+[xUnit.net 00:00:00.52]         /__w/1/s/src/fsharp/src/FSharp.Core/reflect.fs(1230,0): at <StartupCode$FSharp-Core>.$Reflect.Invoke@1230.Invoke(T1 inp)
+[xUnit.net 00:00:00.52]            at System.Lazy`1.ViaFactory(LazyThreadSafetyMode mode)
+[xUnit.net 00:00:00.52]            at System.Lazy`1.ExecutionAndPublication(LazyHelper executionAndPublication, Boolean useDefaultConstructor)
+[xUnit.net 00:00:00.52]            at System.Lazy`1.CreateValue()
+[xUnit.net 00:00:00.52]         C:\Users\kurts\Projects\FsCheck\src\FsCheck\Testable.fs(164,0): at FsCheck.Testable.Prop.safeForce[a](Lazy`1 body)
+[xUnit.net 00:00:00.53]     BibleAtlas.FSharp.Tests.SchemaSpike.Binding.BindingLaws.adoption requires selected union payload patterns and numeric bounds to remain enforced at every nested boundary [FAIL]
+[xUnit.net 00:00:00.53]       FsCheck.Xunit.PropertyFailedException :
+[xUnit.net 00:00:00.53]       Falsifiable, after 1 test (0 shrinks) (3478823697833037693,14514303062343667869).
+[xUnit.net 00:00:00.53]       Last step was invoked with size of 2 and seed of (8523916475253181578,2108418115599170211):
+[xUnit.net 00:00:00.53]       Original:
+[xUnit.net 00:00:00.53]       0us
+[xUnit.net 00:00:00.53]
+[xUnit.net 00:00:00.53]       ---- System.TypeLoadException : Could not resolve type 'BibleAtlas.FSharp.Contract.Point' in assembly 'BibleAtlas.FSharp.Core, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null'.
+[xUnit.net 00:00:00.53]       Stack Trace:
+[xUnit.net 00:00:00.53]
+[xUnit.net 00:00:00.53]         ----- Inner Stack Trace -----
+[xUnit.net 00:00:00.53]            at System.Reflection.TypeNameResolver.GetType(String escapedTypeName, ReadOnlySpan`1 nestedTypeNames, TypeName parsedName)
+[xUnit.net 00:00:00.53]            at System.Reflection.TypeNameResolver.Resolve(TypeName typeName)
+[xUnit.net 00:00:00.53]            at System.Reflection.TypeNameResolver.GetType(String typeName, Boolean throwOnError, Boolean ignoreCase, Assembly topLevelAssembly)
+[xUnit.net 00:00:00.53]         /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/SchemaSpike/Binding/BindingLaws.fs(86,0): at BibleAtlas.FSharp.Tests.SchemaSpike.Binding.BindingLaws.configure()
+[xUnit.net 00:00:00.53]         /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/SchemaSpike/Binding/BindingLaws.fs(81,0): at BibleAtlas.FSharp.Tests.SchemaSpike.Binding.BindingLaws.options@81.Invoke(Assembly _arg1)
+[xUnit.net 00:00:00.53]            at System.Collections.Concurrent.ConcurrentDictionary`2.GetOrAdd(TKey key, Func`2 valueFactory)
+[xUnit.net 00:00:00.53]         /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/SchemaSpike/Binding/BindingLaws.fs(81,0): at BibleAtlas.FSharp.Tests.SchemaSpike.Binding.BindingLaws.options()
+[xUnit.net 00:00:00.53]         /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/SchemaSpike/Binding/BindingLaws.fs(66,0): at BibleAtlas.FSharp.Tests.SchemaSpike.Binding.BindingLaws.accepts(String name, JsonElement body)
+[xUnit.net 00:00:00.53]         /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/SchemaSpike/Binding/BindingLaws.fs(57,0): at BibleAtlas.FSharp.Tests.SchemaSpike.Binding.BindingLaws.actual@57-3.Invoke(Tuple`2 tupledArg)
+[xUnit.net 00:00:00.53]         /__w/1/s/src/fsharp/src/FSharp.Core/local.fs(247,0): at Microsoft.FSharp.Primitives.Basics.List.map[T,TResult](FSharpFunc`2 mapping, FSharpList`1 x)
+[xUnit.net 00:00:00.53]         /__w/1/s/src/fsharp/src/FSharp.Core/list.fs(97,0): at Microsoft.FSharp.Collections.ListModule.Map[T,TResult](FSharpFunc`2 mapping, FSharpList`1 list)
+[xUnit.net 00:00:00.53]         /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/SchemaSpike/Binding/BindingLaws.fs(57,0): at BibleAtlas.FSharp.Tests.SchemaSpike.Binding.BindingLaws.adoption requires selected union payload patterns and numeric bounds to remain enforced at every nested boundary(UInt16 suffix)
+[xUnit.net 00:00:00.53]            at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+[xUnit.net 00:00:00.53]            at System.Reflection.MethodBaseInvoker.InvokeDirectByRefWithFewArgs(Object obj, Span`1 copyOfArgs, BindingFlags invokeAttr)
+[xUnit.net 00:00:00.53]         --- End of stack trace from previous location ---
+[xUnit.net 00:00:00.53]         C:\Users\kurts\Projects\FsCheck\src\FsCheck\Runner.fs(595,0): at FsCheck.Runner.invokeAndThrowInner@592-1.Invoke(Object[] o)
+[xUnit.net 00:00:00.53]         /__w/1/s/src/fsharp/src/FSharp.Core/reflect.fs(1230,0): at <StartupCode$FSharp-Core>.$Reflect.Invoke@1230.Invoke(T1 inp)
+[xUnit.net 00:00:00.53]            at System.Lazy`1.ViaFactory(LazyThreadSafetyMode mode)
+[xUnit.net 00:00:00.53]            at System.Lazy`1.ExecutionAndPublication(LazyHelper executionAndPublication, Boolean useDefaultConstructor)
+[xUnit.net 00:00:00.53]            at System.Lazy`1.CreateValue()
+[xUnit.net 00:00:00.53]         C:\Users\kurts\Projects\FsCheck\src\FsCheck\Testable.fs(164,0): at FsCheck.Testable.Prop.safeForce[a](Lazy`1 body)
+[xUnit.net 00:00:00.53]     BibleAtlas.FSharp.Tests.SchemaSpike.Binding.BindingLaws.the existing converter reports the whole original node identity failure hierarchy through structured exception data [FAIL]
+[xUnit.net 00:00:00.53]       FsCheck.Xunit.PropertyFailedException :
+[xUnit.net 00:00:00.53]       Falsifiable, after 1 test (0 shrinks) (15030573499803979013,10174788878418203847).
+[xUnit.net 00:00:00.53]       Last step was invoked with size of 2 and seed of (1663164569873738186,10872078756364661959):
+[xUnit.net 00:00:00.53]       Original:
+[xUnit.net 00:00:00.53]       0us
+[xUnit.net 00:00:00.53]
+[xUnit.net 00:00:00.53]       ---- System.TypeLoadException : Could not resolve type 'BibleAtlas.FSharp.Contract.Point' in assembly 'BibleAtlas.FSharp.Core, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null'.
+[xUnit.net 00:00:00.53]       Stack Trace:
+[xUnit.net 00:00:00.53]
+[xUnit.net 00:00:00.53]         ----- Inner Stack Trace -----
+[xUnit.net 00:00:00.53]            at System.Reflection.TypeNameResolver.GetType(String escapedTypeName, ReadOnlySpan`1 nestedTypeNames, TypeName parsedName)
+[xUnit.net 00:00:00.53]            at System.Reflection.TypeNameResolver.Resolve(TypeName typeName)
+[xUnit.net 00:00:00.53]            at System.Reflection.TypeNameResolver.GetType(String typeName, Boolean throwOnError, Boolean ignoreCase, Assembly topLevelAssembly)
+[xUnit.net 00:00:00.53]         /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/SchemaSpike/Binding/BindingLaws.fs(86,0): at BibleAtlas.FSharp.Tests.SchemaSpike.Binding.BindingLaws.configure()
+[xUnit.net 00:00:00.53]         /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/SchemaSpike/Binding/BindingLaws.fs(81,0): at BibleAtlas.FSharp.Tests.SchemaSpike.Binding.BindingLaws.options@81.Invoke(Assembly _arg1)
+[xUnit.net 00:00:00.53]            at System.Collections.Concurrent.ConcurrentDictionary`2.GetOrAdd(TKey key, Func`2 valueFactory)
+[xUnit.net 00:00:00.53]         /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/SchemaSpike/Binding/BindingLaws.fs(81,0): at BibleAtlas.FSharp.Tests.SchemaSpike.Binding.BindingLaws.options()
+[xUnit.net 00:00:00.53]         /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/SchemaSpike/Binding/BindingLaws.fs(72,0): at BibleAtlas.FSharp.Tests.SchemaSpike.Binding.BindingLaws.refusal(String name, JsonElement body)
+[xUnit.net 00:00:00.53]         /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/SchemaSpike/Binding/BindingLaws.fs(40,0): at BibleAtlas.FSharp.Tests.SchemaSpike.Binding.BindingLaws.the existing converter reports the whole original node identity failure hierarchy through structured exception data(UInt16 suffix)
+[xUnit.net 00:00:00.53]            at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+[xUnit.net 00:00:00.53]            at System.Reflection.MethodBaseInvoker.InvokeDirectByRefWithFewArgs(Object obj, Span`1 copyOfArgs, BindingFlags invokeAttr)
+[xUnit.net 00:00:00.53]         --- End of stack trace from previous location ---
+[xUnit.net 00:00:00.53]         C:\Users\kurts\Projects\FsCheck\src\FsCheck\Runner.fs(595,0): at FsCheck.Runner.invokeAndThrowInner@592-1.Invoke(Object[] o)
+[xUnit.net 00:00:00.53]         /__w/1/s/src/fsharp/src/FSharp.Core/reflect.fs(1230,0): at <StartupCode$FSharp-Core>.$Reflect.Invoke@1230.Invoke(T1 inp)
+[xUnit.net 00:00:00.53]            at System.Lazy`1.ViaFactory(LazyThreadSafetyMode mode)
+[xUnit.net 00:00:00.53]            at System.Lazy`1.ExecutionAndPublication(LazyHelper executionAndPublication, Boolean useDefaultConstructor)
+[xUnit.net 00:00:00.53]            at System.Lazy`1.CreateValue()
+[xUnit.net 00:00:00.53]         C:\Users\kurts\Projects\FsCheck\src\FsCheck\Testable.fs(164,0): at FsCheck.Testable.Prop.safeForce[a](Lazy`1 body)
+[xUnit.net 00:00:00.53]     BibleAtlas.FSharp.Tests.SchemaSpike.Binding.BindingLaws.the original schema bound validating converter accepts every complete recorded query fixture [FAIL]
+[xUnit.net 00:00:00.53]       FsCheck.Xunit.PropertyFailedException :
+[xUnit.net 00:00:00.53]       Falsifiable, after 1 test (0 shrinks) (7196530540248202364,16884512223979659287).
+[xUnit.net 00:00:00.53]       Last step was invoked with size of 100 and seed of (9317403515876310618,14913189760038381421):
+[xUnit.net 00:00:00.53]       Original:
+[xUnit.net 00:00:00.53]       <null>
+[xUnit.net 00:00:00.53]
+[xUnit.net 00:00:00.53]       ---- System.TypeLoadException : Could not resolve type 'BibleAtlas.FSharp.Contract.Point' in assembly 'BibleAtlas.FSharp.Core, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null'.
+[xUnit.net 00:00:00.53]       Stack Trace:
+[xUnit.net 00:00:00.53]
+[xUnit.net 00:00:00.53]         ----- Inner Stack Trace -----
+[xUnit.net 00:00:00.53]            at System.Reflection.TypeNameResolver.GetType(String escapedTypeName, ReadOnlySpan`1 nestedTypeNames, TypeName parsedName)
+[xUnit.net 00:00:00.53]            at System.Reflection.TypeNameResolver.Resolve(TypeName typeName)
+[xUnit.net 00:00:00.53]            at System.Reflection.TypeNameResolver.GetType(String typeName, Boolean throwOnError, Boolean ignoreCase, Assembly topLevelAssembly)
+[xUnit.net 00:00:00.53]         /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/SchemaSpike/Binding/BindingLaws.fs(86,0): at BibleAtlas.FSharp.Tests.SchemaSpike.Binding.BindingLaws.configure()
+[xUnit.net 00:00:00.53]         /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/SchemaSpike/Binding/BindingLaws.fs(81,0): at BibleAtlas.FSharp.Tests.SchemaSpike.Binding.BindingLaws.options@81.Invoke(Assembly _arg1)
+[xUnit.net 00:00:00.53]            at System.Collections.Concurrent.ConcurrentDictionary`2.GetOrAdd(TKey key, Func`2 valueFactory)
+[xUnit.net 00:00:00.53]         /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/SchemaSpike/Binding/BindingLaws.fs(81,0): at BibleAtlas.FSharp.Tests.SchemaSpike.Binding.BindingLaws.options()
+[xUnit.net 00:00:00.53]         /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/SchemaSpike/Binding/BindingLaws.fs(66,0): at BibleAtlas.FSharp.Tests.SchemaSpike.Binding.BindingLaws.accepts(String name, JsonElement body)
+[xUnit.net 00:00:00.53]         /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/SchemaSpike/Binding/BindingLaws.fs(25,0): at BibleAtlas.FSharp.Tests.SchemaSpike.Binding.BindingLaws.actual@25-1.Invoke(QueryExample example)
+[xUnit.net 00:00:00.53]         /__w/1/s/src/fsharp/src/FSharp.Core/local.fs(247,0): at Microsoft.FSharp.Primitives.Basics.List.map[T,TResult](FSharpFunc`2 mapping, FSharpList`1 x)
+[xUnit.net 00:00:00.53]         /__w/1/s/src/fsharp/src/FSharp.Core/list.fs(97,0): at Microsoft.FSharp.Collections.ListModule.Map[T,TResult](FSharpFunc`2 mapping, FSharpList`1 list)
+[xUnit.net 00:00:00.53]         /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/SchemaSpike/Binding/BindingLaws.fs(25,0): at BibleAtlas.FSharp.Tests.SchemaSpike.Binding.BindingLaws.the original schema bound validating converter accepts every complete recorded query fixture()
+[xUnit.net 00:00:00.53]            at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+[xUnit.net 00:00:00.53]            at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+[xUnit.net 00:00:00.53]         --- End of stack trace from previous location ---
+[xUnit.net 00:00:00.53]         C:\Users\kurts\Projects\FsCheck\src\FsCheck\Runner.fs(595,0): at FsCheck.Runner.invokeAndThrowInner@592-1.Invoke(Object[] o)
+[xUnit.net 00:00:00.53]         /__w/1/s/src/fsharp/src/FSharp.Core/reflect.fs(1230,0): at <StartupCode$FSharp-Core>.$Reflect.Invoke@1230.Invoke(T1 inp)
+[xUnit.net 00:00:00.53]            at System.Lazy`1.ViaFactory(LazyThreadSafetyMode mode)
+[xUnit.net 00:00:00.53]            at System.Lazy`1.ExecutionAndPublication(LazyHelper executionAndPublication, Boolean useDefaultConstructor)
+[xUnit.net 00:00:00.53]            at System.Lazy`1.CreateValue()
+[xUnit.net 00:00:00.53]         C:\Users\kurts\Projects\FsCheck\src\FsCheck\Testable.fs(164,0): at FsCheck.Testable.Prop.safeForce[a](Lazy`1 body)
+[xUnit.net 00:00:00.54]   Finished:    BindingFit
+  Passed BibleAtlas.FSharp.Tests.PropertyTests.every compiled FSharp test is a property including inherited or aliased test attributes [54 ms]
+  Failed BibleAtlas.FSharp.Tests.SchemaSpike.Binding.BindingLaws.the schema bound converter refuses opaque identity patterns and closed leaf record extras [352 ms]
+  Error Message:
+   FsCheck.Xunit.PropertyFailedException :
+Falsifiable, after 1 test (0 shrinks) (5401038944010143916,14141020722138188569).
+Last step was invoked with size of 2 and seed of (11218428698324072492,15161152630289541325):
+Original:
+0us
+
+---- System.TypeLoadException : Could not resolve type 'BibleAtlas.FSharp.Contract.Point' in assembly 'BibleAtlas.FSharp.Core, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null'.
+  Stack Trace:
+
+----- Inner Stack Trace -----
+   at System.Reflection.TypeNameResolver.GetType(String escapedTypeName, ReadOnlySpan`1 nestedTypeNames, TypeName parsedName)
+   at System.Reflection.TypeNameResolver.Resolve(TypeName typeName)
+   at System.Reflection.TypeNameResolver.GetType(String typeName, Boolean throwOnError, Boolean ignoreCase, Assembly topLevelAssembly)
+   at BibleAtlas.FSharp.Tests.SchemaSpike.Binding.BindingLaws.configure() in /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/SchemaSpike/Binding/BindingLaws.fs:line 86
+   at BibleAtlas.FSharp.Tests.SchemaSpike.Binding.BindingLaws.options@81.Invoke(Assembly _arg1) in /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/SchemaSpike/Binding/BindingLaws.fs:line 81
+   at System.Collections.Concurrent.ConcurrentDictionary`2.GetOrAdd(TKey key, Func`2 valueFactory)
+   at BibleAtlas.FSharp.Tests.SchemaSpike.Binding.BindingLaws.options() in /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/SchemaSpike/Binding/BindingLaws.fs:line 81
+   at BibleAtlas.FSharp.Tests.SchemaSpike.Binding.BindingLaws.accepts(String name, JsonElement body) in /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/SchemaSpike/Binding/BindingLaws.fs:line 66
+   at BibleAtlas.FSharp.Tests.SchemaSpike.Binding.BindingLaws.actual@34-2.Invoke(Tuple`2 tupledArg) in /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/SchemaSpike/Binding/BindingLaws.fs:line 34
+   at Microsoft.FSharp.Primitives.Basics.List.map[T,TResult](FSharpFunc`2 mapping, FSharpList`1 x) in /__w/1/s/src/fsharp/src/FSharp.Core/local.fs:line 247
+   at Microsoft.FSharp.Collections.ListModule.Map[T,TResult](FSharpFunc`2 mapping, FSharpList`1 list) in /__w/1/s/src/fsharp/src/FSharp.Core/list.fs:line 97
+   at BibleAtlas.FSharp.Tests.SchemaSpike.Binding.BindingLaws.the schema bound converter refuses opaque identity patterns and closed leaf record extras(UInt16 suffix) in /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/SchemaSpike/Binding/BindingLaws.fs:line 34
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeDirectByRefWithFewArgs(Object obj, Span`1 copyOfArgs, BindingFlags invokeAttr)
+--- End of stack trace from previous location ---
+   at FsCheck.Runner.invokeAndThrowInner@592-1.Invoke(Object[] o) in C:\Users\kurts\Projects\FsCheck\src\FsCheck\Runner.fs:line 595
+   at <StartupCode$FSharp-Core>.$Reflect.Invoke@1230.Invoke(T1 inp) in /__w/1/s/src/fsharp/src/FSharp.Core/reflect.fs:line 1230
+   at System.Lazy`1.ViaFactory(LazyThreadSafetyMode mode)
+   at System.Lazy`1.ExecutionAndPublication(LazyHelper executionAndPublication, Boolean useDefaultConstructor)
+   at System.Lazy`1.CreateValue()
+   at FsCheck.Testable.Prop.safeForce[a](Lazy`1 body) in C:\Users\kurts\Projects\FsCheck\src\FsCheck\Testable.fs:line 164
+  Failed BibleAtlas.FSharp.Tests.SchemaSpike.Binding.BindingLaws.every original component has a generated runtime type registered with the existing validating converter [7 ms]
+  Error Message:
+   FsCheck.Xunit.PropertyFailedException :
+Falsifiable, after 1 test (0 shrinks) (6163663923843483528,14406421195600759961).
+Last step was invoked with size of 100 and seed of (134146948994353378,2235758024274565043):
+Original:
+<null>
+
+---- System.TypeLoadException : Could not resolve type 'BibleAtlas.FSharp.Contract.Point' in assembly 'BibleAtlas.FSharp.Core, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null'.
+  Stack Trace:
+
+----- Inner Stack Trace -----
+   at System.Reflection.TypeNameResolver.GetType(String escapedTypeName, ReadOnlySpan`1 nestedTypeNames, TypeName parsedName)
+   at System.Reflection.TypeNameResolver.Resolve(TypeName typeName)
+   at System.Reflection.TypeNameResolver.GetType(String typeName, Boolean throwOnError, Boolean ignoreCase, Assembly topLevelAssembly)
+   at BibleAtlas.FSharp.Tests.SchemaSpike.Binding.BindingLaws.configure() in /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/SchemaSpike/Binding/BindingLaws.fs:line 86
+   at BibleAtlas.FSharp.Tests.SchemaSpike.Binding.BindingLaws.options@81.Invoke(Assembly _arg1) in /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/SchemaSpike/Binding/BindingLaws.fs:line 81
+   at System.Collections.Concurrent.ConcurrentDictionary`2.GetOrAdd(TKey key, Func`2 valueFactory)
+   at BibleAtlas.FSharp.Tests.SchemaSpike.Binding.BindingLaws.options() in /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/SchemaSpike/Binding/BindingLaws.fs:line 81
+   at BibleAtlas.FSharp.Tests.SchemaSpike.Binding.BindingLaws.every original component has a generated runtime type registered with the existing validating converter() in /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/SchemaSpike/Binding/BindingLaws.fs:line 15
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+--- End of stack trace from previous location ---
+   at FsCheck.Runner.invokeAndThrowInner@592-1.Invoke(Object[] o) in C:\Users\kurts\Projects\FsCheck\src\FsCheck\Runner.fs:line 595
+   at <StartupCode$FSharp-Core>.$Reflect.Invoke@1230.Invoke(T1 inp) in /__w/1/s/src/fsharp/src/FSharp.Core/reflect.fs:line 1230
+   at System.Lazy`1.ViaFactory(LazyThreadSafetyMode mode)
+   at System.Lazy`1.ExecutionAndPublication(LazyHelper executionAndPublication, Boolean useDefaultConstructor)
+   at System.Lazy`1.CreateValue()
+   at FsCheck.Testable.Prop.safeForce[a](Lazy`1 body) in C:\Users\kurts\Projects\FsCheck\src\FsCheck\Testable.fs:line 164
+  Failed BibleAtlas.FSharp.Tests.SchemaSpike.Binding.BindingLaws.adoption requires selected union payload patterns and numeric bounds to remain enforced at every nested boundary [12 ms]
+  Error Message:
+   FsCheck.Xunit.PropertyFailedException :
+Falsifiable, after 1 test (0 shrinks) (3478823697833037693,14514303062343667869).
+Last step was invoked with size of 2 and seed of (8523916475253181578,2108418115599170211):
+Original:
+0us
+
+---- System.TypeLoadException : Could not resolve type 'BibleAtlas.FSharp.Contract.Point' in assembly 'BibleAtlas.FSharp.Core, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null'.
+  Stack Trace:
+
+----- Inner Stack Trace -----
+   at System.Reflection.TypeNameResolver.GetType(String escapedTypeName, ReadOnlySpan`1 nestedTypeNames, TypeName parsedName)
+   at System.Reflection.TypeNameResolver.Resolve(TypeName typeName)
+   at System.Reflection.TypeNameResolver.GetType(String typeName, Boolean throwOnError, Boolean ignoreCase, Assembly topLevelAssembly)
+   at BibleAtlas.FSharp.Tests.SchemaSpike.Binding.BindingLaws.configure() in /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/SchemaSpike/Binding/BindingLaws.fs:line 86
+   at BibleAtlas.FSharp.Tests.SchemaSpike.Binding.BindingLaws.options@81.Invoke(Assembly _arg1) in /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/SchemaSpike/Binding/BindingLaws.fs:line 81
+   at System.Collections.Concurrent.ConcurrentDictionary`2.GetOrAdd(TKey key, Func`2 valueFactory)
+   at BibleAtlas.FSharp.Tests.SchemaSpike.Binding.BindingLaws.options() in /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/SchemaSpike/Binding/BindingLaws.fs:line 81
+   at BibleAtlas.FSharp.Tests.SchemaSpike.Binding.BindingLaws.accepts(String name, JsonElement body) in /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/SchemaSpike/Binding/BindingLaws.fs:line 66
+   at BibleAtlas.FSharp.Tests.SchemaSpike.Binding.BindingLaws.actual@57-3.Invoke(Tuple`2 tupledArg) in /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/SchemaSpike/Binding/BindingLaws.fs:line 57
+   at Microsoft.FSharp.Primitives.Basics.List.map[T,TResult](FSharpFunc`2 mapping, FSharpList`1 x) in /__w/1/s/src/fsharp/src/FSharp.Core/local.fs:line 247
+   at Microsoft.FSharp.Collections.ListModule.Map[T,TResult](FSharpFunc`2 mapping, FSharpList`1 list) in /__w/1/s/src/fsharp/src/FSharp.Core/list.fs:line 97
+   at BibleAtlas.FSharp.Tests.SchemaSpike.Binding.BindingLaws.adoption requires selected union payload patterns and numeric bounds to remain enforced at every nested boundary(UInt16 suffix) in /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/SchemaSpike/Binding/BindingLaws.fs:line 57
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeDirectByRefWithFewArgs(Object obj, Span`1 copyOfArgs, BindingFlags invokeAttr)
+--- End of stack trace from previous location ---
+   at FsCheck.Runner.invokeAndThrowInner@592-1.Invoke(Object[] o) in C:\Users\kurts\Projects\FsCheck\src\FsCheck\Runner.fs:line 595
+   at <StartupCode$FSharp-Core>.$Reflect.Invoke@1230.Invoke(T1 inp) in /__w/1/s/src/fsharp/src/FSharp.Core/reflect.fs:line 1230
+   at System.Lazy`1.ViaFactory(LazyThreadSafetyMode mode)
+   at System.Lazy`1.ExecutionAndPublication(LazyHelper executionAndPublication, Boolean useDefaultConstructor)
+   at System.Lazy`1.CreateValue()
+   at FsCheck.Testable.Prop.safeForce[a](Lazy`1 body) in C:\Users\kurts\Projects\FsCheck\src\FsCheck\Testable.fs:line 164
+  Failed BibleAtlas.FSharp.Tests.SchemaSpike.Binding.BindingLaws.the existing converter reports the whole original node identity failure hierarchy through structured exception data [< 1 ms]
+  Error Message:
+   FsCheck.Xunit.PropertyFailedException :
+Falsifiable, after 1 test (0 shrinks) (15030573499803979013,10174788878418203847).
+Last step was invoked with size of 2 and seed of (1663164569873738186,10872078756364661959):
+Original:
+0us
+
+---- System.TypeLoadException : Could not resolve type 'BibleAtlas.FSharp.Contract.Point' in assembly 'BibleAtlas.FSharp.Core, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null'.
+  Stack Trace:
+
+----- Inner Stack Trace -----
+   at System.Reflection.TypeNameResolver.GetType(String escapedTypeName, ReadOnlySpan`1 nestedTypeNames, TypeName parsedName)
+   at System.Reflection.TypeNameResolver.Resolve(TypeName typeName)
+   at System.Reflection.TypeNameResolver.GetType(String typeName, Boolean throwOnError, Boolean ignoreCase, Assembly topLevelAssembly)
+   at BibleAtlas.FSharp.Tests.SchemaSpike.Binding.BindingLaws.configure() in /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/SchemaSpike/Binding/BindingLaws.fs:line 86
+   at BibleAtlas.FSharp.Tests.SchemaSpike.Binding.BindingLaws.options@81.Invoke(Assembly _arg1) in /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/SchemaSpike/Binding/BindingLaws.fs:line 81
+   at System.Collections.Concurrent.ConcurrentDictionary`2.GetOrAdd(TKey key, Func`2 valueFactory)
+   at BibleAtlas.FSharp.Tests.SchemaSpike.Binding.BindingLaws.options() in /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/SchemaSpike/Binding/BindingLaws.fs:line 81
+   at BibleAtlas.FSharp.Tests.SchemaSpike.Binding.BindingLaws.refusal(String name, JsonElement body) in /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/SchemaSpike/Binding/BindingLaws.fs:line 72
+   at BibleAtlas.FSharp.Tests.SchemaSpike.Binding.BindingLaws.the existing converter reports the whole original node identity failure hierarchy through structured exception data(UInt16 suffix) in /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/SchemaSpike/Binding/BindingLaws.fs:line 40
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeDirectByRefWithFewArgs(Object obj, Span`1 copyOfArgs, BindingFlags invokeAttr)
+--- End of stack trace from previous location ---
+   at FsCheck.Runner.invokeAndThrowInner@592-1.Invoke(Object[] o) in C:\Users\kurts\Projects\FsCheck\src\FsCheck\Runner.fs:line 595
+   at <StartupCode$FSharp-Core>.$Reflect.Invoke@1230.Invoke(T1 inp) in /__w/1/s/src/fsharp/src/FSharp.Core/reflect.fs:line 1230
+   at System.Lazy`1.ViaFactory(LazyThreadSafetyMode mode)
+   at System.Lazy`1.ExecutionAndPublication(LazyHelper executionAndPublication, Boolean useDefaultConstructor)
+   at System.Lazy`1.CreateValue()
+   at FsCheck.Testable.Prop.safeForce[a](Lazy`1 body) in C:\Users\kurts\Projects\FsCheck\src\FsCheck\Testable.fs:line 164
+  Failed BibleAtlas.FSharp.Tests.SchemaSpike.Binding.BindingLaws.the original schema bound validating converter accepts every complete recorded query fixture [< 1 ms]
+  Error Message:
+   FsCheck.Xunit.PropertyFailedException :
+Falsifiable, after 1 test (0 shrinks) (7196530540248202364,16884512223979659287).
+Last step was invoked with size of 100 and seed of (9317403515876310618,14913189760038381421):
+Original:
+<null>
+
+---- System.TypeLoadException : Could not resolve type 'BibleAtlas.FSharp.Contract.Point' in assembly 'BibleAtlas.FSharp.Core, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null'.
+  Stack Trace:
+
+----- Inner Stack Trace -----
+   at System.Reflection.TypeNameResolver.GetType(String escapedTypeName, ReadOnlySpan`1 nestedTypeNames, TypeName parsedName)
+   at System.Reflection.TypeNameResolver.Resolve(TypeName typeName)
+   at System.Reflection.TypeNameResolver.GetType(String typeName, Boolean throwOnError, Boolean ignoreCase, Assembly topLevelAssembly)
+   at BibleAtlas.FSharp.Tests.SchemaSpike.Binding.BindingLaws.configure() in /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/SchemaSpike/Binding/BindingLaws.fs:line 86
+   at BibleAtlas.FSharp.Tests.SchemaSpike.Binding.BindingLaws.options@81.Invoke(Assembly _arg1) in /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/SchemaSpike/Binding/BindingLaws.fs:line 81
+   at System.Collections.Concurrent.ConcurrentDictionary`2.GetOrAdd(TKey key, Func`2 valueFactory)
+   at BibleAtlas.FSharp.Tests.SchemaSpike.Binding.BindingLaws.options() in /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/SchemaSpike/Binding/BindingLaws.fs:line 81
+   at BibleAtlas.FSharp.Tests.SchemaSpike.Binding.BindingLaws.accepts(String name, JsonElement body) in /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/SchemaSpike/Binding/BindingLaws.fs:line 66
+   at BibleAtlas.FSharp.Tests.SchemaSpike.Binding.BindingLaws.actual@25-1.Invoke(QueryExample example) in /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/SchemaSpike/Binding/BindingLaws.fs:line 25
+   at Microsoft.FSharp.Primitives.Basics.List.map[T,TResult](FSharpFunc`2 mapping, FSharpList`1 x) in /__w/1/s/src/fsharp/src/FSharp.Core/local.fs:line 247
+   at Microsoft.FSharp.Collections.ListModule.Map[T,TResult](FSharpFunc`2 mapping, FSharpList`1 list) in /__w/1/s/src/fsharp/src/FSharp.Core/list.fs:line 97
+   at BibleAtlas.FSharp.Tests.SchemaSpike.Binding.BindingLaws.the original schema bound validating converter accepts every complete recorded query fixture() in /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/SchemaSpike/Binding/BindingLaws.fs:line 25
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+--- End of stack trace from previous location ---
+   at FsCheck.Runner.invokeAndThrowInner@592-1.Invoke(Object[] o) in C:\Users\kurts\Projects\FsCheck\src\FsCheck\Runner.fs:line 595
+   at <StartupCode$FSharp-Core>.$Reflect.Invoke@1230.Invoke(T1 inp) in /__w/1/s/src/fsharp/src/FSharp.Core/reflect.fs:line 1230
+   at System.Lazy`1.ViaFactory(LazyThreadSafetyMode mode)
+   at System.Lazy`1.ExecutionAndPublication(LazyHelper executionAndPublication, Boolean useDefaultConstructor)
+   at System.Lazy`1.CreateValue()
+   at FsCheck.Testable.Prop.safeForce[a](Lazy`1 body) in C:\Users\kurts\Projects\FsCheck\src\FsCheck\Testable.fs:line 164
+
+Test Run Failed.
+Total tests: 6
+     Passed: 1
+     Failed: 5
+ Total time: 0.8755 Seconds

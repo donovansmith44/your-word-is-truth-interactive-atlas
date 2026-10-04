@@ -8,6 +8,7 @@
   <ItemGroup>
     <Compile Include="../SurveyData.fs" />
     <Compile Include="../SurveyInputs.fs" />
+    <Compile Include="../SchemaSurvey.fs" />
     <Compile Include="../SchemaLaws.fs" />
     <Compile Include="Program.fs" />
     <PackageReference Include="Bolero" Version="0.25.65" />

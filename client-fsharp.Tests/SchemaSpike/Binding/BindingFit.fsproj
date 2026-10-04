@@ -6,15 +6,13 @@
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="SurveyData.fs" />
-    <Compile Include="SurveyInputs.fs" />
-    <Compile Include="SchemaSurvey.fs" />
-    <Compile Include="SchemaLaws.fs" />
-    <Compile Include="../PropertyTests.fs" />
-  </ItemGroup>
-  <ItemGroup>
+    <Compile Include="../SurveyData.fs" />
+    <Compile Include="../SurveyInputs.fs" />
+    <Compile Include="../SchemaSurvey.fs" />
+    <Compile Include="BindingLaws.fs" />
+    <Compile Include="../../PropertyTests.fs" />
     <ProjectReference Include="$(JsonSchemaSource)/src/JsonSchema/JsonSchema.csproj" AdditionalProperties="GeneratePackageOnBuild=false" />
-    <ProjectReference Include="../../client-fsharp/Core/BibleAtlas.FSharp.Core.fsproj" />
+    <ProjectReference Include="../../../client-fsharp/Core/BibleAtlas.FSharp.Core.fsproj" />
     <PackageReference Include="YamlDotNet" Version="18.1.0" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
     <PackageReference Include="xunit" Version="2.9.3" />

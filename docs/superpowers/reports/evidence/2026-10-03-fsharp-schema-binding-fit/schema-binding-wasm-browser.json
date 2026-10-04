@@ -1,0 +1,67 @@
+{
+  "url": "http://127.0.0.1:5100/",
+  "status": "passed",
+  "report": {
+    "Properties": [
+      "the original approved OpenAPI builds and accepts every recorded query answer without schema edits",
+      "generated valid roots and invalid root shapes are distinguished by the original pattern",
+      "both published element identity branches accept exactly their declared opaque wire shapes",
+      "all required node fields reject omission and null and the full record accepts its generated label",
+      "closed records reject extra properties through the original additionalProperties keyword",
+      "structured evaluation retains the exact failing instance location and keyword without reading message text",
+      "nullable heading and every whole TextWindow fixture remain valid under generated artifact roots",
+      "base schema acceptance cannot replace the concrete branch validation performed by the generated serializer"
+    ],
+    "Fixtures": 35,
+    "MaxGeneratedCases": 100,
+    "ElapsedMilliseconds": 8434,
+    "ValidatorAssembly": "JsonSchema.Net, Version=9.0.0.0, Culture=neutral, PublicKeyToken=17ed63f672b0e278"
+  },
+  "elapsed_seconds": 10.62936594599887,
+  "console": [
+    {
+      "type": "info",
+      "text": "Debugging hotkey: Shift+Alt+D (when application has focus)"
+    },
+    {
+      "type": "log",
+      "text": "Ok, passed 1 test."
+    },
+    {
+      "type": "log",
+      "text": "Ok, passed 100 tests."
+    },
+    {
+      "type": "log",
+      "text": "Ok, passed 100 tests."
+    },
+    {
+      "type": "log",
+      "text": "Ok, passed 100 tests."
+    },
+    {
+      "type": "log",
+      "text": "Ok, passed 100 tests."
+    },
+    {
+      "type": "log",
+      "text": "Ok, passed 100 tests."
+    },
+    {
+      "type": "log",
+      "text": "Ok, passed 100 tests."
+    },
+    {
+      "type": "log",
+      "text": "Ok, passed 100 tests."
+    }
+  ],
+  "page_errors": [],
+  "http_failures": [],
+  "control": "original-inputs",
+  "resource_inventory": {
+    "count": 232,
+    "original_full_inventory_sha256": "bb65e5bcb199e922bd427e1d8331da7cf00274aee81738d62ade28597eb5612d",
+    "retained_in_owned_integration_log": true
+  }
+}

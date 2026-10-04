@@ -1,16 +1,12 @@
 module rec BibleAtlas.FSharp.Tests.SchemaSpike.SchemaLaws
 
-open System.IO
 open System.Text.Json
 open System.Text.Json.Nodes
 open FsCheck
 open FsCheck.Xunit
 open global.Xunit
 open Json.Schema
-
-let initialize (inputs: SurveyData.Inputs) =
-    inputSets[repository ()] <- inputs
-    schemas.Clear()
+open BibleAtlas.FSharp.Tests.SchemaSpike.SchemaSurvey
 
 [<Property(MaxTest = 1)>]
 let ``the original approved OpenAPI builds and accepts every recorded query answer without schema edits`` () =
@@ -75,24 +71,7 @@ let ``base schema acceptance cannot replace the concrete branch validation perfo
     let actual = (schema "TextRef").Evaluate(incomplete).IsValid, (schema "BibleRef").Evaluate(incomplete).IsValid, BibleAtlas.FSharp.Json.decode<BibleAtlas.FSharp.Contract.TextRef>(incomplete.GetRawText()) |> Result.isOk
     Assert.Equal((true, false, false), actual)
 
-let private schema (name: string) : JsonSchema = schemas.GetOrAdd(name, buildSchema)
-
-let private buildSchema (name: string) =
-    let source = (document ()).DeepClone()
-    source["$ref"] <- JsonValue.Create<string>($"#/components/schemas/{name}")
-    let options = BuildOptions(Dialect = Dialect.Draft202012, SchemaRegistry = SchemaRegistry())
-    JsonSchema.Build(element source, options)
-
 let private fixtures () : (string * string * JsonElement) list =
-    (inputs ()).Examples |> List.map (fun example -> example.SchemaName, example.FileName, example.Body)
+    SchemaSurvey.examples () |> List.map (fun example -> example.SchemaName, example.FileName, example.Body)
 
 let private element (node: JsonNode) : JsonElement = JsonSerializer.Deserialize<JsonElement>(node.ToJsonString())
-
-let private document () : JsonNode = (inputs ()).Document
-
-let private inputs () : SurveyData.Inputs = inputSets.GetOrAdd(repository (), SurveyInputs.load)
-
-let private repository () = Path.GetFullPath(Path.Combine(__SOURCE_DIRECTORY__, "../.."))
-
-let private schemas: System.Collections.Concurrent.ConcurrentDictionary<string, JsonSchema> = System.Collections.Concurrent.ConcurrentDictionary<string, JsonSchema>()
-let private inputSets: System.Collections.Concurrent.ConcurrentDictionary<string, SurveyData.Inputs> = System.Collections.Concurrent.ConcurrentDictionary<string, SurveyData.Inputs>()

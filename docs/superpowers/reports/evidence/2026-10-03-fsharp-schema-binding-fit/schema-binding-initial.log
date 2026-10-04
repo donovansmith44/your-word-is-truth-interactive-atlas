@@ -1,0 +1,16 @@
+  Determining projects to restore...
+  Restored /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/SchemaSpike/Binding/BindingFit.fsproj (in 734 ms).
+  5 of 6 projects are up-to-date for restore.
+  Json.More -> /home/donovan/mut/codex-json-schema-fit-source/src/Json.More/bin/Debug/net10.0/Json.More.dll
+  JsonPointer -> /home/donovan/mut/codex-json-schema-fit-source/src/JsonPointer/bin/Debug/net10.0/JsonPointer.Net.dll
+  JsonSchema -> /home/donovan/mut/codex-json-schema-fit-source/src/JsonSchema/bin/Debug/net10.0/JsonSchema.Net.dll
+  BibleAtlas.FSharp.ContractGenerator -> /home/donovan/w/CX-FSHARP-wire/client-fsharp.ContractGenerator/bin/Debug/net10.0/BibleAtlas.FSharp.ContractGenerator.dll
+  BibleAtlas.FSharp.Core -> /home/donovan/w/CX-FSHARP-wire/client-fsharp/Core/bin/Debug/net10.0/BibleAtlas.FSharp.Core.dll
+/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/SchemaSpike/Binding/BindingLaws.fs(17,57): error FS0597: This argument expression needs parentheses. Expressions involving function or method calls must be parenthesized when passed as arguments, e.g. 'printfn "%s" (arg.Trim())'. [/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/SchemaSpike/Binding/BindingFit.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/SchemaSpike/Binding/BindingLaws.fs(49,122): error FS0010: Unexpected symbol ':' in expression. Expected '|}' or other token. [/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/SchemaSpike/Binding/BindingFit.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/SchemaSpike/Binding/BindingLaws.fs(49,73): error FS0605: Unmatched '{|' [/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/SchemaSpike/Binding/BindingFit.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/SchemaSpike/Binding/BindingLaws.fs(49,133): error FS0010: Unexpected symbol ';' in binding. Expected incomplete structured construct at or before this point or other token. [/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/SchemaSpike/Binding/BindingFit.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/SchemaSpike/Binding/BindingLaws.fs(80,9): error FS0046: The identifier 'component' is reserved for future use by F# [/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/SchemaSpike/Binding/BindingFit.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/SchemaSpike/Binding/BindingLaws.fs(80,62): error FS0597: This argument expression needs parentheses. Expressions involving function or method calls must be parenthesized when passed as arguments, e.g. 'printfn "%s" (arg.Trim())'. [/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/SchemaSpike/Binding/BindingFit.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/SchemaSpike/Binding/BindingLaws.fs(81,79): error FS0046: The identifier 'component' is reserved for future use by F# [/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/SchemaSpike/Binding/BindingFit.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/SchemaSpike/Binding/BindingLaws.fs(82,78): error FS0046: The identifier 'component' is reserved for future use by F# [/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/SchemaSpike/Binding/BindingFit.fsproj]

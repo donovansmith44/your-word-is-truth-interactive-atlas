@@ -1,0 +1,1288 @@
+[
+  {
+    "expected": [
+      {
+        "Item1": "Anchor",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "ArtifactRoot",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "BibleRef",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "BibleReference",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "BookDetail",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "BookId",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "CanonBook",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "CatechismDetail",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "CatechismItem",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "CatechismProofVerse",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "CatechismRef",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "Chapter",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "ChapterReference",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "ConcordRef",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "ConcordReference",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "Confidence",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "Contents",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "ContentsChild",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "ContentsChildKind",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "ContentsReference",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "ContentsRoot",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "ContentsRootKind",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "Contract",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "Corpus",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "CrossRef",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "CrossReferenceTarget",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "DateClaim",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "EdgeElement",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "EdgeEntry",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "EdgeId",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "EdgeKind",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "EdgePage",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "EdgePageCursor",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "EdgePosition",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "EdgeRecord",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "EdgeRef",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "EdgeSummaryEntry",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "Element",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "ElementId",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "ElementPage",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "ElementPageCursor",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "Era",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "EraDetail",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "EraId",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "ErrorBody",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "ErrorCode",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "ErrorInner",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "EventAnalogue",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "EventDetail",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "EventKind",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "EventPage",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "EventWitness",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "Heading",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "KretzmannChapter",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "KretzmannChapterItem",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "KretzmannChapterVerse",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "LandMask",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "Landmark",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "LandmarkKind",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "LandmarkSize",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "MapDetail",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "MissingElement",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "Narrative",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "NarrativeAdjacentEvent",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "NarrativeEventPositions",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "NarrativeId",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "NarrativePosition",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "NodeElement",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "NodeId",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "NodeKind",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "NodePosition",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "NodeRecord",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "NodeRef",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "Parentage",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "PassageReference",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "PersonLife",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "PersonRef",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "PlaceDetail",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "PlaceRef",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "Point",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "Polities",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "Polity",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "PolityDelta",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "PolityDetail",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "PolityId",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "PositionRef",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "Provenance",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "ProvenanceEntry",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "QuietPlace",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "ReadingReference",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "Scene",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "SceneArrow",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "SceneEvent",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "SceneMode",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "SceneNarrative",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "ScenePlace",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "SourceCategory",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "SourceEntry",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "SourcesDocument",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "Testament",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "TextPoint",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "TextRef",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "TextScope",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "TextSpan",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "TextUnit",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "TextWindow",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "TextWindowReference",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "TimeRange",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "TimelinePosition",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "UnitHeading",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "UnitReference",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "UnitText",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "Verse",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "VerseGroup",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "VerseRangeReference",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "VerseReference",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "VerseSpanReference",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "WindowDir",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "WordsOfChristSpan",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "Year",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "YearSpan",
+        "Item2": true,
+        "Item3": true
+      }
+    ],
+    "actual": [
+      {
+        "Item1": "Anchor",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "ArtifactRoot",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "BibleRef",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "BibleReference",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "BookDetail",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "BookId",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "CanonBook",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "CatechismDetail",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "CatechismItem",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "CatechismProofVerse",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "CatechismRef",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "Chapter",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "ChapterReference",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "ConcordRef",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "ConcordReference",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "Confidence",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "Contents",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "ContentsChild",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "ContentsChildKind",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "ContentsReference",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "ContentsRoot",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "ContentsRootKind",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "Contract",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "Corpus",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "CrossRef",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "CrossReferenceTarget",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "DateClaim",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "EdgeElement",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "EdgeEntry",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "EdgeId",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "EdgeKind",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "EdgePage",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "EdgePageCursor",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "EdgePosition",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "EdgeRecord",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "EdgeRef",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "EdgeSummaryEntry",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "Element",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "ElementId",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "ElementPage",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "ElementPageCursor",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "Era",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "EraDetail",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "EraId",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "ErrorBody",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "ErrorCode",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "ErrorInner",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "EventAnalogue",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "EventDetail",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "EventKind",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "EventPage",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "EventWitness",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "Heading",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "KretzmannChapter",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "KretzmannChapterItem",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "KretzmannChapterVerse",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "LandMask",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "Landmark",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "LandmarkKind",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "LandmarkSize",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "MapDetail",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "MissingElement",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "Narrative",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "NarrativeAdjacentEvent",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "NarrativeEventPositions",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "NarrativeId",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "NarrativePosition",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "NodeElement",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "NodeId",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "NodeKind",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "NodePosition",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "NodeRecord",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "NodeRef",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "Parentage",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "PassageReference",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "PersonLife",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "PersonRef",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "PlaceDetail",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "PlaceRef",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "Point",
+        "Item2": false,
+        "Item3": false
+      },
+      {
+        "Item1": "Polities",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "Polity",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "PolityDelta",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "PolityDetail",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "PolityId",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "PositionRef",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "Provenance",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "ProvenanceEntry",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "QuietPlace",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "ReadingReference",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "Scene",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "SceneArrow",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "SceneEvent",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "SceneMode",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "SceneNarrative",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "ScenePlace",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "SourceCategory",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "SourceEntry",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "SourcesDocument",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "Testament",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "TextPoint",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "TextRef",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "TextScope",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "TextSpan",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "TextUnit",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "TextWindow",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "TextWindowReference",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "TimeRange",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "TimelinePosition",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "UnitHeading",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "UnitReference",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "UnitText",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "Verse",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "VerseGroup",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "VerseRangeReference",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "VerseReference",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "VerseSpanReference",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "WindowDir",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "WordsOfChristSpan",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "Year",
+        "Item2": true,
+        "Item3": true
+      },
+      {
+        "Item1": "YearSpan",
+        "Item2": true,
+        "Item3": true
+      }
+    ]
+  },
+  {
+    "expected": [
+      {
+        "Item1": "BibleRef",
+        "Item2": false
+      },
+      {
+        "Item1": "TextRef",
+        "Item2": false
+      },
+      {
+        "Item1": "UnitText",
+        "Item2": false
+      },
+      {
+        "Item1": "BibleRef",
+        "Item2": false
+      },
+      {
+        "Item1": "TextRef",
+        "Item2": false
+      },
+      {
+        "Item1": "UnitText",
+        "Item2": false
+      },
+      {
+        "Item1": "PositionRef",
+        "Item2": false
+      },
+      {
+        "Item1": "Element",
+        "Item2": false
+      }
+    ],
+    "actual": [
+      {
+        "Item1": "BibleRef",
+        "Item2": false
+      },
+      {
+        "Item1": "TextRef",
+        "Item2": false
+      },
+      {
+        "Item1": "UnitText",
+        "Item2": false
+      },
+      {
+        "Item1": "BibleRef",
+        "Item2": false
+      },
+      {
+        "Item1": "TextRef",
+        "Item2": true
+      },
+      {
+        "Item1": "UnitText",
+        "Item2": true
+      },
+      {
+        "Item1": "PositionRef",
+        "Item2": true
+      },
+      {
+        "Item1": "Element",
+        "Item2": true
+      }
+    ]
+  }
+]

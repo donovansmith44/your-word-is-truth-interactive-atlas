@@ -64,7 +64,7 @@ let private run (http: HttpClient) () = async {
 
 let private check (inputs: Inputs) : Report =
     let elapsed = Stopwatch.StartNew()
-    SchemaLaws.initialize inputs
+    SchemaSurvey.initialize inputs
     let properties =
         typeof<Inputs>.Assembly.GetType("BibleAtlas.FSharp.Tests.SchemaSpike.SchemaLaws", true)
             .GetMethods(BindingFlags.Public ||| BindingFlags.Static ||| BindingFlags.DeclaredOnly)
