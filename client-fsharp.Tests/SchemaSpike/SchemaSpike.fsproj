@@ -6,6 +6,8 @@
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="SurveyData.fs" />
+    <Compile Include="SurveyInputs.fs" />
     <Compile Include="SchemaLaws.fs" />
     <Compile Include="../PropertyTests.fs" />
   </ItemGroup>

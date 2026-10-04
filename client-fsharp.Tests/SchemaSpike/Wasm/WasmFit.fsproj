@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk.BlazorWebAssembly">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <AssemblyName>BibleAtlas.SchemaSurvey.Wasm</AssemblyName>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <SurveyInput>$(MSBuildProjectDirectory)/obj/survey.json</SurveyInput>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../SurveyData.fs" />
+    <Compile Include="../SurveyInputs.fs" />
+    <Compile Include="../SchemaLaws.fs" />
+    <Compile Include="Program.fs" />
+    <PackageReference Include="Bolero" Version="0.25.65" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="10.0.12" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="10.0.12" PrivateAssets="all" />
+    <PackageReference Include="FsCheck.Xunit" Version="3.4.0" />
+    <PackageReference Include="xunit" Version="2.9.3" />
+    <PackageReference Include="YamlDotNet" Version="18.1.0" />
+    <ProjectReference Include="../../../client-fsharp/Core/BibleAtlas.FSharp.Core.fsproj" />
+    <ProjectReference Include="$(JsonSchemaSource)/src/JsonSchema/JsonSchema.csproj" AdditionalProperties="GeneratePackageOnBuild=false" />
+    <Content Include="$(SurveyInput)" Link="wwwroot/survey.json" ContentRoot="$(MSBuildProjectDirectory)/obj/" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+  <Target Name="PrepareSurveyInput" BeforeTargets="PrepareForBuild">
+    <Error Condition="'$(JsonSchemaSource)' == ''" Text="Set JsonSchemaSource to the pinned MIT source checkout." />
+    <MSBuild Projects="../Export/Export.fsproj" Targets="Restore;Build" Properties="Configuration=$(Configuration)" />
+    <Exec Command="dotnet &quot;$(MSBuildProjectDirectory)/../Export/bin/$(Configuration)/net10.0/BibleAtlas.SchemaSurvey.Export.dll&quot; &quot;$(MSBuildProjectDirectory)/../../..&quot; &quot;$(SurveyInput)&quot;" />
+  </Target>
+</Project>

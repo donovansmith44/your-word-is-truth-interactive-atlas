@@ -1,0 +1,27 @@
+  Json.More -> /home/donovan/mut/codex-json-schema-fit-source/src/Json.More/bin/Debug/net10.0/Json.More.dll
+  JsonPointer -> /home/donovan/mut/codex-json-schema-fit-source/src/JsonPointer/bin/Debug/net10.0/JsonPointer.Net.dll
+  JsonSchema -> /home/donovan/mut/codex-json-schema-fit-source/src/JsonSchema/bin/Debug/net10.0/JsonSchema.Net.dll
+  BibleAtlas.FSharp.ContractGenerator -> /home/donovan/w/CX-FSHARP-wire/client-fsharp.ContractGenerator/bin/Debug/net10.0/BibleAtlas.FSharp.ContractGenerator.dll
+  BibleAtlas.FSharp.Core -> /home/donovan/w/CX-FSHARP-wire/client-fsharp/Core/bin/Debug/net10.0/BibleAtlas.FSharp.Core.dll
+  SchemaSpike -> /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/SchemaSpike/bin/Debug/net10.0/SchemaSpike.dll
+Test run for /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/SchemaSpike/bin/Debug/net10.0/SchemaSpike.dll (.NETCoreApp,Version=v10.0)
+A total of 1 test files matched the specified pattern.
+[xUnit.net 00:00:00.00] xUnit.net VSTest Adapter v3.1.4+50e68bbb8b (64-bit .NET 10.0.12)
+[xUnit.net 00:00:00.06]   Discovering: SchemaSpike
+[xUnit.net 00:00:00.09]   Discovered:  SchemaSpike
+[xUnit.net 00:00:00.10]   Starting:    SchemaSpike
+  Passed BibleAtlas.FSharp.Tests.PropertyTests.every compiled FSharp test is a property including inherited or aliased test attributes [57 ms]
+  Passed BibleAtlas.FSharp.Tests.SchemaSpike.SchemaLaws.closed records reject extra properties through the original additionalProperties keyword [290 ms]
+  Passed BibleAtlas.FSharp.Tests.SchemaSpike.SchemaLaws.base schema acceptance cannot replace the concrete branch validation performed by the generated serializer [73 ms]
+  Passed BibleAtlas.FSharp.Tests.SchemaSpike.SchemaLaws.the original approved OpenAPI builds and accepts every recorded query answer without schema edits [208 ms]
+  Passed BibleAtlas.FSharp.Tests.SchemaSpike.SchemaLaws.both published element identity branches accept exactly their declared opaque wire shapes [35 ms]
+  Passed BibleAtlas.FSharp.Tests.SchemaSpike.SchemaLaws.nullable heading and every whole TextWindow fixture remain valid under generated artifact roots [158 ms]
+[xUnit.net 00:00:01.00]   Finished:    SchemaSpike
+  Passed BibleAtlas.FSharp.Tests.SchemaSpike.SchemaLaws.all required node fields reject omission and null and the full record accepts its generated label [32 ms]
+  Passed BibleAtlas.FSharp.Tests.SchemaSpike.SchemaLaws.structured evaluation retains the exact failing instance location and keyword without reading message text [34 ms]
+  Passed BibleAtlas.FSharp.Tests.SchemaSpike.SchemaLaws.generated valid roots and invalid root shapes are distinguished by the original pattern [4 ms]
+
+Test Run Successful.
+Total tests: 9
+     Passed: 9
+ Total time: 1.3365 Seconds

@@ -1,0 +1,18 @@
+  Determining projects to restore...
+  All projects are up-to-date for restore.
+  Determining projects to restore...
+  All projects are up-to-date for restore.
+  Export -> /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/SchemaSpike/Export/bin/Debug/net10.0/BibleAtlas.SchemaSurvey.Export.dll
+  BibleAtlas.FSharp.ContractGenerator -> /home/donovan/w/CX-FSHARP-wire/client-fsharp.ContractGenerator/bin/Debug/net10.0/BibleAtlas.FSharp.ContractGenerator.dll
+  BibleAtlas.FSharp.Core -> /home/donovan/w/CX-FSHARP-wire/client-fsharp/Core/bin/Debug/net10.0/BibleAtlas.FSharp.Core.dll
+  Json.More -> /home/donovan/mut/codex-json-schema-fit-source/src/Json.More/bin/Debug/net10.0/Json.More.dll
+  JsonPointer -> /home/donovan/mut/codex-json-schema-fit-source/src/JsonPointer/bin/Debug/net10.0/JsonPointer.Net.dll
+  JsonSchema -> /home/donovan/mut/codex-json-schema-fit-source/src/JsonSchema/bin/Debug/net10.0/JsonSchema.Net.dll
+  WasmFit -> /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/SchemaSpike/Wasm/bin/Debug/net10.0/BibleAtlas.SchemaSurvey.Wasm.dll
+  WasmFit (Blazor output) -> /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/SchemaSpike/Wasm/bin/Debug/net10.0/wwwroot
+
+Build succeeded.
+    0 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:08.27

@@ -1,0 +1,22 @@
+  Determining projects to restore...
+  Skipping project "/home/donovan/w/CX-FSHARP-wire/Core/BibleAtlas.FSharp.Core.fsproj" because it was not found.
+  Skipping project "/home/donovan/w/CX-FSHARP-wire/Core/BibleAtlas.FSharp.Core.fsproj" because it was not found.
+  Restored /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/SchemaSpike/Wasm/WasmFit.fsproj (in 5.52 sec).
+  3 of 4 projects are up-to-date for restore.
+  Determining projects to restore...
+  Restored /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/SchemaSpike/Export/Export.fsproj (in 418 ms).
+  Export -> /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/SchemaSpike/Export/bin/Debug/net10.0/BibleAtlas.SchemaSurvey.Export.dll
+  Json.More -> /home/donovan/mut/codex-json-schema-fit-source/src/Json.More/bin/Debug/net10.0/Json.More.dll
+  JsonPointer -> /home/donovan/mut/codex-json-schema-fit-source/src/JsonPointer/bin/Debug/net10.0/JsonPointer.Net.dll
+  JsonSchema -> /home/donovan/mut/codex-json-schema-fit-source/src/JsonSchema/bin/Debug/net10.0/JsonSchema.Net.dll
+/home/donovan/.dotnet/sdk/10.0.401/Microsoft.Common.CurrentVersion.targets(2205,5): warning MSB9008: The referenced project ../../../Core/BibleAtlas.FSharp.Core.fsproj does not exist. [/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/SchemaSpike/Wasm/WasmFit.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/SchemaSpike/Wasm/Program.fs(90,54): error FS0597: This argument expression needs parentheses. Expressions involving function or method calls must be parenthesized when passed as arguments, e.g. 'printfn "%s" (arg.Trim())'. [/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/SchemaSpike/Wasm/WasmFit.fsproj]
+
+Build FAILED.
+
+/home/donovan/.dotnet/sdk/10.0.401/Microsoft.Common.CurrentVersion.targets(2205,5): warning MSB9008: The referenced project ../../../Core/BibleAtlas.FSharp.Core.fsproj does not exist. [/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/SchemaSpike/Wasm/WasmFit.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/SchemaSpike/Wasm/Program.fs(90,54): error FS0597: This argument expression needs parentheses. Expressions involving function or method calls must be parenthesized when passed as arguments, e.g. 'printfn "%s" (arg.Trim())'. [/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/SchemaSpike/Wasm/WasmFit.fsproj]
+    1 Warning(s)
+    1 Error(s)
+
+Time Elapsed 00:00:27.79

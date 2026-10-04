@@ -7,7 +7,10 @@ open FsCheck
 open FsCheck.Xunit
 open global.Xunit
 open Json.Schema
-open YamlDotNet.Serialization
+
+let initialize (inputs: SurveyData.Inputs) =
+    inputSets[repository ()] <- inputs
+    schemas.Clear()
 
 [<Property(MaxTest = 1)>]
 let ``the original approved OpenAPI builds and accepts every recorded query answer without schema edits`` () =
@@ -81,35 +84,15 @@ let private buildSchema (name: string) =
     JsonSchema.Build(element source, options)
 
 let private fixtures () : (string * string * JsonElement) list =
-    Directory.GetFiles(fixtureDirectory (), "*.json") |> Array.sort |> Array.toList |> List.choose (fun file ->
-        let name = Path.GetFileNameWithoutExtension file
-        let source = JsonNode.Parse(File.ReadAllText file)
-        let shape =
-            if name = "index" || name = "contract" then None
-            elif source["status"].GetValue<int>() >= clientRefusalMinimum then Some "ErrorBody"
-            elif name.StartsWith "focus-" then Some "NodeRecord"
-            elif name.StartsWith "contents-" then Some "Contents"
-            elif name.StartsWith "text-window-" then Some "TextWindow"
-            elif name.StartsWith "traversal-" then Some "EdgePage"
-            elif name.StartsWith "scene-" then Some "Scene"
-            elif name.StartsWith "event-page-" then Some "EventPage"
-            elif name = "element-read" then Some "ElementPage"
-            else invalidOp $"Unclassified query fixture {name}"
-        shape |> Option.map (fun shape -> shape, name, element (source["body"])))
+    (inputs ()).Examples |> List.map (fun example -> example.SchemaName, example.FileName, example.Body)
 
 let private element (node: JsonNode) : JsonElement = JsonSerializer.Deserialize<JsonElement>(node.ToJsonString())
 
-let private document () : JsonNode = documents.GetOrAdd(repository (), loadDocument)
+let private document () : JsonNode = (inputs ()).Document
 
-let private loadDocument (root: string) : JsonNode =
-    let deserialize = DeserializerBuilder().WithAttemptingUnquotedStringTypeDeserialization().Build()
-    let serialize = SerializerBuilder().JsonCompatible().Build()
-    let body = File.ReadAllText(Path.Combine(root, "contracts/openapi.yaml")) |> deserialize.Deserialize<obj> |> serialize.Serialize
-    JsonNode.Parse(body)
+let private inputs () : SurveyData.Inputs = inputSets.GetOrAdd(repository (), SurveyInputs.load)
 
-let private fixtureDirectory () = Path.Combine(repository (), "contracts/atlas-query-contract/fixtures")
 let private repository () = Path.GetFullPath(Path.Combine(__SOURCE_DIRECTORY__, "../.."))
-let private clientRefusalMinimum = 400
 
 let private schemas: System.Collections.Concurrent.ConcurrentDictionary<string, JsonSchema> = System.Collections.Concurrent.ConcurrentDictionary<string, JsonSchema>()
-let private documents: System.Collections.Concurrent.ConcurrentDictionary<string, JsonNode> = System.Collections.Concurrent.ConcurrentDictionary<string, JsonNode>()
+let private inputSets: System.Collections.Concurrent.ConcurrentDictionary<string, SurveyData.Inputs> = System.Collections.Concurrent.ConcurrentDictionary<string, SurveyData.Inputs>()
