@@ -18,7 +18,14 @@ let ``helper functions members and shared test fixtures follow their first calle
         |> List.collect (fun directory -> Directory.GetFiles(Path.Combine(root, directory), "*.fs", SearchOption.AllDirectories) |> Array.toList)
         |> List.filter (fun path -> not (path.Contains("/bin/") || path.Contains("/obj/")))
     let generated = ["client-fsharp/Core/obj/Contract/Wire.g.fs"; "client-fsharp/Core/obj/Contract/Vocabulary.g.fs"] |> List.map (fun file -> Path.Combine(root, file))
-    let actual = files @ generated |> List.collect (fun file -> violations file (File.ReadAllText file)) |> List.sort
+    let bindingPath = Path.Combine(root, "client-fsharp.Tests/SchemaSpike/Binding/obj/Contract/SchemaTypes.g.fs")
+    let bindingSource =
+        match BibleAtlas.FSharp.ContractGenerator.Generator.generateBindings (File.ReadAllText(Path.Combine(root, "contracts/openapi.yaml"))) with
+        | Ok source -> source
+        | Error error -> failwith error
+    if File.Exists bindingPath then Assert.Equal(bindingSource, File.ReadAllText bindingPath)
+    let sources = (files @ generated |> List.map (fun file -> file, File.ReadAllText file)) @ [bindingPath, bindingSource]
+    let actual = sources |> List.collect (fun (file, source) -> violations file source) |> List.sort
     Assert.True(actual.IsEmpty, String.concat "\n" actual)
 
 [<Property>]

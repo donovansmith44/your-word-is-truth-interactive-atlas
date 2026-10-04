@@ -14,9 +14,10 @@ open BibleAtlas.FSharp.Tests.SchemaSpike
 let ``adoption requires a complete schema binding including components whose FSharp aliases erase at runtime`` () =
     let converter = (options ()).Converters[0]
     let names = definitions () |> Seq.map _.Key |> Seq.sort |> Seq.toList
+    Assert.Equal<string list>(names, Map.keys SchemaTypes.all |> Seq.toList)
     let actual = names |> List.map (fun name ->
-        let shape = typeof<ArtifactRoot>.Assembly.GetType(contractNamespace () + name)
-        name, not (isNull shape), not (isNull shape) && converter.CanConvert shape)
+        let shape = Map.tryFind name SchemaTypes.all
+        name, shape.IsSome, shape |> Option.exists converter.CanConvert)
     let expected = names |> List.map (fun name -> name, true, true)
     Assert.True((expected = actual), sprintf "Expected %s; actual %s" (JsonSerializer.Serialize expected) (JsonSerializer.Serialize actual))
 
@@ -39,7 +40,7 @@ let ``the schema bound converter refuses opaque identity patterns and closed lea
 let ``the original Point schema enforces exactly two numeric coordinates despite its erased runtime alias`` (suffix: uint16) (length: byte) =
     let point = JsonSerializer.SerializeToElement(Array.init (int length) (fun _ -> float suffix))
     let expected = int length = coordinatePairLength
-    Assert.Equal(expected, (SchemaSurvey.schema "Point").Evaluate(point).IsValid)
+    Assert.Equal(expected, accepts "Point" point)
 
 [<Property>]
 let ``the existing converter reports the whole original node identity failure hierarchy through structured exception data`` (suffix: uint16) =
@@ -84,13 +85,13 @@ let private definitions () : JsonObject =
 
 let private accepts (name: string) (body: JsonElement) =
     try
-        JsonSerializer.Deserialize(body.GetRawText(), typeof<ArtifactRoot>.Assembly.GetType(contractNamespace () + name, true), options ()) |> ignore
+        JsonSerializer.Deserialize(body.GetRawText(), SchemaTypes.all[name], options ()) |> ignore
         true
     with :? JsonException -> false
 
 let private refusal (name: string) (body: JsonElement) =
     try
-        JsonSerializer.Deserialize(body.GetRawText(), typeof<ArtifactRoot>.Assembly.GetType(contractNamespace () + name, true), options ()) |> ignore
+        JsonSerializer.Deserialize(body.GetRawText(), SchemaTypes.all[name], options ()) |> ignore
         None
     with :? JsonException as error ->
         match error.Data["validation"] with
@@ -103,16 +104,12 @@ let private options () : JsonSerializerOptions = configurations.GetOrAdd(typeof<
 
 let private configure () : JsonSerializerOptions =
     let register = typeof<ValidatingJsonConverter>.GetMethod("MapType")
-    for definition in definitions () do
-        let shape = typeof<ArtifactRoot>.Assembly.GetType(contractNamespace () + definition.Key)
-        if not (isNull shape) then
-            register.MakeGenericMethod(shape).Invoke(null, [|SchemaSurvey.schema definition.Key|]) |> ignore
+    for name, shape in Map.toList SchemaTypes.all do
+        register.MakeGenericMethod(shape).Invoke(null, [|SchemaSurvey.schema name|]) |> ignore
     let shapes = JsonFSharpTypes.Records ||| JsonFSharpTypes.Collections ||| JsonFSharpTypes.OptionalTypes ||| JsonFSharpTypes.Tuples
     let result = JsonFSharpOptions.Default().WithTypes(shapes).WithAllowOverride().WithSkippableOptionFields(SkippableOptionFields.Always, deserializeNullAsNone = true).ToJsonSerializerOptions()
     result.Converters.Insert(0, ValidatingJsonConverter(EvaluationOptions = EvaluationOptions(OutputFormat = OutputFormat.List)))
     result
-
-let private contractNamespace () = typeof<ArtifactRoot>.Namespace + "."
 
 let private configurations: System.Collections.Concurrent.ConcurrentDictionary<System.Reflection.Assembly, JsonSerializerOptions> = System.Collections.Concurrent.ConcurrentDictionary<System.Reflection.Assembly, JsonSerializerOptions>()
 

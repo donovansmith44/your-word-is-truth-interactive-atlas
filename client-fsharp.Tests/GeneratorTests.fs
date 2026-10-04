@@ -6,6 +6,28 @@ open System.IO
 open BibleAtlas.FSharp.ContractGenerator
 
 [<Property>]
+let ``schema bindings retain distinct component names even when both FSharp aliases erase to the same collection`` (suffix: uint16) =
+    let left = $"Left{suffix}"
+    let right = $"Right{suffix}"
+    let source = document $"    {left}:\n      type: array\n      items: {{type: number}}\n      minItems: 2\n      maxItems: 2\n    {right}:\n      type: array\n      items: {{type: number}}\n      minItems: 3\n      maxItems: 3\n"
+    let expected = $"// Generated from contracts/openapi.yaml.\nnamespace BibleAtlas.FSharp.Contract\n\nmodule internal SchemaTypes =\n    let all : Map<string, System.Type> =\n        Map.ofList [\n            \"{left}\", typeof<{left}>\n            \"{right}\", typeof<{right}>\n        ]\n"
+    Assert.Equal(Ok expected, Generator.generateBindings source)
+
+[<Property>]
+let ``schema bindings emit every component once in source order regardless of its wire shape`` (suffix: uint16) =
+    let identity = $"Identity{suffix}"
+    let record = $"Entry{suffix}"
+    let kind = $"Kind{suffix}"
+    let source = document $"    {identity}: {{type: string}}\n    {record}:\n      type: object\n      properties:\n        name: {{type: string}}\n    {kind}: {{type: string, enum: [served, other]}}\n"
+    let expected = $"// Generated from contracts/openapi.yaml.\nnamespace BibleAtlas.FSharp.Contract\n\nmodule internal SchemaTypes =\n    let all : Map<string, System.Type> =\n        Map.ofList [\n            \"{identity}\", typeof<{identity}>\n            \"{record}\", typeof<{record}>\n            \"{kind}\", typeof<{kind}>\n        ]\n"
+    Assert.Equal(Ok expected, Generator.generateBindings source)
+
+[<Property>]
+let ``schema bindings refuse a document with no schema components`` (suffix: uint16) =
+    let source = $"openapi: 3.1.0\ninfo: {{title: 'Missing{suffix}'}}\n"
+    Assert.Equal(Error "the document has no components.schemas", Generator.generateBindings source)
+
+[<Property>]
 let ``a schema generates immutable fields with their exact wire names and optionality`` (suffix: uint16) required nullable =
     let identity = $"Entry{suffix}"
     let fields = if required then "[display_name, count]" else "[display_name]"

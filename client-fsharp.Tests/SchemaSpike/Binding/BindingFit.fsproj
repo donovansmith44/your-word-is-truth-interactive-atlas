@@ -9,6 +9,7 @@
     <Compile Include="../SurveyData.fs" />
     <Compile Include="../SurveyInputs.fs" />
     <Compile Include="../SchemaSurvey.fs" />
+    <Compile Include="obj/Contract/SchemaTypes.g.fs" />
     <Compile Include="BindingLaws.fs" />
     <Compile Include="../../PropertyTests.fs" />
     <ProjectReference Include="$(JsonSchemaSource)/src/JsonSchema/JsonSchema.csproj" AdditionalProperties="GeneratePackageOnBuild=false" />
@@ -19,6 +20,9 @@
     <PackageReference Include="xunit.runner.visualstudio" Version="3.1.4" />
     <PackageReference Include="FsCheck.Xunit" Version="3.4.0" />
   </ItemGroup>
+  <Target Name="GenerateSchemaBindings" BeforeTargets="CoreCompile" Inputs="$(MSBuildProjectDirectory)/../../../contracts/openapi.yaml;$(MSBuildProjectDirectory)/../../../client-fsharp.ContractGenerator/bin/$(Configuration)/net10.0/BibleAtlas.FSharp.ContractGenerator.dll" Outputs="$(MSBuildProjectDirectory)/obj/Contract/SchemaTypes.g.fs">
+    <Exec Command="dotnet &quot;$(MSBuildProjectDirectory)/../../../client-fsharp.ContractGenerator/bin/$(Configuration)/net10.0/BibleAtlas.FSharp.ContractGenerator.dll&quot; --schema-bindings &quot;$(MSBuildProjectDirectory)/../../../contracts/openapi.yaml&quot; &quot;$(MSBuildProjectDirectory)/obj/Contract/SchemaTypes.g.fs&quot;" />
+  </Target>
   <Target Name="RequireJsonSchemaSource" BeforeTargets="PrepareForBuild">
     <Error Condition="'$(JsonSchemaSource)' == ''" Text="Set JsonSchemaSource to the pinned MIT source checkout documented in the JSON validation report." />
   </Target>

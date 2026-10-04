@@ -1,0 +1,14 @@
+  BibleAtlas.Client.ContractGenerator -> /home/donovan/w/CX-FSHARP-wire/client.ContractGenerator/bin/Debug/net10.0/BibleAtlas.Client.ContractGenerator.dll
+  BibleAtlas.FSharp.ContractGenerator -> /home/donovan/w/CX-FSHARP-wire/client-fsharp.ContractGenerator/bin/Debug/net10.0/BibleAtlas.FSharp.ContractGenerator.dll
+  BibleAtlas.FSharp.Core -> /home/donovan/w/CX-FSHARP-wire/client-fsharp/Core/bin/Debug/net10.0/BibleAtlas.FSharp.Core.dll
+  BibleAtlas.FSharp.Client -> /home/donovan/w/CX-FSHARP-wire/client-fsharp/bin/Debug/net10.0/BibleAtlas.FSharp.Client.dll
+  BibleAtlas.FSharp.Client (Blazor output) -> /home/donovan/w/CX-FSHARP-wire/client-fsharp/bin/Debug/net10.0/wwwroot
+/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/GeneratorTests.fs(14,41): error FS0039: The value, constructor, namespace or type 'generateBindings' is not defined. Maybe you want one of the following:
+   generate
+   generateFile [/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/BibleAtlas.FSharp.Tests.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/GeneratorTests.fs(23,41): error FS0039: The value, constructor, namespace or type 'generateBindings' is not defined. Maybe you want one of the following:
+   generate
+   generateFile [/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/BibleAtlas.FSharp.Tests.fsproj]
+/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/GeneratorTests.fs(28,76): error FS0039: The value, constructor, namespace or type 'generateBindings' is not defined. Maybe you want one of the following:
+   generate
+   generateFile [/home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/BibleAtlas.FSharp.Tests.fsproj]

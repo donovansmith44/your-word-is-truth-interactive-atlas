@@ -9,20 +9,19 @@ open YamlDotNet.RepresentationModel
 module rec Generator =
     let generateFile document output =
         generate (File.ReadAllText document)
-        |> Result.map (fun generated ->
-            let directory = Path.GetDirectoryName(Path.GetFullPath output)
-            Directory.CreateDirectory directory |> ignore
-            File.WriteAllText(output, generated))
+        |> Result.map (write output)
+
+    let generateBindingsFile document output =
+        generateBindings (File.ReadAllText document)
+        |> Result.map (write output)
 
     let generate (document: string) : Result<string, string> =
         try
-            let yaml = YamlStream()
-            use reader = new StringReader(document)
-            yaml.Load(reader)
-            let schemas: (string * YamlNode) list = yaml.Documents[0].RootNode |> get "components" |> Option.bind (get "schemas") |> Option.map fields |> Option.defaultWith (fun () -> invalidOp "the document has no components.schemas")
+            let root = readDocument document
+            let schemas = schemaDefinitions root
             let definitions: ResizeArray<string * YamlNode> = ResizeArray<string * YamlNode>(schemas)
             let requests =
-                yaml.Documents[0].RootNode |> get "paths" |> Option.map fields |> Option.defaultValue []
+                root |> get "paths" |> Option.map fields |> Option.defaultValue []
                 |> List.choose (fun (path, endpoint) ->
                     get "get" endpoint |> Option.bind (fun operation ->
                         let response = get "responses" operation |> Option.bind (get "200") |> Option.bind (get "content") |> Option.bind (get "application/json") |> Option.bind (get "schema")
@@ -139,6 +138,31 @@ module rec Generator =
             Ok(output.ToString().Replace("\r\n", "\n"))
         with error -> Error error.Message
 
+
+    let generateBindings (document: string) : Result<string, string> =
+        try
+            let schemas = readDocument document |> schemaDefinitions
+            let output = StringBuilder("// Generated from contracts/openapi.yaml.\nnamespace BibleAtlas.FSharp.Contract\n\nmodule internal SchemaTypes =\n    let all : Map<string, System.Type> =\n        Map.ofList [\n")
+            for typeName, _ in schemas do
+                output.AppendLine($"            {quote typeName}, typeof<{typeName}>") |> ignore
+            output.AppendLine("        ]") |> ignore
+            Ok (output.ToString().Replace("\r\n", "\n"))
+        with error -> Error error.Message
+
+    let private write (output: string) (generated: string) =
+        let directory = Path.GetDirectoryName(Path.GetFullPath output)
+        Directory.CreateDirectory directory |> ignore
+        File.WriteAllText(output, generated)
+
+    let private readDocument (document: string) : YamlNode =
+        let yaml = YamlStream()
+        use reader = new StringReader(document)
+        yaml.Load(reader)
+        yaml.Documents[0].RootNode
+
+    let private schemaDefinitions (root: YamlNode) : (string * YamlNode) list =
+        root |> get "components" |> Option.bind (get "schemas") |> Option.map fields
+        |> Option.defaultWith (fun () -> invalidOp "the document has no components.schemas")
 
     let rec private shape (definitions: ResizeArray<string * YamlNode>) (context: string) (node: YamlNode) : string =
         match get "$ref" node with

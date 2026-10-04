@@ -1,0 +1,72 @@
+  Json.More -> /home/donovan/mut/codex-json-schema-fit-source/src/Json.More/bin/Debug/net10.0/Json.More.dll
+  JsonPointer -> /home/donovan/mut/codex-json-schema-fit-source/src/JsonPointer/bin/Debug/net10.0/JsonPointer.Net.dll
+  JsonSchema -> /home/donovan/mut/codex-json-schema-fit-source/src/JsonSchema/bin/Debug/net10.0/JsonSchema.Net.dll
+  BibleAtlas.FSharp.ContractGenerator -> /home/donovan/w/CX-FSHARP-wire/client-fsharp.ContractGenerator/bin/Debug/net10.0/BibleAtlas.FSharp.ContractGenerator.dll
+  BibleAtlas.FSharp.Core -> /home/donovan/w/CX-FSHARP-wire/client-fsharp/Core/bin/Debug/net10.0/BibleAtlas.FSharp.Core.dll
+  BindingFit -> /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/SchemaSpike/Binding/bin/Debug/net10.0/BindingFit.dll
+Test run for /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/SchemaSpike/Binding/bin/Debug/net10.0/BindingFit.dll (.NETCoreApp,Version=v10.0)
+A total of 1 test files matched the specified pattern.
+[xUnit.net 00:00:00.00] xUnit.net VSTest Adapter v3.1.4+50e68bbb8b (64-bit .NET 10.0.12)
+[xUnit.net 00:00:00.04]   Discovering: BindingFit
+[xUnit.net 00:00:00.07]   Discovered:  BindingFit
+[xUnit.net 00:00:00.09]   Starting:    BindingFit
+[xUnit.net 00:00:00.95]     BibleAtlas.FSharp.Tests.SchemaSpike.Binding.BindingLaws.adoption requires selected union payload identities and numeric bounds to remain enforced across every discriminator family [FAIL]
+[xUnit.net 00:00:00.95]       FsCheck.Xunit.PropertyFailedException :
+[xUnit.net 00:00:00.95]       Falsifiable, after 1 test (1 shrink) (6354981228317725173,6847628284357194481).
+[xUnit.net 00:00:00.95]       Last step was invoked with size of 2 and seed of (13267885152418897631,9135765482719056289):
+[xUnit.net 00:00:00.95]       Original:
+[xUnit.net 00:00:00.95]       2us
+[xUnit.net 00:00:00.95]       Shrunk:
+[xUnit.net 00:00:00.95]       0us
+[xUnit.net 00:00:00.95]
+[xUnit.net 00:00:00.95]       ---- Expected [{"Item1":"BibleRef","Item2":false},{"Item1":"TextRef","Item2":false},{"Item1":"UnitText","Item2":false},{"Item1":"BibleRef","Item2":false},{"Item1":"TextRef","Item2":false},{"Item1":"UnitText","Item2":false},{"Item1":"PositionRef","Item2":false},{"Item1":"Element","Item2":false}]; actual [{"Item1":"BibleRef","Item2":false},{"Item1":"TextRef","Item2":false},{"Item1":"UnitText","Item2":false},{"Item1":"BibleRef","Item2":false},{"Item1":"TextRef","Item2":true},{"Item1":"UnitText","Item2":true},{"Item1":"PositionRef","Item2":true},{"Item1":"Element","Item2":true}]
+[xUnit.net 00:00:00.95]       Stack Trace:
+[xUnit.net 00:00:00.95]
+[xUnit.net 00:00:00.95]         ----- Inner Stack Trace -----
+[xUnit.net 00:00:00.95]         /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/SchemaSpike/Binding/BindingLaws.fs(67,0): at BibleAtlas.FSharp.Tests.SchemaSpike.Binding.BindingLaws.adoption requires selected union payload identities and numeric bounds to remain enforced across every discriminator family(UInt16 suffix)
+[xUnit.net 00:00:00.95]            at InvokeStub_BindingLaws.adoption requires selected union payload identities and numeric bounds to remain enforced across every discriminator family(Object, Span`1)
+[xUnit.net 00:00:00.95]            at System.Reflection.MethodBaseInvoker.InvokeWithOneArg(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
+[xUnit.net 00:00:00.95]         --- End of stack trace from previous location ---
+[xUnit.net 00:00:00.95]         C:\Users\kurts\Projects\FsCheck\src\FsCheck\Runner.fs(595,0): at FsCheck.Runner.invokeAndThrowInner@592-1.Invoke(Object[] o)
+[xUnit.net 00:00:00.95]         /__w/1/s/src/fsharp/src/FSharp.Core/reflect.fs(1230,0): at <StartupCode$FSharp-Core>.$Reflect.Invoke@1230.Invoke(T1 inp)
+[xUnit.net 00:00:00.95]            at System.Lazy`1.ViaFactory(LazyThreadSafetyMode mode)
+[xUnit.net 00:00:00.95]            at System.Lazy`1.ExecutionAndPublication(LazyHelper executionAndPublication, Boolean useDefaultConstructor)
+[xUnit.net 00:00:00.95]            at System.Lazy`1.CreateValue()
+[xUnit.net 00:00:00.95]         C:\Users\kurts\Projects\FsCheck\src\FsCheck\Testable.fs(164,0): at FsCheck.Testable.Prop.safeForce[a](Lazy`1 body)
+[xUnit.net 00:00:01.37]   Finished:    BindingFit
+  Passed BibleAtlas.FSharp.Tests.PropertyTests.every compiled FSharp test is a property including inherited or aliased test attributes [65 ms]
+  Passed BibleAtlas.FSharp.Tests.SchemaSpike.Binding.BindingLaws.the schema bound converter refuses opaque identity patterns and closed leaf record extras [484 ms]
+  Passed BibleAtlas.FSharp.Tests.SchemaSpike.Binding.BindingLaws.the original Point schema enforces exactly two numeric coordinates despite its erased runtime alias [67 ms]
+  Passed BibleAtlas.FSharp.Tests.SchemaSpike.Binding.BindingLaws.adoption requires a complete schema binding including components whose FSharp aliases erase at runtime [6 ms]
+  Passed BibleAtlas.FSharp.Tests.SchemaSpike.Binding.BindingLaws.the existing converter reports the whole original node identity failure hierarchy through structured exception data [7 ms]
+  Failed BibleAtlas.FSharp.Tests.SchemaSpike.Binding.BindingLaws.adoption requires selected union payload identities and numeric bounds to remain enforced across every discriminator family [225 ms]
+  Error Message:
+   FsCheck.Xunit.PropertyFailedException :
+Falsifiable, after 1 test (1 shrink) (6354981228317725173,6847628284357194481).
+Last step was invoked with size of 2 and seed of (13267885152418897631,9135765482719056289):
+Original:
+2us
+Shrunk:
+0us
+
+---- Expected [{"Item1":"BibleRef","Item2":false},{"Item1":"TextRef","Item2":false},{"Item1":"UnitText","Item2":false},{"Item1":"BibleRef","Item2":false},{"Item1":"TextRef","Item2":false},{"Item1":"UnitText","Item2":false},{"Item1":"PositionRef","Item2":false},{"Item1":"Element","Item2":false}]; actual [{"Item1":"BibleRef","Item2":false},{"Item1":"TextRef","Item2":false},{"Item1":"UnitText","Item2":false},{"Item1":"BibleRef","Item2":false},{"Item1":"TextRef","Item2":true},{"Item1":"UnitText","Item2":true},{"Item1":"PositionRef","Item2":true},{"Item1":"Element","Item2":true}]
+  Stack Trace:
+
+----- Inner Stack Trace -----
+   at BibleAtlas.FSharp.Tests.SchemaSpike.Binding.BindingLaws.adoption requires selected union payload identities and numeric bounds to remain enforced across every discriminator family(UInt16 suffix) in /home/donovan/w/CX-FSHARP-wire/client-fsharp.Tests/SchemaSpike/Binding/BindingLaws.fs:line 67
+   at InvokeStub_BindingLaws.adoption requires selected union payload identities and numeric bounds to remain enforced across every discriminator family(Object, Span`1)
+   at System.Reflection.MethodBaseInvoker.InvokeWithOneArg(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
+--- End of stack trace from previous location ---
+   at FsCheck.Runner.invokeAndThrowInner@592-1.Invoke(Object[] o) in C:\Users\kurts\Projects\FsCheck\src\FsCheck\Runner.fs:line 595
+   at <StartupCode$FSharp-Core>.$Reflect.Invoke@1230.Invoke(T1 inp) in /__w/1/s/src/fsharp/src/FSharp.Core/reflect.fs:line 1230
+   at System.Lazy`1.ViaFactory(LazyThreadSafetyMode mode)
+   at System.Lazy`1.ExecutionAndPublication(LazyHelper executionAndPublication, Boolean useDefaultConstructor)
+   at System.Lazy`1.CreateValue()
+   at FsCheck.Testable.Prop.safeForce[a](Lazy`1 body) in C:\Users\kurts\Projects\FsCheck\src\FsCheck\Testable.fs:line 164
+  Passed BibleAtlas.FSharp.Tests.SchemaSpike.Binding.BindingLaws.the original schema bound validating converter accepts every complete recorded query fixture [426 ms]
+
+Test Run Failed.
+Total tests: 7
+     Passed: 6
+     Failed: 1
+ Total time: 1.6959 Seconds
